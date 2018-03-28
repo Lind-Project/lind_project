@@ -10,7 +10,7 @@
 # Uncomment this to print each command as they are executed
 # set -o xtrace
 # Uncomment this for debugging. Will stop B on any failed commands
-# set -o errexit
+set -o errexit
 # Uncomment this to dump time profiling information out to a file to see where the script is slow
 # PS4='+ $(date "+%s.%N")\011 '
 # exec 2>bashstart."$$".log
@@ -118,14 +118,12 @@ function download_src() {
 	#
 	# rm -rf "${LIND_SRC:?}/nacl"
 	# mkdir -p "${NACL_SRC}"
-	# cd "${NACL_SRC}" || exit 1
+	cd "${NACL_SRC}" || exit 1
 	#
 	# git clone git@github.com:Lind-Project/native_client.git
-	# gclient config --name=native_client https://github.com/Lind-Project/native_client.git --git-deps
 	gclient config --name=native_client git@github.com:Lind-Project/native_client.git --git-deps
 	gclient sync
 	cd "${NACL_TOOLCHAIN_BASE}" && rm -rf SRC
-	cp "$LIND_SRC/Makefile.native_client" "$NACL_TOOLCHAIN_BASE/Makefile"
 	make sync-pinned
 	cd SRC || exit 1
 	mv glibc glibc_orig
@@ -140,8 +138,7 @@ function download_src() {
 
 	# convert files from python to python2
 	cd "$NACL_SRC/native_client" || exit 1
-	git apply -v $LIND_SRC/native_client.patch
-	# cp "$LIND_SRC/Makefile.native_client" "$NACL_TOOLCHAIN_BASE/Makefile"
+	patch -p1 <"$LIND_SRC/native_client.patch"
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
 		while read -r file; do
