@@ -1,158 +1,200 @@
 #!/bin/bash
-# Chris Matthews <cmatthew@cs.uvic.ca>
+#
 # Try to ease the burden of building lind (repy, nacl, and toolchain)
-
+#
+# Created by Chris Matthews <cmatthew@cs.uvic.ca>
+# Updated by Joey Pabalinas <joeypabalinas@gmail.com>
 
 # Uncomment this to print each command as they are executed
 # ≈set -o xtrace
 
-# Uncomment this for debugging. Will stop B on any failed commands 
+# Uncomment this for debugging. Will stop B on any failed commands
 # set -o errexit
 
 # Uncomment this to dump time profiling information out to a file to see where the script is slow
 # PS4='+ $(date "+%s.%N")\011 '
-# exec 3>&2 2> bashstart.$$.log
+# exec 3>&2 2> bashstart."$$".log
 # set -x
+
 trap 'echo "All done."' EXIT
 
-if [ -z "$REPY_PATH" ]; then
-   echo "Need to set REPY_PATH"
-   exit 1
+# check for default environment flag
+for word; do
+	if [[ "$word" == -*e* ]]; then
+		LIND_SRC="/usr/lind_project/lind"
+		REPY_PATH="$LIND_SRC/nacl"
+		NACL_SDK_ROOT="$LIND_SRC/nacl/sdk"
+		LIND_MONITOR="$LIND_SRC/reference_monitor"
+		PATH="$LIND_SRC/depot_tools:$PATH"
+		LD_LIBRARY_PATH=/glibc/
+		export LIND_SRC REPY_PATH NACL_SDK_ROOT LIND_MONITOR PATH LD_LIBRARY_PATH
+		# remove -e flag after setting up environment
+		mapfile -td ' ' args < <(printf '%s' "${*//-*e*}")
+		set -- "${args[@]}"
+		unset args
+	fi
+done
+
+if [[ -z "$REPY_PATH" ]]; then
+	echo "Need to set REPY_PATH"
+	exit 1
 fi
 
-if [ -z "$LIND_SRC" ]; then
-   echo "Need to set LIND_SRC"
-   exit 1
+if [[ -z "$LIND_SRC" ]]; then
+	echo "Need to set LIND_SRC"
+	exit 1
 fi
 
 readonly OS_NAME=$(uname -s)
-if [ $OS_NAME = "Darwin" ]; then
-  readonly OS_SUBDIR="mac"
-elif [ $OS_NAME = "Linux" ]; then
-  readonly OS_SUBDIR="linux"
+if [[ "$OS_NAME" == "Darwin" ]]; then
+	readonly OS_SUBDIR="mac"
+elif [[ "$OS_NAME" == "Linux" ]]; then
+	readonly OS_SUBDIR="linux"
 else
-  readonly OS_SUBDIR="win"
+	readonly OS_SUBDIR="win"
 fi
-readonly MODE='dbg-'${OS_SUBDIR}
-readonly LIND_SRC=${LIND_SRC}
-readonly MISC_DIR=${LIND_SRC}/misc
-readonly NACL_SRC=${LIND_SRC}/nacl
-readonly NACL_BASE=${NACL_SRC}/native_client
-readonly NACL_TOOLCHAIN_BASE=${NACL_BASE}/tools
-readonly LIND_GLIBC_SRC=${LIND_SRC}/lind_glibc
-readonly NACL_REPY=${LIND_SRC}/nacl_repy
-readonly NACL_PORTS_DIR=${LIND_SRC}/naclports
+readonly MODE='dbg-'"${OS_SUBDIR}"
+readonly LIND_SRC="${LIND_SRC}"
+readonly MISC_DIR="${LIND_SRC}"/misc
+readonly NACL_SRC="${LIND_SRC}"/nacl
+readonly NACL_BASE="${NACL_SRC}"/native_client
+readonly NACL_TOOLCHAIN_BASE="${NACL_BASE}"/tools
+readonly LIND_GLIBC_SRC="${LIND_SRC}"/lind_glibc
+readonly NACL_REPY="${LIND_SRC}"/nacl_repy
+readonly NACL_PORTS_DIR="${LIND_SRC}"/naclports
 
-readonly REPY_PATH=${REPY_PATH}
-readonly REPY_PATH_BIN=${REPY_PATH}/bin
-readonly REPY_PATH_REPY=${REPY_PATH}/repy
-readonly REPY_PATH_LIB=${REPY_PATH}/lib
-readonly REPY_PATH_SDK=${REPY_PATH}/sdk
+readonly REPY_PATH="${REPY_PATH}"
+readonly REPY_PATH_BIN="${REPY_PATH}"/bin
+readonly REPY_PATH_REPY="${REPY_PATH}"/repy
+readonly REPY_PATH_LIB="${REPY_PATH}"/lib
+readonly REPY_PATH_SDK="${REPY_PATH}"/sdk
 
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 
-readonly RSYNC='rsync -avrc --force'
+readonly -a RSYNC=(rsync -avrc --force)
+readonly -a PYGREPL=(grep -lPR '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' .)
+readonly -a PYGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
+readonly -a PYSED=(sed -i.orig -r 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
 
-if [ "$NACL_SDK_ROOT" != "${REPY_PATH_SDK}" ]; then
-  echo "You need to set \$NACL_SDK_ROOT to ${REPY_PATH_SDK}"
-  exit 1
+if [[ "$NACL_SDK_ROOT" != "${REPY_PATH_SDK}" ]]; then
+	echo "You need to set \"$NACL_SDK_ROOT\" to \"${REPY_PATH_SDK}\""
+	exit 1
 fi
 
 function download_src {
-  mkdir -p ${LIND_SRC}
-  cd ${LIND_SRC} && rm -rf lind_glibc misc nacl_repy nacl
-  
-  git clone ${LIND_GLIBC_URL} lind_glibc
-  cd lind_glibc
-  git checkout -b one_proc_model origin/one_proc_model
-  cd ..
-  
-  git clone ${LIND_MISC_URL} misc
-  
-  git clone ${NACL_REPY_URL} nacl_repy
-  
-  mkdir -p ${NACL_SRC}
-  cd ${NACL_SRC}
-  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@lind --git-deps
-  gclient sync
-  cd ${NACL_TOOLCHAIN_BASE} && rm -fr SRC
-  make sync-pinned
-  cd SRC
-  mv glibc glibc_orig
-  ln -s ${LIND_GLIBC_SRC} glibc
-  cd ..
-  
-  mkdir -p ${NACL_PORTS_DIR}
-  cd ${NACL_PORTS_DIR}
-  gclient config --name=src https://chromium.googlesource.com/external/naclports.git --git-deps
-  gclient sync
-  
-  cd ${LIND_SRC}
+	# mkdir -p "${LIND_SRC}"
+	# cd "${LIND_SRC}" && rm -rf "${LIND_SRC:?}/lind_glibc"
+	#
+	# git clone "${LIND_GLIBC_URL}" lind_glibc
+	# cd lind_glibc || exit 1
+	# git checkout -b one_proc_model origin/one_proc_model
+	# cd .. || exit 1
+	#
+	# rm -rf "${LIND_SRC:?}/misc"
+	# git clone "${LIND_MISC_URL}" misc
+	#
+	# rm -rf "${LIND_SRC:?}/nacl_repy"
+	# git clone "${NACL_REPY_URL}" nacl_repy
+	#
+	# rm -rf "${LIND_SRC:?}/nacl"
+	# mkdir -p "${NACL_SRC}"
+	# cd "${NACL_SRC}" || exit 1
+	#
+	# git clone git@github.com:Lind-Project/native_client.git
+	# gclient config --name=native_client https://github.com/Lind-Project/native_client.git --git-deps
+	gclient config --name=native_client git@github.com:Lind-Project/native_client.git --git-deps
+	gclient sync
+	cd "${NACL_TOOLCHAIN_BASE}" && rm -rf SRC
+	cp "$LIND_SRC/Makefile.native_client" "$NACL_TOOLCHAIN_BASE/Makefile"
+	make sync-pinned
+	cd SRC || exit 1
+	mv glibc glibc_orig
+	ln -s "$LIND_GLIBC_SRC" glibc
+	cd .. || exit 1
+
+	mkdir -p "${NACL_PORTS_DIR}"
+	cd "${NACL_PORTS_DIR}" || exit 1
+	# gclient config --name=src http://chromium.googlesource.com/native_client/nacl-gcc.git --git-deps
+	gclient config --name=src https://chromium.googlesource.com/webports/ --git-deps
+	gclient sync
+
+	# convert files from python to python2
+	cd "$NACL_SRC/native_client" || exit 1
+	git apply -v $LIND_SRC/native_client.patch
+	# cp "$LIND_SRC/Makefile.native_client" "$NACL_TOOLCHAIN_BASE/Makefile"
+	"${PYGREPL[@]}" 2>/dev/null | \
+		"${PYGREPV[@]}" | \
+		while read -r file; do
+			"${PYSED[@]}" "$file"
+			mv -v "$file.orig" "$file"
+		done
+
+	cd "${LIND_SRC}" || exit 1
 }
 
-#
-#
 #call this instead of echo, then we can do things like log and print to notifier
+#
+#
 function print {
-    echo $1
-    #notify-send --icon=/usr/share/icons/gnome/256x256/apps/utilities-terminal.png "Build Script" "$1" >& /dev/null
+	echo "$1"
+	# notify-send --icon=/usr/share/icons/gnome/256x256/apps/utilities-terminal.png "Build Script" "$1" >& /dev/null
 }
 
 
-#
 # wipe the entire modular build toolchain build tree, then rebuild it
 # Warning: this can take a while!
+#
 function clean_toolchain {
-     cd ${NACL_TOOLCHAIN_BASE} && rm -rf out BUILD
+	cd "${NACL_TOOLCHAIN_BASE}" && rm -rf out BUILD
 }
 
 
 # Compile liblind and the compoent programs.
-# 
-# 
+#
+#
 function build_liblind {
-    echo -ne "Building liblind... "
-    cd ${MISC_DIR}/liblind && make clean all > /dev/null
-    echo "done."
+	echo -ne "Building liblind... "
+	cd "${MISC_DIR}"/liblind && make clean all > /dev/null
+	echo "done."
 
 }
 
 
 # Copy the toolchain files into the repy subdir.
 #
-# 
+#
 function install_to_path {
-    # nothing should fail here.
-    set -o errexit
+	# nothing should fail here.
+	set -o errexit
 
-    echo "Injecting Libs into RePy install"
+	echo "Injecting Libs into RePy install"
 
-    print "**Sending NaCl stuff to ${REPY_PATH}"
+	print "**Sending NaCl stuff to \"${REPY_PATH}\""
 
-    #echo "Deleting all directories in the ${REPY_PATH} (except repy folder)"
-    #rm -rf ${REPY_PATH_BIN}
-    #rm -rf ${REPY_PATH_LIB}
-    #rm -rf ${REPY_PATH_SDK}
+	# echo "Deleting all directories in the "${REPY_PATH}" (except repy folder)"
+	# rm -rf "${REPY_PATH_BIN:?}"
+	# rm -rf "${REPY_PATH_LIB:?}"
+	# rm -rf "${REPY_PATH_SDK:?}"
 
-    mkdir -p ${REPY_PATH_BIN}
-    mkdir -p ${REPY_PATH_LIB}/glibc
-    mkdir -p ${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc
-    mkdir -p ${REPY_PATH_SDK}/tools
+	mkdir -p "${REPY_PATH_BIN}"
+	mkdir -p "${REPY_PATH_LIB}/glibc"
+	mkdir -p "${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc"
+	mkdir -p "${REPY_PATH_SDK}/tools"
 
-    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/* ${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc
-    #we need some files from the original sdk to help compile some applications (e.g. zlib)
-    #${RSYNC} ${MISC_DIR}/${OS_SUBDIR}_pepper_28_tools/* ${REPY_PATH_SDK}/tools
+	"${RSYNC[@]}" "${NACL_TOOLCHAIN_BASE:?}/out/nacl-sdk/"* "${REPY_PATH_SDK:?}/toolchain/${OS_SUBDIR:?}_x86_glibc"
+	# we need some files from the original sdk to help compile some applications (e.g. zlib)
+	# "${RSYNC[@]}" "${MISC_DIR:?}/${OS_SUBDIR:?}_pepper_28_tools/"* "${REPY_PATH_SDK:?}/tools"
 
-    ${RSYNC} ${NACL_BASE}/scons-out/${MODE}-x86-64/staging/* ${REPY_PATH_BIN}
+	"${RSYNC[@]}" "${NACL_BASE:?}/scons-out/${MODE:?}-x86-64/staging/"* "${REPY_PATH_BIN:?}"
 
-    #install script
-    cp -f ${MISC_DIR}/lind.sh ${REPY_PATH_BIN}/lind
-    chmod +x ${REPY_PATH_BIN}/lind
-    
-    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
+	#install script
+	cp -f "${MISC_DIR:?}/lind.sh" "${REPY_PATH_BIN:?}/lind"
+	chmod +x "${REPY_PATH_BIN}"/lind
+
+	"${RSYNC[@]}" "${NACL_TOOLCHAIN_BASE:?}/out/nacl-sdk/x86_64-nacl/lib/"*  "${REPY_PATH_LIB:?}/glibc"
 }
 
 
