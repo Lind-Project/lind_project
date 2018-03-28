@@ -135,6 +135,7 @@ function download_src {
 	cd "${LIND_SRC}" || exit 1
 }
 
+
 #call this instead of echo, then we can do things like log and print to notifier
 #
 #
@@ -231,6 +232,7 @@ function test_apps {
 	./test.sh
 }
 
+
 # Check the REPY_PATH location to make sure it is safe to be installing stuff there.
 #
 #
@@ -298,6 +300,7 @@ function nightly_build {
 	test_apps
 
 }
+
 
 function clean_install {
 	rm -rf "${REPY_PATH:?}"
@@ -367,14 +370,17 @@ function build_glibc {
 	print "Done building toolchain"
 }
 
+
 function update_glibc {
 	cd "${NACL_TOOLCHAIN_BASE}" && make updateglibc
 }
+
 
 function update_glibc2 {
 	cd "${NACL_TOOLCHAIN_BASE}" && rm BUILD/stamp-glibc64
 	make BUILD/stamp-glibc64
 }
+
 
 # Run the glibc tester
 #
