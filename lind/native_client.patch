@@ -1,25 +1,28 @@
 diff --git a/SConstruct b/SConstruct
-index 5afd2652cffa0081c9..4365ac01bce2d3af08 100755
+index 5afd2652cffa0081c9..9e087a124dd5d3eae8 100755
 --- a/SConstruct
 +++ b/SConstruct
-@@ -2718,7 +2718,7 @@ def MakeLinuxEnv(platform=None):
+@@ -292,7 +292,7 @@ def SetUpArgumentBits(env):
+     desc='Collect and display information about which commands are executed '
+       'during the build process')
+ 
+-  BitFromArgument(env, 'werror', default=True,
++  BitFromArgument(env, 'werror', default=False,
+     desc='Treat warnings as errors (-Werror)')
+ 
+   BitFromArgument(env, 'disable_nosys_linker_warnings', default=False,
+@@ -2718,8 +2718,10 @@ def MakeLinuxEnv(platform=None):
    #              header that causes the kernel to set the READ_IMPLIES_EXEC
    #              personality flag, which disables NX page protection.
    linux_env.Prepend(
--      CPPDEFINES=[['-D_FORTIFY_SOURCE', '2']],
-+      CPPDEFINES=[['-D_FORTIFY_SOURCE', '2', '-O2']],
-       LINKFLAGS=['-pie', '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-z,noexecstack'],
++      CFLAGS=['-O2'],
++      CXXFLAGS=['-O2'],
+       CPPDEFINES=[['-D_FORTIFY_SOURCE', '2']],
+-      LINKFLAGS=['-pie', '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-z,noexecstack'],
++      LINKFLAGS=['-O2', '-pie', '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-z,noexecstack'],
        )
    # The ARM toolchain has a linker that doesn't handle the code its
-@@ -2727,7 +2727,7 @@ def MakeLinuxEnv(platform=None):
-     linux_env.Prepend(CCFLAGS=['-fPIC'])
-     # TODO(mcgrathr): Temporarily punt _FORTIFY_SOURCE for ARM because
-     # it causes a libc dependency newer than the old bots have installed.
--    linux_env.FilterOut(CPPDEFINES=[['-D_FORTIFY_SOURCE', '2']])
-+    linux_env.FilterOut(CPPDEFINES=[['-D_FORTIFY_SOURCE', '2', '-O2']])
-   else:
-     linux_env.Prepend(CCFLAGS=['-fPIE'])
- 
+   # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
 index df922ac047476ef944..a40c2eecfbe829e354 100644
 --- a/tools/Makefile
