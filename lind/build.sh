@@ -68,21 +68,22 @@ elif [[ "$OS_NAME" == "Linux" ]]; then
 else
 	readonly OS_SUBDIR="win"
 fi
-readonly MODE='dbg-'"${OS_SUBDIR}"
-readonly LIND_SRC="${LIND_SRC}"
-readonly MISC_DIR="${LIND_SRC}"/lind-misc
-readonly NACL_SRC="${LIND_SRC}"/nacl
-readonly NACL_BASE="${NACL_SRC}"/native_client
-readonly NACL_TOOLCHAIN_BASE="${NACL_BASE}"/tools
-readonly LIND_GLIBC_SRC="${LIND_SRC}"/lind_glibc
-readonly NACL_REPY="${LIND_SRC}"/nacl_repy
-readonly NACL_PORTS_DIR="${LIND_SRC}"/naclports
+readonly MODE='dbg-'"$OS_SUBDIR"
+readonly LIND_SRC="$LIND_SRC"
+readonly MISC_DIR="$LIND_SRC/lind-misc"
+readonly NACL_SRC="$LIND_SRC/nacl"
+readonly NACL_BASE="$NACL_SRC/native_client"
+readonly NACL_THIRD_PARTY="$LIND_SRC/third_party"
+readonly NACL_TOOLCHAIN_BASE="$NACL_BASE/tools"
+readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
+readonly NACL_REPY="$LIND_SRC/nacl_repy"
+readonly NACL_PORTS_DIR="$LIND_SRC/naclports"
 
-readonly REPY_PATH="${REPY_PATH}"
-readonly REPY_PATH_BIN="${REPY_PATH}"/bin
-readonly REPY_PATH_REPY="${REPY_PATH}"/repy
-readonly REPY_PATH_LIB="${REPY_PATH}"/lib
-readonly REPY_PATH_SDK="${REPY_PATH}"/sdk
+readonly REPY_PATH="$REPY_PATH"
+readonly REPY_PATH_BIN="$REPY_PATH/bin"
+readonly REPY_PATH_REPY="$REPY_PATH/repy"
+readonly REPY_PATH_LIB="$REPY_PATH/lib"
+readonly REPY_PATH_SDK="$REPY_PATH/sdk"
 
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
@@ -346,7 +347,9 @@ function build_glibc() {
 
 	print -ne "Copy component.h header to glibc: "
 	cd "$MISC_DIR/liblind" || exit 1
+	rm -fv "$NACL_SRC/third_party"
 	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
+	ln -rsv "$NACL_THIRD_PARTY" "$NACL_SRC/"
 	print "done."
 
 	print "Building glibc"
@@ -362,9 +365,7 @@ function build_glibc() {
 
 	# turns out this works better if you do it from the nacl base dir
 	cd "$NACL_TOOLCHAIN_BASE" && rm -fr BUILD out
-	cp "$LIND_SRC/Makefile.native_client" "$NACL_TOOLCHAIN_BASE/Makefile"
 	make clean build-with-glibc -j4 || exit -1
-
 	print "Done building toolchain"
 }
 
@@ -372,7 +373,7 @@ function build_glibc() {
 # Update glibc toolchain
 #
 function update_glibc() {
-	cd "${NACL_TOOLCHAIN_BASE}" && make updateglibc
+	cd "$NACL_TOOLCHAIN_BASE" && make updateglibc
 }
 
 
