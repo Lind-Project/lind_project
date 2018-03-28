@@ -13,3 +13,6 @@
 [submodule "lind_experiments"]
 	path = lind_experiments
 	url = git@github.com:Lind-Project/lind_experiments.git
+[submodule "Lind-misc"]
+	path = Lind-misc
+	url = git@github.com:Lind-Project/Lind-misc.git
