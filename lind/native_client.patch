@@ -24,7 +24,7 @@ index 5afd2652cffa0081c9..9e087a124dd5d3eae8 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..a40c2eecfbe829e354 100644
+index df922ac047476ef944..1643dc7097d8fd3bd4 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -43,7 +43,8 @@ SHELL = /bin/bash
@@ -74,8 +74,8 @@ index df922ac047476ef944..a40c2eecfbe829e354 100644
 -	    echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version; \
 -	fi
 +	rm -rf BUILD/.gcc-extra-* SRC/.gcc-extra-* && \
-+	$(MAKE) -f $(THISMAKEFILE) install-gcc-extras && \
-+	echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version;
++		$(MAKE) -f $(THISMAKEFILE) install-gcc-extras && \
++		echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version;
  
  gcc-extras := gmp mpfr mpc ppl cloog-ppl
  
@@ -95,7 +95,17 @@ index df922ac047476ef944..a40c2eecfbe829e354 100644
  
  GCC_CONFIGURE_FLAGS-newlib = --disable-shared \
  			     --enable-languages="c,c++,objc" \
-@@ -550,7 +557,8 @@ endif
+@@ -507,8 +514,7 @@ PREGCC_BUILD_DIR = BUILD/build-pregcc-$(CROSSARCH)
+ #   the search path will include full gcc stuff that should not be picked.
+ # make install:
+ #   DESTDIR should be ignored at this step.
+-BUILD/stamp-$(CROSSARCH)-pregcc-standalone: \
+-  BUILD/stamp-$(CROSSARCH)-binutils | SRC/gcc BUILD
++BUILD/stamp-$(CROSSARCH)-pregcc-standalone: BUILD/stamp-$(CROSSARCH)-binutils | SRC/gcc BUILD
+ ifneq ($(SRCDIR),)
+ 	$(MAKE) -f $(THISMAKEFILE) gcc-extras
+ endif
+@@ -550,7 +556,8 @@ endif
  # by the Native Client threads package build.
  ##################################################################
  
@@ -105,7 +115,7 @@ index df922ac047476ef944..a40c2eecfbe829e354 100644
  
  BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
  	rm -rf BUILD/build-newlib-$(CROSSARCH)
-@@ -560,8 +568,6 @@ BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
+@@ -560,8 +567,6 @@ BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
  	  ../../SRC/newlib/configure \
  		      --disable-libgloss \
  		      --enable-newlib-iconv \
@@ -114,7 +124,7 @@ index df922ac047476ef944..a40c2eecfbe829e354 100644
  		      --enable-newlib-io-long-long \
  		      --enable-newlib-io-long-double \
  		      --enable-newlib-io-c99-formats \
-@@ -574,20 +580,12 @@ BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
+@@ -574,20 +579,12 @@ BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
  	  $(MAKE) && \
  	  $(MAKE) DESTDIR=$(DESTDIR) install
  ifeq ($(CANNED_REVISION), no)
@@ -137,7 +147,7 @@ index df922ac047476ef944..a40c2eecfbe829e354 100644
  	    > $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib$$bits/libc.a; \
  	done
  	touch $@
-@@ -632,7 +630,6 @@ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
+@@ -632,7 +629,6 @@ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
  	    libc_cv_forced_unwind=yes \
  	    libc_cv_c_cleanup=yes \
  	    libc_cv_slibdir=/lib32 \
@@ -145,7 +155,7 @@ index df922ac047476ef944..a40c2eecfbe829e354 100644
  	    --prefix= \
  	    --libdir=/lib32 \
  	    --host=i486-linux-gnu \
-@@ -655,7 +652,6 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
+@@ -655,7 +651,6 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
  	    libc_cv_forced_unwind=yes \
  	    libc_cv_c_cleanup=yes \
  	    libc_cv_slibdir=/lib \
@@ -153,7 +163,7 @@ index df922ac047476ef944..a40c2eecfbe829e354 100644
  	    --prefix= \
  	    --libdir=/lib \
  	    --host=x86_64-linux-gnu \
-@@ -665,6 +661,23 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
+@@ -665,6 +660,23 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
  	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
  	touch $@
  
