@@ -202,20 +202,22 @@ function install_to_path {
 #
 #
 function test_repy {
-    cd $REPY_PATH/repy/
-    set +o errexit  # some of our unit tests fail
-    for file in ut_lind_*; do 
-	    echo $file 
-        #trap 'python2.6 ${REPY_PATH}/repy/repy.py --safebinary ${REPY_PATH}/repy/restrictions.lind ${REPY_PATH}/repy/lind_server.py $@' INT TERM EXIT
-        trap ';' TERM
-        python $file
-	    #trap 'python $file' INT TERM EXIT  
-    done
+	cd "$REPY_PATH/repy/" || exit 1
+	# some of our unit tests fail
+	set +o errexit
+	for file in ut_lind_*; do
+		echo "$file"
+		# trap 'python2 "${REPY_PATH}"/repy/repy.py --safebinary \
+		#         "${REPY_PATH}"/repy/restrictions.lind "${REPY_PATH}"/repy/lind_server.py "$@"' INT TERM EXIT
+		trap ';' TERM
+		python2 "$file"
+		# trap 'python2 "$file"' INT TERM EXIT
+	done
 
-    # run the struct test
-    file=ut_seattlelibtests_teststruct.py
-    echo $file 
-    python $file  
+	# run the struct test
+	file=ut_seattlelibtests_teststruct.py
+	echo "$file"
+	python2 "$file"
 
 }
 
@@ -224,8 +226,8 @@ function test_repy {
 #
 #
 function test_apps {
-    set +o errexit
-    cd ${MISC_DIR}/tests
+	set +o errexit
+	cd "${MISC_DIR}/tests" || exit 1
 	./test.sh
 }
 
@@ -234,35 +236,34 @@ function test_apps {
 #
 function check_install_dir {
 
-    # and if it does not exit, make it.
-    if [ ! -d "$REPY_PATH" ]; then
-	mkdir -p ${REPY_PATH}
-    fi
+	# and if it does not exit, make it.
+	if [[ ! -d "$REPY_PATH" ]]; then
+		mkdir -p "${REPY_PATH}"
+	fi
 
 }
 
 
-# Install repy into $REPY_PATH with the prepare_tests script.
+# Install repy into "$REPY_PATH" with the prepare_tests script.
 #
 #
 function build_repy {
 
-    set -o errexit
+	set -o errexit
 
-    mkdir -p ${REPY_PATH_REPY}
+	mkdir -p "${REPY_PATH_REPY}"
 
-    print "Building Repy in $REPY_SRC to $REPY_PATH" 
-    cd ${NACL_REPY}
-    python preparetest.py -t -f ${REPY_PATH_REPY}
-    print "Done building Repy in ${REPY_PATH_REPY}"
-    cd seattlelib
-    set -o errexit
-    for file in *.mix
-    do
-	${MISC_DIR}/check_includes.sh $file
-    done
-    set +o errexit
-    #etags  --language-force=python *.mix *.repy
+	print "Building Repy in \"$REPY_SRC\" to \"$REPY_PATH\""
+	cd "${NACL_REPY}" || exit 1
+	python2 preparetest.py -t -f "${REPY_PATH_REPY}"
+	print "Done building Repy in \"${REPY_PATH_REPY}\""
+	cd seattlelib || exit 1
+	set -o errexit
+	for file in *.mix; do
+		"${MISC_DIR}"/check_includes.sh "$file"
+	done
+	set +o errexit
+	# etags  --language-force=python *.mix *.repy
 }
 
 
@@ -270,38 +271,37 @@ function build_repy {
 #
 #
 function nightly_build {
-    set -o errexit
-    # Clean
-    # clean_install
-    # clean_nacl
-    # clean_toolchain
-    # check_install_dir
-    # Update
-    ~/lind/misc/global_update.sh
-
-    # build
-    # build_toolchain
-    # build_rpc
-    # build_glibc
-    # build_nacl
-    # build_repy
-    # build_sdk
+	set -o errexit
+	# Clean
+	# clean_install
+	# clean_nacl
+	# clean_toolchain
+	# check_install_dir
+	# Update
+	"$LIND_SRC/Lind-misc/global_update.sh"
+	# build
+	# build_toolchain
+	# build_rpc
+	# build_glibc
+	# build_nacl
+	# build_repy
+	# build_sdk
 	# install_to_path
 
-    # test repy
-    test_repy
+	# test repy
+	test_repy
 
-    # test glibc
-    test_glibc
+	# test glibc
+	test_glibc
 
-    # test applications
-    test_apps
+	# test applications
+	test_apps
 
 }
 
 function clean_install {
-    rm -rf $REPY_PATH
-    mkdir -p $REPY_PATH
+	rm -rf "${REPY_PATH:?}"
+	mkdir -p "${REPY_PATH}"
 }
 
 
@@ -309,20 +309,20 @@ function clean_install {
 #
 #
 function build_nacl {
-     print "Building NaCl"
-     cd ${NACL_BASE} || exit -1
+	print "Building NaCl"
+	cd "${NACL_BASE}" || exit 1
 
-     # build NaCl with glibc tests
-     ./scons --verbose --mode=${MODE},nacl platform=x86-64 --nacl_glibc -j4
-     # and check
-     rc=$?
-     if [ "$rc" -ne "0" ]; then
-	     print "NaCl Build Failed($rc)"
-	     echo -e "\a"
-	     exit $rc
-     fi
+	# build NaCl with glibc tests
+	./scons --verbose --mode="${MODE}",nacl platform=x86-64 --nacl_glibc -j4
+	# and check
+	rc=$?
+	if [[ "$rc" -ne "0" ]]; then
+		print "NaCl Build Failed(\"$rc\")"
+		echo $'\a'
+		exit "$rc"
+	fi
 
-     print "Done building NaCl $rc"
+	print "Done building NaCl \"$rc\""
 }
 
 
@@ -330,9 +330,9 @@ function build_nacl {
 #
 #
 function clean_nacl {
-     cd ${NACL_BASE}
-     ./scons --mode=${MODE},nacl platform=x86-64 --nacl_glibc -c
-     print "Done Cleaning NaCl"
+	cd "${NACL_BASE}"
+	./scons --mode="${MODE}",nacl platform=x86-64 --nacl_glibc -c
+	print "Done Cleaning NaCl"
 }
 
 
@@ -340,134 +340,128 @@ function clean_nacl {
 #
 #
 function build_glibc {
-     # the build is long and borning, so execute this first if it exists
-     type -P fortune &>/dev/null && fortune || echo "Fortune Not Found. Skipping." 
+	# the build is long and borning, so execute this first if it exists
+	type -P fortune &>/dev/null && fortune || echo "Fortune Not Found. Skipping."
 
-     echo -ne "Copy component.h header to glibc: "
-     cd ${MISC_DIR}/liblind
-     cp -fvp component.h ${LIND_GLIBC_SRC}/sysdeps/nacl/
-     echo "done."
+	echo -ne "Copy component.h header to glibc: "
+	cd "${MISC_DIR}"/liblind
+	cp -fvp component.h "${LIND_GLIBC_SRC}"/sysdeps/nacl/
+	echo "done."
 
-     echo "Building glibc"
+	echo "Building glibc"
 
-     # if extra files (like editor temp files) are in the subdir glibc tries to compile them too.
-     # move them here so they dont cause a problem
-     cd ${LIND_GLIBC_SRC}/sysdeps/nacl/
-     shopt -s nullglob
-     for f in .#*;
-     do
-	 print "moving editor backupfile ${f} so it does not get caught in build."
-	 mv -f ${f} .
-     done
+	# if extra files (like editor temp files) are in the subdir glibc tries to compile them too.
+	# move them here so they dont cause a problem
+	cd "${LIND_GLIBC_SRC}"/sysdeps/nacl/
+	shopt -s nullglob
+	for f in .\#*; do
+		print "moving editor backupfile \"${f}\" so it does not get caught in build."
+		mv -f "${f}" .
+	done
 
-     #turns out this works better if you do it from the nacl base dir
-     cd ${NACL_TOOLCHAIN_BASE} && rm -fr BUILD out
-     make clean build-with-glibc -j4 || exit -1
-     
-     print "Done building toolchain"
+	# turns out this works better if you do it from the nacl base dir
+	cd "${NACL_TOOLCHAIN_BASE}" && rm -fr BUILD out
+	cp "${LIND_SRC}/Makefile.native_client" "$NACL_TOOLCHAIN_BASE/Makefile"
+	make clean build-with-glibc -j4 || exit -1
+
+	print "Done building toolchain"
 }
 
 function update_glibc {
-    cd ${NACL_TOOLCHAIN_BASE} && make updateglibc
+	cd "${NACL_TOOLCHAIN_BASE}" && make updateglibc
 }
 
 function update_glibc2 {
-    cd ${NACL_TOOLCHAIN_BASE} && rm BUILD/stamp-glibc64
-    make BUILD/stamp-glibc64
+	cd "${NACL_TOOLCHAIN_BASE}" && rm BUILD/stamp-glibc64
+	make BUILD/stamp-glibc64
 }
 
 # Run the glibc tester
 #
 #
 function glibc_tester {
-    set -o errexit
+	set -o errexit
 
-    cd ${MISC_DIR}/glibc_test/
-    make clean all
-    cd ..
-    rm -rfv lind.metadata linddata.*
-    lind ${MISC_DIR}/glibc_test/glibc_tester.nexe
+	cd "${MISC_DIR}"/glibc_test/
+	make clean all
+	cd ..
+	rm -rfv lind.metadata linddata.*
+	lind "${MISC_DIR}"/glibc_test/glibc_tester.nexe
 }
 
-PS3="build what: " 
-list="all repy nacl buildglibc updateglibc updateglibc2 cleantoolchain download cleannacl install liblind test_repy test_glibc test_apps sdk rpc test nightly"
+PS3="build what: "
+list=(all repy nacl buildglibc updateglibc updateglibc2 cleantoolchain download cleannacl install liblind test_repy test_glibc test_apps sdk rpc test nightly)
 word=""
-if  test -z "$1" 
-then
-    select foo in $list;
-    do
-       args=("$foo")
-       break
-    done
+if [[ -z "$*" ]]; then
+	select choice in "${list[@]}"; do
+		args=("$choice")
+		break
+	done
 else
-    args=("$@")
+	args=("$@")
 fi
 
 START_TIME=$(date +%s)
 
 # all scripts assume we start here
-echo ${args[0]} ${args[1]}
-ELEMENTS=${#args[@]}
-for  (( i=0;i<$ELEMENTS;i++));
-do
-    word=${args[${i}]}
-    if [ "$word" = "repy" ]; then
-	    build_repy
-    elif [ "$word" = "nacl" ]; then
-	    build_nacl
-    elif [ "$word" = "buildglibc" ]; then
-	    build_glibc
-    elif [ "$word" = "updateglibc" ]; then
-            update_glibc
-    elif [ "$word" = "updateglibc2" ]; then
-            update_glibc2
-    elif [ "$word" = "download" ]; then
-            download_src
-    elif [ "$word" = "all" ]; then
-            download_src
-	    build_nacl
-	    build_glibc
-	    build_repy
-	    install_to_path
-    elif [ "$word" = "cleantoolchain" ]; then
-	    print "Cleaning Toolchain"
-	    clean_toolchain
-    elif [ "$word" = "install" ]; then
-	    print "Installing libs into install dir"
-	    install_to_path
-    elif [ "$word" = "cleannacl" ]; then
-	    print "Cleaning NaCl"
-	    clean_nacl
-    elif [ "$word" = "liblind" ]; then
-	    print "Building LibLind"
-	    build_liblind
-    elif [ "$word" = "test_repy" ]; then
-	    print "Testing Repy"
-	    test_repy
-    elif [ "$word" = "test_glibc" ]; then
-	    print "Testing GLibC"
-	    glibc_tester
-    elif [ "$word" = "test_apps" ]; then
-	    print "Testing Applications"
-	    test_apps
-    elif [ "$word" = "test" ]; then
-	    print "Testing All"
-	    test_repy
-	    glibc_tester
-	    test_apps
-    elif [ "$word" = "nightly" ]; then
-	    print "Nightly Build"
-	    nightly_build
-    else 
-	    echo "Error: Did not find a build target named $word. Exiting..."
-	    exit 1
-    fi
+echo "${args[0]}" "${args[1]}"
+ELEMENTS="${#args[@]}"
+for ((i = 0; i < ELEMENTS; i++)); do
+	word="${args[${i}]}"
+	if [[ "$word" == repy ]]; then
+		build_repy
+	elif [[ "$word" == nacl ]]; then
+		build_nacl
+	elif [[ "$word" == buildglibc ]]; then
+		build_glibc
+	elif [[ "$word" == updateglibc ]]; then
+		update_glibc
+	elif [[ "$word" == updateglibc2 ]]; then
+		update_glibc2
+	elif [[ "$word" == download ]]; then
+		download_src
+	elif [[ "$word" == all ]]; then
+		download_src
+		build_nacl
+		build_glibc
+		build_repy
+		install_to_path
+	elif [[ "$word" == cleantoolchain ]]; then
+		print "Cleaning Toolchain"
+		clean_toolchain
+	elif [[ "$word" == install ]]; then
+		print "Installing libs into install dir"
+		install_to_path
+	elif [[ "$word" == cleannacl ]]; then
+		print "Cleaning NaCl"
+		clean_nacl
+	elif [[ "$word" == liblind ]]; then
+		print "Building LibLind"
+		build_liblind
+	elif [[ "$word" == test_repy ]]; then
+		print "Testing Repy"
+		test_repy
+	elif [[ "$word" == test_glibc ]]; then
+		print "Testing GLibC"
+		glibc_tester
+	elif [[ "$word" == test_apps ]]; then
+		print "Testing Applications"
+		test_apps
+	elif [[ "$word" == test ]]; then
+		print "Testing All"
+		test_repy
+		glibc_tester
+		test_apps
+	elif [[ "$word" == nightly ]]; then
+		print "Nightly Build"
+		nightly_build
+	else
+		echo "Error: Did not find a build target named \"$word\". Exiting..."
+		exit 1
+	fi
 done
 
-
 END_TIME=$(date +%s)
-DIFF=$(( $END_TIME - $START_TIME ))
-echo "It took $DIFF seconds"
-echo -e "\a"
-
-
+DIFF=$(( END_TIME - START_TIME ))
+echo "It took \"$DIFF\" seconds"
+echo $'\a'
