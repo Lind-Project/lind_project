@@ -1,21 +1,20 @@
-# <template> - <template>
+# Lind
 
-<template>
+WIP
 
 ## Dependencies
 
-* <template>
+* WIP
 > **Optional:**
-> * <template>
+> * WIP
 
 ## Usage
 ```bash
-./<template> [-hv] [-o<output.c>]
+./lind [-hv] [-o<output.c>]
 ```
+WIP
 
-Run `make` then `./<template>`.
-
-#### <template> options
+#### Lind options
 
 	-h,--help:		Show help/usage information.
 	-v,--version:		Show version information.
@@ -23,4 +22,4 @@ Run `make` then `./<template>`.
 
 ## Libraries used:
 
-* libfoo ([bar/foo](https://github.com/bar/foo))
+* WIP
