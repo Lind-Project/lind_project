@@ -5,20 +5,35 @@
 # Created by Chris Matthews <cmatthew@cs.uvic.ca>
 # Updated by Joey Pabalinas <joeypabalinas@gmail.com>
 
+# DEBUGGING SETTINGS:
+#
 # Uncomment this to print each command as they are executed
-# ≈set -o xtrace
-
+# set -o xtrace
 # Uncomment this for debugging. Will stop B on any failed commands
 # set -o errexit
-
 # Uncomment this to dump time profiling information out to a file to see where the script is slow
 # PS4='+ $(date "+%s.%N")\011 '
-# exec 3>&2 2> bashstart."$$".log
+# exec 2>bashstart."$$".log
 # set -x
 
-trap 'echo "All done."' EXIT
+# Call this instead of print, then we can do things like log and print
+# to notifier
+#
+function print() {
+	printf '%s\n' "$1"
+	# notify-send \
+	#         --icon=/usr/share/icons/gnome/256x256/apps/utilities-terminal.png \
+	#         "Build Script" \
+	#         "$1" \
+	#         >/dev/null 2>&1
+}
 
-# check for default environment flag
+trap 'print "All done."' EXIT
+
+# show arguments
+print "command line: $0 $*"
+
+# Check for default environment flag
 for word; do
 	if [[ "$word" == -*e* ]]; then
 		LIND_SRC="/usr/lind_project/lind"
@@ -36,12 +51,12 @@ for word; do
 done
 
 if [[ -z "$REPY_PATH" ]]; then
-	echo "Need to set REPY_PATH"
+	print "Need to set REPY_PATH"
 	exit 1
 fi
 
 if [[ -z "$LIND_SRC" ]]; then
-	echo "Need to set LIND_SRC"
+	print "Need to set LIND_SRC"
 	exit 1
 fi
 
@@ -80,11 +95,13 @@ readonly -a PYGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PYSED=(sed -i.orig -r 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
 
 if [[ "$NACL_SDK_ROOT" != "${REPY_PATH_SDK}" ]]; then
-	echo "You need to set \"$NACL_SDK_ROOT\" to \"${REPY_PATH_SDK}\""
+	print "You need to set \"$NACL_SDK_ROOT\" to \"${REPY_PATH_SDK}\""
 	exit 1
 fi
 
-function download_src {
+# Download source files
+#
+function download_src() {
 	# mkdir -p "${LIND_SRC}"
 	# cd "${LIND_SRC}" && rm -rf "${LIND_SRC:?}/lind_glibc"
 	#
@@ -136,46 +153,35 @@ function download_src {
 }
 
 
-#call this instead of echo, then we can do things like log and print to notifier
-#
-#
-function print {
-	echo "$1"
-	# notify-send --icon=/usr/share/icons/gnome/256x256/apps/utilities-terminal.png "Build Script" "$1" >& /dev/null
-}
-
-
-# wipe the entire modular build toolchain build tree, then rebuild it
+# Wipe the entire modular build toolchain build tree, then rebuild it
 # Warning: this can take a while!
 #
-function clean_toolchain {
+function clean_toolchain() {
 	cd "${NACL_TOOLCHAIN_BASE}" && rm -rf out BUILD
 }
 
 
 # Compile liblind and the compoent programs.
 #
-#
-function build_liblind {
-	echo -ne "Building liblind... "
+function build_liblind() {
+	print -ne "Building liblind... "
 	cd "${MISC_DIR}"/liblind && make clean all > /dev/null
-	echo "done."
+	print "done."
 
 }
 
 
 # Copy the toolchain files into the repy subdir.
 #
-#
-function install_to_path {
+function install_to_path() {
 	# nothing should fail here.
 	set -o errexit
 
-	echo "Injecting Libs into RePy install"
+	print "Injecting Libs into RePy install"
 
 	print "**Sending NaCl stuff to \"${REPY_PATH}\""
 
-	# echo "Deleting all directories in the "${REPY_PATH}" (except repy folder)"
+	# print "Deleting all directories in the "${REPY_PATH}" (except repy folder)"
 	# rm -rf "${REPY_PATH_BIN:?}"
 	# rm -rf "${REPY_PATH_LIB:?}"
 	# rm -rf "${REPY_PATH_SDK:?}"
@@ -201,13 +207,12 @@ function install_to_path {
 
 # Run the RePy unit tests.
 #
-#
-function test_repy {
+function test_repy() {
 	cd "$REPY_PATH/repy/" || exit 1
 	# some of our unit tests fail
 	set +o errexit
 	for file in ut_lind_*; do
-		echo "$file"
+		print "$file"
 		# trap 'python2 "${REPY_PATH}"/repy/repy.py --safebinary \
 		#         "${REPY_PATH}"/repy/restrictions.lind "${REPY_PATH}"/repy/lind_server.py "$@"' INT TERM EXIT
 		trap ';' TERM
@@ -217,7 +222,7 @@ function test_repy {
 
 	# run the struct test
 	file=ut_seattlelibtests_teststruct.py
-	echo "$file"
+	print "$file"
 	python2 "$file"
 
 }
@@ -225,8 +230,7 @@ function test_repy {
 
 # Run the applications test stuites.
 #
-#
-function test_apps {
+function test_apps() {
 	set +o errexit
 	cd "${MISC_DIR}/tests" || exit 1
 	./test.sh
@@ -235,8 +239,7 @@ function test_apps {
 
 # Check the REPY_PATH location to make sure it is safe to be installing stuff there.
 #
-#
-function check_install_dir {
+function check_install_dir() {
 
 	# and if it does not exit, make it.
 	if [[ ! -d "$REPY_PATH" ]]; then
@@ -248,11 +251,8 @@ function check_install_dir {
 
 # Install repy into "$REPY_PATH" with the prepare_tests script.
 #
-#
-function build_repy {
-
+function build_repy() {
 	set -o errexit
-
 	mkdir -p "${REPY_PATH_REPY}"
 
 	print "Building Repy in \"$REPY_SRC\" to \"$REPY_PATH\""
@@ -271,8 +271,7 @@ function build_repy {
 
 # Update, build and test everything. If there is a problem, freak out.
 #
-#
-function nightly_build {
+function nightly_build() {
 	set -o errexit
 	# Clean
 	# clean_install
@@ -302,7 +301,9 @@ function nightly_build {
 }
 
 
-function clean_install {
+# Clean install path
+#
+function clean_install() {
 	rm -rf "${REPY_PATH:?}"
 	mkdir -p "${REPY_PATH}"
 }
@@ -310,8 +311,7 @@ function clean_install {
 
 # Run the NaCl build.
 #
-#
-function build_nacl {
+function build_nacl() {
 	print "Building NaCl"
 	cd "${NACL_BASE}" || exit 1
 
@@ -321,7 +321,7 @@ function build_nacl {
 	rc=$?
 	if [[ "$rc" -ne "0" ]]; then
 		print "NaCl Build Failed(\"$rc\")"
-		echo $'\a'
+		print $'\a'
 		exit "$rc"
 	fi
 
@@ -331,8 +331,7 @@ function build_nacl {
 
 # Run clean on nacl build.
 #
-#
-function clean_nacl {
+function clean_nacl() {
 	cd "${NACL_BASE}"
 	./scons --mode="${MODE}",nacl platform=x86-64 --nacl_glibc -c
 	print "Done Cleaning NaCl"
@@ -341,17 +340,20 @@ function clean_nacl {
 
 # Build glibc from source
 #
-#
-function build_glibc {
-	# the build is long and borning, so execute this first if it exists
-	type -P fortune &>/dev/null && fortune || echo "Fortune Not Found. Skipping."
+function build_glibc() {
+	# the build is long and boring, so execute this first if it exists
+	if type -P fortune &>/dev/null; then
+		fortune
+	else
+		print "Fortune Not Found. Skipping."
+	fi
 
-	echo -ne "Copy component.h header to glibc: "
+	print -ne "Copy component.h header to glibc: "
 	cd "${MISC_DIR}"/liblind
 	cp -fvp component.h "${LIND_GLIBC_SRC}"/sysdeps/nacl/
-	echo "done."
+	print "done."
 
-	echo "Building glibc"
+	print "Building glibc"
 
 	# if extra files (like editor temp files) are in the subdir glibc tries to compile them too.
 	# move them here so they dont cause a problem
@@ -371,12 +373,16 @@ function build_glibc {
 }
 
 
-function update_glibc {
+# Update glibc toolchain
+#
+function update_glibc() {
 	cd "${NACL_TOOLCHAIN_BASE}" && make updateglibc
 }
 
 
-function update_glibc2 {
+# Update glibc 64bit toolchain
+#
+function update_glibc2() {
 	cd "${NACL_TOOLCHAIN_BASE}" && rm BUILD/stamp-glibc64
 	make BUILD/stamp-glibc64
 }
@@ -384,33 +390,33 @@ function update_glibc2 {
 
 # Run the glibc tester
 #
-#
-function glibc_tester {
+function glibc_tester() {
 	set -o errexit
 
-	cd "${MISC_DIR}"/glibc_test/
+	cd "$MISC_DIR/glibc_test/" || exit 1
 	make clean all
-	cd ..
+	cd .. || exit 1
 	rm -rfv lind.metadata linddata.*
-	lind "${MISC_DIR}"/glibc_test/glibc_tester.nexe
+	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
 }
 
-PS3="build what: "
-list=(all repy nacl buildglibc updateglibc updateglibc2 cleantoolchain download cleannacl install liblind test_repy test_glibc test_apps sdk rpc test nightly)
-word=""
-if [[ -z "$*" ]]; then
+PS3='build what: '
+list+=(all repy nacl buildglibc updateglibc updateglibc2 cleantoolchain)
+list+=(download cleannacl install liblind test_repy test_glibc test_apps)
+list+=(sdk rpc test nightly)
+
+if (($#)); then
+	args=("$@")
+else
 	select choice in "${list[@]}"; do
 		args=("$choice")
 		break
 	done
-else
-	args=("$@")
 fi
 
 START_TIME=$(date +%s)
 
-# all scripts assume we start here
-echo "${args[0]}" "${args[1]}"
+# All scripts assume we start here
 ELEMENTS="${#args[@]}"
 for ((i = 0; i < ELEMENTS; i++)); do
 	word="${args[${i}]}"
@@ -462,12 +468,12 @@ for ((i = 0; i < ELEMENTS; i++)); do
 		print "Nightly Build"
 		nightly_build
 	else
-		echo "Error: Did not find a build target named \"$word\". Exiting..."
+		print "Error: Did not find a build target named \"$word\". Exiting..."
 		exit 1
 	fi
 done
 
 END_TIME=$(date +%s)
 DIFF=$(( END_TIME - START_TIME ))
-echo "It took \"$DIFF\" seconds"
-echo $'\a'
+print "It took \"$DIFF\" seconds"
+print $'\a'
