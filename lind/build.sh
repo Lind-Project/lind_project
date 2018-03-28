@@ -10,7 +10,7 @@
 # Uncomment this to print each command as they are executed
 # set -o xtrace
 # Uncomment this for debugging. Will stop B on any failed commands
-set -o errexit
+# set -o errexit
 # Uncomment this to dump time profiling information out to a file to see where the script is slow
 # PS4='+ $(date "+%s.%N")\011 '
 # exec 2>bashstart."$$".log
@@ -70,7 +70,7 @@ else
 fi
 readonly MODE='dbg-'"${OS_SUBDIR}"
 readonly LIND_SRC="${LIND_SRC}"
-readonly MISC_DIR="${LIND_SRC}"/misc
+readonly MISC_DIR="${LIND_SRC}"/Lind-misc
 readonly NACL_SRC="${LIND_SRC}"/nacl
 readonly NACL_BASE="${NACL_SRC}"/native_client
 readonly NACL_TOOLCHAIN_BASE="${NACL_BASE}"/tools
@@ -249,17 +249,17 @@ function check_install_dir() {
 # Install repy into "$REPY_PATH" with the prepare_tests script.
 #
 function build_repy() {
-	set -o errexit
+	# set -o errexit
 	mkdir -p "${REPY_PATH_REPY}"
 
-	print "Building Repy in \"$REPY_SRC\" to \"$REPY_PATH\""
+	print "Building Repy in \"$NACL_REPY\" to \"$REPY_PATH\""
 	cd "${NACL_REPY}" || exit 1
 	python2 preparetest.py -t -f "${REPY_PATH_REPY}"
 	print "Done building Repy in \"${REPY_PATH_REPY}\""
 	cd seattlelib || exit 1
-	set -o errexit
+	# set -o errexit
 	for file in *.mix; do
-		"${MISC_DIR}"/check_includes.sh "$file"
+		"$MISC_DIR/check_includes.sh" "$file"
 	done
 	set +o errexit
 	# etags  --language-force=python *.mix *.repy
