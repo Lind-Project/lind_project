@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+
 # Copyright (c) 2012 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -103,7 +104,6 @@ import subcommand
 import subprocess2
 from third_party import colorama
 
-
 class GClientKeywords(object):
   class FromImpl(object):
     """Used to implement the From() syntax."""
@@ -192,7 +192,7 @@ class DependencySettings(GClientKeywords):
     if (self._custom_vars.get('webkit_trunk', '') ==
         'svn://svn-mirror.golo.chromium.org/webkit-readonly/trunk'):
       new_url = 'svn://svn-mirror.golo.chromium.org/blink/trunk'
-      print 'Overwriting Var("webkit_trunk") with %s' % new_url
+      print 'Overwriting Var("webkit_trunk") with ' + new_url
       self._custom_vars['webkit_trunk'] = new_url
 
     # Post process the url to remove trailing slashes.
