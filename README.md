@@ -16,9 +16,9 @@ WIP
 
 #### Lind options
 
-	-h,--help:		Show help/usage information.
+	-h,--help:			Show help/usage information.
 	-v,--version:		Show version information.
-	-o:			Name of the file to output source to.
+	-o:					Name of the file to output source to.
 
 ## Libraries used:
 
