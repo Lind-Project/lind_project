@@ -1,0 +1,176 @@
+diff --git a/SConstruct b/SConstruct
+index 5afd2652cffa0081c9..4365ac01bce2d3af08 100755
+--- a/SConstruct
++++ b/SConstruct
+@@ -2718,7 +2718,7 @@ def MakeLinuxEnv(platform=None):
+   #              header that causes the kernel to set the READ_IMPLIES_EXEC
+   #              personality flag, which disables NX page protection.
+   linux_env.Prepend(
+-      CPPDEFINES=[['-D_FORTIFY_SOURCE', '2']],
++      CPPDEFINES=[['-D_FORTIFY_SOURCE', '2', '-O2']],
+       LINKFLAGS=['-pie', '-Wl,-z,relro', '-Wl,-z,now', '-Wl,-z,noexecstack'],
+       )
+   # The ARM toolchain has a linker that doesn't handle the code its
+@@ -2727,7 +2727,7 @@ def MakeLinuxEnv(platform=None):
+     linux_env.Prepend(CCFLAGS=['-fPIC'])
+     # TODO(mcgrathr): Temporarily punt _FORTIFY_SOURCE for ARM because
+     # it causes a libc dependency newer than the old bots have installed.
+-    linux_env.FilterOut(CPPDEFINES=[['-D_FORTIFY_SOURCE', '2']])
++    linux_env.FilterOut(CPPDEFINES=[['-D_FORTIFY_SOURCE', '2', '-O2']])
+   else:
+     linux_env.Prepend(CCFLAGS=['-fPIE'])
+ 
+diff --git a/tools/Makefile b/tools/Makefile
+index df922ac047476ef944..a40c2eecfbe829e354 100644
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -43,7 +43,8 @@ SHELL = /bin/bash
+ # or add to git-cl codereview.settings:
+ #   PUSH_URL_CONFIG: url.ssh://gerrit.chromium.org.pushinsteadof
+ #   ORIGIN_URL_CONFIG: http://git.chromium.org
+-GIT_BASE_URL = http://git.chromium.org/native_client
++# GIT_BASE_URL = http://git.chromium.org/native_client
++GIT_BASE_URL = https://chromium.googlesource.com/native_client
+ 
+ CROSSARCH = x86_64-nacl
+ TOOLCHAINLOC ?= out
+@@ -108,7 +109,8 @@ endif
+ # use, obviously - and this is not always the case: for example they are not
+ # available on MacOS, on 64bit linux you generally can find 64bit versions of
+ # them, but not 32bit versions, etc).
+-SRCDIR = ../../../third_party
++# SRCDIR =
++SRCDIR = ../../../../third_party
+ 
+ ifeq ($(PLATFORM), win)
+   # Ugh, Cygwin and spaces in paths don't work well.
+@@ -131,11 +133,11 @@ endif
+ ##################################################################
+ #  The version numbers for the tools we will be building.
+ ##################################################################
+-GMP_VERSION = 5.0.2
+-MPFR_VERSION = 3.0.1
+-MPC_VERSION = 0.9
+-PPL_VERSION = 0.11.2
+-CLOOG_PPL_VERSION = 0.15.9
++GMP_VERSION = 4.3.2
++MPFR_VERSION = 3.1.4
++MPC_VERSION = 1.0.3
++PPL_VERSION = 0.10.2
++CLOOG_PPL_VERSION = 0.15.11
+ define GCC_EXTRAS
+ gmp: $(GMP_VERSION), \
+ mpfr: $(MPFR_VERSION), \
+@@ -202,11 +204,9 @@ sync: | $(all-latest-git-sources)
+ # They are only updated when pre-requisites version changes.
+ .PHONY: gcc-extras
+ gcc-extras:
+-	if [[ "$$(cat BUILD/.gcc-extras-version)" != "$(GCC_EXTRAS)" ]]; then \
+-	    rm -rf BUILD/.gcc-extra-* SRC/.gcc-extra-* && \
+-	    $(MAKE) -f $(THISMAKEFILE) install-gcc-extras && \
+-	    echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version; \
+-	fi
++	rm -rf BUILD/.gcc-extra-* SRC/.gcc-extra-* && \
++	$(MAKE) -f $(THISMAKEFILE) install-gcc-extras && \
++	echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version;
+ 
+ gcc-extras := gmp mpfr mpc ppl cloog-ppl
+ 
+@@ -433,7 +433,14 @@ GCC_CONFIGURE_FLAGS-nolibc = --disable-shared \
+ 			     --enable-languages="c" \
+ 			     --without-headers
+ 
+-GCC_CFLAGS_FOR_TARGET-newlib = -I$(HEADERS_FOR_BUILD)
++# The newlib-based build of the GCC target libraries (libstdc++ et al)
++# gets used in irt.nexe, which must not use direct register access for
++# TLS.  src/untrusted/irt/nacl.scons:run_irt_tls_test ensures that no
++# such accesses leaked into that binary.  The pregcc build does not
++# produce target libraries that are linked into anything, and the glibc
++# build is not used for building irt.nexe, so they do not need this option.
++GCC_CFLAGS_FOR_TARGET-newlib = -mtls-use-call \
++			       -I$(HEADERS_FOR_BUILD)
+ 
+ GCC_CONFIGURE_FLAGS-newlib = --disable-shared \
+ 			     --enable-languages="c,c++,objc" \
+@@ -550,7 +557,8 @@ endif
+ # by the Native Client threads package build.
+ ##################################################################
+ 
+-NEWLIB_CFLAGS = -O2
++NEWLIB_CFLAGS = -O2 -D_I386MACH_ALLOW_HW_INTERRUPTS -DSIGNAL_PROVIDED \
++  -mtls-use-call
+ 
+ BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
+ 	rm -rf BUILD/build-newlib-$(CROSSARCH)
+@@ -560,8 +568,6 @@ BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
+ 	  ../../SRC/newlib/configure \
+ 		      --disable-libgloss \
+ 		      --enable-newlib-iconv \
+-		      --enable-newlib-iconv-from-encodings=UTF-8,UTF-16LE,UCS-4LE,UTF-16,UCS-4 \
+-		      --enable-newlib-iconv-to-encodings=UTF-8,UTF-16LE,UCS-4LE,UTF-16,UCS-4 \
+ 		      --enable-newlib-io-long-long \
+ 		      --enable-newlib-io-long-double \
+ 		      --enable-newlib-io-c99-formats \
+@@ -574,20 +580,12 @@ BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
+ 	  $(MAKE) && \
+ 	  $(MAKE) DESTDIR=$(DESTDIR) install
+ ifeq ($(CANNED_REVISION), no)
+-# The buildbot script that creates the source tarball adds all the headers to
+-# the tarball itself (see buildbot/buildbot_linux-glibc-makefile.sh)
+-	cp -f $(addprefix ../src/untrusted/pthread/, pthread.h semaphore.h) \
+-	  $(DESTDIR)$(PREFIX)/$(CROSSARCH)/include
++	rm $(DESTDIR)$(PREFIX)/$(CROSSARCH)/include/pthread.h
+ endif
+ 	for bits in 32 64; do \
+ 	  mv $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib$$bits/libc.a \
+ 	     $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib$$bits/libcrt_common.a; \
+-	  if [[ "$$bits" = "32" ]]; then \
+-	    objformat=elf32-i386-nacl ; \
+-	  else \
+-	    objformat=elf64-x86-64-nacl ; \
+-	  fi ; \
+-	  sed "s/@OBJFORMAT@/$$objformat/" newlib-libc-script \
++	  sed "s/@OBJFORMAT@/elf$${bits}-nacl/" newlib-libc-script \
+ 	    > $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib$$bits/libc.a; \
+ 	done
+ 	touch $@
+@@ -632,7 +630,6 @@ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
+ 	    libc_cv_forced_unwind=yes \
+ 	    libc_cv_c_cleanup=yes \
+ 	    libc_cv_slibdir=/lib32 \
+-	    libc_cv_z_combreloc=no \
+ 	    --prefix= \
+ 	    --libdir=/lib32 \
+ 	    --host=i486-linux-gnu \
+@@ -655,7 +652,6 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
+ 	    libc_cv_forced_unwind=yes \
+ 	    libc_cv_c_cleanup=yes \
+ 	    libc_cv_slibdir=/lib \
+-	    libc_cv_z_combreloc=no \
+ 	    --prefix= \
+ 	    --libdir=/lib \
+ 	    --host=x86_64-linux-gnu \
+@@ -665,6 +661,23 @@ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
+ 	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
+ 	touch $@
+ 
++.PHONY: updateglibc
++updateglibc:
++	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
++	    BUILD_CC="gcc -O2 -g" \
++	    CC="$(GLIBC_CC) -m64" \
++	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
++	    libc_cv_forced_unwind=yes \
++	    libc_cv_c_cleanup=yes \
++	    libc_cv_slibdir=/lib \
++	    --prefix= \
++	    --libdir=/lib \
++	    --host=x86_64-linux-gnu \
++	    --with-headers=$(LINUX_HEADERS) \
++	    --enable-kernel=2.6.18
++	$(MAKE) -C BUILD/build-glibc64
++	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
++
+ # Can be used to make a glibc archive separately from the main install tree.
+ # Used, i.e., on buildbots.
+ INST_GLIBC_PREFIX ?= $(PREFIX)

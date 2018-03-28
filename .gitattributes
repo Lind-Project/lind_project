@@ -1,0 +1,10 @@
+# ignore part of your project (not considered for language detection)
+# static/* linguist-vendored
+# consider part of your project as documentation:
+# docs/* linguist-documentation
+# indicate some files some files with specific extension
+# (for instance *.rb) should be considered a specific language:
+# *.rb linguist-language=Ruby
+
+# * linguist-vendored
+# *.c linguist-vendored=false

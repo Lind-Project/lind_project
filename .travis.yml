@@ -1,0 +1,86 @@
+language: c
+cache: ccache
+group: deprecated-2017Q4
+
+matrix:
+  include:
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-7
+            - g++-7
+      env:
+        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7"
+
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+            - g++-6
+      env:
+        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6"
+
+    # works on Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-5.0 main"
+          packages:
+            - clang-5.0 lldb-5.0 lld-5.0
+      env:
+        - MATRIX_EVAL="export PREFIX=~/.local CC=clang-5.0 CXX=clang++-5.0"
+
+before_install:
+    - eval "${MATRIX_EVAL}"
+    - sudo apt-get install -qq --fix-missing elfutils libelf-dev libreadline-dev linux-headers-generic linux-libc-dev
+    # Generate the header since one is missing on the Travis instance
+    - sudo mkdir -p /usr/include/linux
+    - printf "%s\n" \
+                "#ifndef _LINUX_MEMFD_H" \
+                "#define _LINUX_MEMFD_H" \
+                "" \
+                "#define __NR_memfd_create 319" \
+                "#define SYS_memfd_create __NR_memfd_create" \
+                "" \
+                "/* flags for memfd_create(2) (unsigned int) */" \
+                "#define MFD_CLOEXEC 0x0001U" \
+                "#define MFD_ALLOW_SEALING 0x0002U" \
+                "" \
+                "#endif /* _LINUX_MEMFD_H */" \
+                | sudo tee /usr/include/linux/memfd.h
+before_install:
+    - eval "${MATRIX_EVAL}"
+    - sudo apt-get install -qq --fix-missing elfutils libelf-dev libreadline-dev linux-headers-generic linux-libc-dev
+    # Generate the header since one is missing on the Travis instance
+    - sudo mkdir -p /usr/include/linux
+    - printf "%s\n" \
+                "#ifndef _LINUX_MEMFD_H" \
+                "#define _LINUX_MEMFD_H" \
+                "" \
+                "#define __NR_memfd_create 319" \
+                "#define SYS_memfd_create __NR_memfd_create" \
+                "" \
+                "/* flags for memfd_create(2) (unsigned int) */" \
+                "#define MFD_CLOEXEC 0x0001U" \
+                "#define MFD_ALLOW_SEALING 0x0002U" \
+                "" \
+                "#endif /* _LINUX_MEMFD_H */" \
+                | sudo tee /usr/include/linux/memfd.h
+
+script:
+    - make -B
+    - make debug
+    - make clean
+    - make install
+    - make uninstall
+    - make dist
