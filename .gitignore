@@ -13,6 +13,7 @@ repy/
 /lind/tools/
 /lind/third_party/
 /lind/validator_snapshots/
+/Lind-GlibC/
 
 # lind specific files
 list.txt

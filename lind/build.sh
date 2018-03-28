@@ -70,7 +70,7 @@ else
 fi
 readonly MODE='dbg-'"${OS_SUBDIR}"
 readonly LIND_SRC="${LIND_SRC}"
-readonly MISC_DIR="${LIND_SRC}"/Lind-misc
+readonly MISC_DIR="${LIND_SRC}"/lind-misc
 readonly NACL_SRC="${LIND_SRC}"/nacl
 readonly NACL_BASE="${NACL_SRC}"/native_client
 readonly NACL_TOOLCHAIN_BASE="${NACL_BASE}"/tools
@@ -210,9 +210,9 @@ function test_repy() {
 	set +o errexit
 	for file in ut_lind_*; do
 		print "$file"
-		# trap 'python2 "${REPY_PATH}"/repy/repy.py --safebinary \
-		#         "${REPY_PATH}"/repy/restrictions.lind "${REPY_PATH}"/repy/lind_server.py "$@"' INT TERM EXIT
-		trap ';' TERM
+		# trap 'python2 "$REPY_PATH"/repy/repy.py --safebinary \
+		#         "$REPY_PATH"/repy/restrictions.lind "${REPY_PATH}"/repy/lind_server.py "$@"' INT TERM EXIT
+		# trap ';' TERM
 		python2 "$file"
 		# trap 'python2 "$file"' INT TERM EXIT
 	done
@@ -221,7 +221,6 @@ function test_repy() {
 	file=ut_seattlelibtests_teststruct.py
 	print "$file"
 	python2 "$file"
-
 }
 
 
@@ -229,7 +228,7 @@ function test_repy() {
 #
 function test_apps() {
 	set +o errexit
-	cd "${MISC_DIR}/tests" || exit 1
+	cd "$MISC_DIR/tests" || exit 1
 	./test.sh
 }
 
@@ -253,7 +252,7 @@ function build_repy() {
 	mkdir -p "${REPY_PATH_REPY}"
 
 	print "Building Repy in \"$NACL_REPY\" to \"$REPY_PATH\""
-	cd "${NACL_REPY}" || exit 1
+	cd "$NACL_REPY" || exit 1
 	python2 preparetest.py -t -f "${REPY_PATH_REPY}"
 	print "Done building Repy in \"${REPY_PATH_REPY}\""
 	cd seattlelib || exit 1
@@ -346,24 +345,24 @@ function build_glibc() {
 	fi
 
 	print -ne "Copy component.h header to glibc: "
-	cd "${MISC_DIR}"/liblind
-	cp -fvp component.h "${LIND_GLIBC_SRC}"/sysdeps/nacl/
+	cd "$MISC_DIR/liblind" || exit 1
+	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
 	print "done."
 
 	print "Building glibc"
 
 	# if extra files (like editor temp files) are in the subdir glibc tries to compile them too.
 	# move them here so they dont cause a problem
-	cd "${LIND_GLIBC_SRC}"/sysdeps/nacl/
+	cd "$LIND_GLIBC_SRC/sysdeps/nacl/" || exit 1
 	shopt -s nullglob
 	for f in .\#*; do
-		print "moving editor backupfile \"${f}\" so it does not get caught in build."
-		mv -f "${f}" .
+		print "moving editor backupfile \"$f\" so it does not get caught in build."
+		mv -f "$f" .
 	done
 
 	# turns out this works better if you do it from the nacl base dir
-	cd "${NACL_TOOLCHAIN_BASE}" && rm -fr BUILD out
-	cp "${LIND_SRC}/Makefile.native_client" "$NACL_TOOLCHAIN_BASE/Makefile"
+	cd "$NACL_TOOLCHAIN_BASE" && rm -fr BUILD out
+	cp "$LIND_SRC/Makefile.native_client" "$NACL_TOOLCHAIN_BASE/Makefile"
 	make clean build-with-glibc -j4 || exit -1
 
 	print "Done building toolchain"
@@ -380,7 +379,7 @@ function update_glibc() {
 # Update glibc 64bit toolchain
 #
 function update_glibc2() {
-	cd "${NACL_TOOLCHAIN_BASE}" && rm BUILD/stamp-glibc64
+	cd "$NACL_TOOLCHAIN_BASE" && rm BUILD/stamp-glibc64
 	make BUILD/stamp-glibc64
 }
 
