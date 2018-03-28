@@ -1,0 +1,82 @@
+# directories
+build/
+repy/
+/lind/_bad_scm/
+/lind/breakpad/
+/lind/contrib/
+/lind/lind_glibc/
+/lind/nacl/
+/lind/nacl_repy/
+/lind/naclports/
+/lind/native_client/
+/lind/testing/
+/lind/tools/
+/lind/third_party/
+/lind/validator_snapshots/
+
+# lind specific files
+list.txt
+
+# general files
+core.*
+*.rej
+*.old
+*.old
+*.orig
+*.rej
+*.swo
+*.swp
+*\~
+cscope.out
+cscope.in.out
+cscope.po.out
+tags
+TAGS
+vgcore*
+
+# Binaries
+*.out
+*.exe
+
+# Profiling
+*.gcda
+*.gcno
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+*.d
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+*.old
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.tar.gz
+
+# vi:ft=cfg:

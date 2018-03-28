@@ -1,0 +1,15 @@
+[submodule "reference_monitor"]
+	path = reference_monitor
+	url = git@github.com:Lind-Project/reference_monitor.git
+[submodule "Lind-GlibC"]
+	path = Lind-GlibC
+	url = git@github.com:Lind-Project/Lind-GlibC.git
+[submodule "caging"]
+	path = caging
+	url = git@github.com:detectivelyw/caging.git
+[submodule "nacl_repy"]
+	path = nacl_repy
+	url = git@github.com:Lind-Project/nacl_repy.git
+[submodule "lind_experiments"]
+	path = lind_experiments
+	url = git@github.com:Lind-Project/lind_experiments.git
