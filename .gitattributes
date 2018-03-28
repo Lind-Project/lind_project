@@ -6,5 +6,5 @@
 # (for instance *.rb) should be considered a specific language:
 # *.rb linguist-language=Ruby
 
-# * linguist-vendored
-# *.c linguist-vendored=false
+* linguist-vendored
+*.c linguist-vendored=false
