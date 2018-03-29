@@ -151,8 +151,10 @@ function download_src() {
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
 		while read -r file; do
+			# preserve executability
 			"${PYSED[@]}" "$file" > "$file.new"
-			mv -v "$file.new" "$file"
+			cat <"$file.new" >"$file"
+			rm "$file.new"
 		done
 
 	cd "${LIND_SRC}" || exit 1
