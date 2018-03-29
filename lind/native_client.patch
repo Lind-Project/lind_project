@@ -30,7 +30,7 @@ index 5afd2652cffa0081c9..0bc0fe1b617d07d78c 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..7a0d58dc63b0243d2d 100644
+index df922ac047476ef944..0505564f9bca6c3077 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -54,6 +54,15 @@ index df922ac047476ef944..7a0d58dc63b0243d2d 100644
  
  CROSSARCH = x86_64-nacl
  TOOLCHAINLOC ?= out
+@@ -63,7 +63,7 @@ USER_LDFLAGS = -s
+ HOST_TOOLCHAIN_BITS = 32
+ 
+ # If CANNED_REVISION is "no" then it's "from git build": Makefile uses file
+-# named "REVISIONS" to pull infomation from git and builds that.
++# named "REVISIONS" to pull information from git and builds that.
+ # If CANNED_REVISION is set to some revision then Makefile will try to download
+ # sources from commondatastorage.googleapis.com and use them.
+ # You can also set CANNED_REVISION to "yes" if you want to just build sources
 @@ -111,31 +111,31 @@ endif
  SRCDIR = ../../../third_party
  
@@ -347,14 +356,6 @@ index df922ac047476ef944..7a0d58dc63b0243d2d 100644
 -	    --prefix=$(PREFIX) \
 -	    $(GCC_CONFIGURE_FLAGS) \
 -	    $(GCC_CONFIGURE_FLAGS-nolibc)
--	PATH=$(BUILDPATH) $(MAKE) \
--	    -C BUILD/build-pregcc-$(CROSSARCH) \
--	    all-gcc all-target-libgcc
--	PATH=$(BUILDPATH) $(MAKE) \
--	    -C BUILD/build-pregcc-$(CROSSARCH) \
--	    DESTDIR=$(DESTDIR) \
--	    install-gcc install-target-libgcc
--	cp $(DESTDIR)$(PREFIX)/lib/gcc/$(CROSSARCH)/$(GCC_VERSION)/libgcc.a \
 +		CC="$(GCC_CC)" \
 +		CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
 +		LDFLAGS="$(USER_LDFLAGS)" \
@@ -363,13 +364,19 @@ index df922ac047476ef944..7a0d58dc63b0243d2d 100644
 +		--prefix=$(PREFIX) \
 +		$(GCC_CONFIGURE_FLAGS) \
 +		$(GCC_CONFIGURE_FLAGS-nolibc)
-+	PATH=$(BUILDPATH) $(MAKE) -k \
+ 	PATH=$(BUILDPATH) $(MAKE) \
+-	    -C BUILD/build-pregcc-$(CROSSARCH) \
+-	    all-gcc all-target-libgcc
 +		-C BUILD/build-pregcc-$(CROSSARCH) \
 +		all-gcc
-+	PATH=$(BUILDPATH) $(MAKE) -k \
+ 	PATH=$(BUILDPATH) $(MAKE) \
+-	    -C BUILD/build-pregcc-$(CROSSARCH) \
+-	    DESTDIR=$(DESTDIR) \
+-	    install-gcc install-target-libgcc
+-	cp $(DESTDIR)$(PREFIX)/lib/gcc/$(CROSSARCH)/$(GCC_VERSION)/libgcc.a \
 +		-C BUILD/build-pregcc-$(CROSSARCH) \
 +		all-target-libgcc
-+	PATH=$(BUILDPATH) $(MAKE) -k \
++	PATH=$(BUILDPATH) $(MAKE) \
 +		-C BUILD/build-pregcc-$(CROSSARCH) \
 +		DESTDIR=$(DESTDIR) \
 +		install-gcc install-target-libgcc
@@ -385,7 +392,15 @@ index df922ac047476ef944..7a0d58dc63b0243d2d 100644
  	touch $@
  
  .PHONY: pregcc
-@@ -515,31 +556,31 @@ endif
+@@ -508,38 +549,44 @@ PREGCC_BUILD_DIR = BUILD/build-pregcc-$(CROSSARCH)
+ # make install:
+ #   DESTDIR should be ignored at this step.
+ BUILD/stamp-$(CROSSARCH)-pregcc-standalone: \
+-  BUILD/stamp-$(CROSSARCH)-binutils | SRC/gcc BUILD
++	BUILD/stamp-$(CROSSARCH)-binutils | SRC/gcc BUILD
+ ifneq ($(SRCDIR),)
+ 	$(MAKE) -f $(THISMAKEFILE) gcc-extras
+ endif
  	rm -rf $(PREGCC_PREFIX)
  	mkdir -p $(PREGCC_PREFIX)/$(CROSSARCH)/bin
  	for f in '$(DESTDIR)$(PREFIX)/$(CROSSARCH)/bin/*'; do \
@@ -397,7 +412,7 @@ index df922ac047476ef944..7a0d58dc63b0243d2d 100644
  	mkdir $(PREGCC_BUILD_DIR)
  	cd $(PREGCC_BUILD_DIR) && \
  	PATH=$(BUILDPATH) \
- 	$(GCC_SRC_DIR)/configure \
+-	$(GCC_SRC_DIR)/configure \
 -	    CC="$(GCC_CC)" \
 -	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
 -	    LDFLAGS="$(USER_LDFLAGS)" \
@@ -406,30 +421,35 @@ index df922ac047476ef944..7a0d58dc63b0243d2d 100644
 -	    --prefix=$(PREGCC_PREFIX) \
 -	    $(GCC_CONFIGURE_FLAGS) \
 -	    $(GCC_CONFIGURE_FLAGS-nolibc)
--	PATH=$(BUILDPATH) $(MAKE) \
++		$(GCC_SRC_DIR)/configure \
++			CC="$(GCC_CC)" \
++			CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
++			LDFLAGS="$(USER_LDFLAGS)" \
++			CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
++			CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
++			--prefix=$(PREGCC_PREFIX) \
++			$(GCC_CONFIGURE_FLAGS) \
++			$(GCC_CONFIGURE_FLAGS-nolibc)
++	sed 's|--split-size=5000000|--force --no-validate &|g' \
++		BUILD/build-pregcc-x86_64-nacl/Makefile \
++		> BUILD/build-pregcc-x86_64-nacl/Makefile.new
++	mv \
++		BUILD/build-pregcc-x86_64-nacl/Makefile.new \
++		BUILD/build-pregcc-x86_64-nacl/Makefile
+ 	PATH=$(BUILDPATH) $(MAKE) \
 -	    -C $(PREGCC_BUILD_DIR) \
 -	    all-gcc \
 -	    all-target-libgcc \
 -	    DESTDIR=
--	PATH=$(BUILDPATH) $(MAKE) \
--	    -C $(PREGCC_BUILD_DIR) \
--	    install-gcc \
--	    install-target-libgcc \
--	    DESTDIR=
-+		CC="$(GCC_CC)" \
-+		CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
-+		LDFLAGS="$(USER_LDFLAGS)" \
-+		CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
-+		CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
-+		--prefix=$(PREGCC_PREFIX) \
-+		$(GCC_CONFIGURE_FLAGS) \
-+		$(GCC_CONFIGURE_FLAGS-nolibc)
-+	PATH=$(BUILDPATH) $(MAKE) -k \
 +		-C $(PREGCC_BUILD_DIR) \
 +		all-gcc \
 +		all-target-libgcc \
 +		DESTDIR=
-+	PATH=$(BUILDPATH) $(MAKE) -k \
+ 	PATH=$(BUILDPATH) $(MAKE) \
+-	    -C $(PREGCC_BUILD_DIR) \
+-	    install-gcc \
+-	    install-target-libgcc \
+-	    DESTDIR=
 +		-C $(PREGCC_BUILD_DIR) \
 +		install-gcc \
 +		install-target-libgcc \
@@ -437,26 +457,369 @@ index df922ac047476ef944..7a0d58dc63b0243d2d 100644
  	touch $@
  
  
-@@ -765,15 +806,15 @@ ifeq ($(PLATFORM), linux)
- 	    export LD_PRELOAD=/lib/libgcc_s.so.1 ; \
- 	  fi ; \
- 	fi ; \
--	PATH=$(BUILDPATH) $(MAKE) \
-+	PATH=$(BUILDPATH) $(MAKE) -k \
- 	    -C BUILD/build-full-gcc-$(CROSSARCH) \
- 	    all
- else
--	PATH=$(BUILDPATH) $(MAKE) \
-+	PATH=$(BUILDPATH) $(MAKE) -k \
- 	    -C BUILD/build-full-gcc-$(CROSSARCH) \
- 	    all
+@@ -555,40 +602,41 @@ NEWLIB_CFLAGS = -O2
+ BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
+ 	rm -rf BUILD/build-newlib-$(CROSSARCH)
+ 	mkdir BUILD/build-newlib-$(CROSSARCH)
+-	PATH=$(BUILDPATH) && export PATH && \
+-	  cd BUILD/build-newlib-$(CROSSARCH) && \
+-	  ../../SRC/newlib/configure \
+-		      --disable-libgloss \
+-		      --enable-newlib-iconv \
+-		      --enable-newlib-iconv-from-encodings=UTF-8,UTF-16LE,UCS-4LE,UTF-16,UCS-4 \
+-		      --enable-newlib-iconv-to-encodings=UTF-8,UTF-16LE,UCS-4LE,UTF-16,UCS-4 \
+-		      --enable-newlib-io-long-long \
+-		      --enable-newlib-io-long-double \
+-		      --enable-newlib-io-c99-formats \
+-		      --enable-newlib-mb \
+-	    --prefix=$(PREFIX) \
+-	    CFLAGS="$(USER_CFLAGS)" \
+-	    CFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
+-	    CXXFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
+-	    --target=$(CROSSARCH) && \
+-	  $(MAKE) && \
+-	  $(MAKE) DESTDIR=$(DESTDIR) install
++	PATH=$(BUILDPATH) && \
++		export PATH && \
++		cd BUILD/build-newlib-$(CROSSARCH) && \
++		../../SRC/newlib/configure \
++		--disable-libgloss \
++		--enable-newlib-iconv \
++		--enable-newlib-iconv-from-encodings=UTF-8,UTF-16LE,UCS-4LE,UTF-16,UCS-4 \
++		--enable-newlib-iconv-to-encodings=UTF-8,UTF-16LE,UCS-4LE,UTF-16,UCS-4 \
++		--enable-newlib-io-long-long \
++		--enable-newlib-io-long-double \
++		--enable-newlib-io-c99-formats \
++		--enable-newlib-mb \
++		--prefix=$(PREFIX) \
++		CFLAGS="$(USER_CFLAGS)" \
++		CFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
++		CXXFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
++		--target=$(CROSSARCH) && \
++		$(MAKE) && \
++		$(MAKE) DESTDIR=$(DESTDIR) install
+ ifeq ($(CANNED_REVISION), no)
+ # The buildbot script that creates the source tarball adds all the headers to
+ # the tarball itself (see buildbot/buildbot_linux-glibc-makefile.sh)
+ 	cp -f $(addprefix ../src/untrusted/pthread/, pthread.h semaphore.h) \
+-	  $(DESTDIR)$(PREFIX)/$(CROSSARCH)/include
++		$(DESTDIR)$(PREFIX)/$(CROSSARCH)/include
  endif
--	PATH=$(BUILDPATH) $(MAKE) \
-+	PATH=$(BUILDPATH) $(MAKE) -k \
- 	    -C BUILD/build-full-gcc-$(CROSSARCH) \
- 	    DESTDIR=$(DESTDIR) \
- 	    install
-@@ -890,7 +931,7 @@ INST_GLIBC_PROGRAM ?= none
+ 	for bits in 32 64; do \
+-	  mv $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib$$bits/libc.a \
+-	     $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib$$bits/libcrt_common.a; \
+-	  if [[ "$$bits" = "32" ]]; then \
+-	    objformat=elf32-i386-nacl ; \
+-	  else \
+-	    objformat=elf64-x86-64-nacl ; \
+-	  fi ; \
+-	  sed "s/@OBJFORMAT@/$$objformat/" newlib-libc-script \
+-	    > $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib$$bits/libc.a; \
++		mv $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib$$bits/libc.a \
++			$(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib$$bits/libcrt_common.a; \
++		if [[ "$$bits" = "32" ]]; then \
++			objformat=elf32-i386-nacl; \
++		else \
++			objformat=elf64-x86-64-nacl; \
++		fi; \
++		sed "s/@OBJFORMAT@/$$objformat/" newlib-libc-script \
++			> $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib$$bits/libc.a; \
+ 	done
+ 	touch $@
+ 
+@@ -620,47 +668,49 @@ LIB_BITS ?= 64
+ ARCH_DEST_LIB_NATIVE = $(PREFIX_NATIVE)/$(CROSSARCH)/$(if $(filter 32,$(LIB_BITS)),lib32,lib)
+ 
+ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
+-	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
+-	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
++	if [[ ! -d $(LINUX_HEADERS) ]]; then \
++		$(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl; \
+ 	fi
+ 	rm -rf BUILD/build-glibc32
+ 	mkdir -p BUILD/build-glibc32/lib
+-	cd BUILD/build-glibc32 && ../../SRC/glibc/configure \
+-	    BUILD_CC="gcc -O2 -g" \
+-	    CC="$(GLIBC_CC) -m32" \
+-	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs -march=i486 $(GLIBC_CFLAGS)" \
+-	    libc_cv_forced_unwind=yes \
+-	    libc_cv_c_cleanup=yes \
+-	    libc_cv_slibdir=/lib32 \
+-	    libc_cv_z_combreloc=no \
+-	    --prefix= \
+-	    --libdir=/lib32 \
+-	    --host=i486-linux-gnu \
+-	    --with-headers=$(LINUX_HEADERS) \
+-	    --enable-kernel=2.6.18
++	cd BUILD/build-glibc32 && \
++		../../SRC/glibc/configure \
++			BUILD_CC="gcc -O2 -g" \
++			CC="$(GLIBC_CC) -m32" \
++			CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs -march=i486 $(GLIBC_CFLAGS)" \
++			libc_cv_forced_unwind=yes \
++			libc_cv_c_cleanup=yes \
++			libc_cv_slibdir=/lib32 \
++			libc_cv_z_combreloc=no \
++			--prefix= \
++			--libdir=/lib32 \
++			--host=i486-linux-gnu \
++			--with-headers=$(LINUX_HEADERS) \
++			--enable-kernel=2.6.18
+ 	$(MAKE) -C BUILD/build-glibc32
+ 	$(MAKE) -C BUILD/build-glibc32 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
+ 	touch $@
+ 
+ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
+-	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
+-	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
++	if [[ ! -d $(LINUX_HEADERS) ]]; then \
++		$(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl; \
+ 	fi
+ 	rm -rf BUILD/build-glibc64
+ 	mkdir -p BUILD/build-glibc64
+-	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
+-	    BUILD_CC="gcc -O2 -g" \
+-	    CC="$(GLIBC_CC) -m64" \
+-	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
+-	    libc_cv_forced_unwind=yes \
+-	    libc_cv_c_cleanup=yes \
+-	    libc_cv_slibdir=/lib \
+-	    libc_cv_z_combreloc=no \
+-	    --prefix= \
+-	    --libdir=/lib \
+-	    --host=x86_64-linux-gnu \
+-	    --with-headers=$(LINUX_HEADERS) \
+-	    --enable-kernel=2.6.18
++	cd BUILD/build-glibc64 && \
++		../../SRC/glibc/configure \
++			BUILD_CC="gcc -O2 -g" \
++			CC="$(GLIBC_CC) -m64" \
++			CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
++			libc_cv_forced_unwind=yes \
++			libc_cv_c_cleanup=yes \
++			libc_cv_slibdir=/lib \
++			libc_cv_z_combreloc=no \
++			--prefix= \
++			--libdir=/lib \
++			--host=x86_64-linux-gnu \
++			--with-headers=$(LINUX_HEADERS) \
++			--enable-kernel=2.6.18
+ 	$(MAKE) -C BUILD/build-glibc64
+ 	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
+ 	touch $@
+@@ -684,7 +734,7 @@ export-headers: SRC/newlib
+ ifeq ($(CANNED_REVISION), no)
+ 	rm -rf $(HPREFIX)/{bits,sys,machine}
+ 	../src/trusted/service_runtime/export_header.py \
+-	  ../src/trusted/service_runtime/include $(HPREFIX)
++		../src/trusted/service_runtime/include $(HPREFIX)
+ else
+ 	true
+ endif
+@@ -694,24 +744,24 @@ endif
+ ##################################################################
+ .PHONY: glibc-adhoc-files
+ glibc-adhoc-files: | SRC/glibc
+-	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
+-	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
++	if [[ ! -d $(LINUX_HEADERS) ]]; then \
++		$(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl; \
+ 	fi
+ 	install -m 755 -d  $(ARCH_DEST)/lib/ldscripts
+ 	cp -f SRC/glibc/nacl/dyn-link/ldscripts/* \
+-	    $(ARCH_DEST)/lib/ldscripts/
++		$(ARCH_DEST)/lib/ldscripts/
+ 	mkdir -p $(ARCH_DEST)/include/machine
+ 	cp -rf $(LINUX_HEADERS)/{asm*,linux} $(ARCH_DEST)/include
+ ifeq ($(CANNED_REVISION), no)
+ 	cp ../src/untrusted/include/machine/_default_types.h \
+-	    $(ARCH_DEST)/include/machine/_default_types.h
++		$(ARCH_DEST)/include/machine/_default_types.h
+ else
+ 	cp _default_types.h \
+-	    $(ARCH_DEST)/include/machine/_default_types.h
++		$(ARCH_DEST)/include/machine/_default_types.h
+ endif
+ 	for f in catchsegv gencat getconf getent iconv ldd locale \
+-	    localedef mtrace pcprofiledump rpcgen sprof tzselect xtrace; do \
+-	    rm -f $(ARCH_DEST)/bin/$$f ; \
++		localedef mtrace pcprofiledump rpcgen sprof tzselect xtrace; do \
++		rm -f $(ARCH_DEST)/bin/$$f; \
+ 	done
+ 	# These libraries are in link lines because newlib needs them.
+ 	# Since glibc doesn't need them, we just stub them out as empty
+@@ -719,10 +769,10 @@ endif
+ 	# and then libfoo.a, but only the latter under -static, so install
+ 	# under .a names to cover both cases.
+ 	for libdir in lib32 lib; do \
+-	  for lib in nacl nosys; do \
+-	    echo '/* Intentionally empty */' > \
+-		$(PREFIX_NATIVE)/$(CROSSARCH)/$${libdir}/lib$${lib}.a; \
+-	  done; \
++		for lib in nacl nosys; do \
++			echo '/* Intentionally empty */' \
++				> $(PREFIX_NATIVE)/$(CROSSARCH)/$${libdir}/lib$${lib}.a; \
++		done; \
+ 	done
+ 
+ ##################################################################
+@@ -738,45 +788,43 @@ endif
+ 	rm -rf BUILD/build-full-gcc-$(CROSSARCH)
+ 	mkdir BUILD/build-full-gcc-$(CROSSARCH){,/lib}
+ 	ln -s $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib \
+-	  BUILD/build-full-gcc-$(CROSSARCH)/lib/gcc
++		BUILD/build-full-gcc-$(CROSSARCH)/lib/gcc
+ 	# See http://code.google.com/p/nativeclient/issues/detail?id=854
+ 	rm -rf $(SYSINCLUDE_HACK_TARGET)
+ 	ln -s include $(SYSINCLUDE_HACK_TARGET)
+ 	cd BUILD/build-full-gcc-$(CROSSARCH) && \
+-	PATH=$(BUILDPATH) \
+-	$(GCC_SRC_DIR)/configure \
+-	    CC="$(GCC_CC)" \
+-	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
+-	    LDFLAGS="$(USER_LDFLAGS)" \
+-	    CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-glibc)" \
+-	    CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-glibc)" \
+-	    --prefix=$(PREFIX) \
+-	    $(GCC_CONFIGURE_FLAGS) \
+-	    $(GCC_CONFIGURE_FLAGS-glibc)
++		PATH=$(BUILDPATH) \
++		$(GCC_SRC_DIR)/configure \
++			CC="$(GCC_CC)" \
++			CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
++			LDFLAGS="$(USER_LDFLAGS)" \
++			CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-glibc)" \
++			CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-glibc)" \
++			--prefix=$(PREFIX) \
++			$(GCC_CONFIGURE_FLAGS) \
++			$(GCC_CONFIGURE_FLAGS-glibc)
+ ifeq ($(PLATFORM), linux)
+-	if [[ "$(CROSSARCH)" = "x86_64-nacl" ]] ; then \
+-	  if file BUILD/build-pregcc-x86_64-nacl/gcc/cc1 | grep -q x86-64; \
+-	  then \
+-	    export LD_PRELOAD=/lib64/libgcc_s.so.1 ; \
+-	  fi ; \
++	if [[ "$(CROSSARCH)" = "x86_64-nacl" ]]; then \
++		if file BUILD/build-pregcc-x86_64-nacl/gcc/cc1 | grep -q x86-64; then \
++			export LD_PRELOAD=/lib64/libgcc_s.so.1; \
++		fi; \
+ 	else \
+-	  if ! (file BUILD/build-pregcc-x86_64-nacl/gcc/cc1 | grep -q x86-64); \
+-	  then \
+-	    export LD_PRELOAD=/lib/libgcc_s.so.1 ; \
+-	  fi ; \
+-	fi ; \
++		if ! (file BUILD/build-pregcc-x86_64-nacl/gcc/cc1 | grep -q x86-64); then \
++			export LD_PRELOAD=/lib/libgcc_s.so.1; \
++		fi; \
++	fi; \
+ 	PATH=$(BUILDPATH) $(MAKE) \
+-	    -C BUILD/build-full-gcc-$(CROSSARCH) \
+-	    all
++		-C BUILD/build-full-gcc-$(CROSSARCH) \
++		all
+ else
+ 	PATH=$(BUILDPATH) $(MAKE) \
+-	    -C BUILD/build-full-gcc-$(CROSSARCH) \
+-	    all
++		-C BUILD/build-full-gcc-$(CROSSARCH) \
++		all
+ endif
+ 	PATH=$(BUILDPATH) $(MAKE) \
+-	    -C BUILD/build-full-gcc-$(CROSSARCH) \
+-	    DESTDIR=$(DESTDIR) \
+-	    install
++		-C BUILD/build-full-gcc-$(CROSSARCH) \
++		DESTDIR=$(DESTDIR) \
++		install
+ 	# See http://code.google.com/p/nativeclient/issues/detail?id=854
+ 	rm -rf $(SYSINCLUDE_HACK_TARGET)
+ 	touch $@
+@@ -797,23 +845,23 @@ endif
+ 	rm -rf $(SYSINCLUDE_HACK_TARGET)
+ 	ln -s include $(SYSINCLUDE_HACK_TARGET)
+ 	cd BUILD/build-gcc-$(CROSSARCH) && \
+-	PATH=$(BUILDPATH) \
+-	$(GCC_SRC_DIR)/configure \
+-	    CC="$(GCC_CC)" \
+-	    CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
+-	    LDFLAGS="$(USER_LDFLAGS)" \
+-	    CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-newlib)" \
+-	    CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-newlib)" \
+-	    --prefix=$(PREFIX) \
+-	    $(GCC_CONFIGURE_FLAGS) \
+-	    $(GCC_CONFIGURE_FLAGS-newlib)
++		PATH=$(BUILDPATH) \
++		$(GCC_SRC_DIR)/configure \
++			CC="$(GCC_CC)" \
++			CFLAGS="$(USER_CFLAGS) $(GCC_DEFINES)" \
++			LDFLAGS="$(USER_LDFLAGS)" \
++			CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-newlib)" \
++			CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-newlib)" \
++			--prefix=$(PREFIX) \
++			$(GCC_CONFIGURE_FLAGS) \
++			$(GCC_CONFIGURE_FLAGS-newlib)
+ 	PATH=$(BUILDPATH) $(MAKE) \
+-	    -C BUILD/build-gcc-$(CROSSARCH) \
+-	    all
++		-C BUILD/build-gcc-$(CROSSARCH) \
++		all
+ 	PATH=$(BUILDPATH) $(MAKE) \
+-	    -C BUILD/build-gcc-$(CROSSARCH) \
+-	    DESTDIR=$(DESTDIR) \
+-	    install
++		-C BUILD/build-gcc-$(CROSSARCH) \
++		DESTDIR=$(DESTDIR) \
++		install
+ 	# See http://code.google.com/p/nativeclient/issues/detail?id=854
+ 	rm -rf $(SYSINCLUDE_HACK_TARGET)
+ 	touch $@
+@@ -831,27 +879,27 @@ BUILD/stamp-$(CROSSARCH)-gdb: | SRC/gdb BUILD
+ 	mkdir BUILD/build-gdb-$(CROSSARCH)
+ ifeq ($(PLATFORM),win)
+ 	cd BUILD/build-gdb-$(CROSSARCH) && \
+-	  CC="x86_64-w64-mingw32-gcc -m32" \
+-	  CC_FOR_BUILD="x86_64-w64-mingw32-gcc -m32" \
+-	  LDFLAGS="$(USER_LDFLAGS)" \
+-	  CFLAGS="$(USER_CFLAGS)" \
+-	  ../../SRC/gdb/configure \
+-	    --prefix=$(PREFIX) \
+-	    --without-python \
+-	    --host=x86_64-w64-mingw32 \
+-	    --target=x86_64-nacl \
+-	    --enable-targets=arm-none-nacl-eabi
++		CC="x86_64-w64-mingw32-gcc -m32" \
++		CC_FOR_BUILD="x86_64-w64-mingw32-gcc -m32" \
++		LDFLAGS="$(USER_LDFLAGS)" \
++		CFLAGS="$(USER_CFLAGS)" \
++		../../SRC/gdb/configure \
++		--prefix=$(PREFIX) \
++		--without-python \
++		--host=x86_64-w64-mingw32 \
++		--target=x86_64-nacl \
++		--enable-targets=arm-none-nacl-eabi
+ 	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) all
+ 	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) DESTDIR=$(DESTDIR) install
+ else
+ 	cd BUILD/build-gdb-$(CROSSARCH) && \
+-	  CC="gcc -m32" \
+-	  LDFLAGS="$(USER_LDFLAGS)" \
+-	  CFLAGS="$(USER_CFLAGS)" \
+-	  ../../SRC/gdb/configure \
+-	    --prefix=$(PREFIX) \
+-	    --target=x86_64-nacl \
+-	    --enable-targets=arm-none-eabi-nacl
++		CC="gcc -m32" \
++		LDFLAGS="$(USER_LDFLAGS)" \
++		CFLAGS="$(USER_CFLAGS)" \
++		../../SRC/gdb/configure \
++			--prefix=$(PREFIX) \
++			--target=x86_64-nacl \
++			--enable-targets=arm-none-eabi-nacl
+ 	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) all
+ 	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) DESTDIR=$(DESTDIR) install
+ endif
+@@ -890,7 +938,7 @@ INST_GLIBC_PROGRAM ?= none
  .PHONY: build-with-glibc
  build-with-glibc: SRC/gcc
  	$(MAKE) -f $(THISMAKEFILE) sdkdirs
@@ -465,7 +828,7 @@ index df922ac047476ef944..7a0d58dc63b0243d2d 100644
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
  ifeq ($(INST_GLIBC_PROGRAM), none)
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc-standalone
-@@ -911,50 +952,50 @@ else
+@@ -911,50 +959,50 @@ else
  endif
  endif
  	$(CREATE_REDIRECTORS) "$(DESTDIR)$(PREFIX)"
@@ -554,7 +917,7 @@ index df922ac047476ef944..7a0d58dc63b0243d2d 100644
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc
  	$(MAKE) -f $(THISMAKEFILE) export-headers
-@@ -986,7 +1027,7 @@ buildbot-build-with-newlib: | \
+@@ -986,7 +1034,7 @@ buildbot-build-with-newlib: | \
  # because these are not changed from upstream.
  BINUTILS_PATCHNAME := naclbinutils-$(BINUTILS_VERSION)-r$(shell $(SVNVERSION) | tr : _)
  GCC_PATCHNAME := naclgcc-$(GCC_VERSION)-r$(shell $(SVNVERSION) | tr : _)
@@ -563,3 +926,18 @@ index df922ac047476ef944..7a0d58dc63b0243d2d 100644
  GLIBC_PATCHNAME := naclglibc-$(GLIBC_VERSION)-r$(shell $(SVNVERSION) | tr : _)
  NEWLIB_PATCHNAME := naclnewlib-$(NEWLIB_VERSION)-r$(shell $(SVNVERSION) | tr : _)
  
+@@ -1102,10 +1150,10 @@ glibc-check32: $(SEL_LDR)
+ .PHONY: nacl-check
+ nacl-check:
+ 	(cd .. && \
+-	  ./$(SCONS) -k \
+-	    $(SCONS_DESTINATIONS_NOLIB) \
+-	    --mode=opt-host,nacl platform=x86-$(BITSPLATFORM) \
+-	    --nacl_glibc --verbose small_tests)
++		./$(SCONS) -k \
++			$(SCONS_DESTINATIONS_NOLIB) \
++			--mode=opt-host,nacl platform=x86-$(BITSPLATFORM) \
++			--nacl_glibc --verbose small_tests)
+ 
+ 
+ ##################################################################
