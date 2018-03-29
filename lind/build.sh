@@ -125,14 +125,7 @@ function download_src() {
 	# git clone git@github.com:Lind-Project/native_client.git
 	gclient config --name=native_client git@github.com:Lind-Project/native_client.git --git-deps
 	gclient sync
-	cd "${NACL_TOOLCHAIN_BASE}" && rm -rf SRC
-	make sync-pinned
-	cd SRC || exit 1
-	mv glibc glibc_orig
-	ln -s "$LIND_GLIBC_SRC" glibc
-	mv gcc gcc_orig
-	ln -s "$NACL_GCC_DIR" gcc
-	cd .. || exit 1
+
 
 	mkdir -p "$NACL_PORTS_DIR"
 	cd "$NACL_PORTS_DIR" || exit 1
@@ -143,6 +136,15 @@ function download_src() {
 	cd "$NACL_GCC_DIR" || exit 1
 	gclient config --name=src http://chromium.googlesource.com/native_client/nacl-gcc.git --git-deps
 	gclient sync
+
+	cd "${NACL_TOOLCHAIN_BASE}" && rm -rf SRC
+	make sync-pinned
+	cd SRC || exit 1
+	mv glibc glibc_orig
+	ln -s "$LIND_GLIBC_SRC" glibc
+	mv gcc gcc_orig
+	ln -s "$NACL_GCC_DIR" gcc
+	cd .. || exit 1
 
 	# convert files from python to python2
 	cd "$NACL_SRC/native_client" || exit 1
