@@ -30,7 +30,7 @@ index 5afd2652cffa0081c9..0bc0fe1b617d07d78c 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..7c734de471adc149bc 100644
+index df922ac047476ef944..619c679c0193cd13de 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -54,7 +54,41 @@ index df922ac047476ef944..7c734de471adc149bc 100644
  
  CROSSARCH = x86_64-nacl
  TOOLCHAINLOC ?= out
-@@ -131,11 +131,11 @@ endif
+@@ -111,31 +111,31 @@ endif
+ SRCDIR = ../../../third_party
+ 
+ ifeq ($(PLATFORM), win)
+-  # Ugh, Cygwin and spaces in paths don't work well.
+-  # I'm explicitly coding the path.
+-  BUILDPATH = $(DESTDIR)$(PREFIX)/bin:/usr/local/bin:/usr/bin:/bin
+-  SCONS ?= scons.bat
+-  SVN ?= svn.bat
+-  SVNVERSION ?= svnversion.bat | tr -d $$"\r"
+-  PREFIX_NATIVE = $(shell cygpath -m $(PREFIX))
+-  CREATE_REDIRECTORS = ./create_redirectors_cygwin.sh
++	# Ugh, Cygwin and spaces in paths don't work well.
++	# I'm explicitly coding the path.
++	BUILDPATH = $(DESTDIR)$(PREFIX)/bin:/usr/local/bin:/usr/bin:/bin
++	SCONS ?= scons.bat
++	SVN ?= svn.bat
++	SVNVERSION ?= svnversion.bat | tr -d $$"\r"
++	PREFIX_NATIVE = $(shell cygpath -m $(PREFIX))
++	CREATE_REDIRECTORS = ./create_redirectors_cygwin.sh
+ else
+-  BUILDPATH = $(DESTDIR)$(PREFIX)/bin:$(PATH)
+-  SCONS ?= scons
+-  SVN ?= svn
+-  SVNVERSION ?= svnversion
+-  PREFIX_NATIVE = $(DESTDIR)$(PREFIX)
+-  CREATE_REDIRECTORS = ./create_redirectors.sh
++	BUILDPATH = $(DESTDIR)$(PREFIX)/bin:$(PATH)
++	SCONS ?= scons
++	SVN ?= svn
++	SVNVERSION ?= svnversion
++	PREFIX_NATIVE = $(DESTDIR)$(PREFIX)
++	CREATE_REDIRECTORS = ./create_redirectors.sh
+ endif
+ 
  ##################################################################
  #  The version numbers for the tools we will be building.
  ##################################################################
@@ -365,6 +399,25 @@ index df922ac047476ef944..7c734de471adc149bc 100644
  	touch $@
  
  
+@@ -765,15 +802,15 @@ ifeq ($(PLATFORM), linux)
+ 	    export LD_PRELOAD=/lib/libgcc_s.so.1 ; \
+ 	  fi ; \
+ 	fi ; \
+-	PATH=$(BUILDPATH) $(MAKE) \
++	PATH=$(BUILDPATH) $(MAKE) -k \
+ 	    -C BUILD/build-full-gcc-$(CROSSARCH) \
+ 	    all
+ else
+-	PATH=$(BUILDPATH) $(MAKE) \
++	PATH=$(BUILDPATH) $(MAKE) -k \
+ 	    -C BUILD/build-full-gcc-$(CROSSARCH) \
+ 	    all
+ endif
+-	PATH=$(BUILDPATH) $(MAKE) \
++	PATH=$(BUILDPATH) $(MAKE) -k \
+ 	    -C BUILD/build-full-gcc-$(CROSSARCH) \
+ 	    DESTDIR=$(DESTDIR) \
+ 	    install
 @@ -890,7 +927,7 @@ INST_GLIBC_PROGRAM ?= none
  .PHONY: build-with-glibc
  build-with-glibc: SRC/gcc
@@ -374,7 +427,87 @@ index df922ac047476ef944..7c734de471adc149bc 100644
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
  ifeq ($(INST_GLIBC_PROGRAM), none)
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc-standalone
-@@ -954,7 +991,7 @@ endif
+@@ -911,50 +948,50 @@ else
+ endif
+ endif
+ 	$(CREATE_REDIRECTORS) "$(DESTDIR)$(PREFIX)"
+-	for dir in lib32 lib64 ; do ( \
+-	  cd $(DESTDIR)$(PREFIX)/$(CROSSARCH)/$$dir ; \
+-	  for lib in BrokenLocale anl c cidn crypt dl m nsl \
+-	    nss_{compat,dns,files,hesiod,nis,nisplus} pthread \
+-	    resolv rt util ; do \
+-	    for fulllib in lib$$lib.so.* ; do \
+-	      mv lib$$lib-$(GLIBC_VERSION).so "$$fulllib" ; \
+-	      ln -sfn "$$fulllib" lib$$lib-$(GLIBC_VERSION).so ; \
+-	    done ; \
+-	  done ; \
+-	  for fulllib in ld-linux.so.* ld-linux-x86-64.so.* ; do \
+-	    if [[ "$$fulllib" != *\** ]] ; then \
+-	      mv ld-$(GLIBC_VERSION).so "$$fulllib" ; \
+-	      ln -sfn "$$fulllib" ld-$(GLIBC_VERSION).so ; \
+-	    fi ; \
+-	  done ; \
+-	  for fulllib in libthread_db.so.* ; do \
+-	    mv libthread_db-1.0.so "$$fulllib" ; \
+-	    ln -sfn "$$fulllib" libthread_db-1.0.so ; \
+-	  done ; \
+-	  chmod a+x libgcc_s.so.1 ; \
+-	  for fulllib in libgfortran.so.3.* ; do \
+-	    mv "$$fulllib" libgfortran.so.3 ; \
+-	    ln -sfn libgfortran.so.3 "$$fulllib" ; \
+-	    ln -sfn libgfortran.so.3 libgfortran.so ; \
+-	  done ; \
+-	  for fulllib in libobjc.so.2.* ; do \
+-	    mv "$$fulllib" libobjc.so.2 ; \
+-	    ln -sfn libobjc.so.2 "$$fulllib" ; \
+-	    ln -sfn libobjc.so.2 libobjc.so ; \
+-	  done ; \
+-	  for fulllib in libstdc++.so.6.* ; do \
+-	    mv "$$fulllib" libstdc++.so.6 ; \
+-	    ln -sfn libstdc++.so.6 "$$fulllib" ; \
+-	    ln -sfn libstdc++.so.6 libstdc++.so ; \
+-	  done ; \
+-	) ; done
++	for dir in lib32 lib64; do ( \
++		cd $(DESTDIR)$(PREFIX)/$(CROSSARCH)/$$dir; \
++		for lib in BrokenLocale anl c cidn crypt dl m nsl \
++			nss_{compat,dns,files,hesiod,nis,nisplus} pthread \
++			resolv rt util; do \
++			for fulllib in lib$$lib.so.*; do \
++				mv lib$$lib-$(GLIBC_VERSION).so "$$fulllib"; \
++				ln -sfn "$$fulllib" lib$$lib-$(GLIBC_VERSION).so; \
++			done; \
++		done; \
++		for fulllib in ld-linux.so.* ld-linux-x86-64.so.*; do \
++			if [[ "$$fulllib" != *\** ]]; then \
++				mv ld-$(GLIBC_VERSION).so "$$fulllib"; \
++				ln -sfn "$$fulllib" ld-$(GLIBC_VERSION).so; \
++			fi; \
++		done; \
++		for fulllib in libthread_db.so.*; do \
++			mv libthread_db-1.0.so "$$fulllib"; \
++			ln -sfn "$$fulllib" libthread_db-1.0.so; \
++		done; \
++		chmod a+x libgcc_s.so.1; \
++		for fulllib in libgfortran.so.3.*; do \
++			mv "$$fulllib" libgfortran.so.3; \
++			ln -sfn libgfortran.so.3 "$$fulllib"; \
++			ln -sfn libgfortran.so.3 libgfortran.so; \
++		done; \
++		for fulllib in libobjc.so.2.*; do \
++			mv "$$fulllib" libobjc.so.2; \
++			ln -sfn libobjc.so.2 "$$fulllib"; \
++			ln -sfn libobjc.so.2 libobjc.so; \
++		done; \
++		for fulllib in libstdc++.so.6.*; do \
++			mv "$$fulllib" libstdc++.so.6; \
++			ln -sfn libstdc++.so.6 "$$fulllib"; \
++			ln -sfn libstdc++.so.6 libstdc++.so; \
++		done; \
++	); done
+ 	rm -rf "$(DESTDIR)$(PREFIX)"/{include,lib/*.a*,$(CROSSARCH)/lib{,32}/*.la}
+ 	rm -rf "$(DESTDIR)$(PREFIX)"/{lib/{*/*/*/*{,/*}.la,*.so*},lib{32,64}}
+ 
  .PHONY: build-with-newlib
  build-with-newlib: SRC/gcc
  	$(MAKE) -f $(THISMAKEFILE) sdkdirs
