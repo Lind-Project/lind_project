@@ -68,6 +68,11 @@ elif [[ "$OS_NAME" == "Linux" ]]; then
 else
 	readonly OS_SUBDIR="win"
 fi
+if type nproc >/dev/null 2>&1; then
+	readonly JOBS="$(nproc)"
+else
+	readonly JOBS='4'
+fi
 readonly MODE='dbg-'"$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
 readonly MISC_DIR="$LIND_SRC/lind-misc"
@@ -375,7 +380,7 @@ function build_glibc() {
 
 	# turns out this works better if you do it from the nacl base dir
 	cd "$NACL_TOOLCHAIN_BASE" && rm -fr BUILD out
-	make clean build-with-glibc -j4 || exit -1
+	make -j"$JOBS" clean build-with-glibc || exit -1
 	print "Done building toolchain"
 }
 
