@@ -30,7 +30,7 @@ index 5afd2652cffa0081c9..0bc0fe1b617d07d78c 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..91239c0921dd968449 100644
+index df922ac047476ef944..3317c0239554ac6525 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -105,18 +105,16 @@ index df922ac047476ef944..91239c0921dd968449 100644
  define GCC_EXTRAS
  gmp: $(GMP_VERSION), \
  mpfr: $(MPFR_VERSION), \
-@@ -202,22 +202,28 @@ sync: | $(all-latest-git-sources)
- # They are only updated when pre-requisites version changes.
+@@ -203,21 +203,27 @@ sync: | $(all-latest-git-sources)
  .PHONY: gcc-extras
  gcc-extras:
--	if [[ "$$(cat BUILD/.gcc-extras-version)" != "$(GCC_EXTRAS)" ]]; then \
+ 	if [[ "$$(cat BUILD/.gcc-extras-version)" != "$(GCC_EXTRAS)" ]]; then \
 -	    rm -rf BUILD/.gcc-extra-* SRC/.gcc-extra-* && \
 -	    $(MAKE) -f $(THISMAKEFILE) install-gcc-extras && \
 -	    echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version; \
-+	if [[ "$$(cat BUILD/.gcc-extras-version)" != "$(GCC_EXTRAS)" ]] ; then \
 +		rm -rf BUILD/.gcc-extra-* SRC/.gcc-extra-* && \
-+		$(MAKE) -f $(THISMAKEFILE) install-gcc-extras && \
-+		echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version; \
++			$(MAKE) -f $(THISMAKEFILE) install-gcc-extras && \
++			echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version; \
  	fi
  
 -gcc-extras := gmp mpfr mpc ppl cloog-ppl
@@ -266,8 +264,12 @@ index df922ac047476ef944..91239c0921dd968449 100644
  
  GMP_DIR = $(abspath BUILD/.gcc-extra-install-gmp)
  MPFR_DIR = $(abspath BUILD/.gcc-extra-install-mpfr)
-@@ -380,31 +416,32 @@ else
- lstdc++ = -lstdc++
+@@ -377,34 +413,35 @@ CLOOG_DIR = $(abspath BUILD/.gcc-extra-install-cloog-ppl)
+ ifeq ($(PLATFORM),linux)
+ lstdc++ = -Wl,-Bstatic -lstdc++ -Wl,-Bdynamic
+ else
+-lstdc++ = -lstdc++
++lstdc++ = -lpwl -lstdc++
  endif
  
 +# TODO: fix cloog build
@@ -282,7 +284,7 @@ index df922ac047476ef944..91239c0921dd968449 100644
 +	--with-gmp=$(GMP_DIR) \
 +	--with-mpfr=$(MPFR_DIR) \
 +	--with-ppl=$(PPL_DIR) \
-+	--with-host-libstdcxx="-lpwl $(lstdc++) -lm" \
++	--with-host-libstdcxx="$(lstdc++) -lm" \
 +	--disable-ppl-version-check
 +	# --with-cloog=$(CLOOG_DIR)
  else
@@ -328,6 +330,15 @@ index df922ac047476ef944..91239c0921dd968449 100644
  
  
  GCC_CFLAGS_FOR_TARGET-nolibc =
+@@ -453,7 +490,7 @@ ifneq ($(SRCDIR),)
+ 	$(MAKE) -f $(THISMAKEFILE) gcc-extras
+ endif
+ 	rm -rf BUILD/build-pregcc-$(CROSSARCH)
+-	mkdir BUILD/build-pregcc-$(CROSSARCH)
++	mkdir -p BUILD/build-pregcc-$(CROSSARCH)
+ 	cd BUILD/build-pregcc-$(CROSSARCH) && \
+ 	PATH=$(BUILDPATH) \
+ 	$(GCC_SRC_DIR)/configure \
 @@ -465,10 +502,10 @@ endif
  	    --prefix=$(PREFIX) \
  	    $(GCC_CONFIGURE_FLAGS) \
