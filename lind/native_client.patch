@@ -30,7 +30,7 @@ index 5afd2652cffa0081c9..0bc0fe1b617d07d78c 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..619c679c0193cd13de 100644
+index df922ac047476ef944..91239c0921dd968449 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -341,13 +341,7 @@ index df922ac047476ef944..619c679c0193cd13de 100644
  	    -C BUILD/build-pregcc-$(CROSSARCH) \
  	    DESTDIR=$(DESTDIR) \
  	    install-gcc install-target-libgcc
-@@ -510,36 +547,36 @@ PREGCC_BUILD_DIR = BUILD/build-pregcc-$(CROSSARCH)
- BUILD/stamp-$(CROSSARCH)-pregcc-standalone: \
-   BUILD/stamp-$(CROSSARCH)-binutils | SRC/gcc BUILD
- ifneq ($(SRCDIR),)
--	$(MAKE) -f $(THISMAKEFILE) gcc-extras
-+	$(MAKE) -k -f $(THISMAKEFILE) gcc-extras
- endif
+@@ -515,31 +552,31 @@ endif
  	rm -rf $(PREGCC_PREFIX)
  	mkdir -p $(PREGCC_PREFIX)/$(CROSSARCH)/bin
  	for f in '$(DESTDIR)$(PREFIX)/$(CROSSARCH)/bin/*'; do \
