@@ -24,7 +24,7 @@ index 5afd2652cffa0081c9..9e087a124dd5d3eae8 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..5f70d65aa999a79fe1 100644
+index df922ac047476ef944..c7ae33fca05b6ea7be 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -48,6 +48,23 @@ index df922ac047476ef944..5f70d65aa999a79fe1 100644
  
  CROSSARCH = x86_64-nacl
  TOOLCHAINLOC ?= out
+@@ -131,11 +131,11 @@ endif
+ ##################################################################
+ #  The version numbers for the tools we will be building.
+ ##################################################################
+-GMP_VERSION = 5.0.2
+-MPFR_VERSION = 3.0.1
+-MPC_VERSION = 0.9
+-PPL_VERSION = 0.11.2
+-CLOOG_PPL_VERSION = 0.15.9
++GMP_VERSION = 4.3.2
++MPFR_VERSION = 3.1.4
++MPC_VERSION = 1.0.3
++PPL_VERSION = 0.10.2
++CLOOG_PPL_VERSION = 0.15.11
+ define GCC_EXTRAS
+ gmp: $(GMP_VERSION), \
+ mpfr: $(MPFR_VERSION), \
 @@ -276,6 +276,7 @@ fix-cloog-ppl-check: | SRC/.gcc-extra-cloog-ppl
  	    xargs -0 touch -r SRC/.gcc-extra-cloog-ppl
  

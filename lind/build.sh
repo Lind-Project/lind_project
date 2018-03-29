@@ -121,7 +121,6 @@ function download_src() {
 	# rm -rf "${LIND_SRC:?}/nacl"
 	mkdir -p "${NACL_SRC}"
 	cd "${NACL_SRC}" || exit 1
-
 	# git clone git@github.com:Lind-Project/native_client.git
 	gclient config --name=native_client git@github.com:Lind-Project/native_client.git --git-deps
 	gclient sync
