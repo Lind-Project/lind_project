@@ -30,7 +30,7 @@ index 5afd2652cffa0081c9..0bc0fe1b617d07d78c 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..9612bf483157e08b18 100644
+index df922ac047476ef944..1ec07ac66ef6dbc6d5 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -392,7 +392,7 @@ index df922ac047476ef944..9612bf483157e08b18 100644
  	touch $@
  
  .PHONY: pregcc
-@@ -508,38 +549,44 @@ PREGCC_BUILD_DIR = BUILD/build-pregcc-$(CROSSARCH)
+@@ -508,38 +549,46 @@ PREGCC_BUILD_DIR = BUILD/build-pregcc-$(CROSSARCH)
  # make install:
  #   DESTDIR should be ignored at this step.
  BUILD/stamp-$(CROSSARCH)-pregcc-standalone: \
@@ -440,18 +440,20 @@ index df922ac047476ef944..9612bf483157e08b18 100644
 +			--prefix=$(PREGCC_PREFIX) \
 +			$(GCC_CONFIGURE_FLAGS) \
 +			$(GCC_CONFIGURE_FLAGS-nolibc)
-+	sed 's|--split-size=5000000|--force --no-validate &|g' \
-+		BUILD/build-pregcc-x86_64-nacl/Makefile \
-+		> BUILD/build-pregcc-x86_64-nacl/Makefile.new
-+	mv \
-+		BUILD/build-pregcc-x86_64-nacl/Makefile.new \
-+		BUILD/build-pregcc-x86_64-nacl/Makefile
++	sed -e s'|--split-size=5000000|--force --no-validate &|' \
++		<BUILD/build-pregcc-x86_64-nacl/Makefile \
++		>BUILD/build-pregcc-x86_64-nacl/Makefile.new
++	cat \
++		<BUILD/build-pregcc-x86_64-nacl/Makefile.new \
++		>BUILD/build-pregcc-x86_64-nacl/Makefile
 +	PATH=$(BUILDPATH) \
++		$(MAKE) \
 +		-C $(PREGCC_BUILD_DIR) \
 +		all-gcc \
 +		all-target-libgcc \
 +		DESTDIR=
 +	PATH=$(BUILDPATH) \
++		$(MAKE) \
 +		-C $(PREGCC_BUILD_DIR) \
 +		install-gcc \
 +		install-target-libgcc \
