@@ -94,7 +94,7 @@ readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 readonly -a RSYNC=(rsync -avrc --force)
 readonly -a PYGREPL=(grep -lPR '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' .)
 readonly -a PYGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
-readonly -a PYSED=(sed -i.orig -r 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
+readonly -a PYSED=(sed -r 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
 
 if [[ "$NACL_SDK_ROOT" != "${REPY_PATH_SDK}" ]]; then
 	print "You need to set \"$NACL_SDK_ROOT\" to \"${REPY_PATH_SDK}\""
@@ -151,8 +151,8 @@ function download_src() {
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
 		while read -r file; do
-			"${PYSED[@]}" "$file"
-			mv -v "$file.orig" "$file"
+			"${PYSED[@]}" "$file" > "$file.new"
+			mv -v "$file.new" "$file"
 		done
 
 	cd "${LIND_SRC}" || exit 1
