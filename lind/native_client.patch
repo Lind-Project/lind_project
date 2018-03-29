@@ -24,7 +24,7 @@ index 5afd2652cffa0081c9..9e087a124dd5d3eae8 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..891eb5520fced951f2 100644
+index df922ac047476ef944..0c36e9ef1c5511a1ea 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -65,7 +65,7 @@ index df922ac047476ef944..891eb5520fced951f2 100644
  define GCC_EXTRAS
  gmp: $(GMP_VERSION), \
  mpfr: $(MPFR_VERSION), \
-@@ -242,22 +242,36 @@ endef
+@@ -242,22 +242,42 @@ endef
  
  BUILD/.gcc-extra-build-gmp: | BUILD SRC/.gcc-extra-gmp
  	$(gcc-extra-configure) \
@@ -112,10 +112,16 @@ index df922ac047476ef944..891eb5520fced951f2 100644
 +		$(gcc-extra-configure) \
 +			--enable-interfaces="cxx c" \
 +			--with-gmp=$$BUILD/.gcc-extra-install-gmp
++	sed 's/demos //' \
++		$$BUILD/.gcc-extra-build-ppl/Makefile \
++		> $$BUILD/.gcc-extra-build-ppl/Makefile.new
++	mv \
++		$$BUILD/.gcc-extra-build-ppl/Makefile.new \
++		$$BUILD/.gcc-extra-build-ppl/Makefile
  
  .PHONY: fix-cloog-ppl-check
  fix-cloog-ppl-check: | SRC/.gcc-extra-cloog-ppl
-@@ -276,14 +290,18 @@ fix-cloog-ppl-check: | SRC/.gcc-extra-cloog-ppl
+@@ -276,14 +296,18 @@ fix-cloog-ppl-check: | SRC/.gcc-extra-cloog-ppl
  	    xargs -0 touch -r SRC/.gcc-extra-cloog-ppl
  
  BUILD/.gcc-extra-build-cloog-ppl: fix-cloog-ppl-check | \
@@ -130,7 +136,7 @@ index df922ac047476ef944..891eb5520fced951f2 100644
 +		LDFLAGS=-L$$BUILD/.gcc-extra-build-ppl/lib \
 +		$(gcc-extra-configure) \
 +			--with-gmp=$$BUILD/.gcc-extra-install-gmp \
-+			--with-polylib-prefix=$$BUILD/.gcc-extra-install-ppl
++			--with-ppl=$$BUILD/.gcc-extra-install-ppl
  
  all-install-gcc-extras = $(gcc-extras:%=BUILD/.gcc-extra-install-%)
  $(all-install-gcc-extras): BUILD/.gcc-extra-install-%: | SRC \
@@ -139,7 +145,7 @@ index df922ac047476ef944..891eb5520fced951f2 100644
  	if mkdir BUILD/.gcc-extra-install-$*; then \
  	    mkdir BUILD/.gcc-extra-install-$*/include && \
  	    mkdir BUILD/.gcc-extra-install-$*/lib && \
-@@ -890,7 +908,7 @@ INST_GLIBC_PROGRAM ?= none
+@@ -890,7 +914,7 @@ INST_GLIBC_PROGRAM ?= none
  .PHONY: build-with-glibc
  build-with-glibc: SRC/gcc
  	$(MAKE) -f $(THISMAKEFILE) sdkdirs
@@ -148,7 +154,7 @@ index df922ac047476ef944..891eb5520fced951f2 100644
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
  ifeq ($(INST_GLIBC_PROGRAM), none)
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc-standalone
-@@ -954,7 +972,7 @@ endif
+@@ -954,7 +978,7 @@ endif
  .PHONY: build-with-newlib
  build-with-newlib: SRC/gcc
  	$(MAKE) -f $(THISMAKEFILE) sdkdirs
@@ -157,7 +163,7 @@ index df922ac047476ef944..891eb5520fced951f2 100644
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc
  	$(MAKE) -f $(THISMAKEFILE) export-headers
-@@ -986,7 +1004,7 @@ buildbot-build-with-newlib: | \
+@@ -986,7 +1010,7 @@ buildbot-build-with-newlib: | \
  # because these are not changed from upstream.
  BINUTILS_PATCHNAME := naclbinutils-$(BINUTILS_VERSION)-r$(shell $(SVNVERSION) | tr : _)
  GCC_PATCHNAME := naclgcc-$(GCC_VERSION)-r$(shell $(SVNVERSION) | tr : _)
