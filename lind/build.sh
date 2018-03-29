@@ -161,6 +161,8 @@ function download_src() {
 			cat <"$file.new" >"$file"
 			rm "$file.new"
 		done
+	cd "$NACL_GCC_DIR" || exit 1
+	git apply -v "$LIND_SRC/gcc.patch"
 
 	cd "${LIND_SRC}" || exit 1
 }
