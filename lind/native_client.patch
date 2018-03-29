@@ -24,7 +24,7 @@ index 5afd2652cffa0081c9..9e087a124dd5d3eae8 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..7fbe733f80844dde7b 100644
+index df922ac047476ef944..891eb5520fced951f2 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -130,7 +130,7 @@ index df922ac047476ef944..7fbe733f80844dde7b 100644
 +		LDFLAGS=-L$$BUILD/.gcc-extra-build-ppl/lib \
 +		$(gcc-extra-configure) \
 +			--with-gmp=$$BUILD/.gcc-extra-install-gmp \
-+			--with-ppl-prefix=$$BUILD/.gcc-extra-install-ppl \
++			--with-polylib-prefix=$$BUILD/.gcc-extra-install-ppl
  
  all-install-gcc-extras = $(gcc-extras:%=BUILD/.gcc-extra-install-%)
  $(all-install-gcc-extras): BUILD/.gcc-extra-install-%: | SRC \
