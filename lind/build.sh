@@ -44,7 +44,7 @@ for word; do
 		LD_LIBRARY_PATH=/glibc/
 		export LIND_SRC REPY_PATH NACL_SDK_ROOT LIND_MONITOR PATH LD_LIBRARY_PATH
 		# remove -e flag after setting up environment
-		mapfile -td ' ' args < <(printf '%s' "${*//-*e*}")
+		mapfile -td ' ' args < <(printf '%s' "${@//-*e*/}")
 		set -- "${args[@]}"
 		unset args
 	fi
