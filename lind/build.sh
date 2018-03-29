@@ -78,6 +78,7 @@ readonly NACL_TOOLCHAIN_BASE="$NACL_BASE/tools"
 readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
 readonly NACL_REPY="$LIND_SRC/nacl_repy"
 readonly NACL_PORTS_DIR="$LIND_SRC/naclports"
+readonly NACL_GCC_DIR="$LIND_SRC/nacl-gcc"
 
 readonly REPY_PATH="$REPY_PATH"
 readonly REPY_PATH_BIN="$REPY_PATH/bin"
@@ -118,9 +119,9 @@ function download_src() {
 	# git clone "${NACL_REPY_URL}" nacl_repy
 	#
 	# rm -rf "${LIND_SRC:?}/nacl"
-	# mkdir -p "${NACL_SRC}"
+	mkdir -p "${NACL_SRC}"
 	cd "${NACL_SRC}" || exit 1
-	#
+
 	# git clone git@github.com:Lind-Project/native_client.git
 	gclient config --name=native_client git@github.com:Lind-Project/native_client.git --git-deps
 	gclient sync
@@ -129,17 +130,23 @@ function download_src() {
 	cd SRC || exit 1
 	mv glibc glibc_orig
 	ln -s "$LIND_GLIBC_SRC" glibc
+	mv gcc gcc_orig
+	ln -s "$NACL_GCC_DIR" gcc
 	cd .. || exit 1
 
-	mkdir -p "${NACL_PORTS_DIR}"
-	cd "${NACL_PORTS_DIR}" || exit 1
-	# gclient config --name=src http://chromium.googlesource.com/native_client/nacl-gcc.git --git-deps
+	mkdir -p "$NACL_PORTS_DIR"
+	cd "$NACL_PORTS_DIR" || exit 1
 	gclient config --name=src https://chromium.googlesource.com/webports/ --git-deps
+	gclient sync
+
+	mkdir -p "$NACL_GCC_DIR"
+	cd "$NACL_GCC_DIR" || exit 1
+	gclient config --name=src http://chromium.googlesource.com/native_client/nacl-gcc.git --git-deps
 	gclient sync
 
 	# convert files from python to python2
 	cd "$NACL_SRC/native_client" || exit 1
-	patch -p1 <"$LIND_SRC/native_client.patch"
+	# patch -p1 <"$LIND_SRC/native_client.patch"
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
 		while read -r file; do
