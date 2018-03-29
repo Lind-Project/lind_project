@@ -147,7 +147,7 @@ function download_src() {
 
 	# convert files from python to python2
 	cd "$NACL_SRC/native_client" || exit 1
-	# git apply -v "$LIND_SRC/native_client.patch"
+	git apply -v "$LIND_SRC/native_client.patch"
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
 		while read -r file; do
