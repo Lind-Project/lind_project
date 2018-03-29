@@ -24,7 +24,7 @@ index 5afd2652cffa0081c9..9e087a124dd5d3eae8 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..0c36e9ef1c5511a1ea 100644
+index df922ac047476ef944..a5166be1dbdeb98e17 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -65,7 +65,43 @@ index df922ac047476ef944..0c36e9ef1c5511a1ea 100644
  define GCC_EXTRAS
  gmp: $(GMP_VERSION), \
  mpfr: $(MPFR_VERSION), \
-@@ -242,22 +242,42 @@ endef
+@@ -202,22 +202,28 @@ sync: | $(all-latest-git-sources)
+ # They are only updated when pre-requisites version changes.
+ .PHONY: gcc-extras
+ gcc-extras:
+-	if [[ "$$(cat BUILD/.gcc-extras-version)" != "$(GCC_EXTRAS)" ]]; then \
+-	    rm -rf BUILD/.gcc-extra-* SRC/.gcc-extra-* && \
+-	    $(MAKE) -f $(THISMAKEFILE) install-gcc-extras && \
+-	    echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version; \
++	if [[ "$$(cat BUILD/.gcc-extras-version)" != "$(GCC_EXTRAS)" ]] ; then \
++		rm -rf BUILD/.gcc-extra-* SRC/.gcc-extra-* && \
++		$(MAKE) -f $(THISMAKEFILE) install-gcc-extras && \
++		echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version; \
+ 	fi
+ 
+-gcc-extras := gmp mpfr mpc ppl cloog-ppl
++# TODO: fix ppl linking errors
++# gcc-extras := gmp mpfr mpc ppl cloog-ppl
++gcc-extras := gmp mpfr mpc ppl
+ 
+ gcc_extra_dir = $(subst cloog-ppl,cloog,$*)
+ gcc_extra_version = $($(shell echo $*| tr '[:lower:]-' '[:upper:]_')_VERSION)
+ 
+ all-src-gcc-extras = $(gcc-extras:%=SRC/.gcc-extra-%)
++
+ $(all-src-gcc-extras): SRC/.gcc-extra-%: | SRC
+ 	rm -rf SRC/.gcc-extra-$*
+-	cd SRC && tar xpf $(SRCDIR)/$(gcc_extra_dir)/$*-$(gcc_extra_version).tar.*
+-	mv SRC/$*-$(gcc_extra_version) SRC/.gcc-extra-$*
++	cd SRC && \
++		tar xpf $(SRCDIR)/$(gcc_extra_dir)/$*-$(gcc_extra_version).tar.*
++	mv \
++		SRC/$*-$(gcc_extra_version) \
++		SRC/.gcc-extra-$*
+ 
+ # All Macs need Core2 assembly and --enable-fat is broken with stock MacOS gcc.
+ ifneq ($(PLATFORM), mac)
+@@ -242,53 +248,83 @@ endef
  
  BUILD/.gcc-extra-build-gmp: | BUILD SRC/.gcc-extra-gmp
  	$(gcc-extra-configure) \
@@ -112,17 +148,44 @@ index df922ac047476ef944..0c36e9ef1c5511a1ea 100644
 +		$(gcc-extra-configure) \
 +			--enable-interfaces="cxx c" \
 +			--with-gmp=$$BUILD/.gcc-extra-install-gmp
-+	sed 's/demos //' \
-+		$$BUILD/.gcc-extra-build-ppl/Makefile \
-+		> $$BUILD/.gcc-extra-build-ppl/Makefile.new
-+	mv \
-+		$$BUILD/.gcc-extra-build-ppl/Makefile.new \
-+		$$BUILD/.gcc-extra-build-ppl/Makefile
++	sed -e 's|demos ||g' \
++		<BUILD/.gcc-extra-build-ppl/Makefile \
++		>BUILD/.gcc-extra-build-ppl/Makefile.out
++	cat \
++		<BUILD/.gcc-extra-build-ppl/Makefile.out \
++		>BUILD/.gcc-extra-build-ppl/Makefile
++	$(RM) BUILD/.gcc-extra-build-ppl/Makefile.out
  
  .PHONY: fix-cloog-ppl-check
  fix-cloog-ppl-check: | SRC/.gcc-extra-cloog-ppl
-@@ -276,14 +296,18 @@ fix-cloog-ppl-check: | SRC/.gcc-extra-cloog-ppl
- 	    xargs -0 touch -r SRC/.gcc-extra-cloog-ppl
+-	for i in SRC/.gcc-extra-cloog-ppl/configure{.in,} ; do \
+-	    sed -e s'|ppl_minor_version=10|ppl_minor_version=11|'<$$i >$$i.out;\
+-	    cat $$i.out >$$i; \
+-	    rm $$i.out; \
++	for i in SRC/.gcc-extra-cloog-ppl/configure{.in,}; do \
++		sed -e s'|ppl_minor_version=10|ppl_minor_version=11|' \
++			<$$i \
++			>$$i.out;\
++		cat \
++			<$$i.out \
++			>$$i; \
++		rm $$i.out; \
+ 	done
+ 	sed -e s'|LIBS = @LIBS@|LIBS = @LIBS@ -lstdc++ -lm |' \
+-	    <SRC/.gcc-extra-cloog-ppl/Makefile.in \
+-	    >SRC/.gcc-extra-cloog-ppl/Makefile.in.out
+-	cat SRC/.gcc-extra-cloog-ppl/Makefile.in.out \
+-	    >SRC/.gcc-extra-cloog-ppl/Makefile.in
+-	rm SRC/.gcc-extra-cloog-ppl/Makefile.in.out
++		<SRC/.gcc-extra-cloog-ppl/Makefile.in \
++		>SRC/.gcc-extra-cloog-ppl/Makefile.in.out
++	cat \
++		<SRC/.gcc-extra-cloog-ppl/Makefile.in.out \
++		>SRC/.gcc-extra-cloog-ppl/Makefile.in
++	$(RM) SRC/.gcc-extra-cloog-ppl/Makefile.in.out
+ 	find SRC/.gcc-extra-cloog-ppl -print0 | \
+-	    xargs -0 touch -r SRC/.gcc-extra-cloog-ppl
++		xargs -0 touch -r SRC/.gcc-extra-cloog-ppl
  
  BUILD/.gcc-extra-build-cloog-ppl: fix-cloog-ppl-check | \
 -                                                    BUILD/.gcc-extra-install-ppl
@@ -143,9 +206,18 @@ index df922ac047476ef944..0c36e9ef1c5511a1ea 100644
 -                                                        BUILD/.gcc-extra-build-%
 +					BUILD/.gcc-extra-build-%
  	if mkdir BUILD/.gcc-extra-install-$*; then \
- 	    mkdir BUILD/.gcc-extra-install-$*/include && \
- 	    mkdir BUILD/.gcc-extra-install-$*/lib && \
-@@ -890,7 +914,7 @@ INST_GLIBC_PROGRAM ?= none
+-	    mkdir BUILD/.gcc-extra-install-$*/include && \
+-	    mkdir BUILD/.gcc-extra-install-$*/lib && \
+-	    ln -s lib BUILD/.gcc-extra-install-$*/lib64 && \
+-	    ln -s lib BUILD/.gcc-extra-install-$*/lib32; \
++		mkdir BUILD/.gcc-extra-install-$*/include && \
++		mkdir BUILD/.gcc-extra-install-$*/lib && \
++		ln -s lib BUILD/.gcc-extra-install-$*/lib64 && \
++		ln -s lib BUILD/.gcc-extra-install-$*/lib32; \
+ 	fi
+ 	cd BUILD/.gcc-extra-build-$* && $(MAKE) install
+ 
+@@ -890,7 +926,7 @@ INST_GLIBC_PROGRAM ?= none
  .PHONY: build-with-glibc
  build-with-glibc: SRC/gcc
  	$(MAKE) -f $(THISMAKEFILE) sdkdirs
@@ -154,7 +226,7 @@ index df922ac047476ef944..0c36e9ef1c5511a1ea 100644
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
  ifeq ($(INST_GLIBC_PROGRAM), none)
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc-standalone
-@@ -954,7 +978,7 @@ endif
+@@ -954,7 +990,7 @@ endif
  .PHONY: build-with-newlib
  build-with-newlib: SRC/gcc
  	$(MAKE) -f $(THISMAKEFILE) sdkdirs
@@ -163,7 +235,7 @@ index df922ac047476ef944..0c36e9ef1c5511a1ea 100644
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc
  	$(MAKE) -f $(THISMAKEFILE) export-headers
-@@ -986,7 +1010,7 @@ buildbot-build-with-newlib: | \
+@@ -986,7 +1022,7 @@ buildbot-build-with-newlib: | \
  # because these are not changed from upstream.
  BINUTILS_PATCHNAME := naclbinutils-$(BINUTILS_VERSION)-r$(shell $(SVNVERSION) | tr : _)
  GCC_PATCHNAME := naclgcc-$(GCC_VERSION)-r$(shell $(SVNVERSION) | tr : _)
