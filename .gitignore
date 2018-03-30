@@ -35,6 +35,7 @@ cscope.po.out
 tags
 TAGS
 vgcore*
+typescript
 
 # Binaries
 *.out
