@@ -153,9 +153,15 @@ function download_src() {
 	ln -s "$NACL_GCC_DIR" gcc
 	cd .. || exit 1
 
-	# convert files from python to python2
-	cd "$NACL_SRC/native_client" || exit 1
+	# apply toolchain patches
+	cd "$NACL_BASE" || exit 1
 	git apply -v "$LIND_SRC/native_client.patch"
+	cd "$NACL_GCC_DIR" || exit 1
+	git apply -v "$LIND_SRC/gcc.patch"
+	cd "$LIND_GLIBC_SRC" || exit 1
+	git apply -v "$LIND_SRC/glibc.patch"
+
+	# convert files from python to python2
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
 		while read -r file; do
@@ -164,10 +170,8 @@ function download_src() {
 			cat <"$file.new" >"$file"
 			rm "$file.new"
 		done
-	cd "$NACL_GCC_DIR" || exit 1
-	git apply -v "$LIND_SRC/gcc.patch"
 
-	cd "${LIND_SRC}" || exit 1
+	cd "$LIND_SRC" || exit 1
 }
 
 
