@@ -30,7 +30,7 @@ index 5afd2652cffa0081c9..0bc0fe1b617d07d78c 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..14f6afb0a25e01fd33 100644
+index df922ac047476ef944..b1c11b446714454634 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -614,13 +614,13 @@ index df922ac047476ef944..14f6afb0a25e01fd33 100644
 +		../../SRC/glibc/configure \
 +			BUILD_CC="gcc -O2 -g" \
 +			CC="$(GLIBC_CC) -m32" \
-+			CFLAGS="-pipe -fno-strict-aliasing -march=i486 $(GLIBC_CFLAGS)" \
++			CFLAGS="-pipe -fcommons -fno-strict-aliasing -march=i486 $(GLIBC_CFLAGS)" \
 +			MAKE="$(MAKE_COMPAT)" \
 +			libc_cv_forced_unwind=yes \
 +			libc_cv_c_cleanup=yes \
 +			libc_cv_slibdir=/lib32 \
 +			libc_cv_z_combreloc=no \
-+			--disable-tls \
++			--without-tls \
 +			--prefix= \
 +			--libdir=/lib32 \
 +			--host=i486-linux-gnu \
@@ -661,13 +661,13 @@ index df922ac047476ef944..14f6afb0a25e01fd33 100644
 +		../../SRC/glibc/configure \
 +			BUILD_CC="gcc -O2 -g" \
 +			CC="$(GLIBC_CC) -m64" \
-+			CFLAGS="-pipe -fno-strict-aliasing $(GLIBC_CFLAGS)" \
++			CFLAGS="-pipe -fcommons -fno-strict-aliasing $(GLIBC_CFLAGS)" \
 +			MAKE="$(MAKE_COMPAT)" \
 +			libc_cv_forced_unwind=yes \
 +			libc_cv_c_cleanup=yes \
 +			libc_cv_slibdir=/lib \
 +			libc_cv_z_combreloc=no \
-+			--disable-tls \
++			--without-tls \
 +			--prefix= \
 +			--libdir=/lib \
 +			--host=x86_64-linux-gnu \
