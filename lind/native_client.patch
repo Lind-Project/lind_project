@@ -30,7 +30,7 @@ index 5afd2652cffa0081c9..0bc0fe1b617d07d78c 100755
    # The ARM toolchain has a linker that doesn't handle the code its
    # compiler generates under -fPIE.
 diff --git a/tools/Makefile b/tools/Makefile
-index df922ac047476ef944..ffc7b0730da162e89f 100644
+index df922ac047476ef944..2579165ec733e1bb1d 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -34,16 +34,16 @@ THISMAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -531,7 +531,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  	done
  	touch $@
  
-@@ -619,50 +669,77 @@ ARCH_DEST_INC_NATIVE = $(PREFIX_NATIVE)/$(CROSSARCH)/include
+@@ -619,50 +669,83 @@ ARCH_DEST_INC_NATIVE = $(PREFIX_NATIVE)/$(CROSSARCH)/include
  LIB_BITS ?= 64
  ARCH_DEST_LIB_NATIVE = $(PREFIX_NATIVE)/$(CROSSARCH)/$(if $(filter 32,$(LIB_BITS)),lib32,lib)
  
@@ -539,9 +539,15 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
 +# make is too new (versions after 4.x fail when building glibc32).
 +VERSION_TEST := $(MAKE_VERSION:4.%=)
 +ifeq ($(VERSION_TEST),)
-+	MAKE_COMPAT := make-3.81
++	MAKE_COMPAT != \
++		find /bin /sbin /usr/bin /usr/sbin \
++		-type f -name "make-[[:digit:]]*" 2>/dev/null | \
++		tail -n1
 +else
 +	MAKE_COMPAT := make
++endif
++ifeq ($(MAKE_COMPAT),)
++	$(error No suitable make binary found.)
 +endif
 +
  BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
@@ -643,7 +649,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  	touch $@
  
  # Can be used to make a glibc archive separately from the main install tree.
-@@ -672,19 +749,28 @@ INST_GLIBC_PREFIX ?= $(PREFIX)
+@@ -672,19 +755,28 @@ INST_GLIBC_PREFIX ?= $(PREFIX)
  install-glibc: BUILD/stamp-glibc32 BUILD/stamp-glibc64
  	rm -rf "$(INST_GLIBC_PREFIX)"/glibc
  	mkdir "$(INST_GLIBC_PREFIX)"/glibc
@@ -679,7 +685,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  else
  	true
  endif
-@@ -694,24 +780,24 @@ endif
+@@ -694,24 +786,24 @@ endif
  ##################################################################
  .PHONY: glibc-adhoc-files
  glibc-adhoc-files: | SRC/glibc
@@ -712,7 +718,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  	done
  	# These libraries are in link lines because newlib needs them.
  	# Since glibc doesn't need them, we just stub them out as empty
-@@ -719,10 +805,10 @@ endif
+@@ -719,10 +811,10 @@ endif
  	# and then libfoo.a, but only the latter under -static, so install
  	# under .a names to cover both cases.
  	for libdir in lib32 lib; do \
@@ -727,7 +733,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  	done
  
  ##################################################################
-@@ -738,45 +824,42 @@ endif
+@@ -738,45 +830,42 @@ endif
  	rm -rf BUILD/build-full-gcc-$(CROSSARCH)
  	mkdir BUILD/build-full-gcc-$(CROSSARCH){,/lib}
  	ln -s $(DESTDIR)$(PREFIX)/$(CROSSARCH)/lib \
@@ -798,7 +804,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  	# See http://code.google.com/p/nativeclient/issues/detail?id=854
  	rm -rf $(SYSINCLUDE_HACK_TARGET)
  	touch $@
-@@ -797,23 +880,23 @@ endif
+@@ -797,23 +886,23 @@ endif
  	rm -rf $(SYSINCLUDE_HACK_TARGET)
  	ln -s include $(SYSINCLUDE_HACK_TARGET)
  	cd BUILD/build-gcc-$(CROSSARCH) && \
@@ -837,7 +843,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  	# See http://code.google.com/p/nativeclient/issues/detail?id=854
  	rm -rf $(SYSINCLUDE_HACK_TARGET)
  	touch $@
-@@ -831,27 +914,27 @@ BUILD/stamp-$(CROSSARCH)-gdb: | SRC/gdb BUILD
+@@ -831,27 +920,27 @@ BUILD/stamp-$(CROSSARCH)-gdb: | SRC/gdb BUILD
  	mkdir BUILD/build-gdb-$(CROSSARCH)
  ifeq ($(PLATFORM),win)
  	cd BUILD/build-gdb-$(CROSSARCH) && \
@@ -882,7 +888,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) all
  	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) DESTDIR=$(DESTDIR) install
  endif
-@@ -890,7 +973,7 @@ INST_GLIBC_PROGRAM ?= none
+@@ -890,7 +979,7 @@ INST_GLIBC_PROGRAM ?= none
  .PHONY: build-with-glibc
  build-with-glibc: SRC/gcc
  	$(MAKE) -f $(THISMAKEFILE) sdkdirs
@@ -891,7 +897,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
  ifeq ($(INST_GLIBC_PROGRAM), none)
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc-standalone
-@@ -911,50 +994,50 @@ else
+@@ -911,50 +1000,50 @@ else
  endif
  endif
  	$(CREATE_REDIRECTORS) "$(DESTDIR)$(PREFIX)"
@@ -980,7 +986,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-binutils
  	$(MAKE) -f $(THISMAKEFILE) BUILD/stamp-$(CROSSARCH)-pregcc
  	$(MAKE) -f $(THISMAKEFILE) export-headers
-@@ -986,7 +1069,7 @@ buildbot-build-with-newlib: | \
+@@ -986,7 +1075,7 @@ buildbot-build-with-newlib: | \
  # because these are not changed from upstream.
  BINUTILS_PATCHNAME := naclbinutils-$(BINUTILS_VERSION)-r$(shell $(SVNVERSION) | tr : _)
  GCC_PATCHNAME := naclgcc-$(GCC_VERSION)-r$(shell $(SVNVERSION) | tr : _)
@@ -989,7 +995,7 @@ index df922ac047476ef944..ffc7b0730da162e89f 100644
  GLIBC_PATCHNAME := naclglibc-$(GLIBC_VERSION)-r$(shell $(SVNVERSION) | tr : _)
  NEWLIB_PATCHNAME := naclnewlib-$(NEWLIB_VERSION)-r$(shell $(SVNVERSION) | tr : _)
  
-@@ -1102,10 +1185,10 @@ glibc-check32: $(SEL_LDR)
+@@ -1102,10 +1191,10 @@ glibc-check32: $(SEL_LDR)
  .PHONY: nacl-check
  nacl-check:
  	(cd .. && \
