@@ -36,13 +36,14 @@ print "command line: $0 $*"
 # Check for default environment flag
 for word; do
 	if [[ "$word" == -*e* ]]; then
-		LIND_SRC="/usr/lind_project/lind"
+		LIND_BASE="/usr/lind_project"
+		LIND_SRC="$LIND_BASE/lind"
 		REPY_PATH="$LIND_SRC/nacl"
 		NACL_SDK_ROOT="$LIND_SRC/nacl/sdk"
 		LIND_MONITOR="$LIND_SRC/reference_monitor"
 		PATH="$LIND_SRC/depot_tools:$PATH"
 		LD_LIBRARY_PATH=/glibc/
-		export LIND_SRC REPY_PATH NACL_SDK_ROOT LIND_MONITOR PATH LD_LIBRARY_PATH
+		export LIND_BASE LIND_SRC REPY_PATH NACL_SDK_ROOT LIND_MONITOR PATH LD_LIBRARY_PATH
 		# remove -e flag after setting up environment
 		mapfile -td ' ' args < <(printf '%s' "${@//-*e*/}")
 		set -- "${args[@]}"
@@ -110,19 +111,25 @@ fi
 #
 function download_src() {
 	mkdir -p "$LIND_SRC"
-	cd "${LIND_SRC}" && rm -rf "${LIND_SRC:?}/lind_glibc"
+	cd "$LIND_BASE" || exit 1
 
+	rm -rf "${LIND_SRC:?}/lind_glibc"
 	git clone "$LIND_GLIBC_URL" lind_glibc
 	cd lind_glibc || exit 1
 	git checkout i686_caging
 	cd .. || exit 1
 
-	rm -rf "${LIND_SRC:?}/misc"
-	git clone "$LIND_MISC_URL" misc
-
 	rm -rf "${LIND_SRC:?}/nacl_repy"
 	git clone "$NACL_REPY_URL" nacl_repy
 
+	rm -rf "${LIND_SRC:?}/misc"
+	git clone "$LIND_MISC_URL" misc
+
+	ln -rs ./lind_glibc "$LIND_SRC/"
+	ln -rs ./nacl_repy "$LIND_SRC/"
+	ln -rs ./misc "$LIND_SRC/"
+
+	cd "$LIND_SRC" || exit 1
 	rm -rf "${LIND_SRC:?}/nacl"
 	mkdir -p "$NACL_SRC"
 
@@ -132,16 +139,16 @@ function download_src() {
 		git@github.com:Lind-Project/native_client.git@i686_caging --git-deps
 	gclient sync
 
+	mkdir -p "$NACL_GCC_DIR"
+	cd "$NACL_GCC_DIR" || exit 1
+	gclient config --name=src \
+		git@github.com:Lind-Project/nacl-gcc.git@i686_caging --git-deps
+	gclient sync
+
 	mkdir -p "$NACL_PORTS_DIR"
 	cd "$NACL_PORTS_DIR" || exit 1
 	gclient config --name=src \
 		https://chromium.googlesource.com/webports.git --git-deps
-	gclient sync
-
-	mkdir -p "$NACL_GCC_DIR"
-	cd "$NACL_GCC_DIR" || exit 1
-	gclient config --name=src \
-		http://chromium.googlesource.com/native_client/nacl-gcc.git --git-deps
 	gclient sync
 
 	# use custom repos as bases
@@ -153,10 +160,6 @@ function download_src() {
 	mv gcc gcc_orig
 	ln -s "$NACL_GCC_DIR" gcc
 	cd .. || exit 1
-
-	# apply toolchain patches
-	cd "$NACL_GCC_DIR" || exit 1
-	git apply -v "$LIND_SRC/gcc.patch"
 
 	# convert files from python to python2
 	"${PYGREPL[@]}" 2>/dev/null | \

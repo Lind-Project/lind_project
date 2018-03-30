@@ -19,3 +19,6 @@
 [submodule "lind/nacl/native_client"]
 	path = lind/nacl/native_client
 	url = git@github.com:Lind-Project/native_client.git
+[submodule "nacl-gcc"]
+	path = nacl-gcc
+	url = git@github.com:Lind-Project/nacl-gcc.git
