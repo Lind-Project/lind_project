@@ -1,13 +1,13 @@
-diff --git a/gcc/toplev.c b/gcc/toplev.c
-index 5089965208f89f390b..273bbd483bdade8176 100644
---- a/gcc/toplev.c
-+++ b/gcc/toplev.c
-@@ -527,7 +527,7 @@ read_integral_parameter (const char *p, const char *pname, const int  defval)
-    for floor_log2 and exact_log2; see toplev.h.  That construct, however,
-    conflicts with the ISO C++ One Definition Rule.   */
+diff --git a/gcc/toplev.h b/gcc/toplev.h
+index 2324b068f77b2365ec..a701c9ad327368022f 100644
+--- a/gcc/toplev.h
++++ b/gcc/toplev.h
+@@ -174,7 +174,7 @@ extern int exact_log2                  (unsigned HOST_WIDE_INT);
+ extern int floor_log2                  (unsigned HOST_WIDE_INT);
  
--#if GCC_VERSION < 3004 || !defined (__cplusplus)
-+#if GCC_VERSION < 3004 && !defined (__cplusplus)
- 
- /* Given X, an unsigned number, return the largest int Y such that 2**Y <= X.
-    If X is 0, return -1.  */
+ /* Inline versions of the above for speed.  */
+-#if GCC_VERSION >= 3004
++#if GCC_VERSION >= 3004 && defined (__cplusplus)
+ # if HOST_BITS_PER_WIDE_INT == HOST_BITS_PER_LONG
+ #  define CLZ_HWI __builtin_clzl
+ #  define CTZ_HWI __builtin_ctzl
