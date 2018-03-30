@@ -109,38 +109,40 @@ fi
 # Download source files
 #
 function download_src() {
-	# mkdir -p "$LIND_SRC"
-	# cd "${LIND_SRC}" && rm -rf "${LIND_SRC:?}/lind_glibc"
-	#
-	# git clone "$LIND_GLIBC_URL" lind_glibc
-	# cd lind_glibc || exit 1
-	# git checkout -b one_proc_model origin/one_proc_model
-	# cd .. || exit 1
-	#
-	# rm -rf "${LIND_SRC:?}/misc"
-	# git clone "$LIND_MISC_URL" misc
-	#
-	# rm -rf "${LIND_SRC:?}/nacl_repy"
-	# git clone "$NACL_REPY_URL" nacl_repy
-	#
-	# rm -rf "${LIND_SRC:?}/nacl"
-	# mkdir -p "$NACL_SRC"
+	mkdir -p "$LIND_SRC"
+	cd "${LIND_SRC}" && rm -rf "${LIND_SRC:?}/lind_glibc"
+
+	git clone "$LIND_GLIBC_URL" lind_glibc
+	cd lind_glibc || exit 1
+	git checkout i686_caging
+	cd .. || exit 1
+
+	rm -rf "${LIND_SRC:?}/misc"
+	git clone "$LIND_MISC_URL" misc
+
+	rm -rf "${LIND_SRC:?}/nacl_repy"
+	git clone "$NACL_REPY_URL" nacl_repy
+
+	rm -rf "${LIND_SRC:?}/nacl"
+	mkdir -p "$NACL_SRC"
 
 	mkdir -p "$NACL_BASE"
 	cd "$NACL_BASE" || exit 1
-	# git clone git@github.com:Lind-Project/native_client.git
-	gclient config --name=native_client git@github.com:Lind-Project/native_client.git --git-deps
+	gclient config --name=native_client \
+		git@github.com:Lind-Project/native_client.git@i686_caging --git-deps
 	gclient sync
 
 
 	mkdir -p "$NACL_PORTS_DIR"
 	cd "$NACL_PORTS_DIR" || exit 1
-	gclient config --name=src https://chromium.googlesource.com/webports/ --git-deps
+	gclient config --name=src \
+		https://chromium.googlesource.com/webports.git --git-deps
 	gclient sync
 
 	mkdir -p "$NACL_GCC_DIR"
 	cd "$NACL_GCC_DIR" || exit 1
-	gclient config --name=src http://chromium.googlesource.com/native_client/nacl-gcc.git --git-deps
+	gclient config --name=src \
+		http://chromium.googlesource.com/native_client/nacl-gcc.git --git-deps
 	gclient sync
 
 	# use custom repos as bases
