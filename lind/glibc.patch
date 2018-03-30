@@ -18,10 +18,10 @@ index fa21274c734565ed97..57649970df3cddfa11 100644
  extern void __libc_init (int, char **, char **);
  #ifdef USE_NONOPTION_FLAGS
 diff --git a/elf/Makefile b/elf/Makefile
-index d5aa7e0f6d1559c15b..a044d3e48fbfaacf9c 100644
+index 85f8d09781773e28c8..9479f20f989fc0d402 100644
 --- a/elf/Makefile
 +++ b/elf/Makefile
-@@ -314,7 +314,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
+@@ -315,7 +315,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
  		  $(LDFLAGS-rtld) -Wl,-z,defs -Wl,--verbose 2>&1 |	\
  		  LC_ALL=C \
  		  sed -e '/^=========/,/^=========/!d;/^=========/d' \
@@ -30,7 +30,7 @@ index d5aa7e0f6d1559c15b..a044d3e48fbfaacf9c 100644
  		      -e 's/_end = \.; PROVIDE (end = \.);/& . = DATA_SEGMENT_END(.);/' \
  		      -e 's/seg_bss      PT_LOAD FLAGS(6) ;       \/\* read + write \*\///' \
  		      -e 's/} :seg_bss/}/' \
-@@ -339,7 +339,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
+@@ -340,7 +340,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
  # TODO(mseaborn): Remove the need to have two versions of ld.so.
  $(objpfx)runnable-ld.so: $(objpfx)ld.so nacl_fixup_ldso.py
  	cp $(objpfx)ld.so $@.tmp
