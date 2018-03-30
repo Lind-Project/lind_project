@@ -132,7 +132,6 @@ function download_src() {
 		git@github.com:Lind-Project/native_client.git@i686_caging --git-deps
 	gclient sync
 
-
 	mkdir -p "$NACL_PORTS_DIR"
 	cd "$NACL_PORTS_DIR" || exit 1
 	gclient config --name=src \
