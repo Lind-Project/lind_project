@@ -109,23 +109,25 @@ fi
 # Download source files
 #
 function download_src() {
-	# mkdir -p "${LIND_SRC}"
+	# mkdir -p "$LIND_SRC"
 	# cd "${LIND_SRC}" && rm -rf "${LIND_SRC:?}/lind_glibc"
 	#
-	# git clone "${LIND_GLIBC_URL}" lind_glibc
+	# git clone "$LIND_GLIBC_URL" lind_glibc
 	# cd lind_glibc || exit 1
 	# git checkout -b one_proc_model origin/one_proc_model
 	# cd .. || exit 1
 	#
 	# rm -rf "${LIND_SRC:?}/misc"
-	# git clone "${LIND_MISC_URL}" misc
+	# git clone "$LIND_MISC_URL" misc
 	#
 	# rm -rf "${LIND_SRC:?}/nacl_repy"
-	# git clone "${NACL_REPY_URL}" nacl_repy
+	# git clone "$NACL_REPY_URL" nacl_repy
 	#
 	# rm -rf "${LIND_SRC:?}/nacl"
-	mkdir -p "${NACL_SRC}"
-	cd "${NACL_SRC}" || exit 1
+	# mkdir -p "$NACL_SRC"
+
+	mkdir -p "$NACL_BASE"
+	cd "$NACL_BASE" || exit 1
 	# git clone git@github.com:Lind-Project/native_client.git
 	gclient config --name=native_client git@github.com:Lind-Project/native_client.git --git-deps
 	gclient sync
@@ -141,7 +143,8 @@ function download_src() {
 	gclient config --name=src http://chromium.googlesource.com/native_client/nacl-gcc.git --git-deps
 	gclient sync
 
-	cd "${NACL_TOOLCHAIN_BASE}" && rm -rf SRC
+	# use custom repos as bases
+	cd "$NACL_TOOLCHAIN_BASE" && rm -rf SRC
 	make sync-pinned
 	cd SRC || exit 1
 	mv glibc glibc_orig
