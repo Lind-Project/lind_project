@@ -19,6 +19,7 @@ repy/
 list.txt
 log.txt
 errors.txt
+.gclient*
 
 # general files
 core.*
