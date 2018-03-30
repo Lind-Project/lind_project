@@ -153,10 +153,6 @@ function download_src() {
 	ln -s "$NACL_GCC_DIR" gcc
 	cd .. || exit 1
 
-	# apply toolchain patches
-	cd "$NACL_BASE" || exit 1
-	git apply -v "$LIND_SRC/native_client.patch"
-
 	# convert files from python to python2
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
