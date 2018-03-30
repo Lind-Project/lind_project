@@ -109,22 +109,22 @@ fi
 # Download source files
 #
 function download_src() {
-	mkdir -p "$LIND_SRC"
-	cd "${LIND_SRC}" && rm -rf "${LIND_SRC:?}/lind_glibc"
-
-	git clone "$LIND_GLIBC_URL" lind_glibc
-	cd lind_glibc || exit 1
-	git checkout -b one_proc_model origin/one_proc_model
-	cd .. || exit 1
-
-	rm -rf "${LIND_SRC:?}/misc"
-	git clone "$LIND_MISC_URL" misc
-
-	rm -rf "${LIND_SRC:?}/nacl_repy"
-	git clone "$NACL_REPY_URL" nacl_repy
-
-	rm -rf "${LIND_SRC:?}/nacl"
-	mkdir -p "$NACL_SRC"
+	# mkdir -p "$LIND_SRC"
+	# cd "${LIND_SRC}" && rm -rf "${LIND_SRC:?}/lind_glibc"
+	#
+	# git clone "$LIND_GLIBC_URL" lind_glibc
+	# cd lind_glibc || exit 1
+	# git checkout -b one_proc_model origin/one_proc_model
+	# cd .. || exit 1
+	#
+	# rm -rf "${LIND_SRC:?}/misc"
+	# git clone "$LIND_MISC_URL" misc
+	#
+	# rm -rf "${LIND_SRC:?}/nacl_repy"
+	# git clone "$NACL_REPY_URL" nacl_repy
+	#
+	# rm -rf "${LIND_SRC:?}/nacl"
+	# mkdir -p "$NACL_SRC"
 
 	mkdir -p "$NACL_BASE"
 	cd "$NACL_BASE" || exit 1
@@ -152,6 +152,10 @@ function download_src() {
 	mv gcc gcc_orig
 	ln -s "$NACL_GCC_DIR" gcc
 	cd .. || exit 1
+
+	# apply toolchain patches
+	cd "$NACL_GCC_DIR" || exit 1
+	git apply -v "$LIND_SRC/gcc.patch"
 
 	# convert files from python to python2
 	"${PYGREPL[@]}" 2>/dev/null | \
