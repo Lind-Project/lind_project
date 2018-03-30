@@ -1,0 +1,22 @@
+diff --git a/elf/Makefile b/elf/Makefile
+index d5aa7e0f6d1559c15b..a044d3e48fbfaacf9c 100644
+--- a/elf/Makefile
++++ b/elf/Makefile
+@@ -314,7 +314,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
+ 		  $(LDFLAGS-rtld) -Wl,-z,defs -Wl,--verbose 2>&1 |	\
+ 		  LC_ALL=C \
+ 		  sed -e '/^=========/,/^=========/!d;/^=========/d' \
+-		      -e 's/\. = 0 + SIZEOF_HEADERS;/& _begin = . - SIZEOF_HEADERS;/' \
++		      -e 's/\. = .* + SIZEOF_HEADERS;/& _begin = . - SIZEOF_HEADERS;/' \
+ 		      -e 's/_end = \.; PROVIDE (end = \.);/& . = DATA_SEGMENT_END(.);/' \
+ 		      -e 's/seg_bss      PT_LOAD FLAGS(6) ;       \/\* read + write \*\///' \
+ 		      -e 's/} :seg_bss/}/' \
+@@ -339,7 +339,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
+ # TODO(mseaborn): Remove the need to have two versions of ld.so.
+ $(objpfx)runnable-ld.so: $(objpfx)ld.so nacl_fixup_ldso.py
+ 	cp $(objpfx)ld.so $@.tmp
+-	python nacl_fixup_ldso.py $@.tmp
++	python2 nacl_fixup_ldso.py $@.tmp
+ 	mv -f $@.tmp $@
+ 
+ # interp.c exists just to get this string into the libraries.
