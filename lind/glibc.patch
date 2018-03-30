@@ -1,3 +1,22 @@
+diff --git a/csu/init-first.c b/csu/init-first.c
+index fa21274c734565ed97..57649970df3cddfa11 100644
+--- a/csu/init-first.c
++++ b/csu/init-first.c
+@@ -20,9 +20,11 @@
+ #include <unistd.h>
+ #include <sys/types.h>
+ 
+-/* Set nonzero if we have to be prepared for more then one libc being
+-   used in the process.  Safe assumption if initializer never runs.  */
+-int __libc_multiple_libcs attribute_hidden = 1;
++/*
++ * Set nonzero if we have to be prepared for more then one libc being
++ * used in the process.  Safe assumption if initializer never runs.
++ */
++static int __libc_multiple_libcs attribute_hidden = 1;
+ 
+ extern void __libc_init (int, char **, char **);
+ #ifdef USE_NONOPTION_FLAGS
 diff --git a/elf/Makefile b/elf/Makefile
 index d5aa7e0f6d1559c15b..a044d3e48fbfaacf9c 100644
 --- a/elf/Makefile
@@ -101,3 +120,35 @@ index c5866eb9def3becfc6..f82c9efe188540e8df 100644
  # Get rid of these variables if they came from the parent.
  routines =
  aux =
+diff --git a/stdio-common/_itoa.c b/stdio-common/_itoa.c
+index 373843f1cd237b664c..c07221f2c6033c8fc9 100644
+--- a/stdio-common/_itoa.c
++++ b/stdio-common/_itoa.c
+@@ -205,7 +205,7 @@ _itoa_word (unsigned long value, char *buflim,
+ #undef SPECIAL
+ 
+ 
+-#if LLONG_MAX != LONG_MAX
++#if LLONG_MAX != LONG_MAX && 0
+ char *
+ _itoa (value, buflim, base, upper_case)
+      unsigned long long int value;
+diff --git a/sysdeps/unix/sysv/linux/init-first.c b/sysdeps/unix/sysv/linux/init-first.c
+index 7b2333d4bf03fafed5..f1fe213f596f1809ff 100644
+--- a/sysdeps/unix/sysv/linux/init-first.c
++++ b/sysdeps/unix/sysv/linux/init-first.c
+@@ -29,9 +29,11 @@
+ 
+ #include <ldsodefs.h>
+ 
+-/* Set nonzero if we have to be prepared for more then one libc being
+-   used in the process.  Safe assumption if initializer never runs.  */
+-int __libc_multiple_libcs attribute_hidden = 1;
++/*
++ * Set nonzero if we have to be prepared for more then one libc being
++ * used in the process.  Safe assumption if initializer never runs.
++ */
++static int __libc_multiple_libcs attribute_hidden = 1;
+ 
+ /* Remember the command line argument and enviroment contents for
+    later calls of initializers for dynamic libraries.  */
