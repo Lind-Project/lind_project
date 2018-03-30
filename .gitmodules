@@ -16,3 +16,6 @@
 [submodule "Lind-misc"]
 	path = Lind-misc
 	url = git@github.com:Lind-Project/Lind-misc.git
+[submodule "lind/nacl/native_client"]
+	path = lind/nacl/native_client
+	url = git@github.com:Lind-Project/native_client.git
