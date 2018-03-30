@@ -20,3 +20,61 @@ index d5aa7e0f6d1559c15b..a044d3e48fbfaacf9c 100644
  	mv -f $@.tmp $@
  
  # interp.c exists just to get this string into the libraries.
+diff --git a/elf/nacl_fixup_ldso.py b/elf/nacl_fixup_ldso.py
+index a5eb1f9eea1e32680b..2aaab30380b7067caf 100644
+--- a/elf/nacl_fixup_ldso.py
++++ b/elf/nacl_fixup_ldso.py
+@@ -27,7 +27,7 @@ def main(args):
+         raise Exception("Usage: fixup <filename>")
+     filename = args[0]
+     fh = open(filename, "r+")
+-    
++
+     def check(ty, offset, expected):
+         fh.seek(offset)
+         data = fh.read(struct.calcsize(ty))
+@@ -39,22 +39,29 @@ def main(args):
+         fh.seek(offset)
+         fh.write(struct.pack(ty, value))
+ 
+-    # sel_ldr only accepts ELF objects with e_type=ET_EXEC.
+-    check("B", offset_e_type, ET_DYN)
+-    replace("B", offset_e_type, ET_EXEC)
++    try:
++        # sel_ldr only accepts ELF objects with e_type=ET_EXEC.
++        check("B", offset_e_type, ET_DYN)
++        replace("B", offset_e_type, ET_EXEC)
++    except AssertionError as e:
++        print(e)
+ 
+-    # sel_ldr rejects ELF Program Headers other than PT_LOAD.
+-    # Drop PT_DYNAMIC, PT_GNU_STACK and PT_TLS.
+-    fh.seek(offset_ei_class)
+-    elfclass = fh.read(1)
+-    if elfclass == elfclass32:
+-        check("H", offset_e_phnum32, 7)
+-        replace("H", offset_e_phnum32, 3)
+-    elif elfclass == elfclass64:
+-        check("H", offset_e_phnum64, 7)
+-        replace("H", offset_e_phnum64, 3)
+-    else:
+-        raise AssertionError("Unknown ELF class in file %s." % filename)
++    try:
++        # sel_ldr rejects ELF Program Headers other than PT_LOAD.
++        # Drop PT_DYNAMIC, PT_GNU_STACK and PT_TLS.
++        fh.seek(offset_ei_class)
++        elfclass = fh.read(1)
++        if elfclass == elfclass32:
++            check("H", offset_e_phnum32, 9)
++            replace("H", offset_e_phnum32, 3)
++        elif elfclass == elfclass64:
++            check("H", offset_e_phnum64, 9)
++            replace("H", offset_e_phnum64, 3)
++        else:
++            raise AssertionError("Unknown ELF class in file %s." % filename)
++
++    except AssertionError as e:
++        print(e)
+ 
+     fh.close()
+ 
