@@ -9,7 +9,6 @@ repy/
 /lind/nacl_repy/
 /lind/naclports/
 /lind/nacl-gcc/
-/lind/native_client/
 /lind/testing/
 /lind/tools/
 /lind/third_party/
@@ -18,6 +17,8 @@ repy/
 
 # lind specific files
 list.txt
+log.txt
+errors.txt
 
 # general files
 core.*
