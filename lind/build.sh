@@ -369,7 +369,7 @@ function build_glibc() {
 		print "Fortune Not Found. Skipping."
 	fi
 
-	print -ne "Copy component.h header to glibc: "
+	print "Copy component.h header to glibc: "
 	cd "$MISC_DIR/liblind" || exit 1
 	rm -fv "$NACL_SRC/third_party"
 	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
@@ -388,8 +388,9 @@ function build_glibc() {
 	done
 
 	# turns out this works better if you do it from the nacl base dir
-	cd "$NACL_TOOLCHAIN_BASE" || exit 1
-	make -j"$JOBS" build-with-glibc || exit -1
+	# cd "$NACL_TOOLCHAIN_BASE" || exit 1
+	cd "$NACL_TOOLCHAIN_BASE" && rm -fr BUILD out
+	make -j"$JOBS" clean build-with-glibc || exit -1
 	print "Done building toolchain"
 }
 
