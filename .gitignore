@@ -17,8 +17,8 @@ repy/
 
 # lind specific files
 list.txt
-log.txt
-errors.txt
+build.log
+error.log
 .gclient*
 
 # general files
