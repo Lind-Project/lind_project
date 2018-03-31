@@ -22,3 +22,6 @@
 [submodule "nacl-gcc"]
 	path = nacl-gcc
 	url = git@github.com:Lind-Project/nacl-gcc.git
+[submodule "lind/third_party"]
+	path = lind/third_party
+	url = git@github.com:Lind-Project/third_party.git
