@@ -166,7 +166,7 @@ function download_src() {
 		"${PYGREPV[@]}" | \
 		while read -r file; do
 			# preserve executability
-			"${PYSED[@]}" "$file" > "$file.new"
+			"${PYSED[@]}" <"$file" >"$file.new"
 			cat <"$file.new" >"$file"
 			rm "$file.new"
 		done
