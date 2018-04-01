@@ -5,6 +5,44 @@
 # Created by Chris Matthews <cmatthew@cs.uvic.ca>
 # Updated by Joey Pabalinas <joeypabalinas@gmail.com>
 
+# PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
+#
+#  _ MAJOR.MINOR.PATCH-PRE_RELEASE _
+#
+# Please tag *every* new major, minor, pre-release, and release.
+#
+# use alpha -> beta -> rc1 -> rc2 ... for pre-release versions and no
+# suffix for releases.
+#
+# Major version zero (0.y.z) is for initial development. Anything may
+# change at any time. The public API should not be considered stable.
+# version 1.0.0 defines the public API.
+#
+# Patch version Z (x.y.Z | x > 0) *MUST* be incremented if only backwards
+# compatible bug fixes are introduced. A bug fix is defined as an internal
+# change that fixes incorrect behavior.
+#
+# Minor version Y (x.Y.z | x > 0) *MUST* be incremented if new, backwards
+# compatible functionality is introduced to the public API. It *MUST* be
+# incremented if any public API functionality is marked as deprecated.
+# It _MAY_ be incremented if substantial new functionality or improvements
+# are introduced within the private code. It _MAY_ include patch level
+# changes. Patch version *MUST* be reset to 0 when minor version is
+# incremented.
+#
+# Major version X (X.y.z | X > 0) *MUST* be incremented if any backwards
+# incompatible changes are introduced to the public API. It _MAY_ include
+# minor and patch level changes. Patch and minor version *MUST* be reset
+# to 0 when major version is incremented.
+#
+# References:
+# [1] https://semver.org/
+#
+# --
+# Joey Pabalinas <joeypabalinas@gmail.com>
+#
+readonly LIND_VERSION=0.1.1-alpha
+
 # DEBUGGING SETTINGS:
 #
 # Uncomment this to print each command as they are executed
