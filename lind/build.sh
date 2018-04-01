@@ -11,7 +11,7 @@
 #
 # Please tag *every* new major, minor, pre-release, and release.
 #
-# use alpha -> beta -> rc1 -> rc2 ... for pre-release versions and no
+# Use alpha -> beta -> rc1 -> rc2 ... for pre-release versions and no
 # suffix for releases.
 #
 # Major version zero (0.y.z) is for initial development. Anything may
