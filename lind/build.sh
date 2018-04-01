@@ -41,7 +41,18 @@
 # --
 # Joey Pabalinas <joeypabalinas@gmail.com>
 #
-readonly LIND_VERSION=0.1.1-alpha
+readonly version=0.1.1-alpha
+
+# program usage string
+usage+=$'\n'"Lind $version build script"$'\n'
+usage+=$'\n'
+usage+=$'Usage:\n'
+usage+=$'\t'"$0 [options] [command]"$'\n'
+usage+=$'\n'
+usage+=$'Options:\n'
+usage+=$'\t-h, -H\tdisplay this help\n'
+usage+=$'\t-v, -V\tdisplay version\n'
+usage+=$'\t-e, -E\tuse the default evironment\n'
 
 # DEBUGGING SETTINGS:
 #
@@ -68,7 +79,8 @@ function print() {
 
 # Check for flags
 for word; do
-	if [[ "$word" == -*[eE]* ]]; then
+	case "$word" in
+	-*[eE]*)
 		PATH="$LIND_SRC/depot_tools:$PATH"
 		LD_LIBRARY_PATH=/glibc/
 		LIND_BASE="/usr/lind_project"
@@ -83,26 +95,38 @@ for word; do
 		mapfile -td ' ' args < <(printf '%s' "${@//-*[eE]*/}")
 		set -- "${args[@]}"
 		unset args
-	elif [[ "$word" == -*[vV]* ]]; then
+		;;
+	-*[vV]*)
 		# exit after printing version
-		print "Lind $LIND_VERSION"
+		print "Lind $version build script"
 		exit
-	fi
+		;;
+	-*[hH]*)
+		# exit after printing usage
+		print "$usage"
+		exit
+		;;
+	-*)
+		# exit after printing option and usage
+		print "" "Unknown option letter: '${word//-/}'" "$usage"
+		exit -3
+		;;
+	esac
 done
 
 trap 'print "All done."' EXIT
 
-# show command that will be executed
-print "command line arguments: $0 $*"
+# Show command that will be executed
+print "Command line arguments: $0 $*"
 
 if [[ -z "$REPY_PATH" ]]; then
 	print "Need to set REPY_PATH"
-	exit 1
+	exit -2
 fi
 
 if [[ -z "$LIND_SRC" ]]; then
 	print "Need to set LIND_SRC"
-	exit 1
+	exit -2
 fi
 
 readonly OS_NAME=$(uname -s)
@@ -148,7 +172,7 @@ readonly -a PYSED=(sed -r 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe
 
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
 	print "You need to set \"$NACL_SDK_ROOT\" to \"$REPY_PATH_SDK\""
-	exit 1
+	exit -2
 fi
 
 # Download source files
@@ -196,13 +220,14 @@ function download_src() {
 		gclient sync
 
 	# use custom repos as bases
-	cd "$NACL_TOOLCHAIN_BASE" && rm -rfv SRC
+	cd "$NACL_TOOLCHAIN_BASE" || exit 1
+	rm -rfv SRC
 	make sync-pinned
 	cd SRC || exit 1
 	mv glibc glibc_orig
-	ln -s "$LIND_GLIBC_SRC" glibc
+	ln -sv "$LIND_GLIBC_SRC" glibc
 	mv gcc gcc_orig
-	ln -s "$NACL_GCC_DIR" gcc
+	ln -sv "$NACL_GCC_DIR" gcc
 	cd .. || exit 1
 
 	# convert files from python to python2
@@ -321,14 +346,17 @@ function build_repy() {
 	mkdir -pv "$REPY_PATH_REPY"
 
 	print "Building Repy in \"$NACL_REPY\" to \"$REPY_PATH\""
+
 	cd "$NACL_REPY" || exit 1
 	python2 preparetest.py -t -f "$REPY_PATH_REPY"
 	print "Done building Repy in \"$REPY_PATH_REPY\""
+
 	cd seattlelib || exit 1
 	# set -o errexit
 	for file in *.mix; do
 		"$MISC_DIR/check_includes.sh" "$file"
 	done
+
 	set +o errexit
 	# etags  --language-force=python *.mix *.repy
 }
@@ -441,14 +469,16 @@ function build_glibc() {
 # Update glibc toolchain
 #
 function update_glibc() {
-	cd "$NACL_TOOLCHAIN_BASE" && make updateglibc
+	cd "$NACL_TOOLCHAIN_BASE" || exit 1
+	make updateglibc
 }
 
 
 # Update glibc 64bit toolchain
 #
 function update_glibc2() {
-	cd "$NACL_TOOLCHAIN_BASE" && rm BUILD/stamp-glibc64
+	cd "$NACL_TOOLCHAIN_BASE" || exit 1
+	rm -fv BUILD/stamp-glibc64
 	make BUILD/stamp-glibc64
 }
 
