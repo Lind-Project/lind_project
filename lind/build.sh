@@ -186,7 +186,7 @@ function clean_toolchain() {
 # Compile liblind and the compoent programs.
 #
 function build_liblind() {
-	print -ne "Building liblind... "
+	print "Building liblind... "
 	cd "${MISC_DIR}"/liblind && make clean all > /dev/null
 	print "done."
 
