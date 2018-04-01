@@ -108,7 +108,7 @@ for word; do
 		;;
 	-*)
 		# stop processing options after '-' or '--'
-		if [[ "$word" == - || "$word" == -- ]]; then
+		if [[ "$word" == -- || "$word" == - ]]; then
 			break
 		# ignore more than two '-'
 		elif [[ -z "${word//-/}" ]]; then
