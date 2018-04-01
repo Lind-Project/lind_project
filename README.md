@@ -9,8 +9,9 @@ WIP
 > * WIP
 
 ## Usage
+
 ```bash
-./lind [-hv] [-o<output.c>]
+./build.sh [options] [commands]
 ```
 WIP
 
