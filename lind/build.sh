@@ -107,7 +107,14 @@ for word; do
 		exit
 		;;
 	-*)
-		# exit after printing option and usage
+		# stop processing options after '-' or '--'
+		if [[ "$word" == - || "$word" == -- ]]; then
+			break 2
+		# ignore more than two '-'
+		elif [[ -z "${word//-/}" ]]; then
+			continue
+		fi
+		# otherwise exit after printing the bad option and usage
 		print "" "Unknown option letter: '${word//-/}'" "$usage"
 		exit -3
 		;;
