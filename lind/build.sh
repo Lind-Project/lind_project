@@ -30,8 +30,8 @@ function print() {
 
 trap 'print "All done."' EXIT
 
-# show arguments
-print "command line: $0 $*"
+# show command that will be executed
+print "command line arguments: $0 $*"
 
 # Check for default environment flag
 for word; do
