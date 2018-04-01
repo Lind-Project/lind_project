@@ -16,7 +16,7 @@
 # exec 2>bashstart."$$".log
 # set -x
 
-# Call this instead of print, then we can do things like log and print
+# call this instead of print, then we can do things like log and print
 # to notifier
 #
 function print() {
@@ -28,12 +28,7 @@ function print() {
 	#         >/dev/null 2>&1
 }
 
-trap 'print "All done."' EXIT
-
-# show command that will be executed
-print "command line arguments: $0 $*"
-
-# Check for default environment flag
+# Check for flags
 for word; do
 	if [[ "$word" == -*e* ]]; then
 		LIND_BASE="/usr/lind_project"
@@ -43,13 +38,24 @@ for word; do
 		LIND_MONITOR="$LIND_SRC/reference_monitor"
 		PATH="$LIND_SRC/depot_tools:$PATH"
 		LD_LIBRARY_PATH=/glibc/
-		export LIND_BASE LIND_SRC REPY_PATH NACL_SDK_ROOT LIND_MONITOR PATH LD_LIBRARY_PATH
+		export LIND_BASE LIND_SRC REPY_PATH
+		export NACL_SDK_ROOT LIND_MONITOR
+		export PATH LD_LIBRARY_PATH
 		# remove -e flag after setting up environment
 		mapfile -td ' ' args < <(printf '%s' "${@//-*e*/}")
 		set -- "${args[@]}"
 		unset args
+	elif [[ "$word" == -*v* ]]; then
+		# exit after printing version
+		print "Lind $LIND_VERSION"
+		exit
 	fi
 done
+
+trap 'print "All done."' EXIT
+
+# show command that will be executed
+print "command line arguments: $0 $*"
 
 if [[ -z "$REPY_PATH" ]]; then
 	print "Need to set REPY_PATH"
