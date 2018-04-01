@@ -541,5 +541,4 @@ done
 
 END_TIME=$(date +%s)
 DIFF=$(( END_TIME - START_TIME ))
-print "It took \"$DIFF\" seconds"
-print $'\a'
+print "It took $DIFF seconds" $'\a'
