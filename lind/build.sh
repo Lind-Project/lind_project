@@ -20,7 +20,7 @@
 # to notifier
 #
 function print() {
-	printf '%s\n' "$1"
+	printf '%s\n' "$@"
 	# notify-send \
 	#         --icon=/usr/share/icons/gnome/256x256/apps/utilities-terminal.png \
 	#         "Build Script" \
