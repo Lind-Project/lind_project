@@ -54,7 +54,7 @@ readonly LIND_VERSION=0.1.1-alpha
 # exec 2>"bashstart.$$.log"
 # set -x
 
-# call this instead of print, then we can do things like log and print
+# Call this instead of print, then we can do things like log and print
 # to notifier
 #
 function print() {
@@ -460,84 +460,84 @@ function glibc_tester() {
 
 	cd "$MISC_DIR/glibc_test/" || exit 1
 	make clean all
+
 	cd .. || exit 1
 	rm -rfv lind.metadata linddata.*
 	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
 }
 
 PS3='build what: '
+
 list+=(all repy nacl buildglibc updateglibc updateglibc2 cleantoolchain)
 list+=(download cleannacl install liblind test_repy test_glibc test_apps)
 list+=(sdk rpc test nightly)
 
-if (($#)); then
-	args=("$@")
-else
+if ((!$#)); then
 	select choice in "${list[@]}"; do
-		args=("$choice")
+		set -- "$choice"
 		break
 	done
 fi
 
-START_TIME=$(date +%s)
+start_time=$(date +%s)
 
 # All scripts assume we start here
-ELEMENTS="${#args[@]}"
-for ((i = 0; i < ELEMENTS; i++)); do
-	word="${args[${i}]}"
-	if [[ "$word" == repy ]]; then
+while (($#)); do
+	if [[ "$1" == repy ]]; then
 		build_repy
-	elif [[ "$word" == nacl ]]; then
+	elif [[ "$1" == nacl ]]; then
 		build_nacl
-	elif [[ "$word" == buildglibc ]]; then
+	elif [[ "$1" == buildglibc ]]; then
 		build_glibc
-	elif [[ "$word" == updateglibc ]]; then
+	elif [[ "$1" == updateglibc ]]; then
 		update_glibc
-	elif [[ "$word" == updateglibc2 ]]; then
+	elif [[ "$1" == updateglibc2 ]]; then
 		update_glibc2
-	elif [[ "$word" == download ]]; then
+	elif [[ "$1" == download ]]; then
 		download_src
-	elif [[ "$word" == all ]]; then
+	elif [[ "$1" == all ]]; then
 		download_src
 		build_nacl
 		build_glibc
 		build_repy
 		install_to_path
-	elif [[ "$word" == cleantoolchain ]]; then
+	elif [[ "$1" == cleantoolchain ]]; then
 		print "Cleaning Toolchain"
 		clean_toolchain
-	elif [[ "$word" == install ]]; then
+	elif [[ "$1" == install ]]; then
 		print "Installing libs into install dir"
 		install_to_path
-	elif [[ "$word" == cleannacl ]]; then
+	elif [[ "$1" == cleannacl ]]; then
 		print "Cleaning NaCl"
 		clean_nacl
-	elif [[ "$word" == liblind ]]; then
+	elif [[ "$1" == liblind ]]; then
 		print "Building LibLind"
 		build_liblind
-	elif [[ "$word" == test_repy ]]; then
+	elif [[ "$1" == test_repy ]]; then
 		print "Testing Repy"
 		test_repy
-	elif [[ "$word" == test_glibc ]]; then
+	elif [[ "$1" == test_glibc ]]; then
 		print "Testing GLibC"
 		glibc_tester
-	elif [[ "$word" == test_apps ]]; then
+	elif [[ "$1" == test_apps ]]; then
 		print "Testing Applications"
 		test_apps
-	elif [[ "$word" == test ]]; then
+	elif [[ "$1" == test ]]; then
 		print "Testing All"
 		test_repy
 		glibc_tester
 		test_apps
-	elif [[ "$word" == nightly ]]; then
+	elif [[ "$1" == nightly ]]; then
 		print "Nightly Build"
 		nightly_build
 	else
-		print "Error: Did not find a build target named \"$word\". Exiting..."
+		print "Error: Did not find a build target named \"$1\". Exiting..."
 		exit 1
 	fi
+	shift
 done
 
-END_TIME=$(date +%s)
-DIFF=$(( END_TIME - START_TIME ))
-print "It took $DIFF seconds" $'\a'
+end_time="$(date +%s)"
+time_diff="$((end_time - start_time))"
+
+print "It took $time_diff seconds" $'\a'
