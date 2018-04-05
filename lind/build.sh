@@ -151,7 +151,7 @@ else
 fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
-readonly MISC_DIR="$LIND_SRC/lind-misc"
+readonly MISC_DIR="$LIND_SRC/misc"
 readonly NACL_SRC="$LIND_SRC/nacl"
 readonly NACL_BASE="$NACL_SRC/native_client"
 readonly NACL_THIRD_PARTY="$LIND_SRC/third_party"
@@ -196,9 +196,15 @@ function download_src() {
 
 	rm -rfv "${LIND_SRC:?}/nacl_repy"
 	git clone "$NACL_REPY_URL" nacl_repy
+	cd nacl_repy || exit 1
+	git checkout i686_caging
+	cd .. || exit 1
 
 	rm -rfv "${LIND_SRC:?}/misc"
 	git clone "$LIND_MISC_URL" misc
+	cd misc || exit 1
+	git checkout i686_caging
+	cd .. || exit 1
 
 	ln -rs ./lind_glibc "$LIND_SRC/"
 	ln -rs ./nacl_repy "$LIND_SRC/"
@@ -352,7 +358,7 @@ function build_repy() {
 	# set -o errexit
 	mkdir -pv "$REPY_PATH_REPY"
 
-	print "Building Repy in \"$NACL_REPY\" to \"$REPY_PATH\""
+	print "Building Repy in \"$NACL_REPY\" to \"$REPY_PATH_REPY\""
 
 	cd "$NACL_REPY" || exit 1
 	python2 preparetest.py -t -f "$REPY_PATH_REPY"

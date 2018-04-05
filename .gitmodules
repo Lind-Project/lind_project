@@ -1,8 +1,8 @@
 [submodule "reference_monitor"]
 	path = reference_monitor
 	url = git@github.com:Lind-Project/reference_monitor.git
-[submodule "Lind-GlibC"]
-	path = Lind-GlibC
+[submodule "lind_glibc"]
+	path = lind_glibc
 	url = git@github.com:Lind-Project/Lind-GlibC.git
 [submodule "caging"]
 	path = caging
@@ -13,8 +13,8 @@
 [submodule "lind_experiments"]
 	path = lind_experiments
 	url = git@github.com:Lind-Project/lind_experiments.git
-[submodule "Lind-misc"]
-	path = Lind-misc
+[submodule "misc"]
+	path = misc
 	url = git@github.com:Lind-Project/Lind-misc.git
 [submodule "lind/nacl/native_client"]
 	path = lind/nacl/native_client
