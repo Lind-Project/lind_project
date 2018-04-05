@@ -175,6 +175,7 @@ readonly NACL_LSS_URL='https://github.com/Lind-Project/linux-syscall-support'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 
+readonly -a SUBMODULES=(lind_glibc nacl_repy misc third_party linux-syscall-support)
 readonly -a RSYNC=(rsync -avrc --force)
 readonly -a PYGREPL=(grep -lPR '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' .)
 readonly -a PYGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
@@ -191,41 +192,14 @@ function download_src() {
 	mkdir -pv "$LIND_SRC"
 	cd "$LIND_BASE" || exit 1
 
-	rm -rfv "${LIND_SRC:?}/lind_glibc"
-	git clone "$LIND_GLIBC_URL" lind_glibc
-	cd lind_glibc || exit 1
-	git checkout i686_caging
-	cd .. || exit 1
-
-	rm -rfv "${LIND_SRC:?}/nacl_repy"
-	git clone "$NACL_REPY_URL" nacl_repy
-	cd nacl_repy || exit 1
-	git checkout i686_caging
-	cd .. || exit 1
-
-	rm -rfv "${LIND_SRC:?}/misc"
-	git clone "$LIND_MISC_URL" misc
-	cd misc || exit 1
-	git checkout i686_caging
-	cd .. || exit 1
-
-	rm -rfv "${LIND_SRC:?}/third_party"
-	git clone "$LIND_THIRD_PARTY_URL" third_party
-	cd third_party || exit 1
-	git checkout i686_caging
-	cd .. || exit 1
-
-	rm -rfv "${LIND_SRC:?}/linux-syscall-support"
-	git clone "$LIND_THIRD_PARTY_URL" linux-syscall-support
-	cd linux-syscall-support || exit 1
-	git checkout i686_caging
-	cd .. || exit 1
-
-	ln -rsv ./lind_glibc "$LIND_SRC/"
-	ln -rsv ./nacl_repy "$LIND_SRC/"
-	ln -rsv ./misc "$LIND_SRC/"
-	ln -rsv ./third_party "$LIND_SRC/"
-	ln -rsv ./linux-syscall-support "$LIND_SRC/"
+	git submodule sync --recursive
+	git submodule update --recursive
+	for dir in "${SUBMODULES[@]}"; do
+		cd "$dir" || exit 1
+		git checkout i686_caging
+		cd .. || exit 1
+		ln -rsv "$dir" "$LIND_SRC/"
+	done
 
 	cd "$LIND_SRC" || exit 1
 	rm -rfv "${LIND_SRC:?}/nacl"
