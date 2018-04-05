@@ -1,8 +1,9 @@
 # directories
 build/
 repy/
-/lind/nacl/
 /lind/naclports/
+/lind/nacl/*
+!/lind/nacl/native_client/
 
 # lind specific files
 list.txt
