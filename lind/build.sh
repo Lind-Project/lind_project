@@ -497,7 +497,7 @@ function build_glibc() {
 	# turns out this works better if you do it from the nacl base dir
 	cd "$NACL_TOOLCHAIN_BASE" || exit 1
 	rm -rfv BUILD out
-	make -j"$JOBS" clean build-with-glibc || exit -1
+	make -j"$JOBS" clean build-with-glibc build-with-newlib || exit -1
 	print "Done building toolchain"
 }
 
