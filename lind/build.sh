@@ -195,9 +195,6 @@ function download_src() {
 	git submodule sync --recursive
 	git submodule update --recursive
 	for dir in "${SUBMODULES[@]}"; do
-		cd "$dir" || exit 1
-		git checkout i686_caging
-		cd .. || exit 1
 		ln -rsv "$dir" "$LIND_SRC/"
 	done
 
