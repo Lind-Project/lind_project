@@ -151,15 +151,16 @@ else
 fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
+readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
 readonly MISC_DIR="$LIND_SRC/misc"
 readonly NACL_SRC="$LIND_SRC/nacl"
 readonly NACL_BASE="$NACL_SRC/native_client"
 readonly NACL_THIRD_PARTY="$LIND_SRC/third_party"
 readonly NACL_TOOLCHAIN_BASE="$NACL_BASE/tools"
-readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
 readonly NACL_REPY="$LIND_SRC/nacl_repy"
 readonly NACL_PORTS_DIR="$LIND_SRC/naclports"
 readonly NACL_GCC_DIR="$LIND_SRC/nacl-gcc"
+readonly NACL_LSS_DIR="$LIND_SRC/linux-syscall-support"
 
 readonly REPY_PATH="$REPY_PATH"
 readonly REPY_PATH_BIN="$REPY_PATH/bin"
@@ -168,9 +169,10 @@ readonly REPY_PATH_LIB="$REPY_PATH/lib"
 readonly REPY_PATH_SDK="$REPY_PATH/sdk"
 
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
-readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly LIND_THIRD_PARTY_URL='https://github.com/Lind-Project/third_party.git'
+readonly NACL_LSS_URL='https://github.com/Lind-Project/linux-syscall-support'
+readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 
 readonly -a RSYNC=(rsync -avrc --force)
@@ -213,10 +215,17 @@ function download_src() {
 	git checkout i686_caging
 	cd .. || exit 1
 
+	rm -rfv "${LIND_SRC:?}/linux-syscall-support"
+	git clone "$LIND_THIRD_PARTY_URL" linux-syscall-support
+	cd linux-syscall-support || exit 1
+	git checkout i686_caging
+	cd .. || exit 1
+
 	ln -rsv ./lind_glibc "$LIND_SRC/"
 	ln -rsv ./nacl_repy "$LIND_SRC/"
 	ln -rsv ./misc "$LIND_SRC/"
 	ln -rsv ./third_party "$LIND_SRC/"
+	ln -rsv ./linux-syscall-support "$LIND_SRC/"
 
 	cd "$LIND_SRC" || exit 1
 	rm -rfv "${LIND_SRC:?}/nacl"
@@ -227,6 +236,10 @@ function download_src() {
 	gclient config --name=native_client \
 		git@github.com:Lind-Project/native_client.git@i686_caging --git-deps && \
 		gclient sync
+	mkdir -p "$NACL_BASE/src/trusted/service_runtime/linux"
+	rm -fv "$NACL_BASE/src/third_party/lss"
+	ln -rsv "$NACL_LSS_DIR" "$NACL_BASE/src/third_party/lss"
+	ln -rsv "$NACL_BASE/src/third_party" "$NACL_BASE/src/trusted/service_runtime/linux/"
 
 	mkdir -pv "$NACL_GCC_DIR"
 	cd "$NACL_GCC_DIR" || exit 1

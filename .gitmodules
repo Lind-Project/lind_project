@@ -28,3 +28,6 @@
 [submodule "third_party"]
 	path = third_party
 	url = git@github.com:Lind-Project/third_party.git
+[submodule "linux-syscall-support"]
+	path = linux-syscall-support
+	url = git@github.com:Lind-Project/linux-syscall-support.git
