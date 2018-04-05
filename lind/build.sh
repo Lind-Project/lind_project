@@ -193,7 +193,7 @@ function download_src() {
 	cd "$LIND_BASE" || exit 1
 
 	git submodule sync --recursive
-	git submodule update --recursive
+	git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
 		ln -rsv "$dir" "$LIND_SRC/"
 	done
