@@ -168,8 +168,9 @@ readonly REPY_PATH_LIB="$REPY_PATH/lib"
 readonly REPY_PATH_SDK="$REPY_PATH/sdk"
 
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
-readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
+readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
+readonly LIND_THIRD_PARTY_URL='https://github.com/Lind-Project/third_party.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 
 readonly -a RSYNC=(rsync -avrc --force)
@@ -206,9 +207,16 @@ function download_src() {
 	git checkout i686_caging
 	cd .. || exit 1
 
-	ln -rs ./lind_glibc "$LIND_SRC/"
-	ln -rs ./nacl_repy "$LIND_SRC/"
-	ln -rs ./misc "$LIND_SRC/"
+	rm -rfv "${LIND_SRC:?}/third_party"
+	git clone "$LIND_THIRD_PARTY_URL" third_party
+	cd third_party || exit 1
+	git checkout i686_caging
+	cd .. || exit 1
+
+	ln -rsv ./lind_glibc "$LIND_SRC/"
+	ln -rsv ./nacl_repy "$LIND_SRC/"
+	ln -rsv ./misc "$LIND_SRC/"
+	ln -rsv ./third_party "$LIND_SRC/"
 
 	cd "$LIND_SRC" || exit 1
 	rm -rfv "${LIND_SRC:?}/nacl"
