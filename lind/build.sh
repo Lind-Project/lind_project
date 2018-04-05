@@ -195,6 +195,7 @@ function download_src() {
 	git submodule sync --recursive
 	git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
+		rm -fv "$LIND_SRC/$dir"
 		ln -rsv "$dir" "$LIND_SRC/"
 	done
 
