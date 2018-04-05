@@ -426,6 +426,8 @@ function clean_install() {
 # Run the NaCl build.
 #
 function build_nacl() {
+	local rc
+
 	print "Building NaCl"
 	cd "$NACL_BASE" || exit 1
 
