@@ -1,13 +1,8 @@
 # directories
 build/
 repy/
-/lind/contrib/
-/lind/lind_glibc/
 /lind/nacl/
-/lind/nacl_repy/
 /lind/naclports/
-/lind/tools/
-/Lind-GlibC/
 
 # lind specific files
 list.txt
