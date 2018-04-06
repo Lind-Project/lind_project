@@ -5,6 +5,10 @@
 # Created by Chris Matthews <cmatthew@cs.uvic.ca>
 # Updated by Joey Pabalinas <joeypabalinas@gmail.com>
 
+# Version string
+#
+readonly version=0.1.3-alpha
+#
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
 #  ___ MAJOR.MINOR.PATCH-PRE_RELEASE ____
@@ -40,8 +44,6 @@
 #
 # --
 # Joey Pabalinas <joeypabalinas@gmail.com>
-#
-readonly version=0.1.3-alpha
 
 # program usage string
 usage+=$'\n'"Lind $version build script"$'\n'
