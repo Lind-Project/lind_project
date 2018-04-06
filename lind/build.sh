@@ -210,7 +210,7 @@ function download_src() {
 	mkdir -pv "$NACL_SRC"
 
 	mkdir -pv "$NACL_BASE"
-	cd "$LIND_SRC" || exit 1
+	cd "$NACL_BASE" || exit 1
 	gclient config --name=native_client \
 		git@github.com:Lind-Project/native_client.git@i686_caging --git-deps && \
 		gclient sync
@@ -222,7 +222,7 @@ function download_src() {
 	ln -rsv "$NACL_BASE/src/third_party" "$NACL_BASE/src/trusted/service_runtime/linux/"
 
 	mkdir -pv "$NACL_PORTS_DIR"
-	cd "$LIND_SRC" || exit 1
+	cd "$NACL_BASE" || exit 1
 	gclient config --name=naclports \
 		https://chromium.googlesource.com/webports.git --git-deps && \
 		gclient sync
