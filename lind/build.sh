@@ -157,6 +157,7 @@ fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
 readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
+readonly LIND_BINUTILS_SRC="$LIND_SRC/nacl-binutils"
 readonly MISC_DIR="$LIND_SRC/misc"
 readonly NACL_SRC="$LIND_SRC/nacl"
 readonly NACL_BASE="$NACL_SRC/native_client"
@@ -180,14 +181,17 @@ readonly NACL_LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 
-readonly -a SUBMODULES=(lind_glibc nacl-gcc nacl_repy native_client misc third_party linux-syscall-support)
-readonly -a RSYNC=(rsync -avrc --force)
-readonly -a PYGREPL=(grep -lIPR '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' .)
-readonly -a PYGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
-readonly -a PYSED=(sed -r 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
-readonly -a PNACLGREPL=(grep -IFRlw "\${PNACLPYTHON}" .)
-readonly -a PNACLGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
+readonly -a PYGREPL=(grep '-lIPR' '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' './')
+readonly -a PYGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
+readonly -a PYSED=(sed '-r' 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
+readonly -a PNACLGREPL=(grep '-IFRlw' -- "\${PNACLPYTHON}" './')
+readonly -a PNACLGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
+readonly -a RSYNC=(rsync '-avzP' '--info=progress2' '--partial')
+
+readonly -a SUBMODULES=(lind_glibc nacl-binutils nacl-gcc
+			nacl_repy native_client misc
+			third_party linux-syscall-support)
 
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
 	print "You need to set \"$NACL_SDK_ROOT\" to \"$REPY_PATH_SDK\""
@@ -242,10 +246,12 @@ function download_src() {
 	rm -rfv SRC
 	make sync-pinned
 	cd SRC || exit 1
-	mv glibc glibc_orig
-	ln -sv "$LIND_GLIBC_SRC" glibc
+	mv binutils binutils_orig
+	ln -sv "$LIND_BINUTILS_SRC" binutils
 	mv gcc gcc_orig
 	ln -sv "$NACL_GCC_DIR" gcc
+	mv glibc glibc_orig
+	ln -sv "$LIND_GLIBC_SRC" glibc
 	cd .. || exit 1
 
 	# convert files from python to python2
