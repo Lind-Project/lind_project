@@ -543,9 +543,9 @@ function build_nacl() {
 	cp -v \
 		"scons-out/$MODE-x86-64/lib/libgio.a" \
 		scons-out/nacl_irt-x86-64/lib/
+	chmod +x scons-out/nacl_irt-x86-64/lib/libgio.a
 
-	# TODO XXX:
-	# figure out another way to prevent libgio.a from disappearing
+	# TODO XXX: figure out another way to prevent libgio.a from disappearing
 	# chattr +i scons-out/nacl_irt-x86-64/lib/libgio.a &>/dev/null || true
 
 	# build NaCl with glibc tests
