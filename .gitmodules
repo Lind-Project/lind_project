@@ -36,3 +36,7 @@
 	path = linux-syscall-support
 	url = git@github.com:Lind-Project/linux-syscall-support.git
 	branch = i686_caging
+[submodule "nacl-binutils"]
+	path = nacl-binutils
+	url = git@github.com:Lind-Project/nacl-binutils.git
+	branch = i686_caging
