@@ -145,7 +145,9 @@ elif [[ "$OS_NAME" == "Linux" ]]; then
 else
 	readonly OS_SUBDIR="win"
 fi
-if type -P nproc &>/dev/null; then
+if [[ -n "$JOBS" ]]; then
+	readonly JOBS="$JOBS"
+elif type -P nproc &>/dev/null; then
 	readonly JOBS="$(nproc)"
 else
 	readonly JOBS='4'
