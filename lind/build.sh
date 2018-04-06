@@ -84,6 +84,7 @@ for word; do
 	case "$word" in
 	-*[eE]*)
 		PATH="$LIND_SRC/depot_tools:$PATH"
+		PIC=0
 		LD_LIBRARY_PATH=/glibc/
 		LIND_BASE="/usr/lind_project"
 		LIND_SRC="$LIND_BASE/lind"
@@ -91,7 +92,7 @@ for word; do
 		NACL_SDK_ROOT="$LIND_SRC/nacl/sdk"
 		LIND_MONITOR="$LIND_SRC/reference_monitor"
 		PNACLPYTHON="$(type -P python2)"
-		export PATH LD_LIBRARY_PATH
+		export PIC PATH LD_LIBRARY_PATH
 		export LIND_BASE LIND_SRC REPY_PATH
 		export NACL_SDK_ROOT LIND_MONITOR PNACLPYTHON
 		# remove -e flag after setting up environment
@@ -153,6 +154,11 @@ elif type -P nproc &>/dev/null; then
 	readonly JOBS="$(nproc)"
 else
 	readonly JOBS='4'
+fi
+if [[ -z "$PIC" ]] || ((!PIC)); then
+	readonly NACL_PIC=0
+else
+	readonly NACL_PIC=1
 fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
@@ -230,7 +236,7 @@ function download_src() {
 		git@github.com:Lind-Project/native_client.git@i686_caging \
 		--git-deps && \
 		gclient sync
-	mkdir -p "$NACL_BASE/src/third_party"
+	mkdir -pv "$NACL_BASE/src/third_party"
 	rm -fv \
 		"$NACL_BASE/src/third_party/lss" \
 		"$NACL_BASE/src/trusted/service_runtime/linux/third_party"
@@ -440,7 +446,7 @@ function clean_install() {
 # Run the NaCl build.
 #
 function build_nacl() {
-	local rc
+	local rc mode_dir
 
 	print "Building NaCl"
 	cd "$NACL_BASE" || exit 1
@@ -457,27 +463,48 @@ function build_nacl() {
 		done
 	cd "$NACL_BASE" || exit 1
 
+	# set base out directory
+	if ((NACL_PIC)); then
+		mode_dir="scons-out/nacl-x86-64-pic-glibc"
+	else
+		mode_dir="scons-out/nacl-x86-64-glibc"
+	fi
+
 	# symlink test dirs
-	mkdir -p scons-out/"$MODE"-*/obj/src/
-	rm -fv scons-out/"$MODE"-*/obj/src/third_party_mod
-	ln -rsv "$NACL_THIRD_PARTY_MOD" scons-out/"$MODE"-*/obj/src/
+	mkdir -pv \
+		src/trusted/validator \
+		src/trusted/service_runtime \
+		scons-out/nacl_irt-x86-64/lib \
+		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl \
+		"$mode_dir/obj/src"
+	rm -fv \
+		src/trusted/validator/gtest \
+		src/trusted/service_runtime/gtest \
+		scons-out/nacl_irt-x86-64/lib/libnacl.a \
+		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl/libnacl.a \
+		"$mode_dir/obj/src/third_party_mod"
+	ln -rsv \
+		"$GTEST_DIR/googletest/include/gtest" \
+		src/trusted/validator/
+	ln -rsv \
+		"$GTEST_DIR/googletest/include/gtest" \
+		src/trusted/service_runtime/
+	ln -rsv \
+		"$mode_dir/lib/libnacl.a" \
+		scons-out/nacl_irt-x86-64/lib/
+	ln -rsv \
+		"$mode_dir/obj/src/untrusted/nacl/libnacl.a" \
+		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl/
+	ln -rsv "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
 
 	# build NaCl with glibc tests
 	./scons \
-		--mode=nacl \
+		--mode="$MODE,nacl" \
 		--verbose \
 		--nacl_glibc \
 		-j"$JOBS" \
 		platform=x86-64 \
-		nacl_pic=1 \
-		pp=1
-	./scons \
-		--mode="$MODE" \
-		--verbose \
-		--nacl_glibc \
-		-j"$JOBS" \
-		platform=x86-64 \
-		nacl_pic=1 \
+		nacl_pic="$NACL_PIC" \
 		pp=1
 
 	# and check
