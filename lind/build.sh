@@ -41,7 +41,7 @@
 # --
 # Joey Pabalinas <joeypabalinas@gmail.com>
 #
-readonly version=0.1.2-alpha
+readonly version=0.1.3-alpha
 
 # program usage string
 usage+=$'\n'"Lind $version build script"$'\n'
