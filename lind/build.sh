@@ -441,7 +441,14 @@ function build_nacl() {
 	cd "$NACL_BASE" || exit 1
 
 	# build NaCl with glibc tests
-	./scons --verbose --mode="$MODE,nacl" platform=x86-64 --nacl_glibc -j4
+	./scons --nacl_glibc \
+		--verbose \
+		--mode="$MODE,nacl" \
+		-j"$JOBS" \
+		pp=1 \
+		nacl_pic=1 \
+		platform=x86-64
+
 	# and check
 	rc="$?"
 	if ((rc != 0)); then
