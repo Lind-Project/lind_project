@@ -88,7 +88,7 @@ for word; do
 		REPY_PATH="$LIND_SRC/nacl"
 		NACL_SDK_ROOT="$LIND_SRC/nacl/sdk"
 		LIND_MONITOR="$LIND_SRC/reference_monitor"
-		PNACLPYTHON="python2.7"
+		PNACLPYTHON="$(type -P python2)"
 		export PATH LD_LIBRARY_PATH
 		export LIND_BASE LIND_SRC REPY_PATH
 		export NACL_SDK_ROOT LIND_MONITOR PNACLPYTHON
@@ -181,6 +181,8 @@ readonly -a RSYNC=(rsync -avrc --force)
 readonly -a PYGREPL=(grep -lPR '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' .)
 readonly -a PYGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PYSED=(sed -r 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
+readonly -a PNACLGREP=(grep -FRlw "\${PNACLPYTHON}" .)
+readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
 	print "You need to set \"$NACL_SDK_ROOT\" to \"$REPY_PATH_SDK\""
@@ -422,6 +424,17 @@ function build_nacl() {
 	ln -rsv \
 		"$NACL_BASE/toolchain/linux_x86/pnacl_newlib" \
 		"$NACL_BASE/toolchain/pnacl_linux_x86/newlib"
+
+	# sed to python2
+	cd "$NACL_BASE/toolchain" || exit 1
+	"${PNACLGREP[@]}" 2>/dev/null | \
+		while read -r file; do
+			# preserve executability
+			"${PNACLSEDSED[@]}" <"$file" >"$file.new"
+			cat <"$file.new" >"$file"
+			rm "$file.new"
+		done
+	cd "$NACL_BASE" || exit 1
 
 	# build NaCl with glibc tests
 	./scons --verbose --mode="$MODE,nacl" platform=x86-64 --nacl_glibc -j4
