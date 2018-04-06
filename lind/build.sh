@@ -435,12 +435,6 @@ function build_nacl() {
 	print "Building NaCl"
 	cd "$NACL_BASE" || exit 1
 
-	# create symlinks
-	rm -fv "$NACL_BASE/toolchain/pnacl_linux_x86/newlib"
-	ln -rsv \
-		"$NACL_BASE/toolchain/linux_x86/pnacl_newlib" \
-		"$NACL_BASE/toolchain/pnacl_linux_x86/newlib"
-
 	# sed to python2
 	cd "$NACL_BASE/toolchain" || exit 1
 	"${PNACLGREPL[@]}" 2>/dev/null | \
@@ -455,12 +449,11 @@ function build_nacl() {
 
 	# build NaCl with glibc tests
 	./scons --nacl_glibc \
-		--verbose \
 		--mode="$MODE,nacl" \
+		--verbose \
 		-j"$JOBS" \
-		pp=1 \
-		nacl_pic=1 \
-		platform=x86-64
+		platform=x86-64 \
+		pp=1
 
 	# and check
 	rc="$?"
@@ -580,9 +573,9 @@ while (($#)); do
 	elif [[ "$1" == all ]]; then
 		download_src
 		build_glibc
-		install_to_path
 		build_repy
 		build_nacl
+		install_to_path
 		build_liblind
 	elif [[ "$1" == cleantoolchain ]]; then
 		print "Cleaning Toolchain"
