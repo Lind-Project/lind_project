@@ -452,6 +452,12 @@ function clean_install() {
 #
 function build_nacl() {
 	local rc mode_dir
+	local -a dirs
+
+	dirs+=(src/trusted/validator/ src/trusted/validator/x86/)
+	dirs+=(src/trusted/service_runtime/ src/trusted/validator/x86/decoder/)
+	dirs+=(tests/unittests/trusted/bits/ tests/unittests/trusted/platform_qualify/)
+	dirs+=(src/shared/gio/)
 
 	print "Building NaCl"
 	cd "$NACL_BASE" || exit 1
@@ -475,41 +481,76 @@ function build_nacl() {
 		mode_dir="scons-out/nacl-x86-64-glibc"
 	fi
 
-	# symlink test dirs
+	# symlink gatest dirs
+	for dir in "${dirs[@]}"; do
+		mkdir -pv "$dir"
+		rm -fv "$dir/gtest"
+		ln -rsv "$GTEST_DIR/googletest/include/gtest" "$dir"
+	done
+
+	# symlink libraries
 	mkdir -pv \
-		src/trusted/validator \
-		src/trusted/validator/x86 \
-		src/trusted/service_runtime \
+		src/untrusted/minidump_generator \
 		scons-out/nacl_irt-x86-64/lib \
 		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl \
+		scons-out/nacl_irt-x86-64/obj/src/shared/srpc \
+		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl \
+		scons-out/nacl_irt-x86-64/obj/src/shared/platform \
+		scons-out/nacl_irt-x86-64/lib \
 		"$mode_dir/obj/src"
 	rm -fv \
-		src/trusted/validator/gtest \
-		src/trusted/validator/x86/gtest \
-		src/trusted/service_runtime/gtest \
+		src/untrusted/minidump_generator/breakpad \
 		scons-out/nacl_irt-x86-64/lib/libnacl.a \
 		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl/libnacl.a \
+		scons-out/nacl_irt-x86-64/obj/src/shared/srpc/libsrpc.a \
+		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl/libimc_syscalls.a \
+		scons-out/nacl_irt-x86-64/obj/src/shared/platform/libplatform.a \
+		scons-out/nacl_irt-x86-64/lib/libplatform.a \
+		scons-out/nacl_irt-x86-64/lib/libgio.a \
 		"$mode_dir/obj/src/third_party_mod"
-	ln -rsv \
-		"$GTEST_DIR/googletest/include/gtest" \
-		src/trusted/validator/
-	ln -rsv \
-		"$GTEST_DIR/googletest/include/gtest" \
-		src/trusted/validator/x86/
-	ln -rsv \
-		"$GTEST_DIR/googletest/include/gtest" \
-		src/trusted/service_runtime/
-	ln -rsv \
+	ln -rsv "$REPY_PATH/breakpad" src/untrusted/minidump_generator/
+	ln -rsv "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
+
+	# build debug target with glibc tests
+	./scons \
+		--mode="$MODE" \
+		--verbose \
+		--nacl_glibc \
+		-j"$JOBS" \
+		platform=x86-64 \
+		nacl_pic="$NACL_PIC" \
+		pp=1
+
+	# copy static libraries
+	cp -v \
 		"$mode_dir/lib/libnacl.a" \
 		scons-out/nacl_irt-x86-64/lib/
-	ln -rsv \
+	cp -v \
 		"$mode_dir/obj/src/untrusted/nacl/libnacl.a" \
 		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl/
-	ln -rsv "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
+	cp -v \
+		"$mode_dir/lib/libsrpc.a" \
+		scons-out/nacl_irt-x86-64/obj/src/shared/srpc/
+	cp -v \
+		"$mode_dir/obj/src/untrusted/nacl/libimc_syscalls.a" \
+		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl
+	cp -v \
+		"scons-out/$MODE-x86-64/obj/src/shared/platform/libplatform.a" \
+		scons-out/nacl_irt-x86-64/obj/src/shared/platform/
+	cp -v \
+		"scons-out/$MODE-x86-64/lib/libplatform.a" \
+		scons-out/nacl_irt-x86-64/lib/
+	cp -v \
+		"scons-out/$MODE-x86-64/lib/libgio.a" \
+		scons-out/nacl_irt-x86-64/lib/
+
+	# TODO XXX:
+	# figure out another way to prevent libgio.a from disappearing
+	# chattr +i scons-out/nacl_irt-x86-64/lib/libgio.a &>/dev/null || true
 
 	# build NaCl with glibc tests
 	./scons \
-		--mode="$MODE,nacl" \
+		--mode="nacl" \
 		--verbose \
 		--nacl_glibc \
 		-j"$JOBS" \
@@ -523,6 +564,8 @@ function build_nacl() {
 		print "NaCl Build Failed [Exit Code: $rc]" $'\a'
 		exit "$rc"
 	fi
+
+	# chattr -i scons-out/nacl_irt-x86-64/lib/libgio.a &>/dev/null || true
 
 	print "Done building NaCl"
 }
