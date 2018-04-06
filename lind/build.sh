@@ -211,6 +211,9 @@ function download_src() {
 	ln -rsv "$LIND_SRC/native_client" "$NACL_SRC/"
 
 	cd "$NACL_BASE" || exit 1
+	gclient config --name=native_client \
+		https://github.com/Lind_project/native_client.git@i686_caging --git-deps && \
+		gclient sync
 	mkdir -p \
 		"$NACL_BASE/src/trusted/service_runtime/linux" \
 		"$NACL_BASE/src/third_party"

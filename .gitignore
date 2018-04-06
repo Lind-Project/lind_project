@@ -3,6 +3,7 @@ build/
 repy/
 /lind/nacl/*
 !/lind/nacl/native_client/
+/lind/native_client
 
 # lind specific files
 list.txt
