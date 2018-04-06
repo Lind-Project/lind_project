@@ -44,3 +44,7 @@
 	path = googletest
 	url = git@github.com:Lind-Project/googletest.git
 	branch = i686_caging
+[submodule "google-breakpad"]
+	path = google-breakpad
+	url = git@github.com:Lind-Project/google-breakpad.git
+	branch = i686_caging

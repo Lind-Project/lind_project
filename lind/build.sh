@@ -84,7 +84,7 @@ for word; do
 	case "$word" in
 	-*[eE]*)
 		PATH="$LIND_SRC/depot_tools:$PATH"
-		PIC=0
+		PIC=1
 		LD_LIBRARY_PATH=/glibc/
 		LIND_BASE="/usr/lind_project"
 		LIND_SRC="$LIND_BASE/lind"
@@ -155,10 +155,10 @@ elif type -P nproc &>/dev/null; then
 else
 	readonly JOBS='4'
 fi
-if [[ -z "$PIC" ]] || ((!PIC)); then
-	readonly NACL_PIC=0
-else
+if [[ -z "$PIC" ]] || ((PIC)); then
 	readonly NACL_PIC=1
+else
+	readonly NACL_PIC=0
 fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
@@ -473,12 +473,14 @@ function build_nacl() {
 	# symlink test dirs
 	mkdir -pv \
 		src/trusted/validator \
+		src/trusted/validator/x86 \
 		src/trusted/service_runtime \
 		scons-out/nacl_irt-x86-64/lib \
 		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl \
 		"$mode_dir/obj/src"
 	rm -fv \
 		src/trusted/validator/gtest \
+		src/trusted/validator/x86/gtest \
 		src/trusted/service_runtime/gtest \
 		scons-out/nacl_irt-x86-64/lib/libnacl.a \
 		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl/libnacl.a \
@@ -486,6 +488,9 @@ function build_nacl() {
 	ln -rsv \
 		"$GTEST_DIR/googletest/include/gtest" \
 		src/trusted/validator/
+	ln -rsv \
+		"$GTEST_DIR/googletest/include/gtest" \
+		src/trusted/validator/x86/
 	ln -rsv \
 		"$GTEST_DIR/googletest/include/gtest" \
 		src/trusted/service_runtime/
