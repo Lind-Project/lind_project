@@ -180,10 +180,10 @@ readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 
 readonly -a SUBMODULES=(lind_glibc nacl_repy misc third_party linux-syscall-support)
 readonly -a RSYNC=(rsync -avrc --force)
-readonly -a PYGREPL=(grep -lPR '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' .)
+readonly -a PYGREPL=(grep -lIPR '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' .)
 readonly -a PYGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PYSED=(sed -r 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
-readonly -a PNACLGREPL=(grep -FRlw "\${PNACLPYTHON}" .)
+readonly -a PNACLGREPL=(grep -IFRlw "\${PNACLPYTHON}" .)
 readonly -a PNACLGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 
