@@ -220,10 +220,10 @@ function download_src() {
 		https://github.com/Lind_project/native_client.git \
 		--git-deps && \
 		gclient sync
-	mkdir -p \
-		"$NACL_BASE/src/trusted/service_runtime/linux" \
-		"$NACL_BASE/src/third_party"
-	rm -fv "$NACL_BASE/src/third_party/lss" "$NACL_BASE/src/trusted/service_runtime/linux"
+	mkdir -p "$NACL_BASE/src/third_party"
+	rm -fv \
+		"$NACL_BASE/src/third_party/lss" \
+		"$NACL_BASE/src/trusted/service_runtime/linux/third_party"
 	ln -rsv "$NACL_LSS_DIR" "$NACL_BASE/src/third_party/lss"
 	ln -rsv "$NACL_BASE/src/third_party" "$NACL_BASE/src/trusted/service_runtime/linux/"
 
