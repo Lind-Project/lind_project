@@ -175,6 +175,7 @@ readonly NACL_REPY="$LIND_SRC/nacl_repy"
 readonly NACL_PORTS_DIR="$LIND_SRC/naclports"
 readonly NACL_GCC_DIR="$LIND_SRC/nacl-gcc"
 readonly NACL_LSS_DIR="$LIND_SRC/linux-syscall-support"
+readonly BREAKPAD_DIR="$LIND_SRC/google-breakpad"
 
 readonly REPY_PATH="$REPY_PATH"
 readonly REPY_PATH_BIN="$REPY_PATH/bin"
@@ -198,9 +199,8 @@ readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 readonly -a RSYNC=(rsync '-avzP' '--info=progress2' '--partial')
 
 readonly -a SUBMODULES=(lind_glibc nacl-binutils nacl-gcc
-			nacl_repy native_client misc
-			third_party googletest
-			linux-syscall-support)
+			nacl_repy native_client misc third_party
+			googletest google-breakpad linux-syscall-support)
 
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
 	print "You need to set \"$NACL_SDK_ROOT\" to \"$REPY_PATH_SDK\""
@@ -279,6 +279,11 @@ function download_src() {
 	cd "$GTEST_DIR" || exit 1
 	cmake .
 	make
+
+	cd "$REPY_PATH/breakpad" || exit 1
+	cd "$REPY_PATH/breakpad" || exit 1
+	mv src src_orig
+	ln -rsv "$BREAKPAD_DIR" src
 
 	cd "$LIND_SRC" || exit 1
 }
