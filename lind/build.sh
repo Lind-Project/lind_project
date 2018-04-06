@@ -582,8 +582,8 @@ while (($#)); do
 		build_glibc
 		install_to_path
 		build_liblind
-		build_nacl
 		build_repy
+		build_nacl
 	elif [[ "$1" == cleantoolchain ]]; then
 		print "Cleaning Toolchain"
 		clean_toolchain
