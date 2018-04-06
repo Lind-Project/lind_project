@@ -363,6 +363,7 @@ function build_repy() {
 	print "Building Repy in \"$NACL_REPY\" to \"$REPY_PATH_REPY\""
 
 	cd "$NACL_REPY" || exit 1
+	cp seattlelib/xmlrpc/* "$REPY_PATH_REPY/"
 	python2 preparetest.py -t -f "$REPY_PATH_REPY"
 	print "Done building Repy in \"$REPY_PATH_REPY\""
 
@@ -569,10 +570,11 @@ while (($#)); do
 		download_src
 	elif [[ "$1" == all ]]; then
 		download_src
-		build_nacl
 		build_glibc
-		build_repy
 		install_to_path
+		build_liblind
+		build_nacl
+		build_repy
 	elif [[ "$1" == cleantoolchain ]]; then
 		print "Cleaning Toolchain"
 		clean_toolchain
