@@ -88,9 +88,10 @@ for word; do
 		REPY_PATH="$LIND_SRC/nacl"
 		NACL_SDK_ROOT="$LIND_SRC/nacl/sdk"
 		LIND_MONITOR="$LIND_SRC/reference_monitor"
+		PNACLPYTHON="python2.7"
 		export PATH LD_LIBRARY_PATH
 		export LIND_BASE LIND_SRC REPY_PATH
-		export NACL_SDK_ROOT LIND_MONITOR
+		export NACL_SDK_ROOT LIND_MONITOR PNACLPYTHON
 		# remove -e flag after setting up environment
 		mapfile -td ' ' args < <(printf '%s' "${@//-*[eE]*/}")
 		set -- "${args[@]}"
@@ -416,6 +417,12 @@ function build_nacl() {
 	print "Building NaCl"
 	cd "$NACL_BASE" || exit 1
 
+	# create symlinks
+	rm -fv "$NACL_BASE/toolchain/pnacl_linux_x86/newlib"
+	ln -rsv \
+		"$NACL_BASE/toolchain/linux_x86/pnacl_newlib" \
+		"$NACL_BASE/toolchain/pnacl_linux_x86/newlib"
+
 	# build NaCl with glibc tests
 	./scons --verbose --mode="$MODE,nacl" platform=x86-64 --nacl_glibc -j4
 	# and check
@@ -432,7 +439,7 @@ function build_nacl() {
 # Run clean on nacl build.
 #
 function clean_nacl() {
-	cd "${NACL_BASE}"
+	cd "$NACL_BASE"
 	./scons --mode="$MODE,nacl" platform=x86-64 --nacl_glibc -c
 	print "Done Cleaning NaCl"
 }
