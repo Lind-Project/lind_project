@@ -174,7 +174,7 @@ readonly REPY_PATH_SDK="$REPY_PATH/sdk"
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly LIND_THIRD_PARTY_URL='https://github.com/Lind-Project/third_party.git'
-readonly NACL_LSS_URL='https://github.com/Lind-Project/linux-syscall-support'
+readonly NACL_LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 
@@ -222,13 +222,13 @@ function download_src() {
 	mkdir -pv "$NACL_GCC_DIR"
 	cd "$NACL_GCC_DIR" || exit 1
 	gclient config --name=src \
-		git@github.com:Lind-Project/nacl-gcc.git@i686_caging --git-deps && \
+		git@github.com:Lind-Project/nacl-gcc@i686_caging --git-deps && \
 		gclient sync
 
 	mkdir -pv "$NACL_PORTS_DIR"
 	cd "$NACL_PORTS_DIR" || exit 1
 	gclient config --name=src \
-		https://chromium.googlesource.com/webports.git --git-deps && \
+		https://chromium.googlesource.com/webports --git-deps && \
 		gclient sync
 
 	# use custom repos as bases
