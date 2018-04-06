@@ -158,6 +158,7 @@ readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
 readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
 readonly LIND_BINUTILS_SRC="$LIND_SRC/nacl-binutils"
+readonly GTEST_DIR="$LIND_SRC/googletest"
 readonly MISC_DIR="$LIND_SRC/misc"
 readonly NACL_SRC="$LIND_SRC/nacl"
 readonly NACL_BASE="$NACL_SRC/native_client"
@@ -191,7 +192,8 @@ readonly -a RSYNC=(rsync '-avzP' '--info=progress2' '--partial')
 
 readonly -a SUBMODULES=(lind_glibc nacl-binutils nacl-gcc
 			nacl_repy native_client misc
-			third_party linux-syscall-support)
+			third_party googletest
+			linux-syscall-support)
 
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
 	print "You need to set \"$NACL_SDK_ROOT\" to \"$REPY_PATH_SDK\""
@@ -263,6 +265,13 @@ function download_src() {
 			cat <"$file.new" >"$file"
 			rm "$file.new"
 		done
+
+	cd "$NACL_BASE/third_party_mod" || exit 1
+	mv gtest gtest_orig
+	ln -rsv "$GTEST_DIR/googletest" gtest
+	cd "$GTEST_DIR" || exit 1
+	cmake .
+	make
 
 	cd "$LIND_SRC" || exit 1
 }
@@ -448,11 +457,13 @@ function build_nacl() {
 	cd "$NACL_BASE" || exit 1
 
 	# build NaCl with glibc tests
-	./scons --nacl_glibc \
+	./scons \
+		--nacl_glibc \
 		--mode="$MODE,nacl" \
 		--verbose \
 		-j"$JOBS" \
 		platform=x86-64 \
+		nacl_pic=1 \
 		pp=1
 
 	# and check
@@ -573,10 +584,10 @@ while (($#)); do
 	elif [[ "$1" == all ]]; then
 		download_src
 		build_glibc
+		build_liblind
 		build_repy
 		build_nacl
 		install_to_path
-		build_liblind
 	elif [[ "$1" == cleantoolchain ]]; then
 		print "Cleaning Toolchain"
 		clean_toolchain
