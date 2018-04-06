@@ -4,6 +4,7 @@ repy/
 /lind/nacl/*
 !/lind/nacl/native_client/
 /lind/native_client
+/lind/googletest
 
 # lind specific files
 list.txt

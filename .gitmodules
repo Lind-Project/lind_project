@@ -40,3 +40,7 @@
 	path = nacl-binutils
 	url = git@github.com:Lind-Project/nacl-binutils.git
 	branch = i686_caging
+[submodule "googletest"]
+	path = googletest
+	url = git@github.com:Lind-Project/googletest.git
+	branch = i686_caging
