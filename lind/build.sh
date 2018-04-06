@@ -163,6 +163,7 @@ readonly MISC_DIR="$LIND_SRC/misc"
 readonly NACL_SRC="$LIND_SRC/nacl"
 readonly NACL_BASE="$NACL_SRC/native_client"
 readonly NACL_THIRD_PARTY="$LIND_SRC/third_party"
+readonly NACL_THIRD_PARTY_MOD="$NACL_BASE/src/third_party_mod"
 readonly NACL_TOOLCHAIN_BASE="$NACL_BASE/tools"
 readonly NACL_REPY="$LIND_SRC/nacl_repy"
 readonly NACL_PORTS_DIR="$LIND_SRC/naclports"
@@ -456,11 +457,24 @@ function build_nacl() {
 		done
 	cd "$NACL_BASE" || exit 1
 
+	# symlink test dirs
+	mkdir -p scons-out/"$MODE"-*/obj/src/
+	rm -fv scons-out/"$MODE"-*/obj/src/third_party_mod
+	ln -rsv "$NACL_THIRD_PARTY_MOD" scons-out/"$MODE"-*/obj/src/
+
 	# build NaCl with glibc tests
 	./scons \
-		--nacl_glibc \
-		--mode="$MODE,nacl" \
+		--mode=nacl \
 		--verbose \
+		--nacl_glibc \
+		-j"$JOBS" \
+		platform=x86-64 \
+		nacl_pic=1 \
+		pp=1
+	./scons \
+		--mode="$MODE" \
+		--verbose \
+		--nacl_glibc \
 		-j"$JOBS" \
 		platform=x86-64 \
 		nacl_pic=1 \
@@ -584,10 +598,10 @@ while (($#)); do
 	elif [[ "$1" == all ]]; then
 		download_src
 		build_glibc
-		build_liblind
 		build_repy
 		build_nacl
 		install_to_path
+		build_liblind
 	elif [[ "$1" == cleantoolchain ]]; then
 		print "Cleaning Toolchain"
 		clean_toolchain
