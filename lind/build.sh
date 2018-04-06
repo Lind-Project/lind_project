@@ -178,7 +178,7 @@ readonly NACL_LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 
-readonly -a SUBMODULES=(lind_glibc nacl_repy misc third_party linux-syscall-support)
+readonly -a SUBMODULES=(lind_glibc nacl-gcc nacl_repy misc third_party linux-syscall-support)
 readonly -a RSYNC=(rsync -avrc --force)
 readonly -a PYGREPL=(grep -lIPR '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' .)
 readonly -a PYGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
@@ -210,25 +210,21 @@ function download_src() {
 	mkdir -pv "$NACL_SRC"
 
 	mkdir -pv "$NACL_BASE"
-	cd "$NACL_BASE" || exit 1
+	cd "$LIND_SRC" || exit 1
 	gclient config --name=native_client \
 		git@github.com:Lind-Project/native_client.git@i686_caging --git-deps && \
 		gclient sync
-	mkdir -p "$NACL_BASE/src/trusted/service_runtime/linux"
+	mkdir -p \
+		"$NACL_BASE/src/trusted/service_runtime/linux" \
+		"$NACL_BASE/src/third_party"
 	rm -fv "$NACL_BASE/src/third_party/lss"
 	ln -rsv "$NACL_LSS_DIR" "$NACL_BASE/src/third_party/lss"
 	ln -rsv "$NACL_BASE/src/third_party" "$NACL_BASE/src/trusted/service_runtime/linux/"
 
-	mkdir -pv "$NACL_GCC_DIR"
-	cd "$NACL_GCC_DIR" || exit 1
-	gclient config --name=src \
-		git@github.com:Lind-Project/nacl-gcc@i686_caging --git-deps && \
-		gclient sync
-
 	mkdir -pv "$NACL_PORTS_DIR"
-	cd "$NACL_PORTS_DIR" || exit 1
-	gclient config --name=src \
-		https://chromium.googlesource.com/webports --git-deps && \
+	cd "$LIND_SRC" || exit 1
+	gclient config --name=naclports \
+		https://chromium.googlesource.com/webports.git --git-deps && \
 		gclient sync
 
 	# use custom repos as bases
