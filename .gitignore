@@ -1,7 +1,6 @@
 # directories
 build/
 repy/
-/lind/naclports/
 /lind/nacl/*
 !/lind/nacl/native_client/
 
