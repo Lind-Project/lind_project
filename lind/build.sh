@@ -204,6 +204,8 @@ function download_src() {
 		rm -fv "$LIND_SRC/$dir"
 		ln -rsv "$dir" "$LIND_SRC/"
 	done
+
+	cd "$LIND_BASE" || exit 1
 	gclient config --name=nacl-gcc \
 		https://chromium.googlesource.com/native_client/nacl-gcc.git \
 		--git-deps && \
@@ -217,7 +219,6 @@ function download_src() {
 	cd "$NACL_SRC" || exit 1
 	gclient config --name=native_client \
 		git@github.com:Lind-Project/native_client.git@i686_caging \
-		https://github.com/Lind_project/native_client.git \
 		--git-deps && \
 		gclient sync
 	mkdir -p "$NACL_BASE/src/third_party"
