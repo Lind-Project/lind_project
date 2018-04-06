@@ -183,7 +183,8 @@ readonly -a RSYNC=(rsync -avrc --force)
 readonly -a PYGREPL=(grep -lPR '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' .)
 readonly -a PYGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PYSED=(sed -r 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
-readonly -a PNACLGREP=(grep -FRlw "\${PNACLPYTHON}" .)
+readonly -a PNACLGREPL=(grep -FRlw "\${PNACLPYTHON}" .)
+readonly -a PNACLGREPV=(grep -vP '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
@@ -429,7 +430,8 @@ function build_nacl() {
 
 	# sed to python2
 	cd "$NACL_BASE/toolchain" || exit 1
-	"${PNACLGREP[@]}" 2>/dev/null | \
+	"${PNACLGREPL[@]}" 2>/dev/null | \
+		"${PNACLGREPV[@]}" | \
 		while read -r file; do
 			# preserve executability
 			"${PNACLSEDSED[@]}" <"$file" >"$file.new"
