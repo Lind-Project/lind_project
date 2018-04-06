@@ -204,6 +204,10 @@ function download_src() {
 		rm -fv "$LIND_SRC/$dir"
 		ln -rsv "$dir" "$LIND_SRC/"
 	done
+	gclient config --name=nacl-gcc \
+		https://chromium.googlesource.com/native_client/nacl-gcc.git \
+		--git-deps && \
+		gclient sync
 
 	cd "$LIND_SRC" || exit 1
 	rm -rfv "${LIND_SRC:?}/nacl"
@@ -212,7 +216,8 @@ function download_src() {
 
 	cd "$NACL_BASE" || exit 1
 	gclient config --name=native_client \
-		https://github.com/Lind_project/native_client.git@i686_caging --git-deps && \
+		https://github.com/Lind_project/native_client.git@i686_caging \
+		--git-deps && \
 		gclient sync
 	mkdir -p \
 		"$NACL_BASE/src/trusted/service_runtime/linux" \
@@ -224,7 +229,8 @@ function download_src() {
 	mkdir -pv "$NACL_PORTS_DIR"
 	cd "$NACL_BASE" || exit 1
 	gclient config --name=naclports \
-		https://chromium.googlesource.com/webports.git --git-deps && \
+		https://chromium.googlesource.com/webports.git \
+		--git-deps && \
 		gclient sync
 
 	# use custom repos as bases
