@@ -261,8 +261,9 @@ function download_src() {
 	ln -sv "$NACL_GCC_DIR" gcc
 	mv glibc glibc_orig
 	ln -sv "$LIND_GLIBC_SRC" glibc
-	cd .. || exit 1
 
+	cd .. || exit 1
+	python2 ./toolchain_build/toolchain_build.py
 	# convert files from python to python2
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
@@ -481,14 +482,19 @@ function build_nacl() {
 		mode_dir="scons-out/nacl-x86-64-glibc"
 	fi
 
-	# symlink gatest dirs
+	# symlink gtest dirs
 	for dir in "${dirs[@]}"; do
 		mkdir -pv "$dir"
 		rm -fv "$dir/gtest"
 		ln -rsv "$GTEST_DIR/googletest/include/gtest" "$dir"
 	done
 
-	# symlink libraries
+	# symlink library and include directories
+	if [[ -d scons-out/nacl_irt-x86-64 ]]; then
+		mv scons-out/nacl_irt-x86-64{,_orig}
+	fi
+	rm -fv scons-out/nacl_irt-x86-64
+	ln -rsv $mode_dir scons-out/nacl_irt-x86-64
 	mkdir -pv \
 		src/untrusted/minidump_generator \
 		scons-out/nacl_irt-x86-64/lib \
@@ -500,63 +506,38 @@ function build_nacl() {
 		"$mode_dir/obj/src"
 	rm -fv \
 		src/untrusted/minidump_generator/breakpad \
-		scons-out/nacl_irt-x86-64/lib/libnacl.a \
-		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl/libnacl.a \
-		scons-out/nacl_irt-x86-64/obj/src/shared/srpc/libsrpc.a \
-		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl/libimc_syscalls.a \
-		scons-out/nacl_irt-x86-64/obj/src/shared/platform/libplatform.a \
-		scons-out/nacl_irt-x86-64/lib/libplatform.a \
-		scons-out/nacl_irt-x86-64/lib/libgio.a \
 		"$mode_dir/obj/src/third_party_mod"
 	ln -rsv "$REPY_PATH/breakpad" src/untrusted/minidump_generator/
 	ln -rsv "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
 
-	# build debug target with glibc tests
-	./scons \
-		--mode="$MODE" \
-		--verbose \
-		--nacl_glibc \
-		-j"$JOBS" \
-		platform=x86-64 \
-		nacl_pic="$NACL_PIC" \
-		pp=1
-
-	# copy static libraries
-	cp -v \
-		"$mode_dir/lib/libnacl.a" \
-		scons-out/nacl_irt-x86-64/lib/
-	cp -v \
-		"$mode_dir/obj/src/untrusted/nacl/libnacl.a" \
-		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl/
-	cp -v \
-		"$mode_dir/lib/libsrpc.a" \
-		scons-out/nacl_irt-x86-64/obj/src/shared/srpc/
-	cp -v \
-		"$mode_dir/obj/src/untrusted/nacl/libimc_syscalls.a" \
-		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl
-	cp -v \
-		"scons-out/$MODE-x86-64/obj/src/shared/platform/libplatform.a" \
-		scons-out/nacl_irt-x86-64/obj/src/shared/platform/
-	cp -v \
-		"scons-out/$MODE-x86-64/lib/libplatform.a" \
-		scons-out/nacl_irt-x86-64/lib/
-	cp -v \
-		"scons-out/$MODE-x86-64/lib/libgio.a" \
-		scons-out/nacl_irt-x86-64/lib/
-	chmod +x scons-out/nacl_irt-x86-64/lib/libgio.a
-
-	# TODO XXX: figure out another way to prevent libgio.a from disappearing
-	# chattr +i scons-out/nacl_irt-x86-64/lib/libgio.a &>/dev/null || true
-
 	# build NaCl with glibc tests
 	./scons \
-		--mode="nacl" \
+		--mode="$MODE,nacl" \
 		--verbose \
 		--nacl_glibc \
 		-j"$JOBS" \
+		-k \
 		platform=x86-64 \
 		nacl_pic="$NACL_PIC" \
-		pp=1
+		build_bin
+	./scons \
+		--mode="$MODE,nacl" \
+		--verbose \
+		--nacl_glibc \
+		-j"$JOBS" \
+		-k \
+		platform=x86-64 \
+		nacl_pic="$NACL_PIC" \
+		bindir=scons-out/nacl_irt-x86-64/staging \
+		install_bin
+	./scons \
+		--mode="$MODE,nacl" \
+		--verbose \
+		--nacl_glibc \
+		-j"$JOBS" \
+		-k \
+		platform=x86-64 \
+		nacl_pic="$NACL_PIC"
 
 	# and check
 	rc="$?"
@@ -564,8 +545,6 @@ function build_nacl() {
 		print "NaCl Build Failed [Exit Code: $rc]" $'\a'
 		exit "$rc"
 	fi
-
-	# chattr -i scons-out/nacl_irt-x86-64/lib/libgio.a &>/dev/null || true
 
 	print "Done building NaCl"
 }
