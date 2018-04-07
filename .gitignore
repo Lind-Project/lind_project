@@ -12,6 +12,13 @@ build.log
 error.log
 .gclient*
 
+# archives
+*.tar*
+*.gz
+*.bz2
+*.zip
+*.7z
+
 # general files
 core.*
 *.rej

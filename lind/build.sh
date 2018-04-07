@@ -521,7 +521,6 @@ function build_nacl() {
 	./scons \
 		--mode="$MODE,nacl" \
 		--verbose \
-		--nacl_glibc \
 		-j"$JOBS" \
 		-k \
 		platform=x86-64 \
