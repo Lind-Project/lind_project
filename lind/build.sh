@@ -261,6 +261,7 @@ function download_src() {
 	ln -sv "$NACL_GCC_DIR" gcc
 	mv glibc glibc_orig
 	ln -sv "$LIND_GLIBC_SRC" glibc
+	cd .. || exit 1
 
 	# convert files from python to python2
 	"${PYGREPL[@]}" 2>/dev/null | \
@@ -272,14 +273,13 @@ function download_src() {
 			rm "$file.new"
 		done
 
-	cd "$NACL_BASE/third_party_mod" || exit 1
+	cd "$NACL_BASE/src/third_party_mod" || exit 1
 	mv gtest gtest_orig
 	ln -rsv "$GTEST_DIR/googletest" gtest
 	cd "$GTEST_DIR" || exit 1
 	cmake .
 	make
 
-	cd "$REPY_PATH/breakpad" || exit 1
 	cd "$REPY_PATH/breakpad" || exit 1
 	mv src src_orig
 	ln -rsv "$BREAKPAD_DIR" src
