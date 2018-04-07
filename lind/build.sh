@@ -262,8 +262,6 @@ function download_src() {
 	mv glibc glibc_orig
 	ln -sv "$LIND_GLIBC_SRC" glibc
 
-	cd .. || exit 1
-	python2 ./toolchain_build/toolchain_build.py
 	# convert files from python to python2
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
