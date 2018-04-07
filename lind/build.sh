@@ -198,7 +198,7 @@ readonly -a PNACLGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 readonly -a RSYNC=(rsync '-avzP' '--info=progress2' '--partial')
 
-readonly -a SUBMODULES=(lind_glibc nacl-binutils nacl-gcc
+readonly -a SUBMODULES=(lind_glibc nacl-binutils nacl-gcc pnacl-clang
 			nacl_repy native_client misc third_party
 			googletest google-breakpad linux-syscall-support)
 
@@ -515,7 +515,7 @@ function build_nacl() {
 		--nacl_glibc \
 		-j"$JOBS" \
 		-k \
-		platform=x86-64 \
+		platformii=x86-64 \
 		nacl_pic="$NACL_PIC" \
 		build_bin
 	./scons \
