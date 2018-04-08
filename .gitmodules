@@ -20,10 +20,6 @@
 	path = misc
 	url = git@github.com:Lind-Project/Lind-misc.git
 	branch = i686_caging
-[submodule "native_client"]
-	path = native_client
-	url = git@github.com:Lind-Project/native_client.git
-	branch = i686_caging
 [submodule "nacl-gcc"]
 	path = nacl-gcc
 	url = git@github.com:Lind-Project/nacl-gcc.git
@@ -51,4 +47,8 @@
 [submodule "pnacl-clang"]
 	path = pnacl-clang
 	url = git@github.com:Lind-Project/pnacl-clang.git
+	branch = i686_caging
+[submodule "native_client"]
+	path = native_client
+	url = git@github.com:Lind-Project/native_client.git
 	branch = i686_caging
