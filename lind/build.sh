@@ -209,14 +209,14 @@ fi
 # Download source files
 #
 function download_src() {
-	mkdir -pv "$LIND_SRC"
+	mkdir -p "$LIND_SRC"
 	cd "$LIND_BASE" || exit 1
 
 	git submodule sync --recursive
 	git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
-		rm -fv "$LIND_SRC/$dir"
-		ln -rsv "$dir" "$LIND_SRC/"
+		rm -f "$LIND_SRC/$dir"
+		ln -rs "$dir" "$LIND_SRC/"
 	done
 
 	# use custom-patched gcc repo
@@ -228,27 +228,26 @@ function download_src() {
 	cd nacl-gcc || exit 1
 	for patch in "${LIND_BASE:?}"/patches/*.patch; do
 		patch -p1 <"$patch"
-	done
-
+	done 2>/dev/null
 	cd "$LIND_SRC" || exit 1
 	rm -rf "${LIND_SRC:?}/nacl"
-	mkdir -pv "$NACL_BASE"
-	ln -rsv "$LIND_SRC/native_client" "$NACL_BASE/"
+	mkdir -p "$NACL_BASE"
+	ln -rs "$LIND_SRC/native_client" "$NACL_BASE/"
 
 	cd "$NACL_BASE" || exit 1
 	gclient config --name=native_client \
-		git@github.com:Lind-Project/native_client.git@i686_caging \
+		https://github.com/Lind-Project/native_client.git
+	i686_caging \
 		--git-deps && \
 		gclient sync
 	cd "$NACL_SRC" || exit 1
-	mkdir -pv "$NACL_SRC/src/third_party"
-	rm -fv \
-		"$NACL_SRC/src/third_party/lss" \
-		"$NACL_SRC/src/trusted/service_runtime/linux/third_party"
-	ln -rsv "$NACL_LSS_DIR" "$NACL_SRC/src/third_party/lss"
-	ln -rsv "$NACL_SRC/src/third_party" "$NACL_SRC/src/trusted/service_runtime/linux/"
+	mkdir -p "$NACL_SRC/src/third_party"
+	rm -f "$NACL_SRC/src/third_party/lss"
+	rm -f "$NACL_SRC/src/trusted/service_runtime/linux/third_party"
+	ln -rs "$NACL_LSS_DIR" "$NACL_SRC/src/third_party/lss"
+	ln -rs "$NACL_SRC/src/third_party" "$NACL_SRC/src/trusted/service_runtime/linux/"
 
-	mkdir -pv "$NACL_PORTS_DIR"
+	mkdir -p "$NACL_PORTS_DIR"
 	cd "$NACL_BASE" || exit 1
 	gclient config --name=naclports \
 		https://chromium.googlesource.com/webports.git \
@@ -272,11 +271,11 @@ function setup_toolchain() {
 	# use custom repos as bases
 	cd "$NACL_TOOLCHAIN_SRC/SRC" || exit 1
 	for dir in "${toolchain_dirs[@]}"; do
-		rm -fv "$dir" || mv -v "$dir" "${dir}_orig"
+		rm -f "$dir" || mv -v "$dir" "${dir}_orig"
 	done 2>/dev/null
-	ln -sv "$LIND_BINUTILS_SRC" binutils
-	ln -sv "$NACL_GCC_DIR" gcc
-	ln -sv "$LIND_GLIBC_SRC" glibc
+	ln -s "$LIND_BINUTILS_SRC" binutils
+	ln -s "$NACL_GCC_DIR" gcc
+	ln -s "$LIND_GLIBC_SRC" glibc
 
 	# convert files from python to python2
 	cd "$NACL_SRC" || exit 1
@@ -291,16 +290,16 @@ function setup_toolchain() {
 
 	cd "$NACL_THIRD_PARTY" || exit 1
 	mv gtest gtest_orig
-	ln -rsv "$GTEST_DIR/googletest" gtest
+	ln -rs "$GTEST_DIR/googletest" gtest
 	cd "$GTEST_DIR" || exit 1
 	cmake .
 	make
 
-	rm -fv "$REPY_PATH/breakpad"
-	ln -rsv "$BREAKPAD_DIR" "$REPY_PATH/breakpad"
+	rm -f "$REPY_PATH/breakpad"
+	ln -rs "$BREAKPAD_DIR" "$REPY_PATH/breakpad"
 	cd "$REPY_PATH/breakpad" || exit 1
 	rm -rf src
-	ln -rsv "$BREAKPAD_DIR" src
+	ln -rs "$BREAKPAD_DIR" src
 
 	cd "$LIND_SRC" || exit 1
 }
@@ -339,10 +338,10 @@ function install_to_path() {
 	# rm -rf "${REPY_PATH_LIB:?}"
 	# rm -rf "${REPY_PATH_SDK:?}"
 
-	mkdir -pv "$REPY_PATH"
-	mkdir -pv "$REPY_PATH_LIB/glibc"
-	mkdir -pv "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
-	mkdir -pv "$REPY_PATH_SDK/tools"
+	mkdir -p "$REPY_PATH"
+	mkdir -p "$REPY_PATH_LIB/glibc"
+	mkdir -p "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
+	mkdir -p "$REPY_PATH_SDK/tools"
 
 	"${RSYNC[@]}" \
 		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/" \
@@ -402,7 +401,7 @@ function check_install_dir() {
 
 	# and if it does not exit, make it.
 	if [[ ! -d "$REPY_PATH" ]]; then
-		mkdir -pv "${REPY_PATH}"
+		mkdir -p "${REPY_PATH}"
 	fi
 
 }
@@ -412,7 +411,7 @@ function check_install_dir() {
 #
 function build_repy() {
 	# set -o errexit
-	mkdir -pv "$REPY_PATH_REPY"
+	mkdir -p "$REPY_PATH_REPY"
 
 	print "Building Repy in \"$NACL_REPY\" to \"$REPY_PATH_REPY\""
 
@@ -468,7 +467,7 @@ function nightly_build() {
 #
 function clean_install() {
 	rm -rf "${REPY_PATH:?}"
-	mkdir -pv "${REPY_PATH}"
+	mkdir -p "${REPY_PATH}"
 }
 
 
@@ -509,18 +508,18 @@ function build_nacl() {
 
 	# symlink gtest dirs
 	for dir in "${dirs[@]}"; do
-		mkdir -pv "$dir"
-		rm -fv "$dir/gtest"
-		ln -rsv "$GTEST_DIR/googletest/include/gtest" "$dir"
+		mkdir -p "$dir"
+		rm -f "$dir/gtest"
+		ln -rs "$GTEST_DIR/googletest/include/gtest" "$dir"
 	done
 
 	# symlink library and include directories
 	if [[ -d scons-out/nacl_irt-x86-64 ]]; then
 		mv scons-out/nacl_irt-x86-64{,_orig}
 	fi
-	rm -fv scons-out/nacl_irt-x86-64
-	ln -rsv $mode_dir scons-out/nacl_irt-x86-64
-	mkdir -pv \
+	rm -f scons-out/nacl_irt-x86-64
+	ln -rs $mode_dir scons-out/nacl_irt-x86-64
+	mkdir -p \
 		src/untrusted/minidump_generator \
 		scons-out/nacl_irt-x86-64/lib \
 		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl \
@@ -529,11 +528,11 @@ function build_nacl() {
 		scons-out/nacl_irt-x86-64/obj/src/shared/platform \
 		scons-out/nacl_irt-x86-64/lib \
 		"$mode_dir/obj/src"
-	rm -fv \
+	rm -f \
 		src/untrusted/minidump_generator/breakpad \
 		"$mode_dir/obj/src/third_party"
-	ln -rsv "$REPY_PATH/breakpad" src/untrusted/minidump_generator/
-	ln -rsv "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
+	ln -rs "$REPY_PATH/breakpad" src/untrusted/minidump_generator/
+	ln -rs "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
 
 	# build NaCl with glibc tests
 	./scons --mode="nacl" --verbose -j"$JOBS" \
@@ -578,9 +577,9 @@ function build_glibc() {
 
 	print "Copy component.h header to glibc: "
 	cd "$MISC_DIR/liblind" || exit 1
-	rm -fv "$NACL_SRC/third_party"
+	rm -f "$NACL_SRC/third_party"
 	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
-	ln -rsv "$NACL_THIRD_PARTY" "$NACL_SRC/"
+	ln -rs "$NACL_THIRD_PARTY" "$NACL_SRC/"
 	print "done."
 
 	print "Building glibc"
@@ -614,7 +613,7 @@ function update_glibc() {
 #
 function update_glibc2() {
 	cd "$NACL_TOOLCHAIN_SRC" || exit 1
-	rm -fv BUILD/stamp-glibc64
+	rm -f BUILD/stamp-glibc64
 	make BUILD/stamp-glibc64
 }
 
