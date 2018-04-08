@@ -83,16 +83,23 @@ function print() {
 for word; do
 	case "$word" in
 	-*[eE]*)
-		PATH="$LIND_SRC/depot_tools:$PATH"
+		# submodule update is very noisy with these options enabled
+		GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
 		PIC=1
+		# for nacl environment
+		PATH="$LIND_SRC/depot_tools:$PATH"
 		LD_LIBRARY_PATH=/glibc/
+		# base repo paths
 		LIND_BASE="/usr/lind_project"
 		LIND_SRC="$LIND_BASE/lind"
 		REPY_PATH="$LIND_SRC/nacl"
+		# toolchain root
 		NACL_SDK_ROOT="$LIND_SRC/nacl/sdk"
 		LIND_MONITOR="$LIND_SRC/reference_monitor"
 		PNACLPYTHON="$(type -P python2)"
-		export PIC PATH LD_LIBRARY_PATH
+		# export the set environment
+		export GIT_SSH_COMMAND PIC
+		export PATH LD_LIBRARY_PATH
 		export LIND_BASE LIND_SRC REPY_PATH
 		export NACL_SDK_ROOT LIND_MONITOR PNACLPYTHON
 		# remove -e flag after setting up environment
