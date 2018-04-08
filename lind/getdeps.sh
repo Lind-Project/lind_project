@@ -95,6 +95,9 @@ function download() {
 }
 
 function extract() {
+	(
+	local dir="${1%%-*}"
+	cd "$dir" || return 1
 	if [[ -f "$1" ]]; then
 		case "$1" in
 		*.tar.bz2)
@@ -125,6 +128,7 @@ function extract() {
 	else
 		echo "'$1' is not a valid file!"
 	fi
+	)
 }
 
 # ======================
