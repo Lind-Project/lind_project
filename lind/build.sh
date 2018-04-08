@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.1.4-alpha
+readonly version=0.1.6-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -166,11 +166,10 @@ readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
 readonly LIND_BINUTILS_SRC="$LIND_SRC/nacl-binutils"
 readonly GTEST_DIR="$LIND_SRC/googletest"
 readonly MISC_DIR="$LIND_SRC/misc"
-readonly NACL_SRC="$LIND_SRC/nacl"
-readonly NACL_BASE="$NACL_SRC/native_client"
-readonly NACL_THIRD_PARTY="$LIND_SRC/third_party"
-readonly NACL_THIRD_PARTY_MOD="$NACL_BASE/src/third_party_mod"
-readonly NACL_TOOLCHAIN_BASE="$NACL_BASE/tools"
+readonly NACL_BASE="$LIND_SRC/nacl"
+readonly NACL_SRC="$NACL_BASE/native_client"
+readonly NACL_THIRD_PARTY="$NACL_SRC/src/third_party"
+readonly NACL_TOOLCHAIN_SRC="$NACL_SRC/tools"
 readonly NACL_REPY="$LIND_SRC/nacl_repy"
 readonly NACL_PORTS_DIR="$LIND_SRC/naclports"
 readonly NACL_GCC_DIR="$LIND_SRC/nacl-gcc"
@@ -222,7 +221,7 @@ function download_src() {
 
 	cd "$LIND_BASE" || exit 1
 	gclient config --name=nacl-gcc \
-		git@github.com:Lind-Project/nacl-gcc.git@i686_caging \
+		https://chromium.googlesource.com/native_client/nacl-gcc.git \
 		--git-deps && \
 		gclient sync
 
@@ -233,37 +232,49 @@ function download_src() {
 
 	cd "$NACL_SRC" || exit 1
 	gclient config --name=native_client \
-		git@github.com:Lind-Project/native_client.git@i686_caging \
+		https://chromium.googlesource.com/native_client/src/native_client.git \
 		--git-deps && \
 		gclient sync
-	mkdir -pv "$NACL_BASE/src/third_party"
+	cd "$NACL_SRC" || exit 1
+	mkdir -pv "$NACL_SRC/src/third_party"
 	rm -fv \
-		"$NACL_BASE/src/third_party/lss" \
-		"$NACL_BASE/src/trusted/service_runtime/linux/third_party"
-	ln -rsv "$NACL_LSS_DIR" "$NACL_BASE/src/third_party/lss"
-	ln -rsv "$NACL_BASE/src/third_party" "$NACL_BASE/src/trusted/service_runtime/linux/"
+		"$NACL_SRC/src/third_party/lss" \
+		"$NACL_SRC/src/trusted/service_runtime/linux/third_party"
+	ln -rsv "$NACL_LSS_DIR" "$NACL_SRC/src/third_party/lss"
+	ln -rsv "$NACL_SRC/src/third_party" "$NACL_SRC/src/trusted/service_runtime/linux/"
 
 	mkdir -pv "$NACL_PORTS_DIR"
-	cd "$NACL_SRC" || exit 1
+	cd "$NACL_BASE" || exit 1
 	gclient config --name=naclports \
 		https://chromium.googlesource.com/webports.git \
 		--git-deps && \
 		gclient sync
 
 	# use custom repos as bases
-	cd "$NACL_TOOLCHAIN_BASE" || exit 1
+	cd "$NACL_TOOLCHAIN_SRC" || exit 1
 	rm -rfv SRC
 	make sync-pinned
-	cd SRC || exit 1
-	mv binutils binutils_orig
-	ln -sv "$LIND_BINUTILS_SRC" binutils
-	mv gcc gcc_orig
-	ln -sv "$NACL_GCC_DIR" gcc
-	mv glibc glibc_orig
-	ln -sv "$LIND_GLIBC_SRC" glibc
 	cd .. || exit 1
+}
+
+
+# Setup base toolchain structure
+#
+function setup_toolchain() {
+	local -a dirs
+	toolchain_dirs=(binutils gcc glibc)
+
+	# use custom repos as bases
+	cd "$NACL_TOOLCHAIN_SRC/SRC" || exit 1
+	for dir in "${toolchain_dirs[@]}"; do
+		rm -f "$dir" || mv "$dir" "${dir}_orig"
+	done 2>/dev/null
+	ln -sv "$LIND_BINUTILS_SRC" binutils
+	ln -sv "$NACL_GCC_DIR" gcc
+	ln -sv "$LIND_GLIBC_SRC" glibc
 
 	# convert files from python to python2
+	cd "$NACL_SRC" || exit 1
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
 		while read -r file; do
@@ -273,15 +284,17 @@ function download_src() {
 			rm "$file.new"
 		done
 
-	cd "$NACL_BASE/src/third_party_mod" || exit 1
+	cd "$NACL_THIRD_PARTY" || exit 1
 	mv gtest gtest_orig
 	ln -rsv "$GTEST_DIR/googletest" gtest
 	cd "$GTEST_DIR" || exit 1
 	cmake .
 	make
 
+	rm -f "$REPY_PATH/breakpad"
+	ln -rsv "$BREAKPAD_DIR" "$REPY_PATH/breakpad"
 	cd "$REPY_PATH/breakpad" || exit 1
-	mv src src_orig
+	rm -rf src
 	ln -rsv "$BREAKPAD_DIR" src
 
 	cd "$LIND_SRC" || exit 1
@@ -292,7 +305,7 @@ function download_src() {
 # Warning: this can take a while!
 #
 function clean_toolchain() {
-	cd "$NACL_TOOLCHAIN_BASE" || exit 1
+	cd "$NACL_TOOLCHAIN_SRC" || exit 1
 	rm -rfv out BUILD
 }
 
@@ -321,22 +334,29 @@ function install_to_path() {
 	# rm -rfv "${REPY_PATH_LIB:?}"
 	# rm -rfv "${REPY_PATH_SDK:?}"
 
-	mkdir -pv "$REPY_PATH_BIN"
+	mkdir -pv "$REPY_PATH"
 	mkdir -pv "$REPY_PATH_LIB/glibc"
 	mkdir -pv "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
 	mkdir -pv "$REPY_PATH_SDK/tools"
 
-	"${RSYNC[@]}" "${NACL_TOOLCHAIN_BASE:?}/out/nacl-sdk/" "${REPY_PATH_SDK:?}/toolchain/${OS_SUBDIR:?}_x86_glibc/"
+	"${RSYNC[@]}" \
+		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/" \
+		"${REPY_PATH_SDK:?}/toolchain/${OS_SUBDIR:?}_x86_glibc/"
 	# we need some files from the original sdk to help compile some applications (e.g. zlib)
 	# "${RSYNC[@]}" "${MISC_DIR:?}/${OS_SUBDIR:?}_pepper_28_tools/" "${REPY_PATH_SDK:?}/tools/"
-
-	"${RSYNC[@]}" "${NACL_BASE:?}/scons-out/${MODE:?}-x86-64/staging/" "${REPY_PATH_BIN:?}/"
 
 	#install script
 	cp -f "${MISC_DIR:?}/lind.sh" "${REPY_PATH_BIN:?}/lind"
 	chmod +x "$REPY_PATH_BIN/lind"
 
-	"${RSYNC[@]}" "${NACL_TOOLCHAIN_BASE:?}/out/nacl-sdk/x86_64-nacl/lib/"  "${REPY_PATH_LIB:?}/glibc/"
+	"${RSYNC[@]}" \
+		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib/"  \
+		"${REPY_PATH_LIB:?}/glibc/"
+
+	"${RSYNC[@]}" \
+		"${NACL_SRC:?}/scons-out/${MODE:?}-x86-64/staging/" \
+		"${REPY_PATH_BIN:?}/"
+
 }
 
 
@@ -459,10 +479,9 @@ function build_nacl() {
 	dirs+=(src/shared/gio/)
 
 	print "Building NaCl"
-	cd "$NACL_BASE" || exit 1
 
 	# sed to python2
-	cd "$NACL_BASE/toolchain" || exit 1
+	cd "$NACL_SRC/toolchain" || exit 1
 	"${PNACLGREPL[@]}" 2>/dev/null | \
 		"${PNACLGREPV[@]}" | \
 		while read -r file; do
@@ -471,7 +490,7 @@ function build_nacl() {
 			cat <"$file.new" >"$file"
 			rm "$file.new"
 		done
-	cd "$NACL_BASE" || exit 1
+	cd "$NACL_SRC" || exit 1
 
 	# set base out directory
 	if ((NACL_PIC)); then
@@ -504,7 +523,7 @@ function build_nacl() {
 		"$mode_dir/obj/src"
 	rm -fv \
 		src/untrusted/minidump_generator/breakpad \
-		"$mode_dir/obj/src/third_party_mod"
+		"$mode_dir/obj/src/third_party"
 	ln -rsv "$REPY_PATH/breakpad" src/untrusted/minidump_generator/
 	ln -rsv "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
 
@@ -550,7 +569,7 @@ function build_nacl() {
 # Run clean on nacl build.
 #
 function clean_nacl() {
-	cd "$NACL_BASE"
+	cd "$NACL_SRC"
 	./scons --mode="$MODE,nacl" platform=x86-64 --nacl_glibc -c
 	print "Done Cleaning NaCl"
 }
@@ -585,7 +604,7 @@ function build_glibc() {
 	done
 
 	# turns out this works better if you do it from the nacl base dir
-	cd "$NACL_TOOLCHAIN_BASE" || exit 1
+	cd "$NACL_TOOLCHAIN_SRC" || exit 1
 	rm -rfv BUILD out
 	make -j"$JOBS" clean build-with-glibc || exit -1
 	print "Done building toolchain"
@@ -595,7 +614,7 @@ function build_glibc() {
 # Update glibc toolchain
 #
 function update_glibc() {
-	cd "$NACL_TOOLCHAIN_BASE" || exit 1
+	cd "$NACL_TOOLCHAIN_SRC" || exit 1
 	make updateglibc
 }
 
@@ -603,7 +622,7 @@ function update_glibc() {
 # Update glibc 64bit toolchain
 #
 function update_glibc2() {
-	cd "$NACL_TOOLCHAIN_BASE" || exit 1
+	cd "$NACL_TOOLCHAIN_SRC" || exit 1
 	rm -fv BUILD/stamp-glibc64
 	make BUILD/stamp-glibc64
 }
@@ -624,9 +643,15 @@ function glibc_tester() {
 
 PS3='build what: '
 
-list+=(all repy nacl buildglibc updateglibc updateglibc2 cleantoolchain)
-list+=(download cleannacl install liblind test_repy test_glibc test_apps)
-list+=(sdk rpc test nightly)
+list+=(all download setup_toolchain)
+list+=(build_glibc build_repy)
+list+=(build_liblind install_toolchain)
+list+=(build_nacl nightly)
+list+=(clean_toolchain clean_nacl)
+list+=(update_glibc update_glibc64)
+list+=(test_repy test_glibc test_apps test)
+# unimplemented
+# list+=(sdk rpc)
 
 if ((!$#)); then
 	select choice in "${list[@]}"; do
@@ -639,35 +664,38 @@ start_time=$(date +%s)
 
 # All scripts assume we start here
 while (($#)); do
-	if [[ "$1" == repy ]]; then
+	if [[ "$1" == build_repy ]]; then
 		build_repy
-	elif [[ "$1" == nacl ]]; then
+	elif [[ "$1" == build_nacl ]]; then
 		build_nacl
-	elif [[ "$1" == buildglibc ]]; then
+	elif [[ "$1" == build_glibc ]]; then
 		build_glibc
-	elif [[ "$1" == updateglibc ]]; then
+	elif [[ "$1" == update_glibc ]]; then
 		update_glibc
-	elif [[ "$1" == updateglibc2 ]]; then
+	elif [[ "$1" == update_glibc64 ]]; then
 		update_glibc2
 	elif [[ "$1" == download ]]; then
 		download_src
+	elif [[ "$1" == setup_toolchain ]]; then
+		setup_toolchain
 	elif [[ "$1" == all ]]; then
 		download_src
+		setup_toolchain
 		build_glibc
 		build_repy
-		build_nacl
 		install_to_path
 		build_liblind
-	elif [[ "$1" == cleantoolchain ]]; then
+		build_nacl
+	elif [[ "$1" == clean_toolchain ]]; then
 		print "Cleaning Toolchain"
 		clean_toolchain
-	elif [[ "$1" == install ]]; then
+	elif [[ "$1" == install_toolchain ]]; then
 		print "Installing libs into install dir"
 		install_to_path
-	elif [[ "$1" == cleannacl ]]; then
+	elif [[ "$1" == clean_nacl ]]; then
 		print "Cleaning NaCl"
 		clean_nacl
-	elif [[ "$1" == liblind ]]; then
+	elif [[ "$1" == build_liblind ]]; then
 		print "Building LibLind"
 		build_liblind
 	elif [[ "$1" == test_repy ]]; then
