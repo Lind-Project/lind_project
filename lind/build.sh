@@ -221,7 +221,7 @@ function download_src() {
 
 	cd "$LIND_BASE" || exit 1
 	gclient config --name=nacl-gcc \
-		https://chromium.googlesource.com/native_client/nacl-gcc.git \
+		git@github.com:Lind-Project/nacl-gcc.git@i686_caging \
 		--git-deps && \
 		gclient sync
 
