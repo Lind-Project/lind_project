@@ -232,7 +232,7 @@ function download_src() {
 
 	cd "$NACL_SRC" || exit 1
 	gclient config --name=native_client \
-		https://chromium.googlesource.com/native_client/src/native_client.git \
+		git@github.com:Lind-Project/native_client.git@i686_caging \
 		--git-deps && \
 		gclient sync
 	cd "$NACL_SRC" || exit 1
