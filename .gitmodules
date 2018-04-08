@@ -22,7 +22,7 @@
 	branch = i686_caging
 [submodule "nacl-gcc"]
 	path = nacl-gcc
-	url = git@github.com:Lind-Project/nacl-gcc.git
+	url = https://chromium.googlesource.com/native_client/nacl-gcc.git
 	branch = i686_caging
 [submodule "third_party"]
 	path = third_party
