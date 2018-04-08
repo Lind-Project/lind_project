@@ -226,7 +226,7 @@ function download_src() {
 		--git-deps && \
 		gclient sync
 	cd nacl-gcc || exit 1
-	for patch in "${LIND_BASE:?}"/patches/*.patch; do
+	for patch in "${LIND_BASE:?}"/patches/nacl-gcc*.patch; do
 		patch -p1 <"$patch"
 	done 2>/dev/null
 	cd "$LIND_SRC" || exit 1
@@ -241,6 +241,9 @@ function download_src() {
 		--git-deps && \
 		gclient sync
 	cd "$NACL_SRC" || exit 1
+	for patch in "${LIND_BASE:?}"/patches/native_client-*.patch; do
+		patch -p1 <"$patch"
+	done 2>/dev/null
 	mkdir -p "$NACL_SRC/src/third_party"
 	rm -f "$NACL_SRC/src/third_party/lss"
 	rm -f "$NACL_SRC/src/trusted/service_runtime/linux/third_party"

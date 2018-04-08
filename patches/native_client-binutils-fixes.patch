@@ -1,0 +1,64 @@
+diff --git a/tools/Makefile b/tools/Makefile
+index c0e3af3e08ae114862..d2f8184c86fa883046 100644
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -376,34 +376,34 @@ sdkdirs:
+ # Builds the cross assembler, linker, archiver, etc.
+ ##################################################################
+ BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
+-	rm -rf BUILD/build-binutils-$(CROSSARCH)
+-	mkdir -p UILD/build-binutils-$(CROSSARCH)
+ 	# We'd like to build binutils with -Werror, but there are a
+ 	# number of warnings in the Mac version of GCC that prevent
+ 	# us from building with -Werror today.
+-	cd BUILD/build-binutils-$(CROSSARCH) && \
+-		CC="$(GCC_CC)" \
+-		CFLAGS="$(USER_CFLAGS) -D_P_NOWAITO=3" \
+-		LDFLAGS="$(USER_LDFLAGS)" \
+-			../../SRC/binutils/configure \
+-				--prefix=$(PREFIX) \
+-				--target=$(CROSSARCH) \
+-				--with-sysroot=$(PREFIX)/$(CROSSARCH) \
+-				--disable-werror \
+-				--enable-deterministic-archives \
+-				--without-zlib
+-	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
+-		sed \
+-			-e '/HAVE_PSTAT_GETDYNAMIC/ s/1/0/' \
+-			-e '/HAVE_PSTAT_GETSTATIC/ s/1/0/' \
+-			<BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h \
+-			>BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
+-		cat \
+-			<BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new \
+-			>BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h && \
+-		rm -f BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
+-		$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all && \
+-		$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
++	rm -rf BUILD/build-binutils-$(CROSSARCH) && \
++		mkdir -p UILD/build-binutils-$(CROSSARCH) && \
++		cd BUILD/build-binutils-$(CROSSARCH) && \
++			CC="$(GCC_CC)" \
++			CFLAGS="$(USER_CFLAGS) -D_P_NOWAITO=3" \
++			LDFLAGS="$(USER_LDFLAGS)" \
++				../../SRC/binutils/configure \
++					--prefix=$(PREFIX) \
++					--target=$(CROSSARCH) \
++					--with-sysroot=$(PREFIX)/$(CROSSARCH) \
++					--disable-werror \
++					--enable-deterministic-archives \
++					--without-zlib
++		$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
++			sed \
++				-e '/HAVE_PSTAT_GETDYNAMIC/ s/1/0/' \
++				-e '/HAVE_PSTAT_GETSTATIC/ s/1/0/' \
++				<BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h \
++				>BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
++			cat \
++				<BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new \
++				>BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h && \
++			rm -f BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
++			$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all && \
++			$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
+ 	touch $@
+ 
+ .PHONY: binutils
