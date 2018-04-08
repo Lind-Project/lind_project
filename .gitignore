@@ -1,16 +1,22 @@
-# directories
-build/
-repy/
-/lind/nacl/*
-!/lind/nacl/native_client/
-/lind/native_client
-/lind/googletest
-
 # lind specific files
 list.txt
 build.log
 error.log
 .gclient*
+
+# lind specific directories
+repy/
+tools/
+build/
+testing/
+breakpad/
+buildtools/
+build_overrides/
+validator_snapshots/
+/lind/native_client
+/lind/googletest
+/lind/nacl/*
+!/lind/nacl/native_client/
 
 # archives
 *.tar*
