@@ -219,11 +219,16 @@ function download_src() {
 		ln -rsv "$dir" "$LIND_SRC/"
 	done
 
+	# use custom-patched gcc repo
 	cd "$LIND_BASE" || exit 1
 	gclient config --name=nacl-gcc \
-		git@github.com:Lind-Project/nacl-gcc.git@i686_caging \
+		https://chromium.googlesource.com/native_client/nacl-gcc.git \
 		--git-deps && \
 		gclient sync
+	cd nacl-gcc || exit 1
+	for patch in "${LIND_BASE:?}"/patches/*.patch; do
+		patch -p1 <"$patch"
+	done
 
 	cd "$LIND_SRC" || exit 1
 	rm -rf "${LIND_SRC:?}/nacl"
