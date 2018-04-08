@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.1.6-alpha
+readonly version=0.2.0-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -83,40 +83,62 @@ function print() {
 for word; do
 	case "$word" in
 	-*[eE]*)
-		# submodule update is very noisy with these options enabled
-		GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
-		PIC=1
-		# for nacl environment
-		PATH="$LIND_SRC/depot_tools:$PATH"
-		LD_LIBRARY_PATH=/glibc/
-		# base repo paths
-		LIND_BASE="/usr/lind_project"
-		LIND_SRC="$LIND_BASE/lind"
+		# setup and print out the default environment
+		PIC=1 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
+		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:$PATH"
+		LIND_BASE="/usr/lind_project" LIND_SRC="$LIND_BASE/lind"
 		REPY_PATH="$LIND_SRC/nacl"
-		# toolchain root
 		NACL_SDK_ROOT="$LIND_SRC/nacl/sdk"
 		LIND_MONITOR="$LIND_SRC/reference_monitor"
 		PNACLPYTHON="$(type -P python2)"
-		# export the set environment
 		export GIT_SSH_COMMAND PIC
-		export PATH LD_LIBRARY_PATH
+		export LD_LIBRARY_PATH PATH
 		export LIND_BASE LIND_SRC REPY_PATH
-		export NACL_SDK_ROOT LIND_MONITOR PNACLPYTHON
+		export NACL_SDK_ROOT
+		export LIND_MONITOR
+		export PNACLPYTHON
+		echo
+		echo '======================================================'
+		echo 'USING DEFAULT NACL ENVIRONMENT:'
+		echo '======================================================'
+		echo
+		cat <<-EOF
+		# quieter git submodule updates
+		PIC=1 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
+
+		# nacl toolchain environment
+		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:\$PATH"
+
+		# base repo paths
+		LIND_BASE="/usr/lind_project" LIND_SRC="$LIND_BASE/lind"
+		REPY_PATH="$LIND_SRC/nacl"
+
+		# toolchain/sdk roots
+		NACL_SDK_ROOT="$LIND_SRC/nacl/sdk"
+		LIND_MONITOR="$LIND_SRC/reference_monitor"
+		PNACLPYTHON="$(type -P python2)"
+		EOF
+		echo
+		echo '======================================================'
+		echo
 		# remove -e flag after setting up environment
 		mapfile -td ' ' args < <(printf '%s' "${@//-*[eE]*/}")
 		set -- "${args[@]}"
 		unset args
 		;;
+
 	-*[vV]*)
 		# exit after printing version
 		print "Lind $version build script"
 		exit
 		;;
+
 	-*[hH]*)
 		# exit after printing usage
 		print "$usage"
 		exit
 		;;
+
 	-*)
 		# stop processing options after '-' or '--'
 		if [[ "$word" == -- || "$word" == - ]]; then
@@ -172,16 +194,16 @@ fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
 
-readonly LIND_GLIBC_SRC="$LIND_BASE/lind_glibc"
-readonly LIND_BINUTILS_SRC="$LIND_BASE/nacl-binutils"
-readonly GTEST_DIR="$LIND_BASE/googletest"
-readonly MISC_DIR="$LIND_BASE/misc"
+readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
+readonly LIND_BINUTILS_SRC="$LIND_SRC/nacl-binutils"
+readonly GTEST_DIR="$LIND_SRC/googletest"
+readonly MISC_DIR="$LIND_SRC/misc"
 readonly NACL_BASE="$LIND_BASE/nacl"
-readonly NACL_SRC="$LIND_BASE/native_client"
-readonly NACL_GCC_DIR="$LIND_BASE/nacl-gcc"
-readonly NACL_REPY="$LIND_BASE/nacl_repy"
-readonly NACL_PORTS_DIR="$LIND_BASE/naclports"
-readonly NACL_LSS_DIR="$LIND_BASE/linux-syscall-support"
+readonly NACL_SRC="$LIND_SRC/native_client"
+readonly NACL_GCC_DIR="$LIND_SRC/nacl-gcc"
+readonly NACL_REPY="$LIND_SRC/nacl_repy"
+readonly NACL_PORTS_DIR="$LIND_SRC/naclports"
+readonly NACL_LSS_DIR="$LIND_SRC/linux-syscall-support"
 readonly BREAKPAD_DIR="$LIND_BASE/google-breakpad"
 
 readonly NACL_THIRD_PARTY="$NACL_SRC/src/third_party"
@@ -221,16 +243,16 @@ fi
 function download_src() {
 	mkdir -p "$LIND_SRC"
 	cd "$LIND_BASE" || exit 1
-	rm -rf "${NACL_GCC_DIR:?}"
-	rm -rf "${NACL_SRC:?}"
+	rm -rf "${LIND_BASE:?}/nacl-gcc"
+	rm -rf "${LIND_BASE:?}/native_client"
 	git submodule sync --recursive
-		git submodule update --remote
+	git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
 		rm -f "$LIND_SRC/$dir"
 		ln -rs "$dir" "$LIND_SRC/"
 	done
 
-	# use custom-patched gcc repo
+	# sync and patch repos
 	cd "$LIND_BASE" || exit 1
 	gclient clean
 	gclient config --name=nacl-gcc \
@@ -239,28 +261,29 @@ function download_src() {
 		gclient sync
 	cd nacl-gcc || exit 1
 	for patch in "${LIND_BASE:?}"/patches/nacl-gcc*.patch; do
-		patch -p1 <"$patch"
-	done 2>/dev/null
-	cd "$LIND_SRC" || exit 1
-	rm -rf "${LIND_SRC:?}/nacl"
-	mkdir -p "$NACL_BASE"
-	ln -rs "$LIND_SRC/native_client" "$NACL_BASE/"
-
-	cd "$NACL_BASE" || exit 1
+		patch -p1 <"$patch" 2>/dev/null || true
+	done
+	cd "$LIND_BASE" || exit 1
 	gclient config --name=native_client \
 		https://github.com/Lind-Project/native_client.git@i686_caging \
 		--git-deps && \
 		gclient sync
-	cd "$NACL_SRC" || exit 1
-	for patch in "${LIND_BASE:?}"/patches/native_client-*.patch; do
-		patch -p1 <"$patch"
-	done 2>/dev/null
+	cd "$LIND_SRC" || exit 1
+	rm -f native_client
+	ln -rs "${LIND_BASE:?}/native_client" ./
+	rm -rf "$NACL_BASE"
+	mkdir -p "$NACL_BASE"
+	cd "$NACL_BASE" || exit 1
+	rm -f native_client
+	ln -rs "${LIND_BASE:?}/native_client" ./
+
+	# use custom repos as bases
+	cd "$LIND_SRC" || exit 1
 	mkdir -p "$NACL_SRC/src/third_party"
 	rm -f "$NACL_SRC/src/third_party/lss"
 	rm -f "$NACL_SRC/src/trusted/service_runtime/linux/third_party"
 	ln -rs "$NACL_LSS_DIR" "$NACL_SRC/src/third_party/lss"
 	ln -rs "$NACL_SRC/src/third_party" "$NACL_SRC/src/trusted/service_runtime/linux/"
-
 	mkdir -p "$NACL_PORTS_DIR"
 	cd "$NACL_BASE" || exit 1
 	gclient config --name=naclports \
@@ -268,7 +291,6 @@ function download_src() {
 		--git-deps && \
 		gclient sync
 
-	# use custom repos as bases
 	cd "$NACL_TOOLCHAIN_SRC" || exit 1
 	rm -rf SRC
 	make sync-pinned
@@ -591,9 +613,13 @@ function build_glibc() {
 
 	print "Copy component.h header to glibc: "
 	cd "$MISC_DIR/liblind" || exit 1
+	rm -f "$NACL_SRC/third_party/getdeps.sh"
 	rm -f "$NACL_SRC/third_party"
-	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
+	cp -fp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
 	ln -rs "$NACL_THIRD_PARTY" "$NACL_SRC/"
+	ln -rs "$LIND_SRC/getdeps.sh" "$NACL_THIRD_PARTY/"
+	cd "$NACL_THIRD_PARTY" || exit 1
+	./getdeps.sh
 	print "done."
 
 	print "Building glibc"

@@ -3,6 +3,9 @@ list.txt
 build.log
 error.log
 .gclient*
+nacl
+nacl-gcc
+native_client
 
 # lind specific directories
 repy/
@@ -13,10 +16,8 @@ breakpad/
 buildtools/
 build_overrides/
 validator_snapshots/
-/lind/native_client
-/lind/googletest
-/lind/nacl/*
-!/lind/nacl/native_client/
+nacl/
+/lind/*/
 
 # archives
 *.tar*

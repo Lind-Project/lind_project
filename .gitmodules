@@ -40,7 +40,3 @@
 	path = google-breakpad
 	url = git@github.com:Lind-Project/google-breakpad.git
 	branch = i686_caging
-[submodule "pnacl-clang"]
-	path = pnacl-clang
-	url = git@github.com:Lind-Project/pnacl-clang.git
-	branch = i686_caging
