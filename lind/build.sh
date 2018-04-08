@@ -226,7 +226,7 @@ function download_src() {
 		gclient sync
 
 	cd "$LIND_SRC" || exit 1
-	rm -rfv "${LIND_SRC:?}/nacl"
+	rm -rf "${LIND_SRC:?}/nacl"
 	mkdir -pv "$NACL_BASE"
 	ln -rsv "$LIND_SRC/native_client" "$NACL_BASE/"
 
@@ -252,7 +252,7 @@ function download_src() {
 
 	# use custom repos as bases
 	cd "$NACL_TOOLCHAIN_SRC" || exit 1
-	rm -rfv SRC
+	rm -rf SRC
 	make sync-pinned
 	cd .. || exit 1
 }
@@ -267,7 +267,7 @@ function setup_toolchain() {
 	# use custom repos as bases
 	cd "$NACL_TOOLCHAIN_SRC/SRC" || exit 1
 	for dir in "${toolchain_dirs[@]}"; do
-		rm -f "$dir" || mv "$dir" "${dir}_orig"
+		rm -fv "$dir" || mv -v "$dir" "${dir}_orig"
 	done 2>/dev/null
 	ln -sv "$LIND_BINUTILS_SRC" binutils
 	ln -sv "$NACL_GCC_DIR" gcc
@@ -281,7 +281,7 @@ function setup_toolchain() {
 			# preserve executability
 			"${PYSED[@]}" <"$file" >"$file.new"
 			cat <"$file.new" >"$file"
-			rm "$file.new"
+			rm -v "$file.new"
 		done
 
 	cd "$NACL_THIRD_PARTY" || exit 1
@@ -291,7 +291,7 @@ function setup_toolchain() {
 	cmake .
 	make
 
-	rm -f "$REPY_PATH/breakpad"
+	rm -fv "$REPY_PATH/breakpad"
 	ln -rsv "$BREAKPAD_DIR" "$REPY_PATH/breakpad"
 	cd "$REPY_PATH/breakpad" || exit 1
 	rm -rf src
@@ -306,7 +306,7 @@ function setup_toolchain() {
 #
 function clean_toolchain() {
 	cd "$NACL_TOOLCHAIN_SRC" || exit 1
-	rm -rfv out BUILD
+	rm -rf out BUILD
 }
 
 
@@ -330,9 +330,9 @@ function install_to_path() {
 	print "** Sending NaCl stuff to \"${REPY_PATH}\""
 
 	# print "Deleting all directories in the "${REPY_PATH}" (except repy folder)"
-	# rm -rfv "${REPY_PATH_BIN:?}"
-	# rm -rfv "${REPY_PATH_LIB:?}"
-	# rm -rfv "${REPY_PATH_SDK:?}"
+	# rm -rf "${REPY_PATH_BIN:?}"
+	# rm -rf "${REPY_PATH_LIB:?}"
+	# rm -rf "${REPY_PATH_SDK:?}"
 
 	mkdir -pv "$REPY_PATH"
 	mkdir -pv "$REPY_PATH_LIB/glibc"
@@ -462,7 +462,7 @@ function nightly_build() {
 # Clean install path
 #
 function clean_install() {
-	rm -rfv "${REPY_PATH:?}"
+	rm -rf "${REPY_PATH:?}"
 	mkdir -pv "${REPY_PATH}"
 }
 
@@ -473,9 +473,12 @@ function build_nacl() {
 	local rc mode_dir
 	local -a dirs
 
-	dirs+=(src/trusted/validator/ src/trusted/validator/x86/)
-	dirs+=(src/trusted/service_runtime/ src/trusted/validator/x86/decoder/)
-	dirs+=(tests/unittests/trusted/bits/ tests/unittests/trusted/platform_qualify/)
+	dirs+=(src/trusted/validator/)
+	dirs+=(src/trusted/validator/x86/)
+	dirs+=(src/trusted/service_runtime/)
+	dirs+=(src/trusted/validator/x86/decoder/)
+	dirs+=(tests/unittests/trusted/bits/)
+	dirs+=(tests/unittests/trusted/platform_qualify/)
 	dirs+=(src/shared/gio/)
 
 	print "Building NaCl"
@@ -528,32 +531,15 @@ function build_nacl() {
 	ln -rsv "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
 
 	# build NaCl with glibc tests
-	./scons \
-		--mode="$MODE,nacl" \
-		--verbose \
-		--nacl_glibc \
-		-j"$JOBS" \
-		-k \
-		platformii=x86-64 \
-		nacl_pic="$NACL_PIC" \
+	./scons --mode="nacl" --verbose -j"$JOBS" \
+		platform=x86-64 nacl_pic="$NACL_PIC"
 		build_bin
-	./scons \
-		--mode="$MODE,nacl" \
-		--verbose \
-		-j"$JOBS" \
-		-k \
-		platform=x86-64 \
-		nacl_pic="$NACL_PIC" \
+	./scons --mode="nacl" --verbose -j"$JOBS" \
+		platform=x86-64 nacl_pic="$NACL_PIC"
 		bindir=scons-out/nacl_irt-x86-64/staging \
 		install_bin
-	./scons \
-		--mode="$MODE,nacl" \
-		--verbose \
-		--nacl_glibc \
-		-j"$JOBS" \
-		-k \
-		platform=x86-64 \
-		nacl_pic="$NACL_PIC"
+	./scons --mode="$MODE,nacl" --verbose -j"$JOBS" --nacl_glibc \
+		platform=x86-64 nacl_pic="$NACL_PIC"
 
 	# and check
 	rc="$?"
@@ -605,7 +591,7 @@ function build_glibc() {
 
 	# turns out this works better if you do it from the nacl base dir
 	cd "$NACL_TOOLCHAIN_SRC" || exit 1
-	rm -rfv BUILD out
+	rm -rf BUILD out
 	make -j"$JOBS" clean build-with-glibc || exit -1
 	print "Done building toolchain"
 }
@@ -637,7 +623,7 @@ function glibc_tester() {
 	make clean all
 
 	cd .. || exit 1
-	rm -rfv lind.metadata linddata.*
+	rm -rf lind.metadata linddata.*
 	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
 }
 
