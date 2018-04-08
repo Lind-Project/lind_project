@@ -132,7 +132,7 @@ for word; do
 	esac
 done
 
-trap 'print "All done."' EXIT
+trap '{ print "All done."; cd "$LIND_SRC" 2>/dev/null; }' EXIT
 
 # Show command that will be executed
 print "Command line arguments: $0 $*"
@@ -162,27 +162,30 @@ elif type -P nproc &>/dev/null; then
 else
 	readonly JOBS='4'
 fi
-if [[ -z "$PIC" ]] || ((PIC)); then
+if ((PIC)); then
+	# default to position-independant
+	# code if $PIC is unset or non-zero
 	readonly NACL_PIC=1
 else
 	readonly NACL_PIC=0
 fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
-readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
-readonly LIND_BINUTILS_SRC="$LIND_SRC/nacl-binutils"
-readonly GTEST_DIR="$LIND_SRC/googletest"
-readonly MISC_DIR="$LIND_SRC/misc"
-readonly NACL_BASE="$LIND_SRC/nacl"
-readonly NACL_SRC="$NACL_BASE/native_client"
+
+readonly LIND_GLIBC_SRC="$LIND_BASE/lind_glibc"
+readonly LIND_BINUTILS_SRC="$LIND_BASE/nacl-binutils"
+readonly GTEST_DIR="$LIND_BASE/googletest"
+readonly MISC_DIR="$LIND_BASE/misc"
+readonly NACL_BASE="$LIND_BASE/nacl"
+readonly NACL_SRC="$LIND_BASE/native_client"
+readonly NACL_GCC_DIR="$LIND_BASE/nacl-gcc"
+readonly NACL_REPY="$LIND_BASE/nacl_repy"
+readonly NACL_PORTS_DIR="$LIND_BASE/naclports"
+readonly NACL_LSS_DIR="$LIND_BASE/linux-syscall-support"
+readonly BREAKPAD_DIR="$LIND_BASE/google-breakpad"
+
 readonly NACL_THIRD_PARTY="$NACL_SRC/src/third_party"
 readonly NACL_TOOLCHAIN_SRC="$NACL_SRC/tools"
-readonly NACL_REPY="$LIND_SRC/nacl_repy"
-readonly NACL_PORTS_DIR="$LIND_SRC/naclports"
-readonly NACL_GCC_DIR="$LIND_SRC/nacl-gcc"
-readonly NACL_LSS_DIR="$LIND_SRC/linux-syscall-support"
-readonly BREAKPAD_DIR="$LIND_SRC/google-breakpad"
-
 readonly REPY_PATH="$REPY_PATH"
 readonly REPY_PATH_BIN="$REPY_PATH/bin"
 readonly REPY_PATH_REPY="$REPY_PATH/repy"
@@ -218,9 +221,10 @@ fi
 function download_src() {
 	mkdir -p "$LIND_SRC"
 	cd "$LIND_BASE" || exit 1
-
+	rm -rf "${NACL_GCC_DIR:?}"
+	rm -rf "${NACL_SRC:?}"
 	git submodule sync --recursive
-	git submodule update --remote
+		git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
 		rm -f "$LIND_SRC/$dir"
 		ln -rs "$dir" "$LIND_SRC/"
@@ -228,6 +232,7 @@ function download_src() {
 
 	# use custom-patched gcc repo
 	cd "$LIND_BASE" || exit 1
+	gclient clean
 	gclient config --name=nacl-gcc \
 		https://chromium.googlesource.com/native_client/nacl-gcc.git \
 		--git-deps && \
@@ -243,8 +248,7 @@ function download_src() {
 
 	cd "$NACL_BASE" || exit 1
 	gclient config --name=native_client \
-		https://github.com/Lind-Project/native_client.git
-	i686_caging \
+		https://github.com/Lind-Project/native_client.git@i686_caging \
 		--git-deps && \
 		gclient sync
 	cd "$NACL_SRC" || exit 1
