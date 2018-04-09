@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.2.1-alpha
+readonly version=0.2.2-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -194,17 +194,17 @@ fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
 
+readonly BREAKPAD_DIR="$LIND_BASE/google-breakpad"
+readonly GTEST_DIR="$LIND_SRC/googletest"
 readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
 readonly LIND_BINUTILS_SRC="$LIND_SRC/nacl-binutils"
-readonly GTEST_DIR="$LIND_SRC/googletest"
 readonly MISC_DIR="$LIND_SRC/misc"
-readonly NACL_BASE="$LIND_BASE/nacl"
-readonly NACL_SRC="$LIND_SRC/native_client"
 readonly NACL_GCC_DIR="$LIND_SRC/nacl-gcc"
+readonly NACL_SRC="$LIND_SRC/native_client"
 readonly NACL_REPY="$LIND_SRC/nacl_repy"
 readonly NACL_PORTS_DIR="$LIND_SRC/naclports"
 readonly NACL_LSS_DIR="$LIND_SRC/linux-syscall-support"
-readonly BREAKPAD_DIR="$LIND_BASE/google-breakpad"
+readonly NACL_BASE="$LIND_BASE/nacl"
 
 readonly NACL_THIRD_PARTY="$NACL_SRC/src/third_party"
 readonly NACL_TOOLCHAIN_SRC="$NACL_SRC/tools"
@@ -229,9 +229,8 @@ readonly -a PNACLGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 readonly -a RSYNC=(rsync '-acrvP' '--info=progress2')
 
-readonly -a SUBMODULES=(lind_glibc nacl-binutils nacl-gcc pnacl-clang
-			nacl_repy native_client misc third_party
-			googletest google-breakpad linux-syscall-support)
+readonly -a SUBMODULES=(nacl-binutils pnacl-clang nacl_repy lind_glibc misc
+			third_party googletest google-breakpad linux-syscall-support)
 
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
 	print "You need to set \"$NACL_SDK_ROOT\" to \"$REPY_PATH_SDK\""
@@ -243,8 +242,8 @@ fi
 function download_src() {
 	mkdir -p "$LIND_SRC"
 	cd "$LIND_BASE" || exit 1
-	# rm -rf "${LIND_BASE:?}/nacl-gcc"
-	# rm -rf "${LIND_BASE:?}/native_client"
+	rm -rf "${LIND_BASE:?}/nacl-gcc"
+	rm -rf "${LIND_BASE:?}/native_client"
 	git submodule sync --recursive
 	git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
@@ -254,26 +253,27 @@ function download_src() {
 
 	# sync and patch repos
 	cd "$LIND_SRC" || exit 1
-	ln -Trsfv "${LIND_BASE:?}/nacl-gcc" nacl-gcc
+	# ln -Trsfv "${LIND_BASE:?}/nacl-gcc" nacl-gcc
 	gclient clean
 	gclient config --name=nacl-gcc \
 		https://chromium.googlesource.com/native_client/nacl-gcc.git \
 		--git-deps && \
 		gclient sync
-	cd nacl-gcc || exit 1
+	# cd nacl-gcc || exit 1
 	# for patch in "${LIND_BASE:?}"/patches/nacl-gcc-*.patch; do
 	#         patch -p1 <"$patch" 2>/dev/null || true
 	# done
-	cd "$LIND_SRC" || exit 1
-	ln -Trsfv "${LIND_BASE:?}/native_client" native_client
+	# cd "$LIND_SRC" || exit 1
+	# ln -Trsfv "${LIND_BASE:?}/native_client" native_client
 	gclient config --name=native_client \
 		https://github.com/Lind-Project/native_client.git@lind \
 		--git-deps && \
 		gclient sync
-	cd native_client || exit 1
+	# cd native_client || exit 1
 	# for patch in "${LIND_BASE:?}"/patches/native_client-*.patch; do
 	#         patch -p1 <"$patch" 2>/dev/null || true
 	# done
+	# cd "$LIND_SRC" || exit 1
 	cd "$LIND_BASE" || exit 1
 	rm -rf "$NACL_BASE"
 	mkdir -p "$NACL_BASE"
@@ -283,17 +283,14 @@ function download_src() {
 	# use custom repos as bases
 	cd "$LIND_SRC" || exit 1
 	mkdir -p "$NACL_SRC/src/third_party"
-	rm -f "$NACL_SRC/src/third_party/lss"
-	rm -f "$NACL_SRC/src/trusted/service_runtime/linux/third_party"
-	ln -rs "$NACL_LSS_DIR" "$NACL_SRC/src/third_party/lss"
-	ln -rs "$NACL_SRC/src/third_party" "$NACL_SRC/src/trusted/service_runtime/linux/"
+	ln -Trfs "$NACL_LSS_DIR" "$NACL_SRC/src/third_party/lss"
+	ln -Trfs "$NACL_SRC/src/third_party" "$NACL_SRC/src/trusted/service_runtime/linux/third_party"
 	mkdir -p "$NACL_PORTS_DIR"
 	cd "$NACL_BASE" || exit 1
 	gclient config --name=naclports \
 		https://chromium.googlesource.com/webports.git \
 		--git-deps && \
 		gclient sync
-
 	cd "$NACL_TOOLCHAIN_SRC" || exit 1
 	rm -rf SRC
 	make sync-pinned
@@ -310,7 +307,9 @@ function setup_toolchain() {
 	# use custom repos as bases
 	cd "$NACL_TOOLCHAIN_SRC/SRC" || exit 1
 	for dir in "${toolchain_dirs[@]}"; do
-		rm -f "$dir" || mv -v "$dir" "${dir}_orig"
+		print "changing: [$dir]"
+		rm -fv "$dir"
+		mv -v "$dir" "${dir}_orig"
 	done 2>/dev/null
 	ln -s "$LIND_BINUTILS_SRC" binutils
 	ln -s "$NACL_GCC_DIR" gcc
@@ -321,6 +320,7 @@ function setup_toolchain() {
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
 		while read -r file; do
+			print "changing: [$file]"
 			# preserve executability
 			"${PYSED[@]}" <"$file" >"$file.new"
 			cat <"$file.new" >"$file"
