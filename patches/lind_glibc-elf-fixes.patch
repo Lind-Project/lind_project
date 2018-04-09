@@ -92,12 +92,3 @@ index c5866eb9def3becfc6..f82c9efe188540e8df 100644
  	$(make-target-directory)
  	touch $@
  
-@@ -245,7 +246,7 @@ endef
- 
- # The top-level glibc Makefile expects subdir_install to update the stubs file.
- subdir_install: stubs
--
-+
- # Get rid of these variables if they came from the parent.
- routines =
- aux =

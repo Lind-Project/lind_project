@@ -1,5 +1,5 @@
 diff --git a/tools/Makefile b/tools/Makefile
-index 3389203cc123b920fd..0607c33067aca02ac9 100644
+index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -43,7 +43,7 @@ SHELL = /bin/bash
@@ -20,19 +20,9 @@ index 3389203cc123b920fd..0607c33067aca02ac9 100644
  
  gcc_extra_dir = $(subst cloog-ppl,cloog,$*)
  gcc_extra_version = $($(shell echo $*| tr '[:lower:]-' '[:upper:]_')_VERSION)
-@@ -338,23 +338,35 @@ sdkdirs:
- # Builds the cross assembler, linker, archiver, etc.
- ##################################################################
- BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
--	rm -rf BUILD/build-binutils-$(CROSSARCH)
--	mkdir BUILD/build-binutils-$(CROSSARCH)
- 	# We'd like to build binutils with -Werror, but there are a
- 	# number of warnings in the Mac version of GCC that prevent
+@@ -345,15 +345,27 @@ BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
  	# us from building with -Werror today.
--	cd BUILD/build-binutils-$(CROSSARCH) && \
-+	rm -rf BUILD/build-binutils-$(CROSSARCH) && \
-+	  mkdir BUILD/build-binutils-$(CROSSARCH) && \
-+	  cd BUILD/build-binutils-$(CROSSARCH) && \
+ 	cd BUILD/build-binutils-$(CROSSARCH) && \
  	  CC="$(GCC_CC)" \
 -	  CFLAGS="$(USER_CFLAGS)" \
 +	  CFLAGS="$(USER_CFLAGS) -D_P_NOWAITO=3" \
@@ -43,12 +33,10 @@ index 3389203cc123b920fd..0607c33067aca02ac9 100644
  	    --prefix=$(PREFIX) \
  	    --target=$(CROSSARCH) \
  	    --with-sysroot=$(PREFIX)/$(CROSSARCH) \
--	    --disable-werror --enable-deterministic-archives --without-zlib
+ 	    --disable-werror --enable-deterministic-archives --without-zlib
 -	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all
 -	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
--	touch $@
-+	    --disable-werror --enable-deterministic-archives --without-zlib && \
-+	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
++	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
 +	  sed \
 +	    -e '/HAVE_PSTAT_GETDYNAMIC/ s/1/0/' \
 +	    -e '/HAVE_PSTAT_GETSTATIC/ s/1/0/' \
@@ -59,11 +47,10 @@ index 3389203cc123b920fd..0607c33067aca02ac9 100644
 +	    >BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h && \
 +	  rm -f BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
 +	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all && \
-+	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install && \
-+	  touch $@
++	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
+ 	touch $@
  
  .PHONY: binutils
- binutils: BUILD/stamp-$(CROSSARCH)-binutils
 @@ -384,16 +396,11 @@ ifneq ($(SRCDIR),)
  GCC_EXTRAS_FLAGS = \
      --with-gmp=$(GMP_DIR) \
