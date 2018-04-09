@@ -243,8 +243,7 @@ fi
 function download_src() {
 	mkdir -p "$LIND_SRC"
 	cd "$LIND_BASE" || exit 1
-	rm -rf "$NACL_GCC_DIR"
-	rm -rf "$NATIVE_CLIENT_SRC"
+	rm -rf nacl-gcc native_client
 	git submodule sync --recursive
 	git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
@@ -319,7 +318,7 @@ function setup_toolchain() {
 
 	# fix "implicit rule" make errors
 	cd "$LIND_GLIBC_SRC" || exit 1
-	for patch in "${LIND_BASE:?}"/patches/nacl_glibc-*.patch; do
+	for patch in "${LIND_BASE:?}"/patches/lind_glibc-*.patch; do
 		patch -p1 <"$patch" 2>/dev/null || true
 	done
 
