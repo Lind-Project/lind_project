@@ -1,42 +1,46 @@
 [submodule "reference_monitor"]
 	path = reference_monitor
-	url = git@github.com:Lind-Project/reference_monitor.git
+	url = https://github.com/Lind-Project/reference_monitor.git
 [submodule "caging"]
 	path = caging
-	url = git@github.com:detectivelyw/caging.git
+	url = https://github.com/detectivelyw/caging.git
 [submodule "lind_glibc"]
 	path = lind_glibc
-	url = git@github.com:Lind-Project/Lind-GlibC.git
-	branch = i686_caging
+	url = https://github.com/Lind-Project/Lind-GlibC.git
+	branch = one_proc_model
 [submodule "nacl_repy"]
 	path = nacl_repy
-	url = git@github.com:Lind-Project/nacl_repy.git
+	url = https://github.com/Lind-Project/nacl_repy.git
 	branch = i686_caging
 [submodule "lind_experiments"]
 	path = lind_experiments
-	url = git@github.com:Lind-Project/lind_experiments.git
+	url = https://github.com/Lind-Project/lind_experiments.git
 	branch = i686_caging
 [submodule "misc"]
 	path = misc
-	url = git@github.com:Lind-Project/Lind-misc.git
+	url = https://github.com/Lind-Project/Lind-misc.git
 	branch = i686_caging
 [submodule "third_party"]
 	path = third_party
-	url = git@github.com:Lind-Project/third_party.git
+	url = https://github.com/Lind-Project/third_party.git
 	branch = i686_caging
 [submodule "linux-syscall-support"]
 	path = linux-syscall-support
-	url = git@github.com:Lind-Project/linux-syscall-support.git
+	url = https://github.com/Lind-Project/linux-syscall-support.git
 	branch = i686_caging
 [submodule "nacl-binutils"]
 	path = nacl-binutils
-	url = git@github.com:Lind-Project/nacl-binutils.git
+	url = https://github.com/Lind-Project/nacl-binutils.git
 	branch = i686_caging
 [submodule "googletest"]
 	path = googletest
-	url = git@github.com:Lind-Project/googletest.git
+	url = https://github.com/Lind-Project/googletest.git
 	branch = i686_caging
 [submodule "google-breakpad"]
 	path = google-breakpad
-	url = git@github.com:Lind-Project/google-breakpad.git
+	url = https://github.com/Lind-Project/google-breakpad.git
 	branch = i686_caging
+[submodule "native_client"]
+	path = native_client
+	url = https://github.com/Lind-Project/native_client.git
+	branch = lind
