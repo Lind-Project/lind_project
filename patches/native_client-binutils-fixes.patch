@@ -9,7 +9,7 @@ index 480638317349b4de20..30d56fb454a745d978 100755
  # Use of this source code is governed by a BSD-style license that can be
  # found in the LICENSE file.
 diff --git a/tools/Makefile b/tools/Makefile
-index 3389203cc123b920fd..21102786c9eb0de4f3 100644
+index 3389203cc123b920fd..0607c33067aca02ac9 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -43,7 +43,7 @@ SHELL = /bin/bash
@@ -287,3 +287,23 @@ index 3389203cc123b920fd..21102786c9eb0de4f3 100644
  	fi
  	install -m 755 -d  $(ARCH_DEST)/lib/ldscripts
  	cp -f SRC/glibc/nacl/dyn-link/ldscripts/* \
+@@ -853,7 +867,8 @@ ifeq ($(PLATFORM),win)
+ 	    --without-python \
+ 	    --host=x86_64-w64-mingw32 \
+ 	    --target=x86_64-nacl \
+-	    --enable-targets=arm-none-nacl-eabi
++	    --enable-targets=arm-none-nacl-eabi \
++	    --disable-werror
+ 	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) all
+ 	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) DESTDIR=$(DESTDIR) install
+ else
+@@ -864,7 +879,8 @@ else
+ 	  ../../SRC/gdb/configure \
+ 	    --prefix=$(PREFIX) \
+ 	    --target=x86_64-nacl \
+-	    --enable-targets=arm-none-eabi-nacl
++	    --enable-targets=arm-none-eabi-nacl \
++	    --disable-werror
+ 	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) all
+ 	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) DESTDIR=$(DESTDIR) install
+ endif
