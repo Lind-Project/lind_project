@@ -1,10 +1,29 @@
 diff --git a/tools/Makefile b/tools/Makefile
-index 3389203cc123b920fd..89613d5c847b2aacab 100644
+index 3389203cc123b920fd..63d8fa2b92e68ecc2b 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
-@@ -345,13 +345,25 @@ BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
+@@ -43,7 +43,7 @@ SHELL = /bin/bash
+ # or add to git-cl codereview.settings:
+ #   PUSH_URL_CONFIG: url.ssh://gerrit.chromium.org.pushinsteadof
+ #   ORIGIN_URL_CONFIG: http://git.chromium.org
+-GIT_BASE_URL = http://git.chromium.org/native_client
++GIT_BASE_URL = https://chromium.googlesource.com/native_client
+ 
+ CROSSARCH = x86_64-nacl
+ TOOLCHAINLOC ?= out
+@@ -338,22 +338,34 @@ sdkdirs:
+ # Builds the cross assembler, linker, archiver, etc.
+ ##################################################################
+ BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
+-	rm -rf BUILD/build-binutils-$(CROSSARCH)
+-	mkdir BUILD/build-binutils-$(CROSSARCH)
+ 	# We'd like to build binutils with -Werror, but there are a
+ 	# number of warnings in the Mac version of GCC that prevent
  	# us from building with -Werror today.
- 	cd BUILD/build-binutils-$(CROSSARCH) && \
+-	cd BUILD/build-binutils-$(CROSSARCH) && \
++	rm -rf BUILD/build-binutils-$(CROSSARCH) && \
++	  mkdir BUILD/build-binutils-$(CROSSARCH) && \
++	  cd BUILD/build-binutils-$(CROSSARCH) && \
  	  CC="$(GCC_CC)" \
 -	  CFLAGS="$(USER_CFLAGS)" \
 +	  CFLAGS="$(USER_CFLAGS) -D_P_NOWAITO=3" \
@@ -16,6 +35,8 @@ index 3389203cc123b920fd..89613d5c847b2aacab 100644
  	    --target=$(CROSSARCH) \
  	    --with-sysroot=$(PREFIX)/$(CROSSARCH) \
 -	    --disable-werror --enable-deterministic-archives --without-zlib
+-	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all
+-	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
 +	    --disable-werror --enable-deterministic-archives --without-zlib && \
 +	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
 +	  sed \
@@ -26,7 +47,9 @@ index 3389203cc123b920fd..89613d5c847b2aacab 100644
 +	  cat \
 +	    <BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new \
 +	    >BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h && \
-+	  rm -f BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new
- 	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all
- 	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
++	  rm -f BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
++	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all && \
++	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
  	touch $@
+ 
+ .PHONY: binutils
