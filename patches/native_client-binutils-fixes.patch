@@ -1,5 +1,15 @@
+diff --git a/src/trusted/service_runtime/export_header.py b/src/trusted/service_runtime/export_header.py
+index 480638317349b4de20..30d56fb454a745d978 100755
+--- a/src/trusted/service_runtime/export_header.py
++++ b/src/trusted/service_runtime/export_header.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/bin/python2
+ # Copyright (c) 2008 The Native Client Authors. All rights reserved.
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
 diff --git a/tools/Makefile b/tools/Makefile
-index 3389203cc123b920fd..57a58587ece44ade33 100644
+index 3389203cc123b920fd..21102786c9eb0de4f3 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -43,7 +43,7 @@ SHELL = /bin/bash
@@ -11,56 +21,269 @@ index 3389203cc123b920fd..57a58587ece44ade33 100644
  
  CROSSARCH = x86_64-nacl
  TOOLCHAINLOC ?= out
+@@ -208,7 +208,7 @@ gcc-extras:
+ 	    echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version; \
+ 	fi
+ 
+-gcc-extras := gmp mpfr mpc ppl cloog-ppl
++gcc-extras := gmp mpfr mpc
+ 
+ gcc_extra_dir = $(subst cloog-ppl,cloog,$*)
+ gcc_extra_version = $($(shell echo $*| tr '[:lower:]-' '[:upper:]_')_VERSION)
 @@ -338,23 +338,35 @@ sdkdirs:
  # Builds the cross assembler, linker, archiver, etc.
  ##################################################################
  BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
 -	rm -rf BUILD/build-binutils-$(CROSSARCH)
 -	mkdir BUILD/build-binutils-$(CROSSARCH)
--	# We'd like to build binutils with -Werror, but there are a
--	# number of warnings in the Mac version of GCC that prevent
--	# us from building with -Werror today.
+ 	# We'd like to build binutils with -Werror, but there are a
+ 	# number of warnings in the Mac version of GCC that prevent
+ 	# us from building with -Werror today.
 -	cd BUILD/build-binutils-$(CROSSARCH) && \
--	  CC="$(GCC_CC)" \
++	rm -rf BUILD/build-binutils-$(CROSSARCH) && \
++	  mkdir BUILD/build-binutils-$(CROSSARCH) && \
++	  cd BUILD/build-binutils-$(CROSSARCH) && \
+ 	  CC="$(GCC_CC)" \
 -	  CFLAGS="$(USER_CFLAGS)" \
--	  LDFLAGS="$(USER_LDFLAGS)" \
--	  ../../SRC/binutils/configure \
--	    --prefix=$(PREFIX) \
--	    --target=$(CROSSARCH) \
--	    --with-sysroot=$(PREFIX)/$(CROSSARCH) \
++	  CFLAGS="$(USER_CFLAGS) -D_P_NOWAITO=3" \
+ 	  LDFLAGS="$(USER_LDFLAGS)" \
+ 	  ../../SRC/binutils/configure \
++	    CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
++	    CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
+ 	    --prefix=$(PREFIX) \
+ 	    --target=$(CROSSARCH) \
+ 	    --with-sysroot=$(PREFIX)/$(CROSSARCH) \
 -	    --disable-werror --enable-deterministic-archives --without-zlib
 -	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all
 -	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
 -	touch $@
-+	 # We'd like to build binutils with -Werror, but there are a
-+	 # number of warnings in the Mac version of GCC that prevent
-+	 # us from building with -Werror today.
-+	 rm -rf BUILD/build-binutils-$(CROSSARCH) && \
-+	   mkdir BUILD/build-binutils-$(CROSSARCH) && \
-+	   cd BUILD/build-binutils-$(CROSSARCH) && \
-+	   CC="$(GCC_CC)" \
-+	   CFLAGS="$(USER_CFLAGS) -D_P_NOWAITO=3" \
-+	   LDFLAGS="$(USER_LDFLAGS)" \
-+	   ../../SRC/binutils/configure \
-+	     CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
-+	     CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
-+	     --prefix=$(PREFIX) \
-+	     --target=$(CROSSARCH) \
-+	     --with-sysroot=$(PREFIX)/$(CROSSARCH) \
-+	     --disable-werror --enable-deterministic-archives --without-zlib && \
-+	   $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
-+	   sed \
-+	     -e '/HAVE_PSTAT_GETDYNAMIC/ s/1/0/' \
-+	     -e '/HAVE_PSTAT_GETSTATIC/ s/1/0/' \
-+	     <BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h \
-+	     >BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
-+	   cat \
-+	     <BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new \
-+	     >BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h && \
-+	   rm -f BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
-+	   $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all && \
-+	   $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install && \
-+	   touch $@
++	    --disable-werror --enable-deterministic-archives --without-zlib && \
++	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
++	  sed \
++	    -e '/HAVE_PSTAT_GETDYNAMIC/ s/1/0/' \
++	    -e '/HAVE_PSTAT_GETSTATIC/ s/1/0/' \
++	    <BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h \
++	    >BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
++	  cat \
++	    <BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new \
++	    >BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h && \
++	  rm -f BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
++	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all && \
++	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install && \
++	  touch $@
  
  .PHONY: binutils
  binutils: BUILD/stamp-$(CROSSARCH)-binutils
+@@ -384,16 +396,11 @@ ifneq ($(SRCDIR),)
+ GCC_EXTRAS_FLAGS = \
+     --with-gmp=$(GMP_DIR) \
+     --with-mpfr=$(MPFR_DIR) \
+-    --with-ppl=$(PPL_DIR) \
+-    --with-host-libstdcxx="-lpwl $(lstdc++) -lm" \
+-    --with-cloog=$(CLOOG_DIR) \
+-    --disable-ppl-version-check
++    --with-host-libstdcxx="-lpwl $(lstdc++) -lm"
+ else
+ GCC_EXTRAS_FLAGS = \
+     --with-gmp \
+-    --with-mpfr \
+-    --with-ppl \
+-    --with-cloog
++    --with-mpfr
+ endif
+ 
+ GCC_CONFIGURE_FLAGS = \
+@@ -557,28 +564,30 @@ endif
+ # by the Native Client threads package build.
+ ##################################################################
+ 
+-NEWLIB_CFLAGS = -O2 -D_I386MACH_ALLOW_HW_INTERRUPTS -DSIGNAL_PROVIDED \
+-  -mtls-use-call
++NEWLIB_CFLAGS = -O2 \
++		-D_I386MACH_ALLOW_HW_INTERRUPTS \
++		-DSIGNAL_PROVIDED \
++		-mtls-use-call
+ 
+ BUILD/stamp-$(CROSSARCH)-newlib: | SRC/newlib BUILD newlib-libc-script
+ 	rm -rf BUILD/build-newlib-$(CROSSARCH)
+ 	mkdir BUILD/build-newlib-$(CROSSARCH)
+ 	PATH=$(BUILDPATH) && export PATH && \
+-	  cd BUILD/build-newlib-$(CROSSARCH) && \
+-	  ../../SRC/newlib/configure \
+-		      --disable-libgloss \
+-		      --enable-newlib-iconv \
+-		      --enable-newlib-io-long-long \
+-		      --enable-newlib-io-long-double \
+-		      --enable-newlib-io-c99-formats \
+-		      --enable-newlib-mb \
+-	    --prefix=$(PREFIX) \
+-	    CFLAGS="$(USER_CFLAGS)" \
+-	    CFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
+-	    CXXFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
+-	    --target=$(CROSSARCH) && \
+-	  $(MAKE) && \
+-	  $(MAKE) DESTDIR=$(DESTDIR) install
++		cd BUILD/build-newlib-$(CROSSARCH) && \
++		../../SRC/newlib/configure \
++			--disable-libgloss \
++			--enable-newlib-iconv \
++			--enable-newlib-io-long-long \
++			--enable-newlib-io-long-double \
++			--enable-newlib-io-c99-formats \
++			--enable-newlib-mb \
++			--prefix=$(PREFIX) \
++			CFLAGS="$(USER_CFLAGS)" \
++			CFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
++			CXXFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
++			--target=$(CROSSARCH) && \
++	  $(MAKE_COMPAT) && \
++	  $(MAKE+COMPAT) DESTDIR=$(DESTDIR) install
+ ifeq ($(CANNED_REVISION), no)
+ 	rm $(DESTDIR)$(PREFIX)/$(CROSSARCH)/include/pthread.h
+ endif
+@@ -619,77 +628,82 @@ ARCH_DEST_LIB_NATIVE = $(PREFIX_NATIVE)/$(CROSSARCH)/$(if $(filter 32,$(LIB_BITS
+ 
+ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
+ 	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
+-	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
+-	fi
+-	rm -rf BUILD/build-glibc32
+-	mkdir -p BUILD/build-glibc32/lib
++		$(MAKE_COMPAT) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
++	fi && \
++	rm -rf BUILD/build-glibc32 && \
++	mkdir -p BUILD/build-glibc32/lib && \
+ 	cd BUILD/build-glibc32 && ../../SRC/glibc/configure \
+-	    BUILD_CC="gcc -O2 -g" \
+-	    CC="$(GLIBC_CC) -m32" \
+-	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs -march=i486 $(GLIBC_CFLAGS)" \
+-	    libc_cv_forced_unwind=yes \
+-	    libc_cv_c_cleanup=yes \
+-	    libc_cv_slibdir=/lib32 \
+-	    --prefix= \
+-	    --libdir=/lib32 \
+-	    --host=i486-linux-gnu \
+-	    --with-headers=$(LINUX_HEADERS) \
+-	    --enable-kernel=2.6.18
+-	$(MAKE) -C BUILD/build-glibc32
+-	$(MAKE) -C BUILD/build-glibc32 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
++		MAKE=$(MAKE_COMPAT) \
++		BUILD_CC="gcc -O2 -g" \
++		CC="$(GLIBC_CC) -m32" \
++		CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs -march=i686 $(GLIBC_CFLAGS)" \
++		libc_cv_forced_unwind=yes \
++		libc_cv_c_cleanup=yes \
++		libc_cv_slibdir=/lib32 \
++		--with-tls \
++		--prefix= \
++		--libdir=/lib32 \
++		--host=i686-linux-gnu \
++		--with-headers=$(LINUX_HEADERS) \
++		--enable-kernel=2.6.18 && \
++	$(MAKE_COMPAT) -C BUILD/build-glibc32 && \
++	$(MAKE_COMPAT) -C BUILD/build-glibc32 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
+ 	touch $@
+ 
+ BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
+ 	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
+-	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
+-	fi
+-	rm -rf BUILD/build-glibc64
+-	mkdir -p BUILD/build-glibc64
++		$(MAKE_COMPAT) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
++	fi && \
++	rm -rf BUILD/build-glibc64 && \
++	mkdir -p BUILD/build-glibc64 && \
+ 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
+-	    BUILD_CC="gcc -O2 -g" \
+-	    CC="$(GLIBC_CC) -m64" \
+-	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
+-	    libc_cv_forced_unwind=yes \
+-	    libc_cv_c_cleanup=yes \
+-	    libc_cv_slibdir=/lib \
+-	    --prefix= \
+-	    --libdir=/lib \
+-	    --host=x86_64-linux-gnu \
+-	    --with-headers=$(LINUX_HEADERS) \
+-	    --enable-kernel=2.6.18
+-	$(MAKE) -C BUILD/build-glibc64
+-	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
++		MAKE=$(MAKE_COMPAT) \
++		BUILD_CC="gcc -O2 -g" \
++		CC="$(GLIBC_CC) -m64" \
++		CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
++		libc_cv_forced_unwind=yes \
++		libc_cv_c_cleanup=yes \
++		libc_cv_slibdir=/lib \
++		--with-tls \
++		--prefix= \
++		--libdir=/lib \
++		--host=x86_64-linux-gnu \
++		--with-headers=$(LINUX_HEADERS) \
++		--enable-kernel=2.6.18 && \
++	$(MAKE_COMPAT) -C BUILD/build-glibc64 && \
++	$(MAKE_COMPAT) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
+ 	touch $@
+ 
+ .PHONY: updateglibc
+ updateglibc:
+ 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
+-	    BUILD_CC="gcc -O2 -g" \
+-	    CC="$(GLIBC_CC) -m64" \
+-	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
+-	    libc_cv_forced_unwind=yes \
+-	    libc_cv_c_cleanup=yes \
+-	    libc_cv_slibdir=/lib \
+-	    --prefix= \
+-	    --libdir=/lib \
+-	    --host=x86_64-linux-gnu \
+-	    --with-headers=$(LINUX_HEADERS) \
+-	    --enable-kernel=2.6.18
+-	$(MAKE) -C BUILD/build-glibc64
+-	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
++		MAKE=$(MAKE_COMPAT) \
++		BUILD_CC="gcc -O2 -g" \
++		CC="$(GLIBC_CC) -m64" \
++		CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
++		libc_cv_forced_unwind=yes \
++		libc_cv_c_cleanup=yes \
++		libc_cv_slibdir=/lib \
++		--prefix= \
++		--libdir=/lib \
++		--host=x86_64-linux-gnu \
++		--with-headers=$(LINUX_HEADERS) \
++		--enable-kernel=2.6.18 && \
++	$(MAKE_COMPAT) -C BUILD/build-glibc64 && \
++	$(MAKE_COMPATT) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
+ 
+ # Can be used to make a glibc archive separately from the main install tree.
+ # Used, i.e., on buildbots.
+ INST_GLIBC_PREFIX ?= $(PREFIX)
+ .PHONY: install-glibc
+ install-glibc: BUILD/stamp-glibc32 BUILD/stamp-glibc64
+-	rm -rf "$(INST_GLIBC_PREFIX)"/glibc
+-	mkdir "$(INST_GLIBC_PREFIX)"/glibc
+-	$(MAKE) -f $(THISMAKEFILE) sdkdirs \
+-	  DESTDIR="" PREFIX="$(INST_GLIBC_PREFIX)/glibc"
+-	$(MAKE) -f $(THISMAKEFILE) -C BUILD/build-glibc32 \
+-	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install
+-	$(MAKE) -f $(THISMAKEFILE) -C BUILD/build-glibc64 \
++	rm -rf "$(INST_GLIBC_PREFIX)"/glibc && \
++	mkdir "$(INST_GLIBC_PREFIX)"/glibc && \
++	$(MAKE_COMPAT) -f $(THISMAKEFILE) sdkdirs \
++	  DESTDIR="" PREFIX="$(INST_GLIBC_PREFIX)/glibc" && \
++	$(MAKE_COMPAT) -f $(THISMAKEFILE) -C BUILD/build-glibc32 \
++	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install && \
++	$(MAKE_COMPAT) -f $(THISMAKEFILE) -C BUILD/build-glibc64 \
+ 	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install
+ 
+ .PHONY: export-headers
+@@ -708,7 +722,7 @@ endif
+ .PHONY: glibc-adhoc-files
+ glibc-adhoc-files: | SRC/glibc
+ 	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
+-	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
++	  $(MAKE_COMPAT) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
+ 	fi
+ 	install -m 755 -d  $(ARCH_DEST)/lib/ldscripts
+ 	cp -f SRC/glibc/nacl/dyn-link/ldscripts/* \
