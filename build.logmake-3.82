@@ -1,0 +1,6 @@
+  ACTION Regenerating Makefile
+  File "./native_client/build/gyp_nacl", line 11
+    print 'Updating projects from gyp files...'
+                                              ^
+SyntaxError: Missing parentheses in call to 'print'. Did you mean print('Updating projects from gyp files...')?
+make-3.82: *** [Makefile] Error 1
