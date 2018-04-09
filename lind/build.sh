@@ -618,9 +618,10 @@ function build_glibc() {
 	print "Copy component.h header to glibc: "
 	cd "$MISC_DIR/liblind" || exit 1
 	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
+	cd "$NATIVE_CLIENT_SRC/src" || exit 1
 	rm -rfv "${NACL_THIRD_PARTY}_orig"
 	mv "$NACL_THIRD_PARTY" "${NACL_THIRD_PARTY}_orig"
-	ln -Trsfv "$NATIVE_CLIENT_SRC/third_party" "$NACL_THIRD_PARTY"
+	ln -Trsv "${LIND_BASE:?}/third_party" "$NACL_THIRD_PARTY"
 	cd "$NACL_THIRD_PARTY" || exit 1
 	bash "$LIND_SRC/getdeps.sh"
 	print "done."
