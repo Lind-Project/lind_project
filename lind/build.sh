@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.2.0-alpha
+readonly version=0.2.1-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -264,7 +264,7 @@ function download_src() {
 	done
 	cd "$LIND_BASE" || exit 1
 	gclient config --name=native_client \
-		https://github.com/Lind-Project/native_client.git@i686_caging \
+		https://github.com/Lind-Project/native_client.git@lind \
 		--git-deps && \
 		gclient sync
 	cd native_client || exit 1
