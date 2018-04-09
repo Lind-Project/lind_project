@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.2.2-alpha
+readonly version=0.2.0-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -84,7 +84,7 @@ for word; do
 	case "$word" in
 	-*[eE]*)
 		# setup and print out the default environment
-		PIC=1 GIT_SSH_COMMAND='ssh -o Tunnel=no'
+		PIC=1 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
 		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:$PATH"
 		LIND_BASE="/usr/lind_project" LIND_SRC="$LIND_BASE/lind"
 		REPY_PATH="$LIND_SRC/nacl"
@@ -104,7 +104,7 @@ for word; do
 		echo
 		cat <<-EOF
 		# quieter git submodule updates
-		PIC=1 GIT_SSH_COMMAND='ssh -o Tunnel=no'
+		PIC=1 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
 
 		# nacl toolchain environment
 		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:\$PATH"
@@ -194,20 +194,20 @@ fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
 
-readonly BREAKPAD_DIR="$LIND_BASE/google-breakpad"
-readonly GTEST_DIR="$LIND_SRC/googletest"
 readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
 readonly LIND_BINUTILS_SRC="$LIND_SRC/nacl-binutils"
+readonly GTEST_DIR="$LIND_SRC/googletest"
 readonly MISC_DIR="$LIND_SRC/misc"
+readonly NACL_BASE="$LIND_BASE/nacl"
+readonly NATIVE_CLIENT_SRC="$LIND_SRC/native_client"
 readonly NACL_GCC_DIR="$LIND_SRC/nacl-gcc"
-readonly NACL_SRC="$LIND_SRC/native_client"
 readonly NACL_REPY="$LIND_SRC/nacl_repy"
 readonly NACL_PORTS_DIR="$LIND_SRC/naclports"
 readonly NACL_LSS_DIR="$LIND_SRC/linux-syscall-support"
-readonly NACL_BASE="$LIND_BASE/nacl"
+readonly BREAKPAD_DIR="$LIND_BASE/google-breakpad"
 
-readonly NACL_THIRD_PARTY="$NACL_SRC/src/third_party"
-readonly NACL_TOOLCHAIN_SRC="$NACL_SRC/tools"
+readonly NACL_THIRD_PARTY="$NATIVE_CLIENT_SRC/src/third_party"
+readonly NACL_TOOLCHAIN_SRC="$NATIVE_CLIENT_SRC/tools"
 readonly REPY_PATH="$REPY_PATH"
 readonly REPY_PATH_BIN="$REPY_PATH/bin"
 readonly REPY_PATH_REPY="$REPY_PATH/repy"
@@ -227,10 +227,11 @@ readonly -a PYSED=(sed '-r' 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.e
 readonly -a PNACLGREPL=(grep '-IFRlw' -- "\${PNACLPYTHON}" './')
 readonly -a PNACLGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
-readonly -a RSYNC=(rsync '-acrvP' '--info=progress2')
+readonly -a RSYNC=(rsync '-avzP' '--info=progress2' '--partial')
 
-readonly -a SUBMODULES=(nacl-binutils pnacl-clang nacl_repy lind_glibc misc
-			third_party googletest google-breakpad linux-syscall-support)
+readonly -a SUBMODULES=(lind_glibc nacl-binutils nacl-gcc pnacl-clang
+			nacl_repy native_client misc third_party
+			googletest google-breakpad linux-syscall-support)
 
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
 	print "You need to set \"$NACL_SDK_ROOT\" to \"$REPY_PATH_SDK\""
@@ -242,8 +243,8 @@ fi
 function download_src() {
 	mkdir -p "$LIND_SRC"
 	cd "$LIND_BASE" || exit 1
-	rm -rf "${LIND_BASE:?}/nacl-gcc"
-	rm -rf "${LIND_BASE:?}/native_client"
+	rm -rf "$NACL_GCC_DIR"
+	rm -rf "$NATIVE_CLIENT_SRC"
 	git submodule sync --recursive
 	git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
@@ -252,43 +253,48 @@ function download_src() {
 	done
 
 	# sync and patch repos
-	cd "$LIND_SRC" || exit 1
-	# ln -Trsfv "${LIND_BASE:?}/nacl-gcc" nacl-gcc
+	cd "$LIND_BASE" || exit 1
 	gclient clean
 	gclient config --name=nacl-gcc \
 		https://chromium.googlesource.com/native_client/nacl-gcc.git \
 		--git-deps && \
 		gclient sync
 	cd nacl-gcc || exit 1
-	for patch in "${LIND_BASE:?}"/patches/nacl-gcc-*.patch; do
+	for patch in "${LIND_BASE:?}"/patches/nacl-gcc*.patch; do
+		patch -p1 <"$patch" 2>/dev/null || true
+	done
+	cd "$LIND_BASE" || exit 1
+	gclient config --name=native_client \
+		https://github.com/Lind-Project/native_client.git@i686_caging \
+		--git-deps && \
+		gclient sync
+	cd native_client || exit 1
+	for patch in "${LIND_BASE:?}"/patches/native_client-*.patch; do
 		patch -p1 <"$patch" 2>/dev/null || true
 	done
 	cd "$LIND_SRC" || exit 1
-	gclient config --name=native_client \
-		https://github.com/Lind-Project/native_client.git@lind \
-		--git-deps && \
-		gclient sync
-	# cd native_client || exit 1
-	# for patch in "${LIND_BASE:?}"/patches/native_client-*.patch; do
-	#         patch -p1 <"$patch" 2>/dev/null || true
-	# done
-	cd "$LIND_BASE" || exit 1
+	rm -f native_client
+	ln -rs "${LIND_BASE:?}/native_client" ./
 	rm -rf "$NACL_BASE"
 	mkdir -p "$NACL_BASE"
 	cd "$NACL_BASE" || exit 1
-	ln -Trsfv "${LIND_BASE:?}/native_client" native_client
+	rm -f native_client
+	ln -rs "${LIND_BASE:?}/native_client" ./
 
 	# use custom repos as bases
 	cd "$LIND_SRC" || exit 1
-	mkdir -p "$NACL_SRC/src/third_party"
-	ln -Trfs "$NACL_LSS_DIR" "$NACL_SRC/src/third_party/lss"
-	ln -Trfs "$NACL_SRC/src/third_party" "$NACL_SRC/src/trusted/service_runtime/linux/third_party"
+	mkdir -p "$NATIVE_CLIENT_SRC/src/third_party"
+	rm -f "$NATIVE_CLIENT_SRC/src/third_party/lss"
+	rm -f "$NATIVE_CLIENT_SRC/src/trusted/service_runtime/linux/third_party"
+	ln -rs "$NACL_LSS_DIR" "$NATIVE_CLIENT_SRC/src/third_party/lss"
+	ln -rs "$NATIVE_CLIENT_SRC/src/third_party" "$NATIVE_CLIENT_SRC/src/trusted/service_runtime/linux/"
 	mkdir -p "$NACL_PORTS_DIR"
 	cd "$NACL_BASE" || exit 1
 	gclient config --name=naclports \
 		https://chromium.googlesource.com/webports.git \
 		--git-deps && \
 		gclient sync
+
 	cd "$NACL_TOOLCHAIN_SRC" || exit 1
 	rm -rf SRC
 	make sync-pinned
@@ -305,20 +311,17 @@ function setup_toolchain() {
 	# use custom repos as bases
 	cd "$NACL_TOOLCHAIN_SRC/SRC" || exit 1
 	for dir in "${toolchain_dirs[@]}"; do
-		print "changing: [$dir]"
-		rm -fv "$dir"
-		mv -v "$dir" "${dir}_orig"
+		rm -f "$dir" || mv -v "$dir" "${dir}_orig"
 	done 2>/dev/null
 	ln -s "$LIND_BINUTILS_SRC" binutils
 	ln -s "$NACL_GCC_DIR" gcc
 	ln -s "$LIND_GLIBC_SRC" glibc
 
 	# convert files from python to python2
-	cd "$NACL_SRC" || exit 1
+	cd "$NATIVE_CLIENT_SRC" || exit 1
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
 		while read -r file; do
-			print "changing: [$file]"
 			# preserve executability
 			"${PYSED[@]}" <"$file" >"$file.new"
 			cat <"$file.new" >"$file"
@@ -337,18 +340,6 @@ function setup_toolchain() {
 	cd "$REPY_PATH/breakpad" || exit 1
 	rm -rf src
 	ln -rs "$BREAKPAD_DIR" src
-
-
-	# sed to python2
-	cd "$NACL_SRC" || exit 1
-	"${PNACLGREPL[@]}" 2>/dev/null | \
-		"${PNACLGREPV[@]}" | \
-		while read -r file; do
-			# preserve executability
-			"${PNACLSEDSED[@]}" <"$file" >"$file.new"
-			cat <"$file.new" >"$file"
-			rm "$file.new"
-		done
 
 	cd "$LIND_SRC" || exit 1
 }
@@ -387,38 +378,29 @@ function install_to_path() {
 	# rm -rf "${REPY_PATH_LIB:?}"
 	# rm -rf "${REPY_PATH_SDK:?}"
 
-	mkdir -p "$REPY_PATH_BIN"
+	mkdir -p "$REPY_PATH"
 	mkdir -p "$REPY_PATH_LIB/glibc"
-	mkdir -p "$REPY_PATH/toolchain/${OS_SUBDIR}_x86_glibc"
+	mkdir -p "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
 	mkdir -p "$REPY_PATH_SDK/tools"
-	mkdir -p "$NACL_TOOLCHAIN_SRC/toolchain/${OS_SUBDIR}_x86_glibc"
 
-	# "${RSYNC[@]}" \
-	#         "${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/" \
-	#         "$NACL_SRC/toolchain/${OS_SUBDIR}_x86_glibc"
-	# "${RSYNC[@]}" \
-	#         "${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib/"  \
-	#         "$NACL_SRC/toolchain/${OS_SUBDIR}_x86/glibc/"
+	"${RSYNC[@]}" \
+		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/" \
+		"${REPY_PATH_SDK:?}/toolchain/${OS_SUBDIR:?}_x86_glibc/"
 	# we need some files from the original sdk to help compile some applications (e.g. zlib)
 	# "${RSYNC[@]}" "${MISC_DIR:?}/${OS_SUBDIR:?}_pepper_28_tools/" "${REPY_PATH_SDK:?}/tools/"
 
-
-	"${RSYNC[@]}" \
-		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk"/* \
-		"${REPY_PATH_SDK:?}/toolchain/${OS_SUBDIR:?}_x86_glibc"
-
 	#install script
 	cp -f "${MISC_DIR:?}/lind.sh" "${REPY_PATH_BIN:?}/lind"
-	ln -Trsfv "${REPY_PATH_SDK:?}/toolchain" "${NACL_SRC:?}/toolchain"
 	chmod +x "$REPY_PATH_BIN/lind"
 
 	"${RSYNC[@]}" \
-		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib"/*  \
-		"${REPY_PATH_LIB:?}/glibc"
+		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib/"  \
+		"${REPY_PATH_LIB:?}/glibc/"
 
 	"${RSYNC[@]}" \
-		"${NACL_SRC:?}/scons-out/${MODE:?}-x86-64/staging"/* \
+		"${NATIVE_CLIENT_SRC:?}/scons-out/${MODE:?}-x86-64/staging/" \
 		"${REPY_PATH_BIN:?}/"
+
 }
 
 
@@ -545,8 +527,19 @@ function build_nacl() {
 
 	print "Building NaCl"
 
+	# sed to python2
+	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
+	"${PNACLGREPL[@]}" 2>/dev/null | \
+		"${PNACLGREPV[@]}" | \
+		while read -r file; do
+			# preserve executability
+			"${PNACLSEDSED[@]}" <"$file" >"$file.new"
+			cat <"$file.new" >"$file"
+			rm "$file.new"
+		done
+	cd "$NATIVE_CLIENT_SRC" || exit 1
+
 	# set base out directory
-	cd "$NACL_SRC" || exit 1
 	if ((NACL_PIC)); then
 		mode_dir="scons-out/nacl-x86-64-pic-glibc"
 	else
@@ -579,14 +572,14 @@ function build_nacl() {
 		src/untrusted/minidump_generator/breakpad \
 		"$mode_dir/obj/src/third_party"
 	ln -rs "$REPY_PATH/breakpad" src/untrusted/minidump_generator/
-	ln -rs "$NACL_THIRD_PARTY" "$mode_dir/obj/src/"
+	ln -rs "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
 
 	# build NaCl with glibc tests
 	./scons --mode="nacl" --verbose -j"$JOBS" \
-		platform=x86-64 nacl_pic="$NACL_PIC" \
+		platform=x86-64 nacl_pic="$NACL_PIC"
 		build_bin
 	./scons --mode="nacl" --verbose -j"$JOBS" \
-		platform=x86-64 nacl_pic="$NACL_PIC" \
+		platform=x86-64 nacl_pic="$NACL_PIC"
 		bindir=scons-out/nacl_irt-x86-64/staging \
 		install_bin
 	./scons --mode="$MODE,nacl" --verbose -j"$JOBS" --nacl_glibc \
@@ -606,7 +599,7 @@ function build_nacl() {
 # Run clean on nacl build.
 #
 function clean_nacl() {
-	cd "$NACL_SRC"
+	cd "$NATIVE_CLIENT_SRC"
 	./scons --mode="$MODE,nacl" platform=x86-64 --nacl_glibc -c
 	print "Done Cleaning NaCl"
 }
@@ -624,13 +617,12 @@ function build_glibc() {
 
 	print "Copy component.h header to glibc: "
 	cd "$MISC_DIR/liblind" || exit 1
-	rm -f "$NACL_SRC/third_party/getdeps.sh"
-	rm -f "$NACL_SRC/third_party"
-	cp -fp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
-	ln -rs "$NACL_THIRD_PARTY" "$NACL_SRC/"
-	ln -rs "$LIND_SRC/getdeps.sh" "$NACL_THIRD_PARTY/"
+	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
+	rm -rfv "${NACL_THIRD_PARTY}_orig"
+	mv "$NACL_THIRD_PARTY" "${NACL_THIRD_PARTY}_orig"
+	ln -Trsfv "$NATIVE_CLIENT_SRC/third_party" "$NACL_THIRD_PARTY"
 	cd "$NACL_THIRD_PARTY" || exit 1
-	./getdeps.sh
+	bash "$LIND_SRC/getdeps.sh"
 	print "done."
 
 	print "Building glibc"
