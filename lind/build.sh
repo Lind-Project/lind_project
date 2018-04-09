@@ -259,12 +259,11 @@ function download_src() {
 		https://chromium.googlesource.com/native_client/nacl-gcc.git \
 		--git-deps && \
 		gclient sync
-	# cd nacl-gcc || exit 1
-	# for patch in "${LIND_BASE:?}"/patches/nacl-gcc-*.patch; do
-	#         patch -p1 <"$patch" 2>/dev/null || true
-	# done
-	# cd "$LIND_SRC" || exit 1
-	# ln -Trsfv "${LIND_BASE:?}/native_client" native_client
+	cd nacl-gcc || exit 1
+	for patch in "${LIND_BASE:?}"/patches/nacl-gcc-*.patch; do
+		patch -p1 <"$patch" 2>/dev/null || true
+	done
+	cd "$LIND_SRC" || exit 1
 	gclient config --name=native_client \
 		https://github.com/Lind-Project/native_client.git@lind \
 		--git-deps && \
@@ -273,7 +272,6 @@ function download_src() {
 	# for patch in "${LIND_BASE:?}"/patches/native_client-*.patch; do
 	#         patch -p1 <"$patch" 2>/dev/null || true
 	# done
-	# cd "$LIND_SRC" || exit 1
 	cd "$LIND_BASE" || exit 1
 	rm -rf "$NACL_BASE"
 	mkdir -p "$NACL_BASE"
