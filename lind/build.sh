@@ -317,6 +317,12 @@ function setup_toolchain() {
 	ln -s "$NACL_GCC_DIR" gcc
 	ln -s "$LIND_GLIBC_SRC" glibc
 
+	# fix "implicit rule" make errors
+	cd "$LIND_GLIBC_SRC" || exit 1
+	for patch in "${LIND_BASE:?}"/patches/nacl_glibc-*.patch; do
+		patch -p1 <"$patch" 2>/dev/null || true
+	done
+
 	# convert files from python to python2
 	cd "$NATIVE_CLIENT_SRC" || exit 1
 	"${PYGREPL[@]}" 2>/dev/null | \
