@@ -122,18 +122,18 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 -	  $(MAKE) DESTDIR=$(DESTDIR) install
 +		cd BUILD/build-newlib-$(CROSSARCH) && \
 +		../../SRC/newlib/configure \
-+			--disable-libgloss \
-+			--enable-newlib-iconv \
-+			--enable-newlib-io-long-long \
-+			--enable-newlib-io-long-double \
-+			--enable-newlib-io-c99-formats \
-+			--enable-newlib-mb \
-+			--prefix=$(PREFIX) \
-+			MAKE=$(MAKE_COMPAT) \
-+			CFLAGS="$(USER_CFLAGS)" \
-+			CFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
-+			CXXFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
-+			--target=$(CROSSARCH) && \
++		      --disable-libgloss \
++		      --enable-newlib-iconv \
++		      --enable-newlib-io-long-long \
++		      --enable-newlib-io-long-double \
++		      --enable-newlib-io-c99-formats \
++		      --enable-newlib-mb \
++		      --prefix=$(PREFIX) \
++		      MAKE=$(MAKE_COMPAT) \
++		      CFLAGS="$(USER_CFLAGS)" \
++		      CFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
++		      CXXFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
++		      --target=$(CROSSARCH)
 +	  $(MAKE_COMPAT) && \
 +	  $(MAKE_COMPAT) DESTDIR=$(DESTDIR) install
  ifeq ($(CANNED_REVISION), no)
@@ -162,20 +162,20 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 -	    --enable-kernel=2.6.18
 -	$(MAKE) -C BUILD/build-glibc32
 -	$(MAKE) -C BUILD/build-glibc32 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
-+		MAKE=$(MAKE_COMPAT) \
-+		BUILD_CC="gcc -O2 -g" \
-+		CC="$(GLIBC_CC) -m32" \
-+		CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs -march=i686 $(GLIBC_CFLAGS)" \
-+		libc_cv_forced_unwind=yes \
-+		libc_cv_c_cleanup=yes \
-+		libc_cv_slibdir=/lib32 \
-+		--with-tls \
-+		--prefix= \
-+		--libdir=/lib32 \
-+		--host=i686-linux-gnu \
-+		--with-headers=$(LINUX_HEADERS) \
-+		--enable-kernel=2.6.18
-+	$(MAKE_COMPAT) -C BUILD/build-glibc32 && \
++	    MAKE=$(MAKE_COMPAT) \
++	    BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
++	    CC="$(GLIBC_CC) -m32 -Wl,--warn-unresolved-symbols" \
++	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs -march=i686 $(GLIBC_CFLAGS)" \
++	    libc_cv_forced_unwind=yes \
++	    libc_cv_c_cleanup=yes \
++	    libc_cv_slibdir=/lib32 \
++	    --with-tls \
++	    --prefix= \
++	    --libdir=/lib32 \
++	    --host=i686-linux-gnu \
++	    -with-headers=$(LINUX_HEADERS) \
++	    -enable-kernel=2.6.18
++	$(MAKE_COMPAT) -C BUILD/build-glibc32
 +	$(MAKE_COMPAT) -C BUILD/build-glibc32 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
  	touch $@
  
@@ -200,20 +200,20 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 -	    --enable-kernel=2.6.18
 -	$(MAKE) -C BUILD/build-glibc64
 -	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
-+		MAKE=$(MAKE_COMPAT) \
-+		BUILD_CC="gcc -O2 -g" \
-+		CC="$(GLIBC_CC) -m64" \
-+		CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
-+		libc_cv_forced_unwind=yes \
-+		libc_cv_c_cleanup=yes \
-+		libc_cv_slibdir=/lib \
-+		--with-tls \
-+		--prefix= \
-+		--libdir=/lib \
-+		--host=x86_64-linux-gnu \
-+		--with-headers=$(LINUX_HEADERS) \
-+		--enable-kernel=2.6.18
-+	$(MAKE_COMPAT) -C BUILD/build-glibc64 && \
++	    MAKE=$(MAKE_COMPAT) \
++	    BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
++	    CC="$(GLIBC_CC) -m64 -Wl,--warn-unresolved-symbols" \
++	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
++	    libc_cv_forced_unwind=yes \
++	    libc_cv_c_cleanup=yes \
++	    libc_cv_slibdir=/lib \
++	    --with-tls \
++	    --prefix= \
++	    --libdir=/lib \
++	    --host=x86_64-linux-gnu \
++	    --with-headers=$(LINUX_HEADERS) \
++	    --enable-kernel=2.6.18
++	$(MAKE_COMPAT) -C BUILD/build-glibc64
 +	$(MAKE_COMPAT) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
  	touch $@
  
@@ -233,19 +233,19 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 -	    --enable-kernel=2.6.18
 -	$(MAKE) -C BUILD/build-glibc64
 -	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
-+		MAKE=$(MAKE_COMPAT) \
-+		BUILD_CC="gcc -O2 -g" \
-+		CC="$(GLIBC_CC) -m64" \
-+		CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
-+		libc_cv_forced_unwind=yes \
-+		libc_cv_c_cleanup=yes \
-+		libc_cv_slibdir=/lib \
-+		--prefix= \
-+		--libdir=/lib \
-+		--host=x86_64-linux-gnu \
-+		--with-headers=$(LINUX_HEADERS) \
-+		--enable-kernel=2.6.18
-+	$(MAKE_COMPAT) -C BUILD/build-glibc64 && \
++	    MAKE=$(MAKE_COMPAT) \
++	    BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
++	    CC="$(GLIBC_CC) -m64 -Wl,--warn-unresolved-symbols" \
++	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
++	    libc_cv_forced_unwind=yes \
++	    libc_cv_c_cleanup=yes \
++	    libc_cv_slibdir=/lib \
++	    --prefix= \
++	    --libdir=/lib \
++	    --host=x86_64-linux-gnu \
++	    --with-headers=$(LINUX_HEADERS) \
++	    --enable-kernel=2.6.18
++	$(MAKE_COMPAT) -C BUILD/build-glibc64
 +	$(MAKE_COMPAT) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
  
  # Can be used to make a glibc archive separately from the main install tree.
@@ -260,8 +260,8 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 -	$(MAKE) -f $(THISMAKEFILE) -C BUILD/build-glibc32 \
 -	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install
 -	$(MAKE) -f $(THISMAKEFILE) -C BUILD/build-glibc64 \
-+	rm -rf "$(INST_GLIBC_PREFIX)"/glibc && \
-+	mkdir "$(INST_GLIBC_PREFIX)"/glibc && \
++	rm -rf "$(INST_GLIBC_PREFIX)"/glibc
++	mkdir "$(INST_GLIBC_PREFIX)"/glibc
 +	$(MAKE_COMPAT) -f $(THISMAKEFILE) sdkdirs \
 +	  DESTDIR="" PREFIX="$(INST_GLIBC_PREFIX)/glibc" && \
 +	$(MAKE_COMPAT) -f $(THISMAKEFILE) -C BUILD/build-glibc32 \
@@ -275,7 +275,7 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
  glibc-adhoc-files: | SRC/glibc
  	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
 -	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
-+	  $(MAKE_COMPAT) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
++		$(MAKE_COMPAT) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
  	fi
  	install -m 755 -d  $(ARCH_DEST)/lib/ldscripts
  	cp -f SRC/glibc/nacl/dyn-link/ldscripts/* \
