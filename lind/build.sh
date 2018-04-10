@@ -515,7 +515,7 @@ function clean_install() {
 # Run the NaCl build.
 #
 function build_nacl() {
-	local rc mode_dir pic_dir
+	local rc
 	local -a dirs
 
 	dirs+=(src/trusted/validator/)
