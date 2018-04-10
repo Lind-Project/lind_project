@@ -247,7 +247,7 @@ function download_src() {
 	git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
 		rm -f "$LIND_SRC/$dir"
-		ln -rs "$dir" "$LIND_SRC/"
+		ln -rsv "$dir" "$LIND_SRC/"
 	done
 
 	# sync and patch repos
@@ -270,22 +270,18 @@ function download_src() {
 	for patch in "${LIND_BASE:?}"/patches/native_client-*.patch; do
 		patch -p1 <"$patch" 2>/dev/null || true
 	done
-	cd "$LIND_SRC" || exit 1
-	rm -f native_client
-	ln -rs "${LIND_BASE:?}/native_client" ./
-	rm -rf "$NACL_BASE"
-	mkdir -p "$NACL_BASE"
-	cd "$NACL_BASE" || exit 1
-	rm -f native_client
-	ln -rs "${LIND_BASE:?}/native_client" ./
 
 	# use custom repos as bases
 	cd "$LIND_SRC" || exit 1
+	rm -f native_client
+	ln -Trsvf "${LIND_BASE:?}/native_client" "$NATIVE_CLIENT_SRC"
+	rm -rf "$NACL_BASE"
+	mkdir -p "$NACL_BASE"
 	mkdir -p "$NATIVE_CLIENT_SRC/src/third_party"
 	rm -f "$NATIVE_CLIENT_SRC/src/third_party/lss"
 	rm -f "$NATIVE_CLIENT_SRC/src/trusted/service_runtime/linux/third_party"
-	ln -rs "$NACL_LSS_DIR" "$NATIVE_CLIENT_SRC/src/third_party/lss"
-	ln -rs "$NATIVE_CLIENT_SRC/src/third_party" "$NATIVE_CLIENT_SRC/src/trusted/service_runtime/linux/"
+	ln -rsv "$NACL_LSS_DIR" "$NATIVE_CLIENT_SRC/src/third_party/lss"
+	ln -rsv "$NATIVE_CLIENT_SRC/src/third_party" "$NATIVE_CLIENT_SRC/src/trusted/service_runtime/linux/"
 	mkdir -p "$NACL_PORTS_DIR"
 	cd "$NACL_BASE" || exit 1
 	gclient config --name=naclports \
@@ -334,16 +330,16 @@ function setup_toolchain() {
 
 	cd "$NACL_THIRD_PARTY" || exit 1
 	mv gtest gtest_orig
-	ln -rs "$GTEST_DIR/googletest" gtest
+	ln -rsv "$GTEST_DIR/googletest" gtest
 	cd "$GTEST_DIR" || exit 1
 	cmake .
 	make
 
 	rm -f "$REPY_PATH/breakpad"
-	ln -rs "$BREAKPAD_DIR" "$REPY_PATH/breakpad"
+	ln -rsv "$BREAKPAD_DIR" "$REPY_PATH/breakpad"
 	cd "$REPY_PATH/breakpad" || exit 1
 	rm -rf src
-	ln -rs "$BREAKPAD_DIR" src
+	ln -rsv "$BREAKPAD_DIR" src
 
 	cd "$LIND_SRC" || exit 1
 }
@@ -394,6 +390,7 @@ function install_to_path() {
 	# "${RSYNC[@]}" "${MISC_DIR:?}/${OS_SUBDIR:?}_pepper_28_tools/" "${REPY_PATH_SDK:?}/tools/"
 
 	#install script
+	mkdir -p "${REPY_PATH_BIN:?}"
 	cp -f "${MISC_DIR:?}/lind.sh" "${REPY_PATH_BIN:?}/lind"
 	chmod +x "$REPY_PATH_BIN/lind"
 
@@ -401,10 +398,10 @@ function install_to_path() {
 		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib/"  \
 		"${REPY_PATH_LIB:?}/glibc/"
 
-	"${RSYNC[@]}" \
-		"${NATIVE_CLIENT_SRC:?}/scons-out/${MODE:?}-x86-64/staging/" \
-		"${REPY_PATH_BIN:?}/"
-
+	# currently missing the staging directory
+	# "${RSYNC[@]}" \
+	#         "${NATIVE_CLIENT_SRC:?}/scons-out/${MODE:?}-x86-64/staging/" \
+	#         "${REPY_PATH_BIN:?}/"
 }
 
 
@@ -530,6 +527,8 @@ function build_nacl() {
 	dirs+=(src/shared/gio/)
 
 	print "Building NaCl"
+	cd "$NATIVE_CLIENT_SRC" || exit 1
+	python2 toolchain_build/toolchain_build.py
 
 	# sed to python2
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
@@ -554,7 +553,7 @@ function build_nacl() {
 	for dir in "${dirs[@]}"; do
 		mkdir -p "$dir"
 		rm -f "$dir/gtest"
-		ln -rs "$GTEST_DIR/googletest/include/gtest" "$dir"
+		ln -rsv "$GTEST_DIR/googletest/include/gtest" "$dir"
 	done
 
 	# symlink library and include directories
@@ -562,7 +561,7 @@ function build_nacl() {
 		mv scons-out/nacl_irt-x86-64{,_orig}
 	fi
 	rm -f scons-out/nacl_irt-x86-64
-	ln -rs $mode_dir scons-out/nacl_irt-x86-64
+	ln -rsv $mode_dir scons-out/nacl_irt-x86-64
 	mkdir -p \
 		src/untrusted/minidump_generator \
 		scons-out/nacl_irt-x86-64/lib \
@@ -575,8 +574,8 @@ function build_nacl() {
 	rm -f \
 		src/untrusted/minidump_generator/breakpad \
 		"$mode_dir/obj/src/third_party"
-	ln -rs "$REPY_PATH/breakpad" src/untrusted/minidump_generator/
-	ln -rs "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
+	ln -rsv "$REPY_PATH/breakpad" src/untrusted/minidump_generator/
+	ln -rsv "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
 
 	# build NaCl with glibc tests
 	./scons --mode="nacl" --verbose -j"$JOBS" \
@@ -683,7 +682,7 @@ PS3='build what: '
 
 list+=(all download setup_toolchain)
 list+=(build_glibc build_repy)
-list+=(build_liblind install_toolchain)
+list+=(install_toolchain build_liblind)
 list+=(build_nacl nightly)
 list+=(clean_toolchain clean_nacl)
 list+=(update_glibc update_glibc64)
