@@ -1,5 +1,5 @@
 diff --git a/tools/Makefile b/tools/Makefile
-index 3389203cc123b920fd..78ee3fe1f7ee44588e 100644
+index 3389203cc123b920fd..ae8ca15383ad916545 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -43,7 +43,26 @@ SHELL = /bin/bash
@@ -144,13 +144,10 @@ index 3389203cc123b920fd..78ee3fe1f7ee44588e 100644
  BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
  	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
 -	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
--	fi
--	rm -rf BUILD/build-glibc32
--	mkdir -p BUILD/build-glibc32/lib
 +		$(MAKE_COMPAT) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
-+	fi && \
-+	rm -rf BUILD/build-glibc32 && \
-+	mkdir -p BUILD/build-glibc32/lib && \
+ 	fi
+ 	rm -rf BUILD/build-glibc32
+ 	mkdir -p BUILD/build-glibc32/lib
  	cd BUILD/build-glibc32 && ../../SRC/glibc/configure \
 -	    BUILD_CC="gcc -O2 -g" \
 -	    CC="$(GLIBC_CC) -m32" \
@@ -177,7 +174,7 @@ index 3389203cc123b920fd..78ee3fe1f7ee44588e 100644
 +		--libdir=/lib32 \
 +		--host=i686-linux-gnu \
 +		--with-headers=$(LINUX_HEADERS) \
-+		--enable-kernel=2.6.18 && \
++		--enable-kernel=2.6.18
 +	$(MAKE_COMPAT) -C BUILD/build-glibc32 && \
 +	$(MAKE_COMPAT) -C BUILD/build-glibc32 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
  	touch $@
@@ -185,13 +182,10 @@ index 3389203cc123b920fd..78ee3fe1f7ee44588e 100644
  BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
  	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
 -	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
--	fi
--	rm -rf BUILD/build-glibc64
--	mkdir -p BUILD/build-glibc64
 +		$(MAKE_COMPAT) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
-+	fi && \
-+	rm -rf BUILD/build-glibc64 && \
-+	mkdir -p BUILD/build-glibc64 && \
+ 	fi
+ 	rm -rf BUILD/build-glibc64
+ 	mkdir -p BUILD/build-glibc64
  	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
 -	    BUILD_CC="gcc -O2 -g" \
 -	    CC="$(GLIBC_CC) -m64" \
@@ -218,7 +212,7 @@ index 3389203cc123b920fd..78ee3fe1f7ee44588e 100644
 +		--libdir=/lib \
 +		--host=x86_64-linux-gnu \
 +		--with-headers=$(LINUX_HEADERS) \
-+		--enable-kernel=2.6.18 && \
++		--enable-kernel=2.6.18
 +	$(MAKE_COMPAT) -C BUILD/build-glibc64 && \
 +	$(MAKE_COMPAT) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
  	touch $@
@@ -250,7 +244,7 @@ index 3389203cc123b920fd..78ee3fe1f7ee44588e 100644
 +		--libdir=/lib \
 +		--host=x86_64-linux-gnu \
 +		--with-headers=$(LINUX_HEADERS) \
-+		--enable-kernel=2.6.18 && \
++		--enable-kernel=2.6.18
 +	$(MAKE_COMPAT) -C BUILD/build-glibc64 && \
 +	$(MAKE_COMPAT) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
  
