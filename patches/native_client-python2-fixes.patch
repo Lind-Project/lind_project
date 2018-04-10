@@ -1,5 +1,5 @@
 diff --git a/SConstruct b/SConstruct
-index 61c34157afdad12f47..926358b4a4a87a9379 100755
+index 61c34157afdad12f47..65884e3dbb3c3b9e8c 100755
 --- a/SConstruct
 +++ b/SConstruct
 @@ -1,4 +1,4 @@
@@ -17,6 +17,52 @@ index 61c34157afdad12f47..926358b4a4a87a9379 100755
      desc='Treat warnings as errors (-Werror)')
  
    BitFromArgument(env, 'disable_nosys_linker_warnings', default=False,
+@@ -1067,6 +1067,9 @@ def DualLibrary(env, lib_name, *args, **kwargs):
+   if env.Bit('linux'):
+     env_shared = env.Clone(OBJSUFFIX='.os')
+     env_shared.Append(CCFLAGS=['-fPIC'])
++    env_shared.Append(CFLAGS=['-Wl,--warn-unresolved-symbols'])
++    env_shared.Append(CXXFLAGS=['-Wl,--warn-unresolved-symbols'])
++    env_shared.Append(LDFLAGS=['-Wl,--warn-unresolved-symbols'])
+     # -fPIE overrides -fPIC, and shared libraries should not be linked
+     # as executables.
+     env_shared.FilterOut(CCFLAGS=['-fPIE'])
+@@ -2328,7 +2328,7 @@ def MakeUnixLikeEnv():
+         '-fvisibility=hidden',
+         '-fstack-protector',
+         ] + werror_flags,
+-    CXXFLAGS=['-std=c++98'],
++    CXXFLAGS=['-std=c++98', '-Wl,--warn-unresolved-symbols'],
+     # NOTE: pthread is only neeeded for libppNaClPlugin.so and on arm
+     LIBS = ['pthread'],
+     CPPDEFINES = [['__STDC_LIMIT_MACROS', '1'],
+@@ -2576,7 +2576,7 @@ def MakeLinuxEnv():
+       # TODO(bradnelson): this should really be able to live in unix_like_env
+       #                   but can't due to what the target_platform_x module is
+       #                   doing.
+-      LINK = '$CXX',
++      LINK = '$CXX -Wl,--warn-unresolved-symbols',
+   )
+ 
+   # Prepend so we can disable warnings via Append
+@@ -2818,7 +2818,7 @@ if nacl_env.Bit('target_arm') and not nacl_env.Bit('bitcode'):
+   # warning one day, perhaps by just compiling with -std=c++0x and
+   # using static_assert.
+   # See https://code.google.com/p/chromium/issues/detail?id=132339
+-  nacl_env.Append(CCFLAGS=['-Wno-unused-local-typedefs'])
++  nacl_env.Append(CCFLAGS=['-Wno-unused-local-typedefs', '-Wno-error'])
+ 
+ # Bitcode files are assumed to be x86-32 and that causes
+ # problems when (bitcode) linking against native x86-64 libs
+@@ -2934,7 +2934,7 @@ if nacl_env.Bit('bitcode'):
+     nacl_env.Append(TRANSLATEFLAGS=['-translate-fast'])
+ 
+   # With pnacl's clang base/ code uses the "override" keyword.
+-  nacl_env.Append(CXXFLAGS=['-Wno-c++11-extensions'])
++  nacl_env.Append(CXXFLAGS=['-Wno-c++11-extensions', '-Wl,--warn-unresolved-symbols'])
+   # Allow extraneous semicolons.  (Until these are removed.)
+   # http://code.google.com/p/nativeclient/issues/detail?id=2861
+   nacl_env.Append(CCFLAGS=['-Wno-extra-semi'])
 diff --git a/build/build.scons b/build/build.scons
 index 4d6e6310c7996d9e6e..d96d2ad2bbd6a0442d 100644
 --- a/build/build.scons
