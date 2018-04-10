@@ -413,7 +413,8 @@ function test_repy() {
 	for file in ut_lind_*; do
 		print "$file"
 		# trap 'python2 "$REPY_PATH/repy/repy.py" --safebinary \
-		#         "$REPY_PATH/repy/restrictions.lind" "$REPY_PATH/repy/lind_server.py" "$@"' INT TERM EXIT
+		#         "$REPY_PATH/repy/restrictions.lind" \
+		#         "$REPY_PATH/repy/lind_server.py" "$@"' INT TERM EXIT
 		# trap ';' TERM
 		python2 "$file"
 		# trap 'python2 "$file"' INT TERM EXIT
@@ -514,7 +515,7 @@ function clean_install() {
 # Run the NaCl build.
 #
 function build_nacl() {
-	local rc mode_dir
+	local rc mode_dir pic_dir
 	local -a dirs
 
 	dirs+=(src/trusted/validator/)
@@ -525,11 +526,14 @@ function build_nacl() {
 	dirs+=(tests/unittests/trusted/platform_qualify/)
 	dirs+=(src/shared/gio/)
 
-	# sed to python2
 	print "Building NaCl"
-	ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
-	# mkdir -p "$NATIVE_CLIENT_SRC/toolchain"
+	# ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
+	mkdir -p "$NATIVE_CLIENT_SRC/toolchain"
+
 	python2 "$NATIVE_CLIENT_SRC/build/download_toolchains.py"
+	gclient runhooks --force
+	python2 "$NATIVE_CLIENT_SRC/toolchain_build/toolchain_build.py"
+	# sed to python2
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
 	"${PNACLGREPL[@]}" 2>/dev/null | \
 		"${PNACLGREPV[@]}" | \
@@ -541,52 +545,18 @@ function build_nacl() {
 		done
 	cd "$NATIVE_CLIENT_SRC" || exit 1
 
-	# set base out directory
-	if ((NACL_PIC)); then
-		mode_dir="scons-out/nacl-x86-64-pic-glibc"
-	else
-		mode_dir="scons-out/nacl-x86-64-glibc"
-	fi
-	# symlink gtest dirs
-	for dir in "${dirs[@]}"; do
-		mkdir -p "$dir"
-		rm -f "$dir/gtest"
-		ln -rsv "$GTEST_DIR/googletest/include/gtest" "$dir"
-	done
-
-	# symlink library and include directories
-	if [[ -d scons-out/nacl_irt-x86-64 ]]; then
-		mv scons-out/nacl_irt-x86-64{,_orig}
-	fi
-	rm -f scons-out/nacl_irt-x86-64
-	ln -rsv $mode_dir scons-out/nacl_irt-x86-64
-	mkdir -p \
-		src/untrusted/minidump_generator \
-		scons-out/nacl_irt-x86-64/lib \
-		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl \
-		scons-out/nacl_irt-x86-64/obj/src/shared/srpc \
-		scons-out/nacl_irt-x86-64/obj/src/untrusted/nacl \
-		scons-out/nacl_irt-x86-64/obj/src/shared/platform \
-		scons-out/nacl_irt-x86-64/lib \
-		"$mode_dir/obj/src"
-	rm -f \
-		src/untrusted/minidump_generator/breakpad \
-		"$mode_dir/obj/src/third_party"
-	ln -rsv "$REPY_PATH/breakpad" src/untrusted/minidump_generator/
-	ln -rsv "$NACL_THIRD_PARTY_MOD" "$mode_dir/obj/src/"
-
 	# build NaCl with glibc tests
-	./scons --mode="nacl" --verbose -j"$JOBS" \
-		platform=x86-64 nacl_pic="$NACL_PIC"
-		build_bin
-	./scons --mode="nacl" --verbose -j"$JOBS" \
-		platform=x86-64 nacl_pic="$NACL_PIC"
-		bindir=scons-out/nacl_irt-x86-64/staging \
-		install_bin
-	./scons --mode="nacl" --verbose -j"$JOBS" --nacl_glibc \
-		platform=x86-64 nacl_pic="$NACL_PIC"
+	# ./scons --mode="nacl" --verbose -j"$JOBS" \
+	#         platform=x86-64 nacl_pic="$NACL_PIC"
+	#         build_bin
+	# ./scons --mode="nacl" --verbose -j"$JOBS" \
+	#         platform=x86-64 nacl_pic="$NACL_PIC"
+	#         bindir=scons-out/nacl_irt-x86-64/staging \
+	#         install_bin
 	# ./scons --mode="$MODE,nacl" --verbose -j"$JOBS" --nacl_glibc \
 	#         platform=x86-64 nacl_pic="$NACL_PIC"
+	./scons --mode="nacl" --verbose -j"$JOBS" --nacl_glibc \
+			platform=x86-64
 
 	# and check
 	rc="$?"

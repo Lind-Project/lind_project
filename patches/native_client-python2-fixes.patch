@@ -1,5 +1,5 @@
 diff --git a/SConstruct b/SConstruct
-index 61c34157afdad12f47..d7d6995b76988df71d 100755
+index 61c34157afdad12f47..926358b4a4a87a9379 100755
 --- a/SConstruct
 +++ b/SConstruct
 @@ -1,4 +1,4 @@
@@ -8,6 +8,15 @@ index 61c34157afdad12f47..d7d6995b76988df71d 100755
  # Copyright (c) 2012 The Native Client Authors. All rights reserved.
  # Use of this source code is governed by a BSD-style license that can be
  # found in the LICENSE file.
+@@ -268,7 +268,7 @@ def SetUpArgumentBits(env):
+     desc='Collect and display information about which commands are executed '
+       'during the build process')
+ 
+-  BitFromArgument(env, 'werror', default=True,
++  BitFromArgument(env, 'werror', default=False,
+     desc='Treat warnings as errors (-Werror)')
+ 
+   BitFromArgument(env, 'disable_nosys_linker_warnings', default=False,
 diff --git a/build/build.scons b/build/build.scons
 index 4d6e6310c7996d9e6e..d96d2ad2bbd6a0442d 100644
 --- a/build/build.scons
