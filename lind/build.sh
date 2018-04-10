@@ -532,7 +532,6 @@ function build_nacl() {
 
 	python2 "$NATIVE_CLIENT_SRC/build/download_toolchains.py"
 	gclient runhooks --force
-	python2 "$NATIVE_CLIENT_SRC/toolchain_build/toolchain_build.py"
 	# sed to python2
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
 	"${PNACLGREPL[@]}" 2>/dev/null | \
