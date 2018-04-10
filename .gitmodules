@@ -40,7 +40,3 @@
 	path = google-breakpad
 	url = https://github.com/Lind-Project/google-breakpad.git
 	branch = i686_caging
-[submodule "native_client"]
-	path = native_client
-	url = https://github.com/Lind-Project/native_client.git
-	branch = lind
