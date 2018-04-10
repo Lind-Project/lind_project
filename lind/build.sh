@@ -398,10 +398,9 @@ function install_to_path() {
 		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib/"  \
 		"${REPY_PATH_LIB:?}/glibc/"
 
-	# currently missing the staging directory
-	# "${RSYNC[@]}" \
-	#         "${NATIVE_CLIENT_SRC:?}/scons-out/${MODE:?}-x86-64/staging/" \
-	#         "${REPY_PATH_BIN:?}/"
+	"${RSYNC[@]}" \
+		"${NATIVE_CLIENT_SRC:?}/scons-out/${MODE:?}-x86-64/staging/" \
+		"${REPY_PATH_BIN:?}/"
 }
 
 
@@ -526,11 +525,11 @@ function build_nacl() {
 	dirs+=(tests/unittests/trusted/platform_qualify/)
 	dirs+=(src/shared/gio/)
 
-	print "Building NaCl"
-	cd "$NATIVE_CLIENT_SRC" || exit 1
-	python2 toolchain_build/toolchain_build.py
-
 	# sed to python2
+	print "Building NaCl"
+	ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
+	# mkdir -p "$NATIVE_CLIENT_SRC/toolchain"
+	python2 "$NATIVE_CLIENT_SRC/build/download_toolchains.py"
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
 	"${PNACLGREPL[@]}" 2>/dev/null | \
 		"${PNACLGREPV[@]}" | \
@@ -548,7 +547,6 @@ function build_nacl() {
 	else
 		mode_dir="scons-out/nacl-x86-64-glibc"
 	fi
-
 	# symlink gtest dirs
 	for dir in "${dirs[@]}"; do
 		mkdir -p "$dir"
@@ -585,8 +583,10 @@ function build_nacl() {
 		platform=x86-64 nacl_pic="$NACL_PIC"
 		bindir=scons-out/nacl_irt-x86-64/staging \
 		install_bin
-	./scons --mode="$MODE,nacl" --verbose -j"$JOBS" --nacl_glibc \
+	./scons --mode="nacl" --verbose -j"$JOBS" --nacl_glibc \
 		platform=x86-64 nacl_pic="$NACL_PIC"
+	# ./scons --mode="$MODE,nacl" --verbose -j"$JOBS" --nacl_glibc \
+	#         platform=x86-64 nacl_pic="$NACL_PIC"
 
 	# and check
 	rc="$?"
@@ -682,8 +682,8 @@ PS3='build what: '
 
 list+=(all download setup_toolchain)
 list+=(build_glibc build_repy)
-list+=(install_toolchain build_liblind)
-list+=(build_nacl nightly)
+list+=(build_nacl build_liblind)
+list+=(install_toolchain nightly)
 list+=(clean_toolchain clean_nacl)
 list+=(update_glibc update_glibc64)
 list+=(test_repy test_glibc test_apps test)
@@ -720,9 +720,9 @@ while (($#)); do
 		setup_toolchain
 		build_glibc
 		build_repy
-		install_to_path
-		build_liblind
 		build_nacl
+		build_liblind
+		install_to_path
 	elif [[ "$1" == clean_toolchain ]]; then
 		print "Cleaning Toolchain"
 		clean_toolchain
