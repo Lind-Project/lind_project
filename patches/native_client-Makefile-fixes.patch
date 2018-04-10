@@ -1,17 +1,36 @@
 diff --git a/tools/Makefile b/tools/Makefile
-index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
+index 3389203cc123b920fd..78ee3fe1f7ee44588e 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
-@@ -43,7 +43,7 @@ SHELL = /bin/bash
+@@ -43,7 +43,26 @@ SHELL = /bin/bash
  # or add to git-cl codereview.settings:
  #   PUSH_URL_CONFIG: url.ssh://gerrit.chromium.org.pushinsteadof
  #   ORIGIN_URL_CONFIG: http://git.chromium.org
 -GIT_BASE_URL = http://git.chromium.org/native_client
 +GIT_BASE_URL = https://chromium.googlesource.com/native_client
++
++# MAKE_VERSION is checked because we need to use the compat version if
++# make is too new (versions after 4.x fail when building glibc32).
++VERSION_TEST := $(MAKE_VERSION:4.%=)
++ifeq ($(VERSION_TEST),)
++	MAKE_COMPAT != \
++		find -H /bin /sbin /usr/bin /usr/sbin \
++			-type f \
++			-a -name "make" \
++			-o -name "make-[[:digit:]]*" 2>/dev/null | \
++			sort | \
++			tail -n1
++# No need run find if the version is compatible
++else
++	MAKE_COMPAT := make
++endif
++ifeq ($(MAKE_COMPAT),)
++       $(error No suitable make binary found.)
++endif
  
  CROSSARCH = x86_64-nacl
  TOOLCHAINLOC ?= out
-@@ -208,7 +208,7 @@ gcc-extras:
+@@ -208,7 +227,7 @@ gcc-extras:
  	    echo -n "$(GCC_EXTRAS)" > BUILD/.gcc-extras-version; \
  	fi
  
@@ -20,7 +39,7 @@ index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
  
  gcc_extra_dir = $(subst cloog-ppl,cloog,$*)
  gcc_extra_version = $($(shell echo $*| tr '[:lower:]-' '[:upper:]_')_VERSION)
-@@ -345,15 +345,27 @@ BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
+@@ -345,15 +364,28 @@ BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
  	# us from building with -Werror today.
  	cd BUILD/build-binutils-$(CROSSARCH) && \
  	  CC="$(GCC_CC)" \
@@ -28,6 +47,7 @@ index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
 +	  CFLAGS="$(USER_CFLAGS) -D_P_NOWAITO=3" \
  	  LDFLAGS="$(USER_LDFLAGS)" \
  	  ../../SRC/binutils/configure \
++	    MAKE=$(MAKE_COMPAT) \
 +	    CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
 +	    CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
  	    --prefix=$(PREFIX) \
@@ -36,7 +56,7 @@ index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
  	    --disable-werror --enable-deterministic-archives --without-zlib
 -	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all
 -	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
-+	$(MAKE) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
++	$(MAKE_COMPAT) -C BUILD/build-binutils-$(CROSSARCH) maybe-configure-libiberty && \
 +	  sed \
 +	    -e '/HAVE_PSTAT_GETDYNAMIC/ s/1/0/' \
 +	    -e '/HAVE_PSTAT_GETSTATIC/ s/1/0/' \
@@ -46,12 +66,12 @@ index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
 +	    <BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new \
 +	    >BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h && \
 +	  rm -f BUILD/build-binutils-$(CROSSARCH)/libiberty/config.h.new && \
-+	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) all && \
-+	  $(MAKE) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
++	  $(MAKE_COMPAT) -C BUILD/build-binutils-$(CROSSARCH) all && \
++	  $(MAKE_COMPAT) -C BUILD/build-binutils-$(CROSSARCH) DESTDIR=$(DESTDIR) install
  	touch $@
  
  .PHONY: binutils
-@@ -384,16 +396,11 @@ ifneq ($(SRCDIR),)
+@@ -384,16 +416,11 @@ ifneq ($(SRCDIR),)
  GCC_EXTRAS_FLAGS = \
      --with-gmp=$(GMP_DIR) \
      --with-mpfr=$(MPFR_DIR) \
@@ -70,7 +90,7 @@ index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
  endif
  
  GCC_CONFIGURE_FLAGS = \
-@@ -557,28 +564,30 @@ endif
+@@ -557,28 +584,31 @@ endif
  # by the Native Client threads package build.
  ##################################################################
  
@@ -109,16 +129,17 @@ index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
 +			--enable-newlib-io-c99-formats \
 +			--enable-newlib-mb \
 +			--prefix=$(PREFIX) \
++			MAKE=$(MAKE_COMPAT) \
 +			CFLAGS="$(USER_CFLAGS)" \
 +			CFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
 +			CXXFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
 +			--target=$(CROSSARCH) && \
 +	  $(MAKE_COMPAT) && \
-+	  $(MAKE+COMPAT) DESTDIR=$(DESTDIR) install
++	  $(MAKE_COMPAT) DESTDIR=$(DESTDIR) install
  ifeq ($(CANNED_REVISION), no)
  	rm $(DESTDIR)$(PREFIX)/$(CROSSARCH)/include/pthread.h
  endif
-@@ -619,77 +628,82 @@ ARCH_DEST_LIB_NATIVE = $(PREFIX_NATIVE)/$(CROSSARCH)/$(if $(filter 32,$(LIB_BITS
+@@ -619,77 +649,82 @@ ARCH_DEST_LIB_NATIVE = $(PREFIX_NATIVE)/$(CROSSARCH)/$(if $(filter 32,$(LIB_BITS
  
  BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
  	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
@@ -231,7 +252,7 @@ index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
 +		--with-headers=$(LINUX_HEADERS) \
 +		--enable-kernel=2.6.18 && \
 +	$(MAKE_COMPAT) -C BUILD/build-glibc64 && \
-+	$(MAKE_COMPATT) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
++	$(MAKE_COMPAT) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
  
  # Can be used to make a glibc archive separately from the main install tree.
  # Used, i.e., on buildbots.
@@ -255,7 +276,7 @@ index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
  	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install
  
  .PHONY: export-headers
-@@ -708,7 +722,7 @@ endif
+@@ -708,7 +743,7 @@ endif
  .PHONY: glibc-adhoc-files
  glibc-adhoc-files: | SRC/glibc
  	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
@@ -264,7 +285,7 @@ index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
  	fi
  	install -m 755 -d  $(ARCH_DEST)/lib/ldscripts
  	cp -f SRC/glibc/nacl/dyn-link/ldscripts/* \
-@@ -853,7 +867,8 @@ ifeq ($(PLATFORM),win)
+@@ -853,7 +888,8 @@ ifeq ($(PLATFORM),win)
  	    --without-python \
  	    --host=x86_64-w64-mingw32 \
  	    --target=x86_64-nacl \
@@ -274,7 +295,7 @@ index 3389203cc123b920fd..5f8aa91669b2fd7e1c 100644
  	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) all
  	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) DESTDIR=$(DESTDIR) install
  else
-@@ -864,7 +879,8 @@ else
+@@ -864,7 +900,8 @@ else
  	  ../../SRC/gdb/configure \
  	    --prefix=$(PREFIX) \
  	    --target=x86_64-nacl \
