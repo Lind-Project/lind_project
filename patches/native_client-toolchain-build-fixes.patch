@@ -1,0 +1,91 @@
+diff --git a/toolchain_build/toolchain_build.py b/toolchain_build/toolchain_build.py
+index a1279d3975d38660cd..7853216ce7df6a505e 100755
+--- a/toolchain_build/toolchain_build.py
++++ b/toolchain_build/toolchain_build.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#!/usr/bin/python2
+ # Copyright (c) 2012 The Native Client Authors. All rights reserved.
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+@@ -37,6 +37,7 @@ TAR_XV = ['tar', '-x', '-v']
+ EXTRACT_STRIP_TGZ = TAR_XV + ['--gzip', '--strip-components=1', '-f']
+ EXTRACT_STRIP_TBZ2 = TAR_XV + ['--bzip2', '--strip-components=1', '-f']
+ CONFIGURE_CMD = ['sh', '%(src)s/configure']
++PATCH_CMD = ['patch', '-p1', '-i']
+ MAKE_PARALLEL_CMD = ['make', '-j%(cores)s']
+ MAKE_CHECK_CMD = MAKE_PARALLEL_CMD + ['check']
+ MAKE_DESTDIR_CMD = ['make', 'DESTDIR=%(abs_output)s']
+@@ -49,8 +50,16 @@ REMOVE_INFO_DIR = command.Remove(command.path.join('%(output)s',
+ 
+ CONFIGURE_HOST_ARCH = []
+ if sys.platform.startswith('linux'):
+-  cc = ['gcc']
+-  cxx = ['g++', '-static-libstdc++']
++  #  cc = ['gcc']
++  #  cxx = ['g++', '-static-libstdc++',
++  #  cc = ['gcc', '-DLONG_MIN=-9223372036854775808']
++  #  cxx = ['g++', '-static-libstdc++', '-D__inline=', '-DLONG_MIN=-9223372036854775808']
++  cc = ['gcc', '-D_P_NOWAITO=3', '-DHAVE_LIMITS_H', '-DHAVE_STRING_H',
++        '-DHAVE_STDLIB_H', '-DHAVE_SYS_STAT_H', '-DHAVE_SYS_TYPES_H',
++        '-DHAVE_FCNTL_H', '-DHAVE_VFORK', '-DHAVE_VFORK_H']
++  cxx = ['g++', '-static-libstdc++', '-D__inline=__inline__', '-D_P_NOWAITO=3',
++         '-DHAVE_LIMITS_H', '-DHAVE_STRING_H', '-DHAVE_STDLIB_H',
++         '-DHAVE_SYS_STAT_H', '-DHAVE_SYS_TYPES_H', '-DHAVE_FCNTL_H']
+   if any(platform.machine().lower().startswith(machine) for machine in
+          ['x86_64', 'amd64', 'x64', 'i686']):
+     # We build the tools for x86-32 hosts so they will run on either x86-32
+@@ -81,7 +90,8 @@ CONFIGURE_HOST_COMMON = CONFIGURE_HOST_ARCH + [
+       '--prefix=',
+       '--disable-silent-rules',
+       '--without-gcc-arch',
+-      ]
++      '--disable-werror',
++  ]
+ 
+ CONFIGURE_HOST_LIB = CONFIGURE_HOST_COMMON + [
+       '--disable-shared',
+@@ -218,7 +228,7 @@ HOST_GCC_LIBS = {
+                 # Without this, the built library will assume the
+                 # instruction set details available on the build machine.
+                 # With this, it dynamically chooses what code to use based
+-                # on the details of the actual host CPU at runtime.
++                # on the details o/binutuf the actual host CPU at runtime.
+                 '--enable-fat',
+                 ],
+             MAKE_PARALLEL_CMD,
+@@ -347,11 +357,15 @@ def HostTools(target):
+                   CONFIGURE_CMD +
+                   CONFIGURE_HOST_TOOL +
+                   ConfigureTargetArgs(target) + [
++                      '--disable-werror',
+                       '--enable-deterministic-archives',
+                       '--enable-gold',
+                       ] + ([] if sys.platform == 'win32' else [
+                           '--enable-plugins',
+                           ])),
++              command.Command(MAKE_PARALLEL_CMD + ['maybe-configure-libiberty']),
++              command.Command(PATCH_CMD + ['../../../../patches/binutils_arm-physmem.patch'],
++                              cwd='../../src/binutils_arm'),
+               command.Command(MAKE_PARALLEL_CMD),
+               command.Command(MAKE_CHECK_CMD),
+               command.Command(MAKE_DESTDIR_CMD + ['install-strip']),
+@@ -384,7 +398,7 @@ def HostTools(target):
+                   'libgo',
+                   'libgomp',
+                   'libitm',
+-                  'libjava',
++                  'lib',
+                   'libmudflap',
+                   'libobjc',
+                   'libquadmath',
+@@ -403,6 +417,9 @@ def HostTools(target):
+               # in place to replace the absolute paths with something that
+               # never varies.  Note that the 'configure-gcc' target will
+               # actually build some components before running gcc/configure.
++              GccCommand(target, MAKE_PARALLEL_CMD + ['maybe-configure-libiberty']),
++              command.Command(PATCH_CMD + ['../../../../patches/gcc_arm-physmem.patch'],
++                              cwd='../../src/gcc_arm'),
+               GccCommand(target, MAKE_PARALLEL_CMD + ['configure-gcc']),
+               command.Command(['sed', '-i', '-e',
+                                ';'.join(['s@%%(abs_%s)s@.../%s_install@g' %

@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.2.3-alpha
+readonly version=0.3.0-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -526,10 +526,9 @@ function build_nacl() {
 	dirs+=(tests/unittests/trusted/platform_qualify/)
 	dirs+=(src/shared/gio/)
 
+	# patch toolchain build errors
 	print "Building NaCl"
-	# ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
-	mkdir -p "$NATIVE_CLIENT_SRC/toolchain"
-
+	ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
 	python2 "$NATIVE_CLIENT_SRC/build/download_toolchains.py"
 	gclient runhooks --force
 	# sed to python2
@@ -542,22 +541,21 @@ function build_nacl() {
 			cat <"$file.new" >"$file"
 			rm "$file.new"
 		done
+	cd "$NATIVE_CLIENT_SRC/toolchain_build/src/binutils_arm" || exit 1
+	for patch in "${LIND_BASE:?}"/patches/binutils_arm-*.patch; do
+		patch -p1 <"$patch" 2>/dev/null || true
+	done
+	cd "$NATIVE_CLIENT_SRC/toolchain_build/src/gcc_arm" || exit 1
+	for patch in "${LIND_BASE:?}"/patches/gcc_arm-*.patch; do
+		patch -p1 <"$patch" 2>/dev/null || true
+	done
 	cd "$NATIVE_CLIENT_SRC" || exit 1
 
 	# build NaCl with glibc tests
-	# ./scons --mode="nacl" --verbose -j"$JOBS" \
-	#         platform=x86-64 nacl_pic="$NACL_PIC"
-	#         build_bin
-	# ./scons --mode="nacl" --verbose -j"$JOBS" \
-	#         platform=x86-64 nacl_pic="$NACL_PIC"
-	#         bindir=scons-out/nacl_irt-x86-64/staging \
-	#         install_bin
-	# ./scons --mode="$MODE,nacl" --verbose -j"$JOBS" --nacl_glibc \
-	#         platform=x86-64 nacl_pic="$NACL_PIC"
-	./scons --mode="nacl" --verbose -j"$JOBS" --nacl_glibc \
-			platform=x86-64
-
-	# and check
+	python2 "$NATIVE_CLIENT_SRC/toolchain_build/toolchain_build.py" --verbose
+	./scons --mode="$MODE,nacl" --verbose \
+		-j"$JOBS" --nacl_glibc \
+		platform=x86-64 nacl_pic="$NACL_PIC"
 	rc="$?"
 	if ((rc != 0)); then
 		print "NaCl Build Failed [Exit Code: $rc]" $'\a'
