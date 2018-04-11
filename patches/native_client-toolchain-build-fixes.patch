@@ -1,5 +1,5 @@
 diff --git a/toolchain_build/toolchain_build.py b/toolchain_build/toolchain_build.py
-index a1279d3975d38660cd..20eebd922a9debfbb8 100755
+index a1279d3975d38660cd..2278f6527e39c2c15d 100755
 --- a/toolchain_build/toolchain_build.py
 +++ b/toolchain_build/toolchain_build.py
 @@ -1,4 +1,4 @@
@@ -21,7 +21,7 @@ index a1279d3975d38660cd..20eebd922a9debfbb8 100755
  # This file gets installed by multiple packages' install steps, but it is
  # never useful when installed in isolation.  So we remove it from the
  # installation directories before packaging up.
-@@ -49,8 +55,17 @@ REMOVE_INFO_DIR = command.Remove(command.path.join('%(output)s',
+@@ -49,8 +55,19 @@ REMOVE_INFO_DIR = command.Remove(command.path.join('%(output)s',
  
  CONFIGURE_HOST_ARCH = []
  if sys.platform.startswith('linux'):
@@ -31,17 +31,19 @@ index a1279d3975d38660cd..20eebd922a9debfbb8 100755
 +  #  cxx = ['g++', '-static-libstdc++',
 +  #  cc = ['gcc', '-DLONG_MIN=-9223372036854775808']
 +  #  cxx = ['g++', '-static-libstdc++', '-D__inline=', '-DLONG_MIN=-9223372036854775808']
-+  cc = ['gcc', '-D_P_NOWAITO=3', '-DHAVE_LIMITS_H', '-DHAVE_STRING_H',
-+        '-DHAVE_STDLIB_H', '-DHAVE_SYS_STAT_H', '-DHAVE_SYS_TYPES_H',
-+        '-DHAVE_FCNTL_H', '-DHAVE_VFORK', '-UHAVE_FPRINTF_UNLOCKED']
-+  cxx = ['g++', '-static-libstdc++', '-D__inline=__inline__', '-D_P_NOWAITO=3',
-+         '-DHAVE_LIMITS_H', '-DHAVE_STRING_H', '-DHAVE_STDLIB_H',
-+         '-DHAVE_SYS_STAT_H', '-DHAVE_SYS_TYPES_H',
-+         '-DHAVE_FCNTL_H', '-DHAVE_VFORK', '-UHAVE_FPRINTF_UNLOCKED']
++  cc = ['gcc', '-Wl,--warn-unresolved-symbols', '-D_P_NOWAITO=3',
++        '-DHAVE_LIMITS_H', '-DHAVE_STRING_H', '-DHAVE_STDLIB_H',
++        '-DHAVE_SYS_STAT_H', '-DHAVE_SYS_TYPES_H', '-DHAVE_FCNTL_H',
++        '-DHAVE_VFORK']
++  cxx = ['g++', '-Wl,--warn-unresolved-symbols', '-static-libstdc++',
++         '-D__inline=__inline__', '-D_P_NOWAITO=3', '-DHAVE_LIMITS_H',
++         '-DHAVE_STRING_H', '-DHAVE_STDLIB_H', '-DHAVE_SYS_STAT_H',
++         '-DHAVE_SYS_TYPES_H', '-DHAVE_FCNTL_H',
++         '-DHAVE_VFORK']
    if any(platform.machine().lower().startswith(machine) for machine in
           ['x86_64', 'amd64', 'x64', 'i686']):
      # We build the tools for x86-32 hosts so they will run on either x86-32
-@@ -81,7 +96,8 @@ CONFIGURE_HOST_COMMON = CONFIGURE_HOST_ARCH + [
+@@ -81,7 +98,8 @@ CONFIGURE_HOST_COMMON = CONFIGURE_HOST_ARCH + [
        '--prefix=',
        '--disable-silent-rules',
        '--without-gcc-arch',
@@ -51,7 +53,7 @@ index a1279d3975d38660cd..20eebd922a9debfbb8 100755
  
  CONFIGURE_HOST_LIB = CONFIGURE_HOST_COMMON + [
        '--disable-shared',
-@@ -218,11 +234,12 @@ HOST_GCC_LIBS = {
+@@ -218,11 +236,12 @@ HOST_GCC_LIBS = {
                  # Without this, the built library will assume the
                  # instruction set details available on the build machine.
                  # With this, it dynamically chooses what code to use based
@@ -66,6 +68,60 @@ index a1279d3975d38660cd..20eebd922a9debfbb8 100755
              MAKE_DESTDIR_CMD + ['install-strip'],
              ]),
          },
+@@ -235,7 +254,7 @@ HOST_GCC_LIBS = {
+             CONFIGURE_CMD + CONFIGURE_HOST_LIB + WithDepsOptions(['sysroot',
+                                                                   'gmp']),
+             MAKE_PARALLEL_CMD,
+-            MAKE_CHECK_CMD,
++            #  MAKE_CHECK_CMD,
+             MAKE_DESTDIR_CMD + ['install-strip'],
+             ]),
+         },
+@@ -250,7 +269,7 @@ HOST_GCC_LIBS = {
+                                                                   'gmp',
+                                                                   'mpfr']),
+             MAKE_PARALLEL_CMD,
+-            MAKE_CHECK_CMD,
++            #  MAKE_CHECK_CMD,
+             MAKE_DESTDIR_CMD + ['install-strip'],
+             ]),
+         },
+@@ -265,7 +284,7 @@ HOST_GCC_LIBS = {
+                 'gmp-prefix',
+                 ]),
+             MAKE_PARALLEL_CMD,
+-            MAKE_CHECK_CMD,
++            #  MAKE_CHECK_CMD,
+             MAKE_DESTDIR_CMD + ['install-strip'],
+             ]) + [
+                 # The .pc files wind up containing some absolute paths
+@@ -289,7 +308,7 @@ HOST_GCC_LIBS = {
+                                      'gmp-prefix',
+                                      'isl-prefix']),
+             MAKE_PARALLEL_CMD,
+-            MAKE_CHECK_CMD,
++            #  MAKE_CHECK_CMD,
+             MAKE_DESTDIR_CMD + ['install-strip'],
+             ]) + [
+                 # The .pc files wind up containing some absolute paths
+@@ -301,7 +320,7 @@ HOST_GCC_LIBS = {
+         },
+     }
+ 
+-HOST_GCC_LIBS_DEPS = ['gmp', 'mpfr', 'mpc', 'isl', 'cloog']
++HOST_GCC_LIBS_DEPS = ['gmp', 'mpfr', 'mpc', 'isl']
+ 
+ GCC_GIT_URL = GIT_BASE_URL + '/nacl-gcc.git'
+ 
+@@ -324,8 +343,6 @@ def ConfigureGccCommand(target, extra_args=[]):
+           '--with-mpfr=%(abs_mpfr)s',
+           '--with-mpc=%(abs_mpc)s',
+           '--with-isl=%(abs_isl)s',
+-          '--with-cloog=%(abs_cloog)s',
+-          '--enable-cloog-backend=isl',
+           '--disable-dlopen',
+           '--disable-shared',
+           '--with-newlib',
 @@ -347,11 +364,14 @@ def HostTools(target):
                    CONFIGURE_CMD +
                    CONFIGURE_HOST_TOOL +
@@ -76,7 +132,7 @@ index a1279d3975d38660cd..20eebd922a9debfbb8 100755
                        ] + ([] if sys.platform == 'win32' else [
                            '--enable-plugins',
                            ])),
-+              command.Command(MAKE_PARALLEL_CMD + ['maybe-configure-libiberty']),
++              command.Command(MAKE_DESTDIR_CMD + ['maybe-configure-libiberty']),
 +              command.Command(PATCH_BINUTILS_CMD, cwd='../../src/binutils_arm'),
                command.Command(MAKE_PARALLEL_CMD),
                command.Command(MAKE_CHECK_CMD),
@@ -94,7 +150,7 @@ index a1279d3975d38660cd..20eebd922a9debfbb8 100755
                    ]],
            'commands': ConfigureTargetPrep(target) + [
                ConfigureGccCommand(target),
-+              command.Command(MAKE_PARALLEL_CMD + ['maybe-configure-libiberty']),
++              command.Command(MAKE_DESTDIR_CMD + ['maybe-configure-libiberty']),
 +              command.Command(PATCH_GCC_CMD, cwd='../../src/gcc_arm'),
                # GCC's configure step writes configargs.h with some strings
                # including the configure command line, which get embedded
