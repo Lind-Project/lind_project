@@ -3,6 +3,7 @@ list.txt
 build.log
 error.log
 .gclient*
+repy
 nacl
 nacl-gcc
 native_client
@@ -16,6 +17,7 @@ breakpad/
 buildtools/
 build_overrides/
 validator_snapshots/
+repy/
 nacl/
 /lind/*/
 
