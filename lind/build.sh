@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.3.0-alpha
+readonly version=0.3.1-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -87,8 +87,8 @@ for word; do
 		PIC=1 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
 		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:$PATH"
 		LIND_BASE="/usr/lind_project" LIND_SRC="$LIND_BASE/lind"
-		REPY_PATH="$LIND_SRC/nacl"
-		NACL_SDK_ROOT="$LIND_SRC/nacl/sdk"
+		REPY_PATH="$LIND_SRC/repy"
+		NACL_SDK_ROOT="$LIND_SRC/repy/sdk"
 		LIND_MONITOR="$LIND_SRC/reference_monitor"
 		PNACLPYTHON="$(type -P python2)"
 		export GIT_SSH_COMMAND PIC
@@ -103,20 +103,19 @@ for word; do
 		echo '======================================================'
 		echo
 		cat <<-EOF
-		# quieter git submodule updates
 		PIC=1 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
-
-		# nacl toolchain environment
 		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:\$PATH"
-
-		# base repo paths
 		LIND_BASE="/usr/lind_project" LIND_SRC="$LIND_BASE/lind"
-		REPY_PATH="$LIND_SRC/nacl"
-
-		# toolchain/sdk roots
-		NACL_SDK_ROOT="$LIND_SRC/nacl/sdk"
+		REPY_PATH="$LIND_SRC/repy"
+		NACL_SDK_ROOT="$LIND_SRC/repy/sdk"
 		LIND_MONITOR="$LIND_SRC/reference_monitor"
 		PNACLPYTHON="$(type -P python2)"
+		export GIT_SSH_COMMAND PIC
+		export LD_LIBRARY_PATH PATH
+		export LIND_BASE LIND_SRC REPY_PATH
+		export NACL_SDK_ROOT
+		export LIND_MONITOR
+		export PNACLPYTHON
 		EOF
 		echo
 		echo '======================================================'
@@ -198,7 +197,7 @@ readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
 readonly LIND_BINUTILS_SRC="$LIND_SRC/nacl-binutils"
 readonly GTEST_DIR="$LIND_SRC/googletest"
 readonly MISC_DIR="$LIND_SRC/misc"
-readonly NACL_BASE="$LIND_BASE/nacl"
+readonly NACL_BASE="$LIND_BASE/repy"
 readonly NATIVE_CLIENT_SRC="$LIND_SRC/native_client"
 readonly NACL_GCC_DIR="$LIND_SRC/nacl-gcc"
 readonly NACL_REPY="$LIND_SRC/nacl_repy"
