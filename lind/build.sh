@@ -387,24 +387,28 @@ function install_to_path() {
 	mkdir -p "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
 	mkdir -p "$REPY_PATH_SDK/tools"
 
-	"${RSYNC[@]}" \
-		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/" \
-		"${REPY_PATH_SDK:?}/toolchain/${OS_SUBDIR:?}_x86_glibc/"
-	# we need some files from the original sdk to help compile some applications (e.g. zlib)
-	# "${RSYNC[@]}" "${MISC_DIR:?}/${OS_SUBDIR:?}_pepper_28_tools/" "${REPY_PATH_SDK:?}/tools/"
-
 	#install script
 	mkdir -p "${REPY_PATH_BIN:?}"
 	cp -f "${MISC_DIR:?}/lind.sh" "${REPY_PATH_BIN:?}/lind"
 	chmod +x "$REPY_PATH_BIN/lind"
 
 	"${RSYNC[@]}" \
+		"${LIND_BASE:?}/caging/repy/repy/" \
+		"${REPY_PATH:?}/"
+	"${RSYNC[@]}" \
+		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/" \
+		"${REPY_PATH_SDK:?}/toolchain/${OS_SUBDIR:?}_x86_glibc/"
+	"${RSYNC[@]}" \
 		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib/"  \
 		"${REPY_PATH_LIB:?}/glibc/"
 
-	"${RSYNC[@]}" \
-		"${NATIVE_CLIENT_SRC:?}/scons-out/${MODE:?}-x86-64/staging/" \
-		"${REPY_PATH_BIN:?}/"
+	# doesn't seem to exist
+	# "${RSYNC[@]}" \
+	#         "${NATIVE_CLIENT_SRC:?}/scons-out/${MODE:?}-x86-64/staging/" \
+	#         "${REPY_PATH_BIN:?}/"
+
+	# we need some files from the original sdk to help compile some applications (e.g. zlib)
+	# "${RSYNC[@]}" "${MISC_DIR:?}/${OS_SUBDIR:?}_pepper_28_tools/" "${REPY_PATH_SDK:?}/tools/"
 }
 
 
@@ -694,8 +698,8 @@ while (($#)); do
 		setup_toolchain
 		build_glibc
 		build_repy
-		build_nacl
 		install_to_path
+		build_nacl
 		build_liblind
 	elif [[ "$1" == clean_toolchain ]]; then
 		print "Cleaning Toolchain"
