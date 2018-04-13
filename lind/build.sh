@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.4.1-alpha
+readonly version=0.4.2-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -84,7 +84,7 @@ for word; do
 	case "$word" in
 	-*[eE]*)
 		# setup and print out the default environment
-		PIC=1 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
+		PIC=0 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
 		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:$PATH"
 		LIND_BASE="/usr/lind_project" LIND_SRC="$LIND_BASE/lind"
 		REPY_PATH="$LIND_SRC/repy"
@@ -103,7 +103,7 @@ for word; do
 		echo '======================================================'
 		echo
 		cat <<-EOF
-		PIC=1 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
+		PIC=0 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
 		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:\$PATH"
 		LIND_BASE="/usr/lind_project" LIND_SRC="$LIND_BASE/lind"
 		REPY_PATH="$LIND_SRC/repy"
@@ -237,7 +237,9 @@ if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
 fi
 
 # needed to prevent compiler flag conflicts
-unset CCFLAGS CFLAGS LDFLAGS CXXFLAGS
+unset CPPFLAGS CFLAGS LDFLAGS CXXFLAGS
+export CFLAGS=-no-pie LDFLAGS=-no-pie CXXFLAGS=-no-pie
+
 
 # Download source files
 #
