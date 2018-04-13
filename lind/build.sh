@@ -103,13 +103,13 @@ for word; do
 		echo '======================================================'
 		echo
 		cat <<-EOF
-		PIC=0 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
-		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:\$PATH"
-		LIND_BASE="/usr/lind_project" LIND_SRC="$LIND_BASE/lind"
-		REPY_PATH="$LIND_SRC/repy"
-		NACL_SDK_ROOT="$LIND_SRC/repy/sdk"
-		LIND_MONITOR="$LIND_SRC/reference_monitor"
-		PNACLPYTHON="$(type -P python2)"
+		PIC="$PIC" GIT_SSH_COMMAND="$GIT_SSH_COMMAND"
+		LD_LIBRARY_PATH="$LD_LIBRARY_PATH" PATH="$LIND_SRC/depot_tools:\$PATH"
+		LIND_BASE="$LIND_BASE LIND_SRC="$LIND_SRC"
+		REPY_PATH="$REPY_PATH"
+		NACL_SDK_ROOT="$NACL_SDK_ROOT"
+		LIND_MONITOR="$LIND_MONITOR"
+		PNACLPYTHON="$PNACLPYTHON"
 		export GIT_SSH_COMMAND PIC
 		export LD_LIBRARY_PATH PATH
 		export LIND_BASE LIND_SRC REPY_PATH
@@ -538,7 +538,6 @@ function build_nacl() {
 	# patch toolchain build errors
 	print "Building NaCl"
 	ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
-	# ln -Trsfv "$NACL_SDK_ROOT/toolchain/linux_x86_glibc" "$NATIVE_CLIENT_SRC/toolchain/linux_x86"
 	gclient runhooks --force
 	# sed to python2
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
