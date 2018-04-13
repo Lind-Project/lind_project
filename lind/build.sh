@@ -236,6 +236,9 @@ if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
 	exit -2
 fi
 
+# needed to prevent compiler flag conflicts
+unset CCFLAGS CFLAGS LDFLAGS CXXFLAGS
+
 # Download source files
 #
 function download_src() {
