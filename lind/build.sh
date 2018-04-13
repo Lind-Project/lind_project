@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.4.2-alpha
+readonly version=0.4.3-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -193,6 +193,7 @@ fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
 
+readonly CAGING_DIR="$LIND_BASE/caging"
 readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
 readonly LIND_BINUTILS_SRC="$LIND_SRC/nacl-binutils"
 readonly GTEST_DIR="$LIND_SRC/googletest"
@@ -393,7 +394,7 @@ function install_to_path() {
 	chmod +x "$REPY_PATH_BIN/lind"
 
 	"${RSYNC[@]}" \
-		"${LIND_BASE:?}/caging/repy/repy/" \
+		"${CAGING_DIR:?}/repy/repy/" \
 		"${REPY_PATH:?}/"
 	"${RSYNC[@]}" \
 		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/" \
@@ -660,7 +661,7 @@ PS3='build what: '
 
 list+=(all download setup_toolchain)
 list+=(build_glibc build_repy)
-list+=(build_nacl install_toolchain)
+list+=(install_toolchain build_nacl)
 list+=(build_liblind nightly)
 list+=(clean_toolchain clean_nacl)
 list+=(update_glibc update_glibc64)
