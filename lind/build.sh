@@ -531,7 +531,7 @@ function build_nacl() {
 	# patch toolchain build errors
 	print "Building NaCl"
 	ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
-	python2 "$NATIVE_CLIENT_SRC/build/download_toolchains.py"
+	# ln -Trsfv "$NACL_SDK_ROOT/toolchain/linux_x86_glibc" "$NATIVE_CLIENT_SRC/toolchain/linux_x86"
 	gclient runhooks --force
 	# sed to python2
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
