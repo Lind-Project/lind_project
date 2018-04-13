@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.3.1-alpha
+readonly version=0.4.1-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
