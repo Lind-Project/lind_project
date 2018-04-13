@@ -654,8 +654,8 @@ PS3='build what: '
 
 list+=(all download setup_toolchain)
 list+=(build_glibc build_repy)
-list+=(build_nacl build_liblind)
-list+=(install_toolchain nightly)
+list+=(build_nacl install_toolchain)
+list+=(build_liblind nightly)
 list+=(clean_toolchain clean_nacl)
 list+=(update_glibc update_glibc64)
 list+=(test_repy test_glibc test_apps test)
@@ -693,8 +693,8 @@ while (($#)); do
 		build_glibc
 		build_repy
 		build_nacl
-		build_liblind
 		install_to_path
+		build_liblind
 	elif [[ "$1" == clean_toolchain ]]; then
 		print "Cleaning Toolchain"
 		clean_toolchain
