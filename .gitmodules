@@ -7,7 +7,7 @@
 [submodule "lind_glibc"]
 	path = lind_glibc
 	url = https://github.com/Lind-Project/Lind-GlibC.git
-	branch = one_proc_model
+	branch = caging
 [submodule "nacl_repy"]
 	path = nacl_repy
 	url = https://github.com/Lind-Project/nacl_repy.git
