@@ -538,7 +538,8 @@ function build_nacl() {
 	# patch toolchain build errors
 	print "Building NaCl"
 	ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
-	gclient runhooks --force
+	python2 ./build/download_toolchains.py --no-arm-trusted
+	# gclient runhooks --force
 	# sed to python2
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
 	"${PNACLGREPL[@]}" 2>/dev/null | \
