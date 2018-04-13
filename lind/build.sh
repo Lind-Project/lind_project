@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.4.3-alpha
+readonly version=0.4.4-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -538,8 +538,8 @@ function build_nacl() {
 	# patch toolchain build errors
 	print "Building NaCl"
 	ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
+	cd "$NATIVE_CLIENT_SRC" || exit 1
 	python2 ./build/download_toolchains.py --no-arm-trusted
-	# gclient runhooks --force
 	# sed to python2
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
 	"${PNACLGREPL[@]}" 2>/dev/null | \
