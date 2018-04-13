@@ -7,6 +7,7 @@ repy
 nacl
 nacl-gcc
 native_client
+/lind/Makefile
 
 # lind specific directories
 repy/

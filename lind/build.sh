@@ -557,6 +557,9 @@ function build_nacl() {
 	python2 "$NATIVE_CLIENT_SRC/toolchain_build/toolchain_build.py" --verbose
 	./scons --mode="$MODE,nacl" --verbose \
 		-j"$JOBS" --nacl_glibc \
+		platform=x86-32 nacl_pic="$NACL_PIC"
+	./scons --mode="$MODE,nacl" --verbose \
+		-j"$JOBS" --nacl_glibc \
 		platform=x86-64 nacl_pic="$NACL_PIC"
 	rc="$?"
 	if ((rc != 0)); then
