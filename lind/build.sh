@@ -79,43 +79,54 @@ function print() {
 	#         >/dev/null 2>&1
 }
 
+# default to position
+# independant code
+# unless $PIC is set
+if ((PIC)); then
+	NACL_PIC=1
+else
+	NACL_PIC=0
+fi
+if [[ -n "$JOBS" ]]; then
+	JOBS="$JOBS"
+elif type nproc &>/dev/null; then
+	JOBS="$(nproc)"
+else
+	JOBS='4'
+fi
+export NACL_PIC JOBS
+
 # Check for flags
 for word; do
 	case "$word" in
 	-*[eE]*)
 		# setup and print out the default environment
-		PIC=0 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
+		JOBS="$JOBS" PIC=0 GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
 		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:$PATH"
 		LIND_BASE="/usr/lind_project" LIND_SRC="$LIND_BASE/lind"
-		REPY_PATH="$LIND_SRC/repy"
-		NACL_SDK_ROOT="$LIND_SRC/repy/sdk"
-		LIND_MONITOR="$LIND_SRC/reference_monitor"
-		PNACLPYTHON="$(type -P python2)"
+		REPY_PATH="$LIND_SRC/repy" NACL_SDK_ROOT="$LIND_SRC/repy/sdk"
+		LIND_MONITOR="$LIND_SRC/reference_monitor" PNACLPYTHON="$(type python2)"
 		export GIT_SSH_COMMAND PIC
 		export LD_LIBRARY_PATH PATH
-		export LIND_BASE LIND_SRC REPY_PATH
-		export NACL_SDK_ROOT
-		export LIND_MONITOR
-		export PNACLPYTHON
+		export LIND_BASE LIND_SRC
+		export REPY_PATH NACL_SDK_ROOT
+		export LIND_MONITOR PNACLPYTHON
 		echo
 		echo '======================================================'
 		echo 'USING DEFAULT NACL ENVIRONMENT:'
 		echo '======================================================'
 		echo
 		cat <<-EOF
-		PIC="$PIC" GIT_SSH_COMMAND="$GIT_SSH_COMMAND"
+		JOBS="$JOBS" PIC="$PIC" GIT_SSH_COMMAND="$GIT_SSH_COMMAND"
 		LD_LIBRARY_PATH="$LD_LIBRARY_PATH" PATH="$LIND_SRC/depot_tools:\$PATH"
 		LIND_BASE="$LIND_BASE LIND_SRC="$LIND_SRC"
-		REPY_PATH="$REPY_PATH"
-		NACL_SDK_ROOT="$NACL_SDK_ROOT"
-		LIND_MONITOR="$LIND_MONITOR"
-		PNACLPYTHON="$PNACLPYTHON"
+		REPY_PATH="$REPY_PATH" NACL_SDK_ROOT="$NACL_SDK_ROOT"
+		LIND_MONITOR="$LIND_MONITOR" PNACLPYTHON="$PNACLPYTHON"
 		export GIT_SSH_COMMAND PIC
 		export LD_LIBRARY_PATH PATH
-		export LIND_BASE LIND_SRC REPY_PATH
-		export NACL_SDK_ROOT
-		export LIND_MONITOR
-		export PNACLPYTHON
+		export LIND_BASE LIND_SRC
+		export REPY_PATH NACL_SDK_ROOT
+		export LIND_MONITOR PNACLPYTHON
 		EOF
 		echo
 		echo '======================================================'
@@ -176,23 +187,8 @@ elif [[ "$OS_NAME" == "Linux" ]]; then
 else
 	readonly OS_SUBDIR="win"
 fi
-if [[ -n "$JOBS" ]]; then
-	readonly JOBS="$JOBS"
-elif type -P nproc &>/dev/null; then
-	readonly JOBS="$(nproc)"
-else
-	readonly JOBS='4'
-fi
-if ((PIC)); then
-	# default to position-independant
-	# code if $PIC is unset or non-zero
-	readonly NACL_PIC=1
-else
-	readonly NACL_PIC=0
-fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_SRC="$LIND_SRC"
-
 readonly CAGING_DIR="$LIND_BASE/caging"
 readonly LIND_GLIBC_SRC="$LIND_SRC/lind_glibc"
 readonly LIND_BINUTILS_SRC="$LIND_SRC/nacl-binutils"
@@ -239,7 +235,7 @@ fi
 
 # needed to prevent compiler flag conflicts
 unset CPPFLAGS CFLAGS LDFLAGS CXXFLAGS
-export CFLAGS=-no-pie LDFLAGS=-no-pie CXXFLAGS=-no-pie
+export MAKEFLAGS="$MAKEFLAGS -j$JOBS"
 
 
 # Download source files
@@ -541,7 +537,10 @@ function build_nacl() {
 
 	# patch toolchain build errors
 	print "Building NaCl"
+	rm -f "$NATIVE_CLIENT_SRC/toolchain" || rm -rf "$NATIVE_CLIENT_SRC/toolchain"
 	ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
+	cd "$NATIVE_CLIENT_SRC" || exit 1
+	python2 ./build/download_toolchains.py --keep --arm-untrusted
 	# sed to python2
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
 	"${PNACLGREPL[@]}" 2>/dev/null | \
@@ -555,6 +554,7 @@ function build_nacl() {
 
 	# build NaCl with glibc tests
 	cd "$NATIVE_CLIENT_SRC" || exit 1
+	python2 ./toolchain_build/toolchain_build.py --verbose
 	./scons --mode="nacl" --verbose \
 		-j"$JOBS" --nacl_glibc \
 		platform=x86-32 nacl_pic="$NACL_PIC"
@@ -566,7 +566,6 @@ function build_nacl() {
 		print "NaCl Build Failed [Exit Code: $rc]" $'\a'
 		exit "$rc"
 	fi
-
 	# TODO: figure out how to do this without the loop
 	while :; do
 		"${RSYNC[@]}" \
@@ -595,7 +594,7 @@ function clean_nacl() {
 #
 function build_glibc() {
 	# the build is long and boring, so execute this first if it exists
-	if type -P fortune &>/dev/null; then
+	if type fortune &>/dev/null; then
 		fortune
 	else
 		print "Fortune Not Found. Skipping."
