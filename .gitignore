@@ -22,6 +22,10 @@ repy/
 nacl/
 /lind/*/
 
+# workspaces
+/build/
+/staging/
+
 # archives
 *.tar*
 *.gz
