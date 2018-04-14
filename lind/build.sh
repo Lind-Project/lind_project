@@ -550,18 +550,9 @@ function build_nacl() {
 			cat <"$file.new" >"$file"
 			rm "$file.new"
 		done
-	cd "$NATIVE_CLIENT_SRC/toolchain_build/src/binutils_arm" || exit 1
-	for patch in "${LIND_BASE:?}"/patches/binutils_arm-*.patch; do
-		patch -p1 <"$patch" 2>/dev/null || true
-	done
-	cd "$NATIVE_CLIENT_SRC/toolchain_build/src/gcc_arm" || exit 1
-	for patch in "${LIND_BASE:?}"/patches/gcc_arm-*.patch; do
-		patch -p1 <"$patch" 2>/dev/null || true
-	done
 	cd "$NATIVE_CLIENT_SRC" || exit 1
 
 	# build NaCl with glibc tests
-	python2 "$NATIVE_CLIENT_SRC/toolchain_build/toolchain_build.py" --verbose
 	./scons --mode="$MODE,nacl" --verbose \
 		-j"$JOBS" --nacl_glibc \
 		platform=x86-32 nacl_pic="$NACL_PIC"
