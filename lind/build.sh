@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.4.4-alpha
+readonly version=0.4.5-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -538,11 +538,6 @@ function build_nacl() {
 	# patch toolchain build errors
 	print "Building NaCl"
 	ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
-	cd "$NATIVE_CLIENT_SRC" || exit 1
-	python2 ./build/download_toolchains.py \
-		--keep --arm-untrusted \
-		native_client/TOOL_REVISIONS
-	gclient runhooks --force
 	# sed to python2
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
 	"${PNACLGREPL[@]}" 2>/dev/null | \
@@ -553,13 +548,13 @@ function build_nacl() {
 			cat <"$file.new" >"$file"
 			rm "$file.new"
 		done
-	cd "$NATIVE_CLIENT_SRC" || exit 1
 
 	# build NaCl with glibc tests
-	./scons --mode="$MODE,nacl" --verbose \
+	cd "$NATIVE_CLIENT_SRC" || exit 1
+	./scons --mode="nacl" --verbose \
 		-j"$JOBS" --nacl_glibc \
 		platform=x86-32 nacl_pic="$NACL_PIC"
-	./scons --mode="$MODE,nacl" --verbose \
+	./scons --mode="$MODE" --verbose \
 		-j"$JOBS" --nacl_glibc \
 		platform=x86-64 nacl_pic="$NACL_PIC"
 	rc="$?"
@@ -567,6 +562,17 @@ function build_nacl() {
 		print "NaCl Build Failed [Exit Code: $rc]" $'\a'
 		exit "$rc"
 	fi
+
+	# TODO: figure out how to do this without the loop
+	while :; do
+		"${RSYNC[@]}" \
+			"$NATIVE_CLIENT_SRC/scons-out/nacl_irt-x86-32/" \
+			"$NATIVE_CLIENT_SRC/scons-out/nacl_irt-x86-64/"
+		./scons --mode="nacl" --verbose \
+			-j"$JOBS" --nacl_glibc \
+			platform=x86-64 nacl_pic="$NACL_PIC" && \
+			break
+	done
 
 	print "Done building NaCl"
 }
