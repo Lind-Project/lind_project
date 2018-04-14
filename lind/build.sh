@@ -557,6 +557,10 @@ function build_nacl() {
 		done
 
 	# build NaCl with glibc tests
+	cd "$NATIVE_CLIENT_SRC/src/third_party" || exit 1
+	git remote set-url origin https://github.com/Lind-Project/third_party.git
+	git fetch --all
+	git reset --hard origin/i686_caging --
 	cd "$NATIVE_CLIENT_SRC" || exit 1
 	python2 ./toolchain_build/toolchain_build.py --verbose
 	./scons --mode="nacl" --verbose \
