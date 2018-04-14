@@ -249,6 +249,10 @@ function download_src() {
 	for dir in "${SUBMODULES[@]}"; do
 		rm -f "$LIND_SRC/$dir"
 		ln -rsv "$dir" "$LIND_SRC/"
+		cd "$LIND_BASE/$dir" || exit 1
+		git stash pop 2>/dev/null || true
+		git stash
+		cd "$LIND_BASE" || exit 1
 	done
 
 	# sync and patch repos
