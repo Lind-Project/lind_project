@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.4.5-alpha
+readonly version=0.5.0-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -264,7 +264,7 @@ function download_src() {
 		gclient sync
 	cd nacl-gcc || exit 1
 	for patch in "${LIND_BASE:?}"/patches/nacl-gcc*.patch; do
-		patch -p1 <"$patch" 2>/dev/null || true
+		patch -p1 <"$patch" >/dev/null 2>&1 || true
 	done
 	cd "$LIND_BASE" || exit 1
 	gclient config --name=native_client \
@@ -273,7 +273,7 @@ function download_src() {
 		gclient sync
 	cd native_client || exit 1
 	for patch in "${LIND_BASE:?}"/patches/native_client-*.patch; do
-		patch -p1 <"$patch" 2>/dev/null || true
+		patch -p1 <"$patch" >/dev/null 2>&1 || true
 	done
 
 	# use custom repos as bases
@@ -321,7 +321,7 @@ function setup_toolchain() {
 	# fix "implicit rule" make errors
 	cd "$LIND_GLIBC_SRC" || exit 1
 	for patch in "${LIND_BASE:?}"/patches/lind_glibc-*.patch; do
-		patch -p1 <"$patch" 2>/dev/null || true
+		patch -p1 <"$patch" >/dev/null 2>&1 || true
 	done
 
 	# convert files from python to python2
