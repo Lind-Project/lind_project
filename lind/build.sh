@@ -562,7 +562,8 @@ function build_nacl() {
 	git fetch --all
 	git reset --hard origin/i686_caging --
 	cd "$NATIVE_CLIENT_SRC" || exit 1
-	python2 ./toolchain_build/toolchain_build.py --verbose
+	python2 ./toolchain_build/toolchain_build.py --verbose || true
+	rm -rf "${NATIVE_CLIENT_SRC:?}"/toolchain_build/src
 	./scons --mode="nacl" --verbose \
 		-j"$JOBS" --nacl_glibc \
 		platform=x86-32 nacl_pic="$NACL_PIC"
