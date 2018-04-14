@@ -95,6 +95,7 @@ else
 	JOBS='4'
 fi
 export NACL_PIC JOBS
+export MAKEFLAGS="$MAKEFLAGS -j$JOBS"
 
 # Check for flags
 for word; do
@@ -232,10 +233,6 @@ if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
 	print "You need to set \"$NACL_SDK_ROOT\" to \"$REPY_PATH_SDK\""
 	exit -2
 fi
-
-# needed to prevent compiler flag conflicts
-unset CPPFLAGS CFLAGS LDFLAGS CXXFLAGS
-export MAKEFLAGS="$MAKEFLAGS -j$JOBS"
 
 
 # Download source files
