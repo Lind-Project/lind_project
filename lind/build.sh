@@ -310,11 +310,13 @@ function setup_toolchain() {
 	# use custom repos as bases
 	cd "$NACL_TOOLCHAIN_SRC/SRC" || exit 1
 	for dir in "${toolchain_dirs[@]}"; do
-		rm -f "$dir" || mv -v "$dir" "${dir}_orig"
-	done 2>/dev/null
-	ln -s "$LIND_BINUTILS_SRC" binutils
-	ln -s "$NACL_GCC_DIR" gcc
-	ln -s "$LIND_GLIBC_SRC" glibc
+		if [[ -d "$dir" ]]; then
+			rm -rf "$dir"
+		fi
+	done
+	ln -Trsv "$LIND_BINUTILS_SRC" ./binutils
+	ln -Trsv "$NACL_GCC_DIR" ./gcc
+	ln -Trsv "$LIND_GLIBC_SRC" ./glibc
 
 	# fix "implicit rule" make errors
 	cd "$LIND_GLIBC_SRC" || exit 1
@@ -334,7 +336,9 @@ function setup_toolchain() {
 		done
 
 	cd "$NACL_THIRD_PARTY" || exit 1
-	mv gtest gtest_orig
+	if [[ -d ./gtest ]]; then
+		rm -rf /gtest
+	fi
 	ln -rsv "$GTEST_DIR/googletest" gtest
 	cd "$GTEST_DIR" || exit 1
 	cmake .
@@ -601,8 +605,9 @@ function build_glibc() {
 	cd "$MISC_DIR/liblind" || exit 1
 	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
 	cd "$NATIVE_CLIENT_SRC/src" || exit 1
-	rm -rfv "${NACL_THIRD_PARTY}_orig"
-	mv "$NACL_THIRD_PARTY" "${NACL_THIRD_PARTY}_orig"
+	if [[ -d "$NACL_THIRD_PARTY" ]]; then
+		rm -rf "$NACL_THIRD_PARTY"
+	fi
 	ln -Trsv "${LIND_BASE:?}/third_party" "$NACL_THIRD_PARTY"
 	cd "$NACL_THIRD_PARTY" || exit 1
 	bash "$LIND_SRC/getdeps.sh"
