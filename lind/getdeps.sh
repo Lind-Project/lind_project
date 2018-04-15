@@ -15,6 +15,8 @@ MIRROR=ftp://gcc.gnu.org/pub/gcc/infrastructure
 # we need a pre-release version for ppl so special-case it
 PPL=ppl-1.2pre4.tar.bz2
 PPL_MIRROR=http://bugseng.com/products/ppl/download/ftp/snapshots
+# PPL=ppl-0.9.tar.gz
+# PPL_MIRROR=http://bugseng.com/external/ppl/download/ftp/releases/0.9
 
 # ===========
 ## functions:
@@ -125,6 +127,7 @@ function extract() {
 		*)
 			echo "I don't know how to extract '$1" ;;
 		esac
+		mv "$1"/* ./
 	else
 		echo "'$1' is not a valid file!"
 	fi

@@ -247,10 +247,12 @@ function download_src() {
 		rm -f "$LIND_SRC/$dir"
 		ln -rsv "$dir" "$LIND_SRC/"
 		cd "$LIND_BASE/$dir" || exit 1
-		git stash pop 2>/dev/null || true
-		git stash
+		git reset --hard >/dev/null 2>&1 || true
+		git clean -f >/dev/null 2>&1 || true
+		git stash >/dev/null 2>&1 && git stash drop
 		cd "$LIND_BASE" || exit 1
 	done
+	git submodule update --remote
 
 	# sync and patch repos
 	cd "$LIND_BASE" || exit 1
@@ -607,7 +609,7 @@ function build_glibc() {
 	print "Copy component.h header to glibc: "
 	cd "$MISC_DIR/liblind" || exit 1
 	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
-	# cd "$NATIVE_CLIENT_SRC/src" || exit 1
+	cd "$NATIVE_CLIENT_SRC/src" || exit 1
 	# if [[ -d "$NACL_THIRD_PARTY" ]]; then
 	#         rm -rf "$NACL_THIRD_PARTY"
 	# fi
@@ -638,7 +640,7 @@ function build_glibc() {
 		<Makefile.new \
 		>Makefile
 	rm -f Makefile.new
-	make -j"$JOBS" clean build-with-glibc || exit -1
+	PATH="$LIND_SRC:$PATH" make -j"$JOBS" clean build-with-glibc || exit -1
 	print "Done building toolchain"
 }
 

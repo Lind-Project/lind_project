@@ -11,7 +11,7 @@
 [submodule "nacl_repy"]
 	path = nacl_repy
 	url = https://github.com/Lind-Project/nacl_repy.git
-	branch = i686_caging
+	branch = caging
 [submodule "lind_experiments"]
 	path = lind_experiments
 	url = https://github.com/Lind-Project/lind_experiments.git
