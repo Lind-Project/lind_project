@@ -396,7 +396,7 @@ function install_to_path() {
 
 	"${RSYNC[@]}" \
 		"${CAGING_DIR:?}/repy/repy/" \
-		"${REPY_PATH:?}/"
+		"${REPY_PATH:?}/repy/"
 	"${RSYNC[@]}" \
 		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/" \
 		"${REPY_PATH_SDK:?}/${OS_SUBDIR:?}_x86_glibc/"
