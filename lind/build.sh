@@ -386,7 +386,7 @@ function install_to_path() {
 
 	mkdir -p "$REPY_PATH"
 	mkdir -p "$REPY_PATH_LIB/glibc"
-	mkdir -p "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
+	mkdir -p "$REPY_PATH_SDK/${OS_SUBDIR}_x86_glibc"
 	mkdir -p "$REPY_PATH_SDK/tools"
 
 	#install script
@@ -399,7 +399,7 @@ function install_to_path() {
 		"${REPY_PATH:?}/"
 	"${RSYNC[@]}" \
 		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/" \
-		"${REPY_PATH_SDK:?}/toolchain/${OS_SUBDIR:?}_x86_glibc/"
+		"${REPY_PATH_SDK:?}/${OS_SUBDIR:?}_x86_glibc/"
 	"${RSYNC[@]}" \
 		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib/"  \
 		"${REPY_PATH_LIB:?}/glibc/"
@@ -427,7 +427,7 @@ function test_repy() {
 		#         "$REPY_PATH/repy/lind_server.py" "$@"' INT TERM EXIT
 		# trap ';' TERM
 		python2 "$file"
-		# trap 'python2 "$file"' INT TERM EXIT
+		trap 'python2 "$file"' INT TERM EXIT
 	done
 
 	# run the struct test
@@ -539,7 +539,7 @@ function build_nacl() {
 	# patch toolchain build errors
 	print "Building NaCl"
 	rm -f "$NATIVE_CLIENT_SRC/toolchain" || rm -rf "$NATIVE_CLIENT_SRC/toolchain"
-	ln -Trsfv "$NACL_SDK_ROOT/toolchain" "$NATIVE_CLIENT_SRC/toolchain"
+	ln -Trsfv "$NACL_SDK_ROOT" "$NATIVE_CLIENT_SRC/toolchain"
 	cd "$NATIVE_CLIENT_SRC" || exit 1
 	python2 ./build/download_toolchains.py --keep --arm-untrusted
 	# sed to python2
