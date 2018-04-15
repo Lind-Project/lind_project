@@ -630,6 +630,14 @@ function build_glibc() {
 	# turns out this works better if you do it from the nacl base dir
 	cd "$NACL_TOOLCHAIN_SRC" || exit 1
 	rm -rf BUILD out
+	sed \
+		's!http://git\.chromium\.org!https://chromium.googlesource.com!g' \
+		<Makefile \
+		>Makefile.new 2>/dev/null || true
+	cat \
+		<Makefile.new \
+		>Makefile
+	rm -f Makefile.new
 	make -j"$JOBS" clean build-with-glibc || exit -1
 	print "Done building toolchain"
 }
