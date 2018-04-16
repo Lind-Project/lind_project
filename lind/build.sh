@@ -261,6 +261,7 @@ function download_src() {
 		https://chromium.googlesource.com/native_client/nacl-gcc.git \
 		--git-deps && \
 		gclient sync
+	ln -Trsv nacl-gcc "$NACL_GCC_DIR"
 	cd nacl-gcc || exit 1
 	for patch in "${LIND_BASE:?}"/patches/nacl-gcc*.patch; do
 		patch -p1 <"$patch" >/dev/null 2>&1 || true
@@ -612,8 +613,8 @@ function build_glibc() {
 	cd "$MISC_DIR/rpcgen" || exit 1
 	python2 ./syscall_gen.py
 	cp -fvp lind_rpc_gen.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
-	cd "$MISC_DIR/liblind" || exit 1
-	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
+	cp -fvp "$MISC_DIR/liblind/component.h" "$LIND_GLIBC_SRC/sysdeps/nacl/"
+	cp -fvp "${LIND_BASE:?}/include"/* "$LIND_GLIBC_SRC/sysdeps/nacl/"
 	# cd "$NATIVE_CLIENT_SRC/src" || exit 1
 	# if [[ -d "$NACL_THIRD_PARTY" ]]; then
 	#         rm -rf "$NACL_THIRD_PARTY"
