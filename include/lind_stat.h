@@ -52,7 +52,9 @@ struct lind_stat
 # define st_ctime st_ctim.tv_sec
     int64_t ___unused[3]; //double underscore is not enough for OSX
 };
-#define stat lind_stat
+#ifndef _SYS_STAT_H
+# define stat lind_stat
+#endif
 
 struct lind_statfs
   {
