@@ -9,6 +9,7 @@
 #define LIND_STAT_H_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 struct lind_timespec
 {
