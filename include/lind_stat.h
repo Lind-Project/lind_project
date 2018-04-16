@@ -53,6 +53,7 @@ struct lind_stat
     int64_t ___unused[3]; //double underscore is not enough for OSX
 };
 #ifndef _SYS_STAT_H
+# define _SYS_STAT_H
 # define stat lind_stat
 #endif
 
