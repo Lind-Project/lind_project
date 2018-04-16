@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.5.0-alpha
+readonly version=0.5.1-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -684,7 +684,7 @@ function glibc_tester() {
 PS3='build what: '
 
 list+=(all download setup_toolchain)
-list+=(build_glibc build_repy)
+list+=(build_repy build_glibc)
 list+=(build_nacl install_toolchain)
 list+=(build_liblind nightly)
 list+=(clean_toolchain clean_nacl)
@@ -721,8 +721,8 @@ while (($#)); do
 	elif [[ "$1" == all ]]; then
 		download_src
 		setup_toolchain
-		build_glibc
 		build_repy
+		build_glibc
 		build_nacl
 		install_to_path
 		build_liblind
