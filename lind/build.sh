@@ -226,7 +226,7 @@ readonly -a PNACLGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 readonly -a RSYNC=(rsync '-avzP' '--info=progress2' '--partial')
 
-readonly -a SUBMODULES=(lind_glibc nacl-binutils nacl_repy misc third_party
+readonly -a SUBMODULES=(third_party lind_glibc nacl-binutils nacl_repy misc
 			googletest google-breakpad linux-syscall-support)
 
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
@@ -240,7 +240,7 @@ fi
 function download_src() {
 	mkdir -p "$LIND_SRC"
 	cd "$LIND_BASE" || exit 1
-	rm -rf nacl-gcc native_client
+	rm -rf nacl-gcc native_client third_party/lss
 	git submodule sync --recursive
 	git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
@@ -267,13 +267,13 @@ function download_src() {
 	done
 	cd "$LIND_BASE" || exit 1
 	gclient config --name=native_client \
-		https://github.com/Lind-Project/native_client.git@caging \
+		https://github.com/Lind-Project/native_client.git@lind \
 		--git-deps && \
 		gclient sync
-	# cd native_client || exit 1
-	# for patch in "${LIND_BASE:?}"/patches/native_client-*.patch; do
-	#         patch -p1 <"$patch" >/dev/null 2>&1 || true
-	# done
+	cd native_client || exit 1
+	for patch in "${LIND_BASE:?}"/patches/native_client-*.patch; do
+		patch -p1 <"$patch" >/dev/null 2>&1 || true
+	done
 
 	# use custom repos as bases
 	cd "$LIND_SRC" || exit 1
@@ -284,8 +284,10 @@ function download_src() {
 	mkdir -p "$NATIVE_CLIENT_SRC/src/third_party"
 	rm -f "$NATIVE_CLIENT_SRC/src/third_party/lss"
 	rm -f "$NATIVE_CLIENT_SRC/src/trusted/service_runtime/linux/third_party"
-	ln -rsv "$NACL_LSS_DIR" "$NATIVE_CLIENT_SRC/src/third_party/lss"
-	ln -rsv "$NATIVE_CLIENT_SRC/src/third_party" "$NATIVE_CLIENT_SRC/src/trusted/service_runtime/linux/"
+	ln -Trsvf "$NACL_LSS_DIR" "$NATIVE_CLIENT_SRC/src/third_party/lss"
+	ln -Trsvf \
+		"$NATIVE_CLIENT_SRC/src/third_party" \
+		"$NATIVE_CLIENT_SRC/src/trusted/service_runtime/linux/third_party"
 	mkdir -p "$NACL_PORTS_DIR"
 	cd "$NACL_BASE" || exit 1
 	gclient config --name=naclports \
@@ -303,25 +305,25 @@ function download_src() {
 # Setup base toolchain structure
 #
 function setup_toolchain() {
-	# local -a toolchain_dirs
-	# toolchain_dirs=(binutils gcc glibc)
+	local -a toolchain_dirs
+	toolchain_dirs=(binutils gcc glibc)
 
 	# use custom repos as bases
-	# cd "$NACL_TOOLCHAIN_SRC/SRC" || exit 1
-	# for dir in "${toolchain_dirs[@]}"; do
-	#         if [[ -d "$dir" ]]; then
-	#                 rm -rf "$dir"
-	#         fi
-	# done
-	# ln -Trsv "$LIND_BINUTILS_SRC" ./binutils
-	# ln -Trsv "$NACL_GCC_DIR" ./gcc
-	# ln -Trsv "$LIND_GLIBC_SRC" ./glibc
+	cd "$NACL_TOOLCHAIN_SRC/SRC" || exit 1
+	for dir in "${toolchain_dirs[@]}"; do
+		if [[ -d "$dir" ]]; then
+			rm -rf "$dir"
+		fi
+	done
+	ln -Trsv "$LIND_BINUTILS_SRC" ./binutils
+	ln -Trsv "$NACL_GCC_DIR" ./gcc
+	ln -Trsv "$LIND_GLIBC_SRC" ./glibc
 
 	# fix "implicit rule" make errors
-	# cd "$LIND_GLIBC_SRC" || exit 1
-	# for patch in "${LIND_BASE:?}"/patches/lind_glibc-*.patch; do
-	#         patch -p1 <"$patch" >/dev/null 2>&1 || true
-	# done
+	cd "$NACL_TOOLCHAIN_SRC/SRC/glibc" || exit 1
+	for patch in "${LIND_BASE:?}"/patches/lind_glibc-*.patch; do
+		patch -p1 <"$patch" >/dev/null 2>&1 || true
+	done
 
 	# convert files from python to python2
 	cd "$NATIVE_CLIENT_SRC" || exit 1
@@ -607,15 +609,18 @@ function build_glibc() {
 	fi
 
 	print "Copy component.h header to glibc: "
+	cd "$MISC_DIR/rpcgen" || exit 1
+	python2 ./syscall_gen.py
+	cp -fvp lind_rpc_gen.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
 	cd "$MISC_DIR/liblind" || exit 1
 	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
-	cd "$NATIVE_CLIENT_SRC/src" || exit 1
+	# cd "$NATIVE_CLIENT_SRC/src" || exit 1
 	# if [[ -d "$NACL_THIRD_PARTY" ]]; then
 	#         rm -rf "$NACL_THIRD_PARTY"
 	# fi
 	# ln -Trsv "${LIND_BASE:?}/third_party" "$NACL_THIRD_PARTY"
-	cd "$NACL_THIRD_PARTY" || exit 1
-	bash "$LIND_SRC/getdeps.sh"
+	# cd "$NACL_THIRD_PARTY" || exit 1
+	# bash "$LIND_SRC/getdeps.sh"
 	print "done."
 
 	print "Building glibc"
@@ -640,7 +645,8 @@ function build_glibc() {
 		<Makefile.new \
 		>Makefile
 	rm -f Makefile.new
-	PATH="$LIND_SRC:$PATH" make -j"$JOBS" clean build-with-glibc || exit -1
+	make clean
+	PATH="$LIND_SRC:$PATH" make -j"$JOBS" build-with-glibc || exit -1
 	print "Done building toolchain"
 }
 
