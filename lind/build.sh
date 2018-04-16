@@ -106,7 +106,7 @@ for word; do
 		LD_LIBRARY_PATH=/glibc/ PATH="$LIND_SRC/depot_tools:$PATH"
 		LIND_BASE="/usr/lind_project" LIND_SRC="$LIND_BASE/lind"
 		REPY_PATH="$LIND_SRC/repy" NACL_SDK_ROOT="$LIND_SRC/repy/sdk"
-		LIND_MONITOR="$LIND_SRC/reference_monitor" PNACLPYTHON="$(type python2)"
+		LIND_MONITOR="$LIND_SRC/reference_monitor" PNACLPYTHON="$(which python2)"
 		export GIT_SSH_COMMAND PIC
 		export LD_LIBRARY_PATH PATH
 		export LIND_BASE LIND_SRC
