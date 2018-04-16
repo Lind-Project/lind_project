@@ -13,10 +13,11 @@ CLOOG_PPL=cloog-ppl-0.15.11.tar.gz
 MIRROR=ftp://gcc.gnu.org/pub/gcc/infrastructure
 
 # we need a pre-release version for ppl so special-case it
-PPL=ppl-1.2pre4.tar.bz2
-PPL_MIRROR=http://bugseng.com/products/ppl/download/ftp/snapshots
-# PPL=ppl-0.9.tar.gz
-# PPL_MIRROR=http://bugseng.com/external/ppl/download/ftp/releases/0.9
+# PPL=ppl-1.2pre4.tar.bz2
+# PPL_MIRROR=http://bugseng.com/products/ppl/download/ftp/snapshots
+PPL=ppl-0.10.2.tar.gz
+PPL_MIRROR=https://gcc.gnu.org/pub/gcc/infrastructure
+# PPL_MIRROR=http://bugseng.com/external/ppl/download/ftp/releases/0.12.1
 
 # ===========
 ## functions:
@@ -88,6 +89,7 @@ function download() {
 	local dir="${1%%-*}"
 	mkdir -p "$dir"
 	cd "$dir" || return 1
+	rm -rf ./*
 	if [[ "$dir" == ppl ]]; then
 		[[ -f "$1" ]] || wget "$PPL_MIRROR"/"$1"
 	else
@@ -127,7 +129,7 @@ function extract() {
 		*)
 			echo "I don't know how to extract '$1" ;;
 		esac
-		mv "$1"/* ./
+		mv "$dir"*/* ./
 	else
 		echo "'$1' is not a valid file!"
 	fi
