@@ -1,17 +1,17 @@
 diff --git a/elf/Makefile b/elf/Makefile
-index 85f8d09781773e28c8..9479f20f989fc0d402 100644
+index 8a3f5b7905514c291d..f9c7fd148a4ee6a7f0 100644
 --- a/elf/Makefile
 +++ b/elf/Makefile
-@@ -315,7 +315,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
+@@ -310,7 +310,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
  		  $(LDFLAGS-rtld) -Wl,-z,defs -Wl,--verbose 2>&1 |	\
  		  LC_ALL=C \
- 		  sed -e '/^=========/,/^=========/!d;/^=========/d' \
+ 		  sed -e '/^=========/,/^=========/!d;/^=========/d'	\
 -		      -e 's/\. = 0 + SIZEOF_HEADERS;/& _begin = . - SIZEOF_HEADERS;/' \
 +		      -e 's/\. = .* + SIZEOF_HEADERS;/& _begin = . - SIZEOF_HEADERS;/' \
- 		      -e 's/_end = \.; PROVIDE (end = \.);/& . = DATA_SEGMENT_END(.);/' \
- 		      -e 's/seg_bss      PT_LOAD FLAGS(6) ;       \/\* read + write \*\///' \
- 		      -e 's/} :seg_bss/}/' \
-@@ -340,7 +340,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
+ 		  > $@.lds
+ 	$(LINK.o) -nostdlib -nostartfiles -shared -o $@			\
+ 		  $(LDFLAGS-rtld) -Wl,-z,defs $(z-now-$(bind-now))	\
+@@ -327,7 +327,7 @@ $(objpfx)ld.so: $(objpfx)librtld.os $(ld-map)
  # TODO(mseaborn): Remove the need to have two versions of ld.so.
  $(objpfx)runnable-ld.so: $(objpfx)ld.so nacl_fixup_ldso.py
  	cp $(objpfx)ld.so $@.tmp
@@ -21,7 +21,7 @@ index 85f8d09781773e28c8..9479f20f989fc0d402 100644
  
  # interp.c exists just to get this string into the libraries.
 diff --git a/elf/nacl_fixup_ldso.py b/elf/nacl_fixup_ldso.py
-index a5eb1f9eea1e32680b..2aaab30380b7067caf 100644
+index f60becc06562b538cd..2aaab30380b7067caf 100644
 --- a/elf/nacl_fixup_ldso.py
 +++ b/elf/nacl_fixup_ldso.py
 @@ -27,7 +27,7 @@ def main(args):
@@ -52,10 +52,10 @@ index a5eb1f9eea1e32680b..2aaab30380b7067caf 100644
 -    fh.seek(offset_ei_class)
 -    elfclass = fh.read(1)
 -    if elfclass == elfclass32:
--        check("H", offset_e_phnum32, 7)
+-        check("H", offset_e_phnum32, 6)
 -        replace("H", offset_e_phnum32, 3)
 -    elif elfclass == elfclass64:
--        check("H", offset_e_phnum64, 7)
+-        check("H", offset_e_phnum64, 6)
 -        replace("H", offset_e_phnum64, 3)
 -    else:
 -        raise AssertionError("Unknown ELF class in file %s." % filename)
@@ -92,3 +92,12 @@ index c5866eb9def3becfc6..f82c9efe188540e8df 100644
  	$(make-target-directory)
  	touch $@
  
+@@ -245,7 +246,7 @@ endef
+ 
+ # The top-level glibc Makefile expects subdir_install to update the stubs file.
+ subdir_install: stubs
+-
++
+ # Get rid of these variables if they came from the parent.
+ routines =
+ aux =
