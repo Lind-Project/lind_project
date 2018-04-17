@@ -240,7 +240,7 @@ fi
 function download_src() {
 	mkdir -p "$LIND_SRC"
 	cd "$LIND_BASE" || exit 1
-	rm -rf nacl-gcc native_client third_party/lss
+	rm -rf nacl-gcc native_client third_party
 	git submodule sync --recursive
 	git submodule update --remote
 	for dir in "${SUBMODULES[@]}"; do
