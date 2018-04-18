@@ -2037,7 +2037,7 @@ def Main(argv):
   execute."""
   if sys.hexversion < 0x02060000:
     print >> sys.stderr, (
-        '\nYour python version %s is unsupported, please upgrade.\n' %
+        '\nYour python2 version %s is unsupported, please upgrade.\n' %
         sys.version.split(' ', 1)[0])
     return 2
   if not sys.executable:
