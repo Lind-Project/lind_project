@@ -537,11 +537,6 @@ function build_nacl() {
 
 	# patch toolchain build errors
 	print "Building NaCl"
-	# rm -f "$NATIVE_CLIENT_SRC/toolchain" || rm -rf "$NATIVE_CLIENT_SRC/toolchain"
-	# ln -Trsfv "$NACL_SDK_ROOT" "$NATIVE_CLIENT_SRC/toolchain"
-	# cd "$NATIVE_CLIENT_SRC" || exit 1
-	# python2 ./build/download_toolchains.py --keep --arm-untrusted
-	# sed to python2
 	cd "$NATIVE_CLIENT_SRC/toolchain" || exit 1
 	"${PNACLGREPL[@]}" 2>/dev/null | \
 		"${PNACLGREPV[@]}" | \
