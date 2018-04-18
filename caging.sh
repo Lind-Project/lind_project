@@ -54,6 +54,14 @@ readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 
+readonly -a PYGREPL=(grep '-lIPR' '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' './')
+readonly -a PYGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
+readonly -a PYSED=(sed '-r' 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
+readonly -a PNACLGREPL=(grep '-IFRlw' -- "\${PNACLPYTHON}" './')
+readonly -a PNACLGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
+readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
+
+# readonly -a RSYNC=(rsync '-avzP' '--info=progress2' '--partial')
 readonly RSYNC='rsync -avrc --force'
 
 if [ "$NACL_SDK_ROOT" != "${REPY_PATH_SDK}" ]; then
@@ -166,14 +174,14 @@ function test_repy {
 	    echo $file
         #trap 'python2.6 ${REPY_PATH}/repy/repy.py --safebinary ${REPY_PATH}/repy/restrictions.lind ${REPY_PATH}/repy/lind_server.py $@' INT TERM EXIT
         trap ';' TERM
-        python $file
-	    #trap 'python $file' INT TERM EXIT
+        python2 $file
+	    #trap 'python2 $file' INT TERM EXIT
     done
 
     # run the struct test
     file=ut_seattlelibtests_teststruct.py
     echo $file
-    python $file
+    python2 $file
 
 }
 
@@ -211,7 +219,7 @@ function build_repy {
 
     print "Building Repy in $REPY_SRC to $REPY_PATH"
     cd ${NACL_REPY}
-    python preparetest.py -t -f ${REPY_PATH_REPY}
+    python2 preparetest.py -t -f ${REPY_PATH_REPY}
     print "Done building Repy in ${REPY_PATH_REPY}"
     cd seattlelib
     set -o errexit
@@ -268,19 +276,45 @@ function clean_install {
 #
 function build_nacl {
      print "Building NaCl"
-     cd ${NACL_BASE} || exit -1
 
-     # build NaCl with glibc tests
-     ./scons --verbose --mode=${MODE},nacl \
-	     nacl_pic=1 werror=0 \
-	     platform=x86-64 --nacl_glibc -j4
+     # convert files from python2 to python2
+     cd "$NATIVE_CLIENT_SRC" || exit 1
+     "${PYGREPL[@]}" 2>/dev/null | \
+	    "${PYGREPV[@]}" | \
+	    while read -r file; do
+		    # preserve executability
+		    "${PYSED[@]}" <"$file" >"$file.new"
+		    cat <"$file.new" >"$file"
+		    rm -f "$file.new"
+	    done
+
+     while :; do
+	 cd ${NACL_BASE} || exit -1
+	 # build NaCl with glibc tests
+	 ./scons --verbose --mode=${MODE},nacl \
+		 nacl_pic=0 werror=0 \
+		 platform=x86-64 --nacl_glibc -j4 \
+		 && break
+
+	 # convert files from python2 to python2
+	 cd "$NATIVE_CLIENT_SRC" || exit 1
+	 "${PYGREPL[@]}" 2>/dev/null | \
+		"${PYGREPV[@]}" | \
+		while read -r file; do
+			# preserve executability
+			"${PYSED[@]}" <"$file" >"$file.new"
+			cat <"$file.new" >"$file"
+			rm -f "$file.new"
+		done
+     done
+
      # and check
-     rc=$?
-     if [ "$rc" -ne "0" ]; then
-	     print "NaCl Build Failed($rc)"
-	     echo -e "\a"
-	     exit $rc
-     fi
+     # rc=$?
+     # if [ "$rc" -ne "0" ]; then
+     #         print "NaCl Build Failed($rc)"
+     #         echo -e "\a"
+     #         exit $rc
+     # fi
 
      print "Done building NaCl $rc"
 }

@@ -321,7 +321,7 @@ function setup_toolchain() {
 	# ln -Trsvf "$NACL_GCC_DIR" ./gcc
 	ln -Trsvf "$LIND_GLIBC_SRC" ./glibc
 
-	# convert files from python to python2
+	# convert files from python2 to python2
 	cd "$NATIVE_CLIENT_SRC" || exit 1
 	"${PYGREPL[@]}" 2>/dev/null | \
 		"${PYGREPV[@]}" | \
