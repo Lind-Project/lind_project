@@ -524,7 +524,7 @@ function clean_install() {
 # Run the NaCl build.
 #
 function build_nacl() {
-	local rc
+	# local rc
 	local -a dirs
 
 	dirs+=(src/trusted/validator/)
@@ -553,28 +553,35 @@ function build_nacl() {
 		done
 
 	# build NaCl with glibc tests
+	cd "$NACL_THIRD_PARTY" || exit 1
+	git stash 2>/dev/null
+	git reset --hard 2>/dev/null
 	cd "$NATIVE_CLIENT_SRC" || exit 1
 	./scons --mode="nacl" --verbose \
 		-j"$JOBS" --nacl_glibc \
-		platform=x86-32 nacl_pic="$NACL_PIC"
+		werror=0 \
+		platform=x86-32 \
+		nacl_pic="$NACL_PIC"
 	./scons --mode="$MODE" --verbose \
 		-j"$JOBS" --nacl_glibc \
-		platform=x86-64 nacl_pic="$NACL_PIC"
-	rc="$?"
-	if ((rc != 0)); then
-		print "NaCl Build Failed [Exit Code: $rc]" $'\a'
-		exit "$rc"
-	fi
+		werror=0 \
+		platform=x86-64 \
+		nacl_pic="$NACL_PIC"
 	# TODO: figure out how to do this without the loop
-	# while :; do
-	#         "${RSYNC[@]}" \
-	#                 "$NATIVE_CLIENT_SRC/scons-out/nacl_irt-x86-32/" \
-	#                 "$NATIVE_CLIENT_SRC/scons-out/nacl_irt-x86-64/"
-	#         ./scons --mode="nacl" --verbose \
-	#                 -j"$JOBS" --nacl_glibc \
-	#                 platform=x86-64 nacl_pic="$NACL_PIC" && \
-	#                 break
-	# done
+	while :; do
+		"${RSYNC[@]}" \
+			"$NATIVE_CLIENT_SRC/scons-out/nacl_irt-x86-32/" \
+			"$NATIVE_CLIENT_SRC/scons-out/nacl_irt-x86-64/"
+		./scons --mode="nacl" --verbose \
+			-j"$JOBS" --nacl_glibc \
+			platform=x86-64 nacl_pic="$NACL_PIC" && \
+			break
+	done
+	# rc="$?"
+	# if ((rc != 0)); then
+	#         print "NaCl Build Failed [Exit Code: $rc]" $'\a'
+	#         exit "$rc"
+	# fi
 
 	print "Done building NaCl"
 }
@@ -605,13 +612,6 @@ function build_glibc() {
 	cp -fvp lind_rpc_gen.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
 	cp -fvp "$MISC_DIR/liblind/component.h" "$LIND_GLIBC_SRC/sysdeps/nacl/"
 	cp -fvp "${LIND_BASE:?}/include"/* "$LIND_GLIBC_SRC/sysdeps/nacl/"
-	# cd "$NATIVE_CLIENT_SRC/src" || exit 1
-	# if [[ -d "$NACL_THIRD_PARTY" ]]; then
-	#         rm -rf "$NACL_THIRD_PARTY"
-	# fi
-	# ln -Trsv "${LIND_BASE:?}/third_party" "$NACL_THIRD_PARTY"
-	# cd "$NACL_THIRD_PARTY" || exit 1
-	# bash "$LIND_SRC/getdeps.sh"
 	print "done."
 
 	print "Building glibc"
