@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.5.1-alpha
+readonly version=0.5.2-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -261,7 +261,7 @@ function download_src() {
 		https://chromium.googlesource.com/native_client/nacl-gcc.git \
 		--git-deps && \
 		gclient sync
-	ln -Trsv nacl-gcc "$NACL_GCC_DIR"
+	ln -Trsvf nacl-gcc "$NACL_GCC_DIR"
 	cd nacl-gcc || exit 1
 	for patch in "${LIND_BASE:?}"/patches/nacl-gcc*.patch; do
 		patch -p1 <"$patch" >/dev/null 2>&1 || true
@@ -316,15 +316,9 @@ function setup_toolchain() {
 			rm -rf "$dir"
 		fi
 	done
-	ln -Trsv "$LIND_BINUTILS_SRC" ./binutils
-	ln -Trsv "$NACL_GCC_DIR" ./gcc
-	ln -Trsv "$LIND_GLIBC_SRC" ./glibc
-
-	# fix "implicit rule" make errors
-	cd "$NACL_TOOLCHAIN_SRC/SRC/glibc" || exit 1
-	for patch in "${LIND_BASE:?}"/patches/lind_glibc-*.patch; do
-		patch -p1 <"$patch" >/dev/null 2>&1 || true
-	done
+	ln -Trsvf "$LIND_BINUTILS_SRC" ./binutils
+	ln -Trsvf "$NACL_GCC_DIR" ./gcc
+	ln -Trsvf "$LIND_GLIBC_SRC" ./glibc
 
 	# convert files from python to python2
 	cd "$NATIVE_CLIENT_SRC" || exit 1
