@@ -7,7 +7,7 @@
 
 # Version string
 #
-readonly version=0.5.2-alpha
+readonly version=0.5.3-alpha
 #
 # PLEASE UPDATE WITH STANDARD SEMANTIC VERSIONING WHEN MAKING CHANGES. [1]
 #
@@ -79,9 +79,7 @@ function print() {
 	#         >/dev/null 2>&1
 }
 
-# default to position
-# independant code
-# unless $PIC is set
+# default to position independant code if $PIC is set
 if ((PIC)); then
 	NACL_PIC=1
 else
@@ -309,7 +307,8 @@ function download_src() {
 #
 function setup_toolchain() {
 	local -a toolchain_dirs
-	toolchain_dirs=(binutils gcc glibc)
+	# toolchain_dirs=(binutils gcc glibc)
+	toolchain_dirs=(glibc)
 
 	# use custom repos as bases
 	cd "$NACL_TOOLCHAIN_SRC/SRC" || exit 1
@@ -318,8 +317,8 @@ function setup_toolchain() {
 			rm -rf "$dir"
 		fi
 	done
-	ln -Trsvf "$LIND_BINUTILS_SRC" ./binutils
-	ln -Trsvf "$NACL_GCC_DIR" ./gcc
+	# ln -Trsvf "$LIND_BINUTILS_SRC" ./binutils
+	# ln -Trsvf "$NACL_GCC_DIR" ./gcc
 	ln -Trsvf "$LIND_GLIBC_SRC" ./glibc
 
 	# convert files from python to python2
@@ -387,6 +386,7 @@ function install_to_path() {
 	rm -rf "${REPY_PATH_SDK:?}"
 
 	mkdir -p "$REPY_PATH"
+	mkdir -p "$REPY_PATH_BIN"
 	mkdir -p "$REPY_PATH_LIB"
 	mkdir -p "$REPY_PATH_SDK/${OS_SUBDIR}_x86_glibc"
 	mkdir -p "$REPY_PATH_SDK/tools"
@@ -405,7 +405,7 @@ function install_to_path() {
 		"${REPY_PATH_SDK:?}/${OS_SUBDIR:?}_x86_glibc/"
 	"${RSYNC[@]}" \
 		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib/" \
-		"${REPY_PATH:?}/glibc/"
+		"${REPY_PATH_LIB:?}/"
 	"${RSYNC[@]}" \
 		"${NATIVE_CLIENT_SRC:?}/scons-out/${MODE:?}-x86-64/staging/" \
 		"${REPY_PATH_BIN:?}/"
