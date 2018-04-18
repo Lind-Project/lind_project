@@ -379,20 +379,21 @@ function install_to_path() {
 	set -o errexit
 
 	print "Injecting Libs into RePy install"
-	print "** Sending NaCl stuff to \"${REPY_PATH}\""
+	print "** Sending NaCl stuff to \"$REPY_PATH\""
 
-	# print "Deleting all directories in the "${REPY_PATH}" (except repy folder)"
-	# rm -rf "${REPY_PATH_BIN:?}"
-	# rm -rf "${REPY_PATH_LIB:?}"
-	# rm -rf "${REPY_PATH_SDK:?}"
+	print "Deleting all directories in the \"$REPY_PATH\" (except repy folder)"
+	rm -rf "${REPY_PATH_BIN:?}"
+	rm -rf "${REPY_PATH_LIB:?}"
+	rm -rf "${REPY_PATH_SDK:?}"
 
 	mkdir -p "$REPY_PATH"
-	mkdir -p "$REPY_PATH_LIB/glibc"
+	mkdir -p "$REPY_PATH_LIB"
 	mkdir -p "$REPY_PATH_SDK/${OS_SUBDIR}_x86_glibc"
 	mkdir -p "$REPY_PATH_SDK/tools"
 
 	#install script
 	mkdir -p "${REPY_PATH_BIN:?}"
+	cp -f "${LIND_SRC:?}/hello.c" "${REPY_PATH:?}/repy/hello.c"
 	cp -f "${MISC_DIR:?}/lind.sh" "${REPY_PATH_BIN:?}/lind"
 	chmod +x "$REPY_PATH_BIN/lind"
 
@@ -403,8 +404,8 @@ function install_to_path() {
 		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/" \
 		"${REPY_PATH_SDK:?}/${OS_SUBDIR:?}_x86_glibc/"
 	"${RSYNC[@]}" \
-		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib/"  \
-		"${REPY_PATH_LIB:?}/glibc/"
+		"${NACL_TOOLCHAIN_SRC:?}/out/nacl-sdk/x86_64-nacl/lib/" \
+		"${REPY_PATH:?}/glibc/"
 	"${RSYNC[@]}" \
 		"${NATIVE_CLIENT_SRC:?}/scons-out/${MODE:?}-x86-64/staging/" \
 		"${REPY_PATH_BIN:?}/"
