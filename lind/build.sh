@@ -96,6 +96,8 @@ else
 fi
 export NACL_PIC JOBS
 export MAKEFLAGS="$MAKEFLAGS -j$JOBS"
+# prevent user flags from conflicting
+unset CFLAGS CPATH CPPFLAGS CXXFLAGS LDFLAGS LIBRARY_PATH
 
 # Check for flags
 for word; do
@@ -328,7 +330,7 @@ function setup_toolchain() {
 			# preserve executability
 			"${PYSED[@]}" <"$file" >"$file.new"
 			cat <"$file.new" >"$file"
-			rm -v "$file.new"
+			rm -f "$file.new"
 		done
 
 	cd "$NACL_THIRD_PARTY" || exit 1
@@ -640,8 +642,8 @@ function build_glibc() {
 		<Makefile.new \
 		>Makefile
 	rm -f Makefile.new
-	make clean
-	PATH="$LIND_SRC:$PATH" make -j"$JOBS" build-with-glibc || exit -1
+	mae clean
+	make build-with-glibc || exit -1
 	print "Done building toolchain"
 }
 
