@@ -366,7 +366,8 @@ function clean_toolchain() {
 function build_liblind() {
 	print "Building liblind... "
 	cd "$MISC_DIR/liblind" || exit 1
-	make clean all
+	make clean
+	make all
 	print "done."
 }
 
