@@ -146,7 +146,9 @@ function clean_toolchain {
 #
 function build_liblind {
     echo -ne "Building liblind... "
-    cd ${MISC_DIR}/liblind && make clean all > /dev/null
+    cd ${MISC_DIR}/liblind || exit 1
+    make clean
+    make all
     echo "done."
 
 }
