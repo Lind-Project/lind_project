@@ -105,6 +105,11 @@ function download_src {
   for patch in "${LIND_BASE:?}"/patches/nacl-gcc*.patch; do
 	  patch -p1 <"$patch" >/dev/null 2>&1 || true
   done
+  cd .. || exit 1
+  cd glibc || exit 1
+  for patch in "${LIND_BASE:?}"/patches/lind_glibc*.patch; do
+	  patch -p1 <"$patch" >/dev/null 2>&1 || true
+  done
   cd "$NACL_TOOLCHAIN_BASE"
 
   mkdir -p ${NACL_PORTS_DIR}
