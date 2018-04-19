@@ -20,6 +20,11 @@ if [ -z "$REPY_PATH" ]; then
    exit 1
 fi
 
+if [ -z "$LIND_BASE" ]; then
+   echo "Need to set LIND_BASE"
+   exit 1
+fi
+
 if [ -z "$LIND_SRC" ]; then
    echo "Need to set LIND_SRC"
    exit 1
@@ -34,6 +39,7 @@ else
   readonly OS_SUBDIR="win"
 fi
 readonly MODE='dbg-'${OS_SUBDIR}
+readonly LIND_BASE=${LIND_BASE}
 readonly LIND_SRC=${LIND_SRC}
 readonly MISC_DIR=${LIND_SRC}/misc
 readonly NACL_SRC=${LIND_SRC}/nacl
@@ -74,39 +80,39 @@ function download_src {
   cd ${LIND_SRC} && rm -rf lind_glibc misc nacl_repy nacl
 
   git clone ${LIND_GLIBC_URL} lind_glibc
-  cd lind_glibc
+  cd lind_glibc || exit 1
   git checkout -b caging origin/caging
-  cd ..
+  cd .. || exit 1
 
   git clone ${LIND_MISC_URL} misc
 
   git clone ${NACL_REPY_URL} nacl_repy
 
   mkdir -p ${NACL_SRC}
-  cd ${NACL_SRC}
+  cd ${NACL_SRC} || exit 1
   gclient config --name=native_client https://github.com/Lind-Project/native_client.git@caging --git-deps
   gclient sync
   cd native_client || exit 1
-  for patch in "${LIND_SRC:?}"/../patches/caging-*.patch; do
+  for patch in "${LIND_BASE:?}"/patches/caging-*.patch; do
 	  patch -p1 <"$patch"
   done
   cd ${NACL_TOOLCHAIN_BASE} && rm -fr SRC
   make sync-pinned
-  cd SRC
+  cd SRC || exit 1
   mv glibc glibc_orig
   ln -s ${LIND_GLIBC_SRC} glibc
   cd gcc || exit 1
   for patch in "${LIND_BASE:?}"/patches/nacl-gcc*.patch; do
 	  patch -p1 <"$patch" >/dev/null 2>&1 || true
   done
-  cd ../../
+  cd "$NACL_TOOLCHAIN_BASE"
 
   mkdir -p ${NACL_PORTS_DIR}
-  cd ${NACL_PORTS_DIR}
+  cd ${NACL_PORTS_DIR} || exit 1
   gclient config --name=src https://chromium.googlesource.com/external/naclports.git --git-deps
   gclient sync
 
-  cd ${LIND_SRC}
+  cd ${LIND_SRC} || exit 1
 }
 
 #
@@ -176,7 +182,7 @@ function install_to_path {
 #
 #
 function test_repy {
-    cd $REPY_PATH/repy/
+    cd $REPY_PATH/repy/ || exit 1
     set +o errexit  # some of our unit tests fail
     for file in ut_lind_*; do
 	    echo $file
@@ -199,8 +205,7 @@ function test_repy {
 #
 function test_apps {
     set +o errexit
-    cd ${MISC_DIR}/tests
-	./test.sh
+    cd ${MISC_DIR}/tests && ./test.sh
 }
 
 # Check the REPY_PATH location to make sure it is safe to be installing stuff there.
@@ -226,10 +231,10 @@ function build_repy {
     mkdir -p ${REPY_PATH_REPY}
 
     print "Building Repy in $REPY_SRC to $REPY_PATH"
-    cd ${NACL_REPY}
+    cd ${NACL_REPY} || exit 1
     python preparetest.py -t -f ${REPY_PATH_REPY}
     print "Done building Repy in ${REPY_PATH_REPY}"
-    cd seattlelib
+    cd seattlelib || exit 1
     set -o errexit
     for file in *.mix
     do
@@ -317,7 +322,7 @@ function build_nacl {
 #
 #
 function clean_nacl {
-     cd ${NACL_BASE}
+     cd ${NACL_BASE} || exit 1
      ./scons --mode=${MODE},nacl platform=x86-64 --nacl_glibc -c
      print "Done Cleaning NaCl"
 }
@@ -339,7 +344,7 @@ function build_glibc {
 
      # if extra files (like editor temp files) are in the subdir glibc tries to compile them too.
      # move them here so they dont cause a problem
-     cd ${LIND_GLIBC_SRC}/sysdeps/nacl/
+     cd ${LIND_GLIBC_SRC}/sysdeps/nacl/ || exit 1
      shopt -s nullglob
      for f in .#*;
      do
@@ -377,9 +382,9 @@ function update_glibc2 {
 function glibc_tester {
     set -o errexit
 
-    cd ${MISC_DIR}/glibc_test/
+    cd ${MISC_DIR}/glibc_test/ || exit 1
     make clean all
-    cd ..
+    cd .. || exit 1
     rm -rfv lind.metadata linddata.*
     lind ${MISC_DIR}/glibc_test/glibc_tester.nexe
 }
