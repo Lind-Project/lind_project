@@ -52,7 +52,7 @@ readonly NACL_PORTS_DIR=${LIND_SRC}/naclports
 readonly REPY_PATH=${REPY_PATH}
 readonly REPY_PATH_BIN=${REPY_PATH}/bin
 readonly REPY_PATH_REPY=${REPY_PATH}/repy
-readonly REPY_PATH_LIB=${REPY_PATH}/lib
+readonly REPY_PATH_LIB=${REPY_PATH}/glibc
 readonly REPY_PATH_SDK=${REPY_PATH}/sdk
 
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
@@ -81,20 +81,19 @@ function download_src {
 
   git clone ${LIND_GLIBC_URL} lind_glibc
   cd lind_glibc || exit 1
-  git checkout one_proc_model
+  git checkout caging
   cd .. || exit 1
 
   git clone ${LIND_MISC_URL} misc
   cd misc || exit 1
-  # git checkout caging
+  git checkout caging
   cd .. || exit 1
 
   git clone ${NACL_REPY_URL} nacl_repy
 
   mkdir -p ${NACL_SRC}
   cd ${NACL_SRC} || exit 1
-  # gclient config --name=native_client https://github.com/Lind-Project/native_client.git@caging --git-deps
-  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@gholamiali --git-deps
+  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@caging --git-deps
   gclient sync
   cd native_client || exit 1
   for patch in "${LIND_BASE:?}"/patches/caging-*.patch; do
@@ -171,7 +170,7 @@ function install_to_path {
     #rm -rf ${REPY_PATH_SDK}
 
     mkdir -p ${REPY_PATH_BIN}
-    mkdir -p ${REPY_PATH_LIB}/glibc
+    mkdir -p ${REPY_PATH_LIB}
     mkdir -p ${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc
     mkdir -p ${REPY_PATH_SDK}/tools
 
@@ -185,7 +184,7 @@ function install_to_path {
     cp -f ${MISC_DIR}/lind.sh ${REPY_PATH_BIN}/lind
     chmod +x ${REPY_PATH_BIN}/lind
 
-    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
+    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}
 }
 
 
@@ -253,7 +252,7 @@ function build_repy {
 	${MISC_DIR}/check_includes.sh $file
     done
     set +o errexit
-    #etags  --language-force=python *.mix *.repy
+    ctags  --language-force=python *.mix *.repy
 }
 
 
@@ -317,7 +316,7 @@ function build_nacl {
      # build NaCl with glibc tests
      PATH="$LIND_BASE:$PATH" \
 	     ./scons --verbose --mode=${MODE},nacl \
-	     nacl_pic=0 werror=0 \
+	     nacl_pic=1 werror=0 \
 	     platform=x86-64 --nacl_glibc -j4
 
      # and check
@@ -356,7 +355,8 @@ function build_glibc {
 
      echo "Building glibc"
 
-     # if extra files (like editor temp files) are in the subdir glibc tries to compile them too.
+     # if extra files (like editor temp files) are
+     # in the subdir glibc tries to compile them too.
      # move them here so they dont cause a problem
      cd ${LIND_GLIBC_SRC}/sysdeps/nacl/ || exit 1
      shopt -s nullglob
