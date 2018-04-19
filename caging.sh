@@ -102,13 +102,13 @@ function download_src {
   mv glibc glibc_orig
   ln -s ${LIND_GLIBC_SRC} glibc
   cd gcc || exit 1
-  for patch in "${LIND_BASE:?}"/patches/nacl-gcc*.patch; do
-	  patch -p1 <"$patch" >/dev/null 2>&1 || true
+  for patch in "${LIND_BASE:?}"/patches/nacl-gcc-*.patch; do
+	  patch -p1 <"$patch"
   done
   cd .. || exit 1
   cd glibc || exit 1
-  for patch in "${LIND_BASE:?}"/patches/lind_glibc*.patch; do
-	  patch -p1 <"$patch" >/dev/null 2>&1 || true
+  for patch in "${LIND_BASE:?}"/patches/glibc-caging-*.patch; do
+	  patch -p1 <"$patch"
   done
   cd "$NACL_TOOLCHAIN_BASE"
 
