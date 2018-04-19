@@ -86,12 +86,20 @@ function download_src {
   cd ${NACL_SRC}
   gclient config --name=native_client https://github.com/Lind-Project/native_client.git@caging --git-deps
   gclient sync
+  cd native_client || exit 1
+  for patch in "${LIND_SRC:?}"/../patches/caging-*.patch; do
+	  patch -p1 <"$patch"
+  done
   cd ${NACL_TOOLCHAIN_BASE} && rm -fr SRC
   make sync-pinned
   cd SRC
   mv glibc glibc_orig
   ln -s ${LIND_GLIBC_SRC} glibc
-  cd ..
+  cd gcc || exit 1
+  for patch in "${LIND_BASE:?}"/patches/nacl-gcc*.patch; do
+	  patch -p1 <"$patch" >/dev/null 2>&1 || true
+  done
+  cd ../../
 
   mkdir -p ${NACL_PORTS_DIR}
   cd ${NACL_PORTS_DIR}
@@ -174,14 +182,14 @@ function test_repy {
 	    echo $file
         #trap 'python2.6 ${REPY_PATH}/repy/repy.py --safebinary ${REPY_PATH}/repy/restrictions.lind ${REPY_PATH}/repy/lind_server.py $@' INT TERM EXIT
         trap ';' TERM
-        python2 $file
-	    #trap 'python2 $file' INT TERM EXIT
+        python $file
+	    #trap 'python $file' INT TERM EXIT
     done
 
     # run the struct test
     file=ut_seattlelibtests_teststruct.py
     echo $file
-    python2 $file
+    python $file
 
 }
 
@@ -219,7 +227,7 @@ function build_repy {
 
     print "Building Repy in $REPY_SRC to $REPY_PATH"
     cd ${NACL_REPY}
-    python2 preparetest.py -t -f ${REPY_PATH_REPY}
+    python preparetest.py -t -f ${REPY_PATH_REPY}
     print "Done building Repy in ${REPY_PATH_REPY}"
     cd seattlelib
     set -o errexit
@@ -276,8 +284,9 @@ function clean_install {
 #
 function build_nacl {
      print "Building NaCl"
+     cd ${NACL_BASE} || exit -1
 
-     # convert files from python2 to python2
+     # convert files from python to python2
      cd "$NATIVE_CLIENT_SRC" || exit 1
      "${PYGREPL[@]}" 2>/dev/null | \
 	    "${PYGREPV[@]}" | \
@@ -288,33 +297,17 @@ function build_nacl {
 		    rm -f "$file.new"
 	    done
 
-     while :; do
-	 cd ${NACL_BASE} || exit -1
-	 # build NaCl with glibc tests
-	 ./scons --verbose --mode=${MODE},nacl \
-		 nacl_pic=0 werror=0 \
-		 platform=x86-64 --nacl_glibc -j4 \
-		 && break
-
-	 # convert files from python2 to python2
-	 cd "$NATIVE_CLIENT_SRC" || exit 1
-	 "${PYGREPL[@]}" 2>/dev/null | \
-		"${PYGREPV[@]}" | \
-		while read -r file; do
-			# preserve executability
-			"${PYSED[@]}" <"$file" >"$file.new"
-			cat <"$file.new" >"$file"
-			rm -f "$file.new"
-		done
-     done
-
+     # build NaCl with glibc tests
+     ./scons --verbose --mode=${MODE},nacl \
+	     nacl_pic=0 werror=0 \
+	     platform=x86-64 --nacl_glibc -j4
      # and check
-     # rc=$?
-     # if [ "$rc" -ne "0" ]; then
-     #         print "NaCl Build Failed($rc)"
-     #         echo -e "\a"
-     #         exit $rc
-     # fi
+     rc=$?
+     if [ "$rc" -ne "0" ]; then
+	     print "NaCl Build Failed($rc)"
+	     echo -e "\a"
+	     exit $rc
+     fi
 
      print "Done building NaCl $rc"
 }
@@ -356,6 +349,14 @@ function build_glibc {
 
      #turns out this works better if you do it from the nacl base dir
      cd ${NACL_TOOLCHAIN_BASE} && rm -fr BUILD out
+     sed \
+	     's!http://git\.chromium\.org!https://chromium.googlesource.com!g' \
+	     <Makefile \
+	     >Makefile.new 2>/dev/null || true
+     cat \
+	     <Makefile.new \
+	     >Makefile
+     rm -f Makefile.new
      make clean build-with-glibc -j4 || exit -1
 
      print "Done building toolchain"
