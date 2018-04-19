@@ -35,11 +35,11 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
  	fi
  
 -gcc-extras := gmp mpfr mpc ppl cloog-ppl
-+gcc-extras := gmp mpfr mpc
++gcc-extras := gmp mpfr mpc cloog-ppl
  
  gcc_extra_dir = $(subst cloog-ppl,cloog,$*)
  gcc_extra_version = $($(shell echo $*| tr '[:lower:]-' '[:upper:]_')_VERSION)
-@@ -345,15 +364,28 @@ BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
+@@ -345,15 +364,26 @@ BUILD/stamp-$(CROSSARCH)-binutils: | SRC/binutils BUILD
  	# us from building with -Werror today.
  	cd BUILD/build-binutils-$(CROSSARCH) && \
  	  CC="$(GCC_CC)" \
@@ -48,8 +48,6 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
  	  LDFLAGS="$(USER_LDFLAGS)" \
  	  ../../SRC/binutils/configure \
 +	    MAKE=$(MAKE_COMPAT) \
-+	    CFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
-+	    CXXFLAGS_FOR_TARGET="-O2 -g $(GCC_CFLAGS_FOR_TARGET-nolibc)" \
  	    --prefix=$(PREFIX) \
  	    --target=$(CROSSARCH) \
  	    --with-sysroot=$(PREFIX)/$(CROSSARCH) \
@@ -71,22 +69,20 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
  	touch $@
  
  .PHONY: binutils
-@@ -384,16 +416,11 @@ ifneq ($(SRCDIR),)
+@@ -384,16 +416,14 @@ ifneq ($(SRCDIR),)
  GCC_EXTRAS_FLAGS = \
      --with-gmp=$(GMP_DIR) \
      --with-mpfr=$(MPFR_DIR) \
 -    --with-ppl=$(PPL_DIR) \
--    --with-host-libstdcxx="-lpwl $(lstdc++) -lm" \
--    --with-cloog=$(CLOOG_DIR) \
--    --disable-ppl-version-check
-+    --with-host-libstdcxx="-lpwl $(lstdc++) -lm"
+     --with-host-libstdcxx="-lpwl $(lstdc++) -lm" \
+     --with-cloog=$(CLOOG_DIR) \
+     --disable-ppl-version-check
  else
  GCC_EXTRAS_FLAGS = \
      --with-gmp \
--    --with-mpfr \
+     --with-mpfr \
 -    --with-ppl \
--    --with-cloog
-+    --with-mpfr
+     --with-cloog
  endif
  
  GCC_CONFIGURE_FLAGS = \
@@ -133,7 +129,7 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 +		      CFLAGS="$(USER_CFLAGS)" \
 +		      CFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
 +		      CXXFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
-+		      --target=$(CROSSARCH)
++		      --target=$(CROSSARCH) && \
 +	  $(MAKE_COMPAT) && \
 +	  $(MAKE_COMPAT) DESTDIR=$(DESTDIR) install
  ifeq ($(CANNED_REVISION), no)
@@ -165,7 +161,7 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 +	    MAKE=$(MAKE_COMPAT) \
 +	    BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
 +	    CC="$(GLIBC_CC) -m32 -Wl,--warn-unresolved-symbols" \
-+	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs -march=i686 $(GLIBC_CFLAGS)" \
++	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs -march=i686 $(GLIBC_CFLAGS)" \
 +	    libc_cv_forced_unwind=yes \
 +	    libc_cv_c_cleanup=yes \
 +	    libc_cv_slibdir=/lib32 \
@@ -203,7 +199,7 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 +	    MAKE=$(MAKE_COMPAT) \
 +	    BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
 +	    CC="$(GLIBC_CC) -m64 -Wl,--warn-unresolved-symbols" \
-+	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
++	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
 +	    libc_cv_forced_unwind=yes \
 +	    libc_cv_c_cleanup=yes \
 +	    libc_cv_slibdir=/lib \
@@ -263,9 +259,9 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 +	rm -rf "$(INST_GLIBC_PREFIX)"/glibc
 +	mkdir "$(INST_GLIBC_PREFIX)"/glibc
 +	$(MAKE_COMPAT) -f $(THISMAKEFILE) sdkdirs \
-+	  DESTDIR="" PREFIX="$(INST_GLIBC_PREFIX)/glibc" && \
++	  DESTDIR="" PREFIX="$(INST_GLIBC_PREFIX)/glibc"
 +	$(MAKE_COMPAT) -f $(THISMAKEFILE) -C BUILD/build-glibc32 \
-+	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install && \
++	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install
 +	$(MAKE_COMPAT) -f $(THISMAKEFILE) -C BUILD/build-glibc64 \
  	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install
  
