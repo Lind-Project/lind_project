@@ -377,7 +377,10 @@ function build_glibc {
 	 >Makefile
      rm -f Makefile.new
      make clean
-     PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 || exit -1
+     # not quite sure why this is needed
+     PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 || \
+	     PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 || \
+	     exit -1
 
      print "Done building toolchain"
 }
