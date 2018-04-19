@@ -299,18 +299,20 @@ function build_nacl {
      # convert files from python to python2
      cd "$NATIVE_CLIENT_SRC" || exit 1
      "${PYGREPL[@]}" 2>/dev/null | \
-	    "${PYGREPV[@]}" | \
-	    while read -r file; do
-		    # preserve executability
-		    "${PYSED[@]}" <"$file" >"$file.new"
-		    cat <"$file.new" >"$file"
-		    rm -f "$file.new"
-	    done
+	      "${PYGREPV[@]}" | \
+	      while read -r file; do
+		      # preserve executability
+		      "${PYSED[@]}" <"$file" >"$file.new"
+		      cat <"$file.new" >"$file"
+		      rm -f "$file.new"
+	      done
 
      # build NaCl with glibc tests
-     ./scons --verbose --mode=${MODE},nacl \
+     PATH="$LIND_BASE:$PATH" \
+	     ./scons --verbose --mode=${MODE},nacl \
 	     nacl_pic=0 werror=0 \
 	     platform=x86-64 --nacl_glibc -j4
+
      # and check
      rc=$?
      if [ "$rc" -ne "0" ]; then
@@ -360,14 +362,15 @@ function build_glibc {
      #turns out this works better if you do it from the nacl base dir
      cd ${NACL_TOOLCHAIN_BASE} && rm -fr BUILD out
      sed \
-	     's!http://git\.chromium\.org!https://chromium.googlesource.com!g' \
-	     <Makefile \
-	     >Makefile.new 2>/dev/null || true
+	 's!http://git\.chromium\.org!https://chromium.googlesource.com!g' \
+	 <Makefile \
+	 >Makefile.new 2>/dev/null || true
      cat \
-	     <Makefile.new \
-	     >Makefile
+	 <Makefile.new \
+	 >Makefile
      rm -f Makefile.new
-     make clean build-with-glibc -j4 || exit -1
+     PATH="$LIND_BASE:$PATH" \
+	 make clean build-with-glibc -j4 || exit -1
 
      print "Done building toolchain"
 }
