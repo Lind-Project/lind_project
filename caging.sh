@@ -81,10 +81,13 @@ function download_src {
 
   git clone ${LIND_GLIBC_URL} lind_glibc
   cd lind_glibc || exit 1
-  git checkout -b caging origin/caging
+  git checkout caging
   cd .. || exit 1
 
   git clone ${LIND_MISC_URL} misc
+  cd misc || exit 1
+  git checkout caging
+  cd .. || exit 1
 
   git clone ${NACL_REPY_URL} nacl_repy
 
@@ -236,9 +239,10 @@ function build_repy {
     mkdir -p ${REPY_PATH_REPY}
 
     print "Building Repy in $REPY_SRC to $REPY_PATH"
-    cd ${NACL_REPY} || exit 1
-    python preparetest.py -t -f ${REPY_PATH_REPY}
-    print "Done building Repy in ${REPY_PATH_REPY}"
+    cd "$NACL_REPY" || exit 1
+    cp seattlelib/xmlrpc/* "$REPY_PATH_REPY/"
+    python2 preparetest.py -t -f "$REPY_PATH_REPY"
+    print "Done building Repy in \"$REPY_PATH_REPY\""
     cd seattlelib || exit 1
     set -o errexit
     for file in *.mix
