@@ -81,7 +81,7 @@ function download_src {
 
   git clone ${LIND_GLIBC_URL} lind_glibc
   cd lind_glibc || exit 1
-  git checkout caging
+  git checkout one_proc_model
   cd .. || exit 1
 
   git clone ${LIND_MISC_URL} misc
