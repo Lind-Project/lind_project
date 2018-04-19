@@ -86,7 +86,7 @@ function download_src {
 
   git clone ${LIND_MISC_URL} misc
   cd misc || exit 1
-  git checkout caging
+  # git checkout caging
   cd .. || exit 1
 
   git clone ${NACL_REPY_URL} nacl_repy
@@ -358,7 +358,7 @@ function build_glibc {
      # move them here so they dont cause a problem
      cd ${LIND_GLIBC_SRC}/sysdeps/nacl/ || exit 1
      shopt -s nullglob
-     for f in .#*;
+     for f in .\#*;
      do
 	 print "moving editor backupfile ${f} so it does not get caught in build."
 	 mv -f ${f} .
@@ -374,8 +374,8 @@ function build_glibc {
 	 <Makefile.new \
 	 >Makefile
      rm -f Makefile.new
-     PATH="$LIND_BASE:$PATH" \
-	 make clean build-with-glibc -j4 || exit -1
+     make clean
+     PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 || exit -1
 
      print "Done building toolchain"
 }
@@ -396,7 +396,8 @@ function glibc_tester {
     set -o errexit
 
     cd ${MISC_DIR}/glibc_test/ || exit 1
-    make clean all
+    make clean
+    PATH="$LIND_BASE:$PATH"make all
     cd .. || exit 1
     rm -rfv lind.metadata linddata.*
     lind ${MISC_DIR}/glibc_test/glibc_tester.nexe
