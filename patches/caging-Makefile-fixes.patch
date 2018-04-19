@@ -1,5 +1,5 @@
 diff --git a/tools/Makefile b/tools/Makefile
-index 3389203cc123b920fd..ae8ca15383ad916545 100644
+index 5e2a5f69d8cf5f3f98..212021d72975c60918 100644
 --- a/tools/Makefile
 +++ b/tools/Makefile
 @@ -43,7 +43,26 @@ SHELL = /bin/bash
@@ -35,7 +35,7 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
  	fi
  
 -gcc-extras := gmp mpfr mpc ppl cloog-ppl
-+gcc-extras := gmp mpfr mpc cloog-ppl
++gcc-extras := gmp mpfr mpc
  
  gcc_extra_dir = $(subst cloog-ppl,cloog,$*)
  gcc_extra_version = $($(shell echo $*| tr '[:lower:]-' '[:upper:]_')_VERSION)
@@ -69,24 +69,26 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
  	touch $@
  
  .PHONY: binutils
-@@ -384,16 +416,14 @@ ifneq ($(SRCDIR),)
+@@ -384,16 +414,11 @@ ifneq ($(SRCDIR),)
  GCC_EXTRAS_FLAGS = \
      --with-gmp=$(GMP_DIR) \
      --with-mpfr=$(MPFR_DIR) \
 -    --with-ppl=$(PPL_DIR) \
-     --with-host-libstdcxx="-lpwl $(lstdc++) -lm" \
-     --with-cloog=$(CLOOG_DIR) \
-     --disable-ppl-version-check
+-    --with-host-libstdcxx="-lpwl $(lstdc++) -lm" \
+-    --with-cloog=$(CLOOG_DIR) \
+-    --disable-ppl-version-check
++    --with-host-libstdcxx="-lpwl $(lstdc++) -lm"
  else
  GCC_EXTRAS_FLAGS = \
      --with-gmp \
-     --with-mpfr \
+-    --with-mpfr \
 -    --with-ppl \
-     --with-cloog
+-    --with-cloog
++    --with-mpfr
  endif
  
  GCC_CONFIGURE_FLAGS = \
-@@ -557,28 +584,31 @@ endif
+@@ -557,28 +582,31 @@ endif
  # by the Native Client threads package build.
  ##################################################################
  
@@ -101,14 +103,14 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
  	rm -rf BUILD/build-newlib-$(CROSSARCH)
  	mkdir BUILD/build-newlib-$(CROSSARCH)
  	PATH=$(BUILDPATH) && export PATH && \
--	  cd BUILD/build-newlib-$(CROSSARCH) && \
--	  ../../SRC/newlib/configure \
--		      --disable-libgloss \
--		      --enable-newlib-iconv \
--		      --enable-newlib-io-long-long \
--		      --enable-newlib-io-long-double \
--		      --enable-newlib-io-c99-formats \
--		      --enable-newlib-mb \
+ 	  cd BUILD/build-newlib-$(CROSSARCH) && \
+ 	  ../../SRC/newlib/configure \
+ 		      --disable-libgloss \
+ 		      --enable-newlib-iconv \
+ 		      --enable-newlib-io-long-long \
+ 		      --enable-newlib-io-long-double \
+ 		      --enable-newlib-io-c99-formats \
+ 		      --enable-newlib-mb \
 -	    --prefix=$(PREFIX) \
 -	    CFLAGS="$(USER_CFLAGS)" \
 -	    CFLAGS_FOR_TARGET='$(NEWLIB_CFLAGS)' \
@@ -116,14 +118,6 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 -	    --target=$(CROSSARCH) && \
 -	  $(MAKE) && \
 -	  $(MAKE) DESTDIR=$(DESTDIR) install
-+		cd BUILD/build-newlib-$(CROSSARCH) && \
-+		../../SRC/newlib/configure \
-+		      --disable-libgloss \
-+		      --enable-newlib-iconv \
-+		      --enable-newlib-io-long-long \
-+		      --enable-newlib-io-long-double \
-+		      --enable-newlib-io-c99-formats \
-+		      --enable-newlib-mb \
 +		      --prefix=$(PREFIX) \
 +		      MAKE=$(MAKE_COMPAT) \
 +		      CFLAGS="$(USER_CFLAGS)" \
@@ -135,13 +129,7 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
  ifeq ($(CANNED_REVISION), no)
  	rm $(DESTDIR)$(PREFIX)/$(CROSSARCH)/include/pthread.h
  endif
-@@ -619,77 +649,82 @@ ARCH_DEST_LIB_NATIVE = $(PREFIX_NATIVE)/$(CROSSARCH)/$(if $(filter 32,$(LIB_BITS
- 
- BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
- 	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
--	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
-+		$(MAKE_COMPAT) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
- 	fi
+@@ -624,19 +652,21 @@ BUILD/stamp-glibc32: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
  	rm -rf BUILD/build-glibc32
  	mkdir -p BUILD/build-glibc32/lib
  	cd BUILD/build-glibc32 && ../../SRC/glibc/configure \
@@ -158,115 +146,25 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
 -	    --enable-kernel=2.6.18
 -	$(MAKE) -C BUILD/build-glibc32
 -	$(MAKE) -C BUILD/build-glibc32 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
-+	    MAKE=$(MAKE_COMPAT) \
-+	    BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
-+	    CC="$(GLIBC_CC) -m32 -Wl,--warn-unresolved-symbols" \
-+	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs -march=i686 $(GLIBC_CFLAGS)" \
-+	    libc_cv_forced_unwind=yes \
-+	    libc_cv_c_cleanup=yes \
-+	    libc_cv_slibdir=/lib32 \
-+	    --with-tls \
-+	    --prefix= \
-+	    --libdir=/lib32 \
-+	    --host=i686-linux-gnu \
-+	    -with-headers=$(LINUX_HEADERS) \
-+	    -enable-kernel=2.6.18
++	  MAKE=$(MAKE_COMPAT) \
++	  BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
++	  CC="$(GLIBC_CC) -m32 -Wl,--warn-unresolved-symbols" \
++	  CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs -march=i686 $(GLIBC_CFLAGS)" \
++	  libc_cv_forced_unwind=yes \
++	  libc_cv_c_cleanup=yes \
++	  libc_cv_slibdir=/lib32 \
++	  --with-tls \
++	  --prefix= \
++	  --libdir=/lib32 \
++	  --host=i686-linux-gnu \
++	  -with-headers=$(LINUX_HEADERS) \
++	  -enable-kernel=2.6.18
 +	$(MAKE_COMPAT) -C BUILD/build-glibc32
 +	$(MAKE_COMPAT) -C BUILD/build-glibc32 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
  	touch $@
  
  BUILD/stamp-glibc64: BUILD/stamp-$(CROSSARCH)-pregcc-standalone | SRC/glibc
- 	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
--	  $(MAKE) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
-+		$(MAKE_COMPAT) -f $(THISMAKEFILE) SRC/linux-headers-for-nacl ; \
- 	fi
- 	rm -rf BUILD/build-glibc64
- 	mkdir -p BUILD/build-glibc64
- 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
--	    BUILD_CC="gcc -O2 -g" \
--	    CC="$(GLIBC_CC) -m64" \
--	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
--	    libc_cv_forced_unwind=yes \
--	    libc_cv_c_cleanup=yes \
--	    libc_cv_slibdir=/lib \
--	    --prefix= \
--	    --libdir=/lib \
--	    --host=x86_64-linux-gnu \
--	    --with-headers=$(LINUX_HEADERS) \
--	    --enable-kernel=2.6.18
--	$(MAKE) -C BUILD/build-glibc64
--	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
-+	    MAKE=$(MAKE_COMPAT) \
-+	    BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
-+	    CC="$(GLIBC_CC) -m64 -Wl,--warn-unresolved-symbols" \
-+	    CFLAGS="-fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
-+	    libc_cv_forced_unwind=yes \
-+	    libc_cv_c_cleanup=yes \
-+	    libc_cv_slibdir=/lib \
-+	    --with-tls \
-+	    --prefix= \
-+	    --libdir=/lib \
-+	    --host=x86_64-linux-gnu \
-+	    --with-headers=$(LINUX_HEADERS) \
-+	    --enable-kernel=2.6.18
-+	$(MAKE_COMPAT) -C BUILD/build-glibc64
-+	$(MAKE_COMPAT) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
- 	touch $@
- 
- .PHONY: updateglibc
- updateglibc:
- 	cd BUILD/build-glibc64 && ../../SRC/glibc/configure \
--	    BUILD_CC="gcc -O2 -g" \
--	    CC="$(GLIBC_CC) -m64" \
--	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
--	    libc_cv_forced_unwind=yes \
--	    libc_cv_c_cleanup=yes \
--	    libc_cv_slibdir=/lib \
--	    --prefix= \
--	    --libdir=/lib \
--	    --host=x86_64-linux-gnu \
--	    --with-headers=$(LINUX_HEADERS) \
--	    --enable-kernel=2.6.18
--	$(MAKE) -C BUILD/build-glibc64
--	$(MAKE) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
-+	    MAKE=$(MAKE_COMPAT) \
-+	    BUILD_CC="gcc -O2 -g -Wl,--warn-unresolved-symbols" \
-+	    CC="$(GLIBC_CC) -m64 -Wl,--warn-unresolved-symbols" \
-+	    CFLAGS="-pipe -fno-strict-aliasing -mno-tls-direct-seg-refs $(GLIBC_CFLAGS)" \
-+	    libc_cv_forced_unwind=yes \
-+	    libc_cv_c_cleanup=yes \
-+	    libc_cv_slibdir=/lib \
-+	    --prefix= \
-+	    --libdir=/lib \
-+	    --host=x86_64-linux-gnu \
-+	    --with-headers=$(LINUX_HEADERS) \
-+	    --enable-kernel=2.6.18
-+	$(MAKE_COMPAT) -C BUILD/build-glibc64
-+	$(MAKE_COMPAT) -C BUILD/build-glibc64 install_root=$(DESTDIR)$(PREFIX)/$(CROSSARCH) install
- 
- # Can be used to make a glibc archive separately from the main install tree.
- # Used, i.e., on buildbots.
- INST_GLIBC_PREFIX ?= $(PREFIX)
- .PHONY: install-glibc
- install-glibc: BUILD/stamp-glibc32 BUILD/stamp-glibc64
--	rm -rf "$(INST_GLIBC_PREFIX)"/glibc
--	mkdir "$(INST_GLIBC_PREFIX)"/glibc
--	$(MAKE) -f $(THISMAKEFILE) sdkdirs \
--	  DESTDIR="" PREFIX="$(INST_GLIBC_PREFIX)/glibc"
--	$(MAKE) -f $(THISMAKEFILE) -C BUILD/build-glibc32 \
--	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install
--	$(MAKE) -f $(THISMAKEFILE) -C BUILD/build-glibc64 \
-+	rm -rf "$(INST_GLIBC_PREFIX)"/glibc
-+	mkdir "$(INST_GLIBC_PREFIX)"/glibc
-+	$(MAKE_COMPAT) -f $(THISMAKEFILE) sdkdirs \
-+	  DESTDIR="" PREFIX="$(INST_GLIBC_PREFIX)/glibc"
-+	$(MAKE_COMPAT) -f $(THISMAKEFILE) -C BUILD/build-glibc32 \
-+	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install
-+	$(MAKE_COMPAT) -f $(THISMAKEFILE) -C BUILD/build-glibc64 \
- 	  install_root="$(INST_GLIBC_PREFIX)/glibc/$(CROSSARCH)" install
- 
- .PHONY: export-headers
-@@ -708,7 +743,7 @@ endif
+@@ -708,7 +738,7 @@ endif
  .PHONY: glibc-adhoc-files
  glibc-adhoc-files: | SRC/glibc
  	if [[ ! -d $(LINUX_HEADERS) ]] ; then \
@@ -275,7 +173,7 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
  	fi
  	install -m 755 -d  $(ARCH_DEST)/lib/ldscripts
  	cp -f SRC/glibc/nacl/dyn-link/ldscripts/* \
-@@ -853,7 +888,8 @@ ifeq ($(PLATFORM),win)
+@@ -853,7 +883,8 @@ ifeq ($(PLATFORM),win)
  	    --without-python \
  	    --host=x86_64-w64-mingw32 \
  	    --target=x86_64-nacl \
@@ -285,7 +183,7 @@ index 3389203cc123b920fd..ae8ca15383ad916545 100644
  	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) all
  	$(MAKE) -C BUILD/build-gdb-$(CROSSARCH) DESTDIR=$(DESTDIR) install
  else
-@@ -864,7 +900,8 @@ else
+@@ -864,7 +895,8 @@ else
  	  ../../SRC/gdb/configure \
  	    --prefix=$(PREFIX) \
  	    --target=x86_64-nacl \
