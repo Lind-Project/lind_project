@@ -96,7 +96,6 @@ function download_src {
 
   mkdir -p ${NACL_SRC}
   cd ${NACL_SRC} || exit 1
-  # gclient config --name=native_client https://github.com/Lind-Project/native_client.git@caging --git-deps
   gclient config --name=native_client https://github.com/Lind-Project/native_client.git@fork_caging --git-deps
   gclient sync
   cd native_client || exit 1
@@ -251,12 +250,11 @@ function build_repy {
     print "Done building Repy in \"$REPY_PATH_REPY\""
     cd seattlelib || exit 1
     set -o errexit
-    for file in *.mix
-    do
+    for file in *.mix; do
 	${MISC_DIR}/check_includes.sh $file
     done
     set +o errexit
-    ctags  --language-force=python *.mix *.repy
+    ctags  --language-force=python *.mix *.repy || true
 }
 
 
