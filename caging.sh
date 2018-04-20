@@ -52,7 +52,7 @@ readonly NACL_PORTS_DIR=${LIND_SRC}/naclports
 readonly REPY_PATH=${REPY_PATH}
 readonly REPY_PATH_BIN=${REPY_PATH}/bin
 readonly REPY_PATH_REPY=${REPY_PATH}/repy
-readonly REPY_PATH_LIB=${REPY_PATH}/glibc
+readonly REPY_PATH_LIB=${REPY_PATH}/lib
 readonly REPY_PATH_SDK=${REPY_PATH}/sdk
 
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
@@ -170,7 +170,7 @@ function install_to_path {
     #rm -rf ${REPY_PATH_SDK}
 
     mkdir -p ${REPY_PATH_BIN}
-    mkdir -p ${REPY_PATH_LIB}
+    mkdir -p ${REPY_PATH_LIB}/glibc
     mkdir -p ${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc
     mkdir -p ${REPY_PATH_SDK}/tools
 
@@ -276,7 +276,7 @@ function nightly_build {
     # build_nacl
     # build_repy
     # build_sdk
-	# install_to_path
+    # install_to_path
 
     # test repy
     test_repy
