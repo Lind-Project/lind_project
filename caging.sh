@@ -378,20 +378,22 @@ function build_glibc {
      rm -f Makefile.new
      make clean
      # not quite sure why this is needed
-     PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 || \
-	     PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 || \
-	     exit -1
+     PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
+	     || PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
+	     || exit -1
 
      print "Done building toolchain"
 }
 
 function update_glibc {
-    cd ${NACL_TOOLCHAIN_BASE} && make updateglibc
+    cd ${NACL_TOOLCHAIN_BASE} \
+	    && PATH="$LIND_BASE:$PATH" make updateglibc
 }
 
 function update_glibc2 {
-    cd ${NACL_TOOLCHAIN_BASE} && rm BUILD/stamp-glibc64
-    make BUILD/stamp-glibc64
+    cd ${NACL_TOOLCHAIN_BASE} \
+	    && rm BUILD/stamp-glibc64 \
+	    && PATH="$LIND_BASE:$PATH" make BUILD/stamp-glibc64
 }
 
 # Run the glibc tester
