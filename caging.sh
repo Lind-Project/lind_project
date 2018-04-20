@@ -93,7 +93,8 @@ function download_src {
 
   mkdir -p ${NACL_SRC}
   cd ${NACL_SRC} || exit 1
-  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@caging --git-deps
+  # gclient config --name=native_client https://github.com/Lind-Project/native_client.git@caging --git-deps
+  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@fork_caging --git-deps
   gclient sync
   cd native_client || exit 1
   for patch in "${LIND_BASE:?}"/patches/caging-*.patch; do
