@@ -184,7 +184,7 @@ function install_to_path {
     cp -f ${MISC_DIR}/lind.sh ${REPY_PATH_BIN}/lind
     chmod +x ${REPY_PATH_BIN}/lind
 
-    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}
+    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
 }
 
 
