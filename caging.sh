@@ -90,6 +90,9 @@ function download_src {
   cd .. || exit 1
 
   git clone ${NACL_REPY_URL} nacl_repy
+  cd nacl_repy || exit 1
+  git checkout fork_caging
+  cd .. || exit 1
 
   mkdir -p ${NACL_SRC}
   cd ${NACL_SRC} || exit 1
@@ -243,7 +246,7 @@ function build_repy {
 
     print "Building Repy in $REPY_SRC to $REPY_PATH"
     cd "$NACL_REPY" || exit 1
-    cp seattlelib/xmlrpc/* "$REPY_PATH_REPY/"
+    cp -v seattlelib/xmlrpc* "$REPY_PATH_REPY/"
     python2 preparetest.py -t -f "$REPY_PATH_REPY"
     print "Done building Repy in \"$REPY_PATH_REPY\""
     cd seattlelib || exit 1
