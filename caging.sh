@@ -81,7 +81,7 @@ function download_src {
 
   git clone ${LIND_GLIBC_URL} lind_glibc
   cd lind_glibc || exit 1
-  git checkout caging
+  git checkout fork_caging
   cd .. || exit 1
 
   git clone ${LIND_MISC_URL} misc
@@ -111,11 +111,11 @@ function download_src {
   for patch in "${LIND_BASE:?}"/patches/nacl-gcc-*.patch; do
 	  patch -p1 <"$patch"
   done
-  cd .. || exit 1
-  cd glibc || exit 1
-  for patch in "${LIND_BASE:?}"/patches/glibc-caging-*.patch; do
-	  patch -p1 <"$patch"
-  done
+  # cd .. || exit 1
+  # cd glibc || exit 1
+  # for patch in "${LIND_BASE:?}"/patches/glibc-caging-*.patch; do
+  #         patch -p1 <"$patch"
+  # done
   cd "$NACL_TOOLCHAIN_BASE"
 
   mkdir -p ${NACL_PORTS_DIR}
