@@ -371,13 +371,13 @@ function build_glibc {
      #turns out this works better if you do it from the nacl base dir
      cd ${NACL_TOOLCHAIN_BASE} && rm -fr BUILD out
      sed \
-	 's!http://git\.chromium\.org!https://chromium.googlesource.com!g' \
-	 <Makefile \
-	 >Makefile.new 2>/dev/null || true
-     cat \
-	 <Makefile.new \
-	 >Makefile
-     rm -f Makefile.new
+         's!http://git\.chromium\.org!https://chromium.googlesource.com!g' \
+         <Makefile \
+         >Makefile.new 2>/dev/null \
+         && cat \
+             <Makefile.new \
+             >Makefile \
+         && rm -f Makefile.new
      make clean
      # not quite sure why this is needed
      PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
