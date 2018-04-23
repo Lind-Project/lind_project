@@ -7,7 +7,8 @@ int main(void)
 {
 	int ret;
 
-	/* puts("forking"); */
+	puts("forking");
+	fork();
 	switch (fork()) {
 	case -1:
 		puts("fork() failed");
@@ -15,11 +16,14 @@ int main(void)
 		exit(EXIT_FAILURE);
 	case 0:
 		puts("child succeeded");
+		fflush(0);
 		exit(EXIT_SUCCESS);
 	}
 	puts("parent waiting");
+	fflush(0);
 	wait(&ret);
 	puts("parent succeeded");
+	fflush(0);
 
 	return 0;
 }
