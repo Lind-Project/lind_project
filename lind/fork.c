@@ -8,7 +8,8 @@ int main(void)
 	int ret;
 
 	puts("forking");
-	fork();
+	fflush(0);
+
 	switch (fork()) {
 	case -1:
 		puts("fork() failed");
@@ -19,6 +20,7 @@ int main(void)
 		fflush(0);
 		exit(EXIT_SUCCESS);
 	}
+
 	puts("parent waiting");
 	fflush(0);
 	wait(&ret);
