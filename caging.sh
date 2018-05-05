@@ -81,7 +81,7 @@ function download_src {
 
   git clone ${LIND_GLIBC_URL} lind_glibc
   cd lind_glibc || exit 1
-  git checkout fork_caging
+  git checkout fork
   cd .. || exit 1
 
   git clone ${LIND_MISC_URL} misc
@@ -91,12 +91,12 @@ function download_src {
 
   git clone ${NACL_REPY_URL} nacl_repy
   cd nacl_repy || exit 1
-  git checkout fork_caging
+  git checkout fork
   cd .. || exit 1
 
   mkdir -p ${NACL_SRC}
   cd ${NACL_SRC} || exit 1
-  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@fork_caging --git-deps
+  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@fork --git-deps
   gclient sync
   cd native_client || exit 1
   for patch in "${LIND_BASE:?}"/patches/caging-*.patch; do
