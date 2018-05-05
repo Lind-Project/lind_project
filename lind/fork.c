@@ -29,6 +29,17 @@ int main(void)
 		puts("child succeeded");
 		printf("%d\n", getpid());
 		fflush(0);
+		switch ((pid = fork())) {
+		case -1:
+			perror("fork() failed");
+			fflush(0);
+			exit(EXIT_FAILURE);
+		case 0:
+			puts("child succeeded");
+			printf("%d\n", getpid());
+			fflush(0);
+			exit(EXIT_SUCCESS);
+		}
 		exit(EXIT_SUCCESS);
 	}
 
