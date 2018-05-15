@@ -20,35 +20,43 @@ int main(void)
 	puts("forking 10");
 	fflush(0);
 
+	/* fork(); */
+	/* _exit(EXIT_SUCCESS); */
+
 	switch ((pid = fork())) {
 	case -1:
 		perror("fork() failed");
 		fflush(0);
-		exit(EXIT_FAILURE);
+		_exit(EXIT_FAILURE);
 	case 0:
+		/* sleep(10); */
+		/*
+		 * switch ((pid = fork())) {
+		 * case -1:
+		 *         perror("fork() failed");
+		 *         fflush(0);
+		 *         exit(EXIT_FAILURE);
+		 * case 0:
+		 *         puts("child succeeded");
+		 *         printf("%d\n", getpid());
+		 *         fflush(0);
+		 *         exit(EXIT_SUCCESS);
+		 * }
+		 */
 		puts("child succeeded");
 		printf("%d\n", getpid());
 		fflush(0);
-		switch ((pid = fork())) {
-		case -1:
-			perror("fork() failed");
-			fflush(0);
-			exit(EXIT_FAILURE);
-		case 0:
-			puts("child succeeded");
-			printf("%d\n", getpid());
-			fflush(0);
-			exit(EXIT_SUCCESS);
-		}
+		/* _exit(EXIT_SUCCESS); */
 		exit(EXIT_SUCCESS);
 	}
 
 	printf("%d\n", getpid());
 	puts("parent waiting");
 	fflush(0);
-	wait(&ret);
+	waitpid(0, &ret, 0);
 	printf("parent %d succeeded after waiting on %d\n", getpid(), pid);
 	fflush(0);
+	/* _exit(EXIT_SUCCESS); */
 
 	return 0;
 }
