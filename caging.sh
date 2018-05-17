@@ -79,14 +79,12 @@ function download_src {
   mkdir -p ${LIND_SRC}
   cd ${LIND_SRC} && rm -rf lind_glibc misc nacl_repy nacl
 
+  git clone ${LIND_MISC_URL} misc
+  cd .. || exit 1
+
   git clone ${LIND_GLIBC_URL} lind_glibc
   cd lind_glibc || exit 1
   git checkout fork
-  cd .. || exit 1
-
-  git clone ${LIND_MISC_URL} misc
-  cd misc || exit 1
-  git checkout caging
   cd .. || exit 1
 
   git clone ${NACL_REPY_URL} nacl_repy
