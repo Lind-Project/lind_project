@@ -30,7 +30,7 @@ if [ -z "$LIND_SRC" ]; then
    exit 1
 fi
 
-readonly OS_NAME=$(uname -s)
+readonly OS_NAME="$(uname -s)"
 if [ $OS_NAME = "Darwin" ]; then
   readonly OS_SUBDIR="mac"
 elif [ $OS_NAME = "Linux" ]; then
@@ -38,22 +38,22 @@ elif [ $OS_NAME = "Linux" ]; then
 else
   readonly OS_SUBDIR="win"
 fi
-readonly MODE='dbg-'${OS_SUBDIR}
-readonly LIND_BASE=${LIND_BASE}
-readonly LIND_SRC=${LIND_SRC}
-readonly MISC_DIR=${LIND_SRC}/misc
-readonly NACL_SRC=${LIND_SRC}/nacl
-readonly NACL_BASE=${NACL_SRC}/native_client
-readonly NACL_TOOLCHAIN_BASE=${NACL_BASE}/tools
-readonly LIND_GLIBC_SRC=${LIND_SRC}/lind_glibc
-readonly NACL_REPY=${LIND_SRC}/nacl_repy
-readonly NACL_PORTS_DIR=${LIND_SRC}/naclports
+readonly MODE="dbg-${OS_SUBDIR}"
+readonly LIND_BASE="${LIND_BASE}"
+readonly LIND_SRC="${LIND_SRC}"
+readonly MISC_DIR="${LIND_SRC}/misc"
+readonly NACL_SRC="${LIND_SRC}/nacl_src"
+readonly NACL_BASE="${NACL_SRC}/nacl"
+readonly NACL_TOOLCHAIN_BASE="${NACL_BASE}/tools"
+readonly LIND_GLIBC_SRC="${LIND_SRC}/lind_glibc"
+readonly NACL_REPY="${LIND_SRC}/nacl_repy"
+readonly NACL_PORTS_DIR="${LIND_SRC}/naclports"
 
-readonly REPY_PATH=${REPY_PATH}
-readonly REPY_PATH_BIN=${REPY_PATH}/bin
-readonly REPY_PATH_REPY=${REPY_PATH}/repy
-readonly REPY_PATH_LIB=${REPY_PATH}/lib
-readonly REPY_PATH_SDK=${REPY_PATH}/sdk
+readonly REPY_PATH="${REPY_PATH}"
+readonly REPY_PATH_BIN="${REPY_PATH}/bin"
+readonly REPY_PATH_REPY="${REPY_PATH}/repy"
+readonly REPY_PATH_LIB="${REPY_PATH}/lib"
+readonly REPY_PATH_SDK="${REPY_PATH}/sdk"
 
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
@@ -94,11 +94,11 @@ function download_src {
 
   mkdir -p ${NACL_SRC}
   cd ${NACL_SRC} || exit 1
-  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@fork --git-deps
+  gclient config --name=nacl https://github.com/Lind-Project/native_client.git@fork --git-deps
   gclient sync
-  cd native_client || exit 1
+  cd nacl || exit 1
   for patch in "${LIND_BASE:?}"/patches/caging-*.patch; do
-	  patch -p1 <"$patch"
+      patch -p1 <"$patch"
   done
   cd ${NACL_TOOLCHAIN_BASE} && rm -fr SRC
   make sync-pinned
@@ -107,7 +107,7 @@ function download_src {
   ln -s ${LIND_GLIBC_SRC} glibc
   cd gcc || exit 1
   for patch in "${LIND_BASE:?}"/patches/nacl-gcc-*.patch; do
-	  patch -p1 <"$patch"
+      patch -p1 <"$patch"
   done
   # cd .. || exit 1
   # cd glibc || exit 1
@@ -196,11 +196,11 @@ function test_repy {
     cd $REPY_PATH/repy/ || exit 1
     set +o errexit  # some of our unit tests fail
     for file in ut_lind_*; do
-	    echo $file
+        echo $file
         #trap 'python2.6 ${REPY_PATH}/repy/repy.py --safebinary ${REPY_PATH}/repy/restrictions.lind ${REPY_PATH}/repy/lind_server.py $@' INT TERM EXIT
         trap ';' TERM
         python $file
-	    #trap 'python $file' INT TERM EXIT
+        #trap 'python $file' INT TERM EXIT
     done
 
     # run the struct test
@@ -226,7 +226,7 @@ function check_install_dir {
 
     # and if it does not exit, make it.
     if [ ! -d "$REPY_PATH" ]; then
-	mkdir -p ${REPY_PATH}
+    mkdir -p ${REPY_PATH}
     fi
 
 }
@@ -249,7 +249,7 @@ function build_repy {
     cd seattlelib || exit 1
     set -o errexit
     for file in *.mix; do
-	${MISC_DIR}/check_includes.sh $file
+    ${MISC_DIR}/check_includes.sh $file
     done
     set +o errexit
     ctags  --language-force=python *.mix *.repy || true
@@ -305,26 +305,26 @@ function build_nacl {
      # convert files from python to python2
      cd "$NATIVE_CLIENT_SRC" || exit 1
      "${PYGREPL[@]}" 2>/dev/null | \
-	      "${PYGREPV[@]}" | \
-	      while read -r file; do
-		      # preserve executability
-		      "${PYSED[@]}" <"$file" >"$file.new"
-		      cat <"$file.new" >"$file"
-		      rm -f "$file.new"
-	      done
+          "${PYGREPV[@]}" | \
+          while read -r file; do
+              # preserve executability
+              "${PYSED[@]}" <"$file" >"$file.new"
+              cat <"$file.new" >"$file"
+              rm -f "$file.new"
+          done
 
      # build NaCl with glibc tests
      PATH="$LIND_BASE:$PATH" \
-	     ./scons --verbose --mode=${MODE},nacl \
-	     nacl_pic=1 werror=0 \
-	     platform=x86-64 --nacl_glibc -j4
+         ./scons --verbose --mode=${MODE},nacl \
+         nacl_pic=1 werror=0 \
+         platform=x86-64 --nacl_glibc -j4
 
      # and check
      rc=$?
      if [ "$rc" -ne "0" ]; then
-	     print "NaCl Build Failed($rc)"
-	     echo -e "\a"
-	     exit $rc
+         print "NaCl Build Failed($rc)"
+         echo -e "\a"
+         exit $rc
      fi
 
      print "Done building NaCl $rc"
@@ -362,8 +362,8 @@ function build_glibc {
      shopt -s nullglob
      for f in .\#*;
      do
-	 print "moving editor backupfile ${f} so it does not get caught in build."
-	 mv -f ${f} .
+     print "moving editor backupfile ${f} so it does not get caught in build."
+     mv -f ${f} .
      done
 
      #turns out this works better if you do it from the nacl base dir
@@ -379,21 +379,21 @@ function build_glibc {
      make clean
      # not quite sure why this is needed
      PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
-	     || PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
-	     || exit -1
+         || PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
+         || exit -1
 
      print "Done building toolchain"
 }
 
 function update_glibc {
     cd ${NACL_TOOLCHAIN_BASE} \
-	    && PATH="$LIND_BASE:$PATH" make updateglibc
+        && PATH="$LIND_BASE:$PATH" make updateglibc
 }
 
 function update_glibc2 {
     cd ${NACL_TOOLCHAIN_BASE} \
-	    && rm BUILD/stamp-glibc64 \
-	    && PATH="$LIND_BASE:$PATH" make BUILD/stamp-glibc64
+        && rm BUILD/stamp-glibc64 \
+        && PATH="$LIND_BASE:$PATH" make BUILD/stamp-glibc64
 }
 
 # Run the glibc tester
