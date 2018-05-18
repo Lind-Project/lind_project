@@ -427,68 +427,63 @@ fi
 START_TIME=$(date +%s)
 
 # all scripts assume we start here
-echo ${args[0]} ${args[1]}
-ELEMENTS=${#args[@]}
-for  (( i=0;i<$ELEMENTS;i++));
-do
-    word=${args[${i}]}
-    if [ "$word" = "repy" ]; then
-	    build_repy
-    elif [ "$word" = "nacl" ]; then
-	    build_nacl
-    elif [ "$word" = "buildglibc" ]; then
-	    build_glibc
-    elif [ "$word" = "updateglibc" ]; then
-            update_glibc
-    elif [ "$word" = "updateglibc2" ]; then
-            update_glibc2
-    elif [ "$word" = "download" ]; then
-            download_src
-    elif [ "$word" = "all" ]; then
-            download_src
-	    build_nacl
-	    build_glibc
-	    build_repy
-	    install_to_path
-    elif [ "$word" = "cleantoolchain" ]; then
-	    print "Cleaning Toolchain"
-	    clean_toolchain
-    elif [ "$word" = "install" ]; then
-	    print "Installing libs into install dir"
-	    install_to_path
-    elif [ "$word" = "cleannacl" ]; then
-	    print "Cleaning NaCl"
-	    clean_nacl
-    elif [ "$word" = "liblind" ]; then
-	    print "Building LibLind"
-	    build_liblind
-    elif [ "$word" = "test_repy" ]; then
-	    print "Testing Repy"
-	    test_repy
-    elif [ "$word" = "test_glibc" ]; then
-	    print "Testing GLibC"
-	    glibc_tester
-    elif [ "$word" = "test_apps" ]; then
-	    print "Testing Applications"
-	    test_apps
-    elif [ "$word" = "test" ]; then
-	    print "Testing All"
-	    test_repy
-	    glibc_tester
-	    test_apps
-    elif [ "$word" = "nightly" ]; then
-	    print "Nightly Build"
-	    nightly_build
-    else
-	    echo "Error: Did not find a build target named $word. Exiting..."
-	    exit 1
-    fi
+echo "${args[0]}" "${args[1]}"
+for word in "${args[@]}"; do
+    case "$word" in
+    repy)
+        build_repy;;
+    nacl)
+        build_nacl;;
+    buildglibc)
+        build_glibc;;
+    updateglibc)
+        update_glibc;;
+    updateglibc2)
+        update_glibc2;;
+    download)
+        download_src;;
+    all)
+        download_src
+        build_nacl
+        build_glibc
+        build_repy
+        install_to_path;;
+    cleantoolchain)
+        print "Cleaning Toolchain"
+        clean_toolchain;;
+    install)
+        print "Installing libs into install dir"
+        install_to_path;;
+    cleannacl)
+        print "Cleaning NaCl"
+        clean_nacl;;
+    liblind)
+        print "Building LibLind"
+        build_liblind;;
+    test_repy)
+        print "Testing Repy"
+        test_repy;;
+    test_glibc)
+        print "Testing GLibC"
+        glibc_tester;;
+    test_apps)
+        print "Testing Applications"
+        test_apps;;
+    test)
+        print "Testing All"
+        test_repy
+        glibc_tester
+        test_apps;;
+    nightly)
+        print "Nightly Build"
+        nightly_build;;
+    *)
+        echo "Error: Did not find a build target named $word. Exiting..."
+        exit 1;;
+    esac
 done
-
 
 END_TIME=$(date +%s)
 DIFF=$(( $END_TIME - $START_TIME ))
 echo "It took $DIFF seconds"
 echo -e "\a"
-
-
