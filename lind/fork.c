@@ -43,8 +43,8 @@ int main(void)
 			exit(EXIT_SUCCESS);
 		}
 		puts("child waiting");
-		/* wait(&ret); */
-		waitpid(-1, &ret, 0);
+		wait(&ret);
+		/* waitpid(-1, &ret, 0); */
 		printf("child %d succeeded after waiting on %d\n", getpid(), pid);
 		puts("child succeeded");
 		fflush(0);
