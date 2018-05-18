@@ -59,6 +59,7 @@ readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
+readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@child_nap_fork'
 
 readonly -a PYGREPL=(grep '-lIPR' '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' './')
 readonly -a PYGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
@@ -71,7 +72,7 @@ readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 readonly RSYNC='rsync -avrc --force'
 
 if [ "$NACL_SDK_ROOT" != "${REPY_PATH_SDK}" ]; then
-  echo "You need to set \$NACL_SDK_ROOT to ${REPY_PATH_SDK}"
+  echo "You need to set \$NACL_SDK_ROOT to $REPY_PATH_SDK"
   exit 1
 fi
 
@@ -92,15 +93,17 @@ function download_src {
   git checkout fork
   cd .. || exit 1
 
-  mkdir -p ${NACL_SRC}
-  cd ${NACL_SRC} || exit 1
-  gclient config --name=nacl https://github.com/Lind-Project/native_client.git@fork --git-deps
+  mkdir -p "$NACL_SRC"
+  cd "$LIND_BASE" || exit 1
+  gclient config --name=native_client "$NACL_GCLIENT_URL"  --git-deps
   gclient sync
-  cd nacl || exit 1
+  cd native_client || exit 1
   for patch in "${LIND_BASE:?}"/patches/caging-*.patch; do
       patch -p1 <"$patch"
   done
-  cd ${NACL_TOOLCHAIN_BASE} && rm -fr SRC
+  cd .. || exit 1
+  ln -Trsv native_client "$NACL_BASE"
+  cd "$NACL_TOOLCHAIN_BASE" && rm -fr SRC
   make sync-pinned
   cd SRC || exit 1
   mv glibc glibc_orig
