@@ -15,17 +15,17 @@
 # set -x
 trap 'echo "All done."' EXIT
 
-if [ -z "$REPY_PATH" ]; then
+if [[ -z "$REPY_PATH" ]]; then
    echo "Need to set REPY_PATH"
    exit 1
 fi
 
-if [ -z "$LIND_BASE" ]; then
+if [[ -z "$LIND_BASE" ]]; then
    echo "Need to set LIND_BASE"
    exit 1
 fi
 
-if [ -z "$LIND_SRC" ]; then
+if [[ -z "$LIND_SRC" ]]; then
    echo "Need to set LIND_SRC"
    exit 1
 fi
@@ -60,6 +60,7 @@ readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@fork'
+readonly NACL_PORTS_URL='https://chromium.googlesource.com/external/naclports.gil'
 
 readonly -a PYGREPL=(grep '-lIPR' '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' './')
 readonly -a PYGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
@@ -89,15 +90,14 @@ function download_src {
   ln -Trsfv "$LIND_BASE/nacl_repy" "$LIND_SRC/nacl_repy"
 
   mkdir -p "$NACL_SRC"
-  # cd "$LIND_BASE" || exit 1
-  # gclient config --name=native_client "$NACL_GCLIENT_URL"  --git-deps
-  # gclient sync
+  gclient config --name=native_client "$NACL_GCLIENT_URL"  --git-deps || true
+  gclient sync
   # cd native_client || exit 1
   # for patch in "${LIND_BASE:?}"/patches/caging-*.patch; do
   #     patch -p1 <"$patch"
   # done
   # cd .. || exit 1
-  # ln -Trsv native_client "$NACL_BASE"
+  ln -Trsv native_client "$NACL_BASE"
   cd "$NACL_TOOLCHAIN_BASE" && rm -fr SRC
   make sync-pinned
   cd SRC || exit 1
@@ -111,7 +111,7 @@ function download_src {
 
   mkdir -p "$NACL_PORTS_DIR"
   cd "$NACL_PORTS_DIR" || exit 1
-  gclient config --name=src https://chromium.googlesource.com/external/naclports.git --git-deps
+  gclient config --name=src "$NACL_PORTS_URL" --git-deps || true
   gclient sync
 
   cd "$LIND_SRC" || exit 1
