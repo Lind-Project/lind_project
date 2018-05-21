@@ -5,16 +5,21 @@ error.log
 .gclient*
 repy
 nacl
+misc
 nacl-gcc
+nacl_repy
 native_client
 /lind/Makefile
 
 # lind specific directories
 repy/
+misc/
 tools/
 build/
 testing/
 breakpad/
+naclports/
+lind_glibc/
 buildtools/
 build_overrides/
 validator_snapshots/
