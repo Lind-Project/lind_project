@@ -159,10 +159,10 @@ function install_to_path {
 
     print "**Sending NaCl stuff to $REPY_PATH"
 
-    #echo "Deleting all directories in the $REPY_PATH (except repy folder)"
-    #rm -rf "${REPY_PATH_BIN:?}"
-    #rm -rf "${REPY_PATH_LIB:?}"
-    #rm -rf "${REPY_PATH_SDK:?}"
+    # echo "Deleting all directories in the $REPY_PATH (except repy folder)"
+    # rm -rf "${REPY_PATH_BIN:?}"
+    # rm -rf "${REPY_PATH_LIB:?}"
+    # rm -rf "${REPY_PATH_SDK:?}"
 
     mkdir -p "$REPY_PATH_BIN"
     mkdir -p "$REPY_PATH_LIB/glibc"
@@ -171,8 +171,6 @@ function install_to_path {
 
     # ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/* ${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc
     "${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk"/* "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
-    #we need some files from the original sdk to help compile some applications (e.g. zlib)
-    #${RSYNC} ${MISC_DIR}/${OS_SUBDIR}_pepper_28_tools/* ${REPY_PATH_SDK}/tools
 
     # ${RSYNC} ${NACL_BASE}/scons-out/${MODE}-x86-64/staging/* ${REPY_PATH_BIN}
     "${RSYNC[@]}" "$NACL_BASE/scons-out/${MODE}-x86-64/staging"/* "$REPY_PATH_BIN"
