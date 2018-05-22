@@ -6,7 +6,6 @@ error.log
 repy
 nacl
 misc
-nacl-gcc
 nacl_repy
 native_client
 /lind/Makefile
