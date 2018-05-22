@@ -46,6 +46,8 @@ readonly NACL_SRC="$LIND_SRC/nacl_src"
 readonly NACL_BASE="$NACL_SRC/nacl"
 readonly NACL_TOOLCHAIN_BASE="$NACL_BASE/tools"
 readonly LIND_GLIBC_SRC="$LIND_BASE/lind_glibc"
+readonly NACL_GCC_SRC="$LIND_BASE/nacl-gcc"
+readonly NACL_BINUTILS_SRC="$LIND_BASE/nacl-binutils"
 readonly NACL_REPY="$LIND_BASE/nacl_repy"
 readonly NACL_PORTS_DIR="$LIND_BASE/naclports"
 
@@ -55,9 +57,11 @@ readonly REPY_PATH_REPY="$REPY_PATH/repy"
 readonly REPY_PATH_LIB="$REPY_PATH/lib"
 readonly REPY_PATH_SDK="$REPY_PATH/sdk"
 
-readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
+readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
+readonly NACL_GCC_URL='https://github.com/Lind-Project/nacl-gcc.git'
+readonly NACL_BINUTILS_URL='https://github.com/Lind-Project/nacl-binutils.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@fork'
 readonly NACL_PORTS_URL='https://chromium.googlesource.com/external/naclports.gil'
@@ -85,9 +89,13 @@ function download_src {
   git clone "$LIND_MISC_URL" misc || true
   git clone -b fork "$LIND_GLIBC_URL" lind_glibc || true
   git clone -b fork "$NACL_REPY_URL" nacl_repy || true
+  git clone -b lind_fork "$NACL_GCC_URL" nacl-gcc || true
+  git clone -b lind_fork "$NACL_BINUTILS_URL" nacl-binutils || true
   ln -Trsfv "$LIND_BASE/misc" "$LIND_SRC/misc"
   ln -Trsfv "$LIND_GLIBC_SRC" "$LIND_SRC/lind_glibc"
   ln -Trsfv "$LIND_BASE/nacl_repy" "$LIND_SRC/nacl_repy"
+  ln -Trsfv "$LIND_BASE/nacl-gcc" "$LIND_SRC/nacl-gcc"
+  ln -Trsfv "$LIND_BASE/nacl-binutils" "$LIND_SRC/nacl-binutils"
 
   mkdir -p "$NACL_SRC"
   gclient config --name=native_client "$NACL_GCLIENT_URL"  --git-deps || true
@@ -102,11 +110,15 @@ function download_src {
   make sync-pinned
   cd SRC || exit 1
   mv glibc glibc_orig
-  ln -s "$LIND_GLIBC_SRC" glibc
-  cd gcc || exit 1
-  for patch in "${LIND_BASE:?}"/patches/nacl-gcc-*.patch; do
-      patch -p1 <"$patch"
-  done
+  ln -Trsfv "$LIND_GLIBC_SRC" glibc
+  mv gcc gcc_orig
+  ln -Trsfv "$NACL_GCC_SRC" gcc
+  mv binutils binutils_orig
+  ln -Trsfv "$NACL_BINUTILS_SRC" binutils
+  # cd gcc || exit 1
+  # for patch in "${LIND_BASE:?}"/patches/nacl-gcc-*.patch; do
+  #     patch -p1 <"$patch"
+  # done
   cd "$NACL_TOOLCHAIN_BASE"
 
   mkdir -p "$NACL_PORTS_DIR"
