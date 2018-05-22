@@ -7,35 +7,35 @@
 [submodule "lind_glibc"]
 	path = lind_glibc
 	url = https://github.com/Lind-Project/Lind-GlibC.git
-	branch = i686_caging
+	branch = lind_fork
 [submodule "nacl_repy"]
 	path = nacl_repy
 	url = https://github.com/Lind-Project/nacl_repy.git
-	branch = i686_caging
+	branch = lind_fork
 [submodule "lind_experiments"]
 	path = lind_experiments
 	url = https://github.com/Lind-Project/lind_experiments.git
-	branch = i686_caging
+	branch = master
 [submodule "misc"]
 	path = misc
 	url = https://github.com/Lind-Project/Lind-misc.git
-	branch = i686_caging
+	branch = master
 [submodule "third_party"]
 	path = third_party
 	url = https://github.com/Lind-Project/third_party.git
-	branch = i686_caging
+	branch = lind_fork
 [submodule "linux-syscall-support"]
 	path = linux-syscall-support
 	url = https://github.com/Lind-Project/linux-syscall-support.git
-	branch = i686_caging
+	branch = lind_fork
 [submodule "googletest"]
 	path = googletest
 	url = https://github.com/Lind-Project/googletest.git
-	branch = i686_caging
+	branch = lind_fork
 [submodule "google-breakpad"]
 	path = google-breakpad
 	url = https://github.com/Lind-Project/google-breakpad.git
-	branch = i686_caging
+	branch = lind_fork
 [submodule "depot_tools"]
 	path = depot_tools
 	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
