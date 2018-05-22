@@ -58,13 +58,15 @@ readonly REPY_PATH_LIB="$REPY_PATH/lib"
 readonly REPY_PATH_SDK="$REPY_PATH/sdk"
 
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
-readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
+readonly THIRD_PARTY_URL='https://github.com/Lind-Project/third_party.git'
+readonly LSS_URL='https://github.com/Lind-Project//linux-syscall-support.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_GCC_URL='https://github.com/Lind-Project/nacl-gcc.git'
 readonly NACL_BINUTILS_URL='https://github.com/Lind-Project/nacl-binutils.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@fork'
 readonly NACL_PORTS_URL='https://chromium.googlesource.com/external/naclports.gil'
+readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 
 readonly -a PYGREPL=(grep '-lIPR' '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' './')
 readonly -a PYGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
@@ -87,15 +89,19 @@ function download_src {
   # rm -rf lind_glibc misc nacl_repy nacl
 
   git clone "$LIND_MISC_URL" misc || true
-  git clone -b fork "$LIND_GLIBC_URL" lind_glibc || true
-  git clone -b fork "$NACL_REPY_URL" nacl_repy || true
+  git clone -b lind_fork "$THIRD_PARTY_URL" third_party || true
+  git clone -b lind_fork "$LSS_URL" linux-syscall-support || true
+  git clone -b lind_fork "$NACL_REPY_URL" nacl_repy || true
   git clone -b lind_fork "$NACL_GCC_URL" nacl-gcc || true
   git clone -b lind_fork "$NACL_BINUTILS_URL" nacl-binutils || true
+  git clone -b lind_fork "$LIND_GLIBC_URL" lind_glibc || true
   ln -Trsfv "$LIND_BASE/misc" "$LIND_SRC/misc"
-  ln -Trsfv "$LIND_GLIBC_SRC" "$LIND_SRC/lind_glibc"
+  ln -Trsfv "$LIND_BASE/third_party" "$LIND_SRC/third_party"
+  ln -Trsfv "$LIND_BASE/linux-syscall-support" "$LIND_SRC/third_party/lss"
   ln -Trsfv "$LIND_BASE/nacl_repy" "$LIND_SRC/nacl_repy"
   ln -Trsfv "$LIND_BASE/nacl-gcc" "$LIND_SRC/nacl-gcc"
   ln -Trsfv "$LIND_BASE/nacl-binutils" "$LIND_SRC/nacl-binutils"
+  ln -Trsfv "$LIND_GLIBC_SRC" "$LIND_SRC/lind_glibc"
 
   mkdir -p "$NACL_SRC"
   gclient config --name=native_client "$NACL_GCLIENT_URL"  --git-deps || true
