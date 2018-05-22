@@ -28,10 +28,6 @@
 	path = linux-syscall-support
 	url = https://github.com/Lind-Project/linux-syscall-support.git
 	branch = i686_caging
-[submodule "nacl-binutils"]
-	path = nacl-binutils
-	url = https://github.com/Lind-Project/nacl-binutils.git
-	branch = i686_caging
 [submodule "googletest"]
 	path = googletest
 	url = https://github.com/Lind-Project/googletest.git
@@ -43,3 +39,11 @@
 [submodule "depot_tools"]
 	path = depot_tools
 	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
+[submodule "nacl-gcc"]
+	path = nacl-gcc
+	url = git@github.com:Lind-Project/nacl-gcc.git
+	branch = lind_fork
+[submodule "nacl-binutils"]
+	path = nacl-binutils
+	url = git@github.com:Lind-Project/nacl-binutils.git
+	branch = lind_fork
