@@ -78,7 +78,7 @@ readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 readonly -a RSYNC=(rsync '-avrcP' '--info=progress2' '--force')
 # readonly RSYNC='rsync -avrc --force'
 
-if [ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]; then
+if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
   echo "You need to set $NACL_SDK_ROOT to $REPY_PATH_SDK"
   exit 1
 fi
