@@ -404,9 +404,8 @@ function update_glibc {
 }
 
 function update_glibc2 {
-    cd "$NACL_TOOLCHAIN_BASE" \
-        && rm BUILD/stamp-glibc64 \
-        && PATH="$LIND_BASE:$PATH" make BUILD/stamp-glibc64
+    cd "$NACL_TOOLCHAIN_BASE" && rm -rf BUILD/stamp-glibc64
+    PATH="$LIND_BASE:$PATH" make BUILD/stamp-glibc64
 }
 
 # Run the glibc tester
