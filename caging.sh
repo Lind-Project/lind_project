@@ -65,6 +65,7 @@ readonly NACL_GCC_URL='https://github.com/Lind-Project/nacl-gcc.git'
 readonly NACL_BINUTILS_URL='https://github.com/Lind-Project/nacl-binutils.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@fork'
+# readonly NACL_GCLIENT_URL='git@github.com:Lind-Project/native_client.git@fork'
 readonly NACL_PORTS_URL='https://chromium.googlesource.com/external/naclports.gil'
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 
@@ -88,13 +89,14 @@ function download_src {
   cd "$LIND_BASE" || exit 1
   # rm -rf lind_glibc misc nacl_repy nacl
 
-  git clone "$LIND_MISC_URL" misc || true
-  git clone -b lind_fork "$THIRD_PARTY_URL" third_party || true
-  git clone -b lind_fork "$LSS_URL" linux-syscall-support || true
-  git clone -b lind_fork "$NACL_REPY_URL" nacl_repy || true
-  git clone -b lind_fork "$NACL_GCC_URL" nacl-gcc || true
-  git clone -b lind_fork "$NACL_BINUTILS_URL" nacl-binutils || true
-  git clone -b lind_fork "$LIND_GLIBC_URL" lind_glibc || true
+  pip2 install gclient --user || pip2 install gclient
+  git clone "$LIND_MISC_URL" misc 2>/dev/null || true
+  git clone -b lind_fork "$THIRD_PARTY_URL" third_party 2>/dev/null || true
+  git clone -b lind_fork "$LSS_URL" linux-syscall-support 2>/dev/null || true
+  git clone -b lind_fork "$NACL_REPY_URL" nacl_repy 2>/dev/null || true
+  git clone -b lind_fork "$NACL_GCC_URL" nacl-gcc 2>/dev/null || true
+  git clone -b lind_fork "$NACL_BINUTILS_URL" nacl-binutils 2>/dev/null || true
+  git clone -b lind_fork "$LIND_GLIBC_URL" lind_glibc 2>/dev/null || true
   ln -Trsfv "$LIND_BASE/misc" "$LIND_SRC/misc"
   ln -Trsfv "$LIND_BASE/third_party" "$LIND_SRC/third_party"
   ln -Trsfv "$LIND_BASE/linux-syscall-support" "$LIND_SRC/third_party/lss"
@@ -111,7 +113,7 @@ function download_src {
   #     patch -p1 <"$patch"
   # done
   # cd .. || exit 1
-  ln -Trsv native_client "$NACL_BASE"
+  ln -Trsfv native_client "$NACL_BASE"
   cd "$NACL_TOOLCHAIN_BASE" && rm -fr SRC
   make sync-pinned
   cd SRC || exit 1
