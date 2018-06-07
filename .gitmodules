@@ -19,13 +19,13 @@
 [submodule "misc"]
 	path = misc
 	url = https://github.com/Lind-Project/Lind-misc.git
-	branch = master
+	branch = lind_fork
 [submodule "third_party"]
 	path = third_party
 	url = https://github.com/Lind-Project/third_party.git
 	branch = lind_fork
 [submodule "linux-syscall-support"]
-	path = linux-syscall-support
+	path = lss
 	url = https://github.com/Lind-Project/linux-syscall-support.git
 	branch = lind_fork
 [submodule "googletest"]
@@ -46,4 +46,8 @@
 [submodule "nacl-binutils"]
 	path = nacl-binutils
 	url = https://github.com/Lind-Project/nacl-binutils.git
+	branch = lind_fork
+[submodule "lss"]
+	path = lss
+	url = https://github.com/Lind-Project/linux-syscall-support.git
 	branch = lind_fork
