@@ -1,18 +1,16 @@
 FROM archlinux/base
 
-WORKDIR /usr
-RUN sed -ni '/\[multilib\]/,/^$/ s/^#//p' /etc/pacman.conf
-RUN pacman -Syu --noconfirm base-devel python2 python2-pip python2-setuptools python2-virtualenv subversion git rsync make autotools gcc-libs lib32-gcc-libs
-RUN git clone https://github.com/Lind-Project/lind_project.git
-RUN ln -Trsfv /usr/bin/python2 /usr/bin/python && ln -Trsfv /usr/bin/pip2 /usr/bin/pip
-RUN mkdir -p "$HOME/.virtualenvs"
-
 ENV LIND_BASE=/usr/lind_project LIND_SRC=/usr/lind_project/lind
 ENV REPY_PATH=/usr/lind_project/lind/repy NACL_SDK_ROOT=/usr/lind_project/repy/sdk
-ENV LIND_MONITOR=/usr/lind_project/reference_monitor
-ENV LD_LIBRARY_PATH=/lib/glibc NACL_SDK_ROOT=/usr/lind_project/lind/repy/sdk
-ENV VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2
-ENV VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv
+ENV LIND_MONITOR=/usr/lind_project/reference_monitor LD_LIBRARY_PATH=/lib/glibc
+ENV NACL_SDK_ROOT=/usr/lind_project/lind/repy/sdk PNACLPYTHON=python2
+
+WORKDIR /usr
+RUN sed -i '/\[multilib\]/,/^$/ s/^#//' /etc/pacman.conf
+RUN pacman -Syu --noconfirm base-devel subversion git rsync make autotools gcc-libs lib32-gcc-libs
+RUN pacman -Syu --noconfirm python2 python2-pip python2-setuptools python2-virtualenv
+RUN git clone https://github.com/Lind-Project/lind_project.git
+RUN ln -Trsfv /usr/bin/python2 /usr/bin/python
 
 WORKDIR /usr/lind_project
 RUN ./caging.sh all
