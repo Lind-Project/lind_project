@@ -60,6 +60,10 @@ readonly REPY_PATH_REPY="$REPY_PATH/repy"
 readonly REPY_PATH_LIB="$REPY_PATH/lib"
 readonly REPY_PATH_SDK="$REPY_PATH/sdk"
 
+readonly VIRTUALENVWRAPPER_PYTHON=python2
+readonly VIRTUALENVWRAPPER_VIRTUALENV=virtualenv2
+readonly WORKON_HOME="$LIND_BASE/.virtualenvs"
+
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly THIRD_PARTY_URL='https://github.com/Lind-Project/third_party.git'
 readonly LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git'
@@ -148,8 +152,23 @@ function download_src {
       print "Need python2 version of pip in order to build Lind"
       exit 1
     fi
+    if ! "$pip_bin" install --user virtualenv || ! "$pip_bin" install virtualenv; then
+      print "Need python virtualenv in order to build Lind"
+      exit 1
+    fi
+    if ! "$pip_bin" install --user virtualenvwrapper || ! "$pip_bin" install virtualenvwrapper; then
+      print "Need python virtualenvwrapper in order to build Lind"
+      exit 1
+    fi
+
+    # start up virtualenv
+    mkdir -p "$WORKON_HOME" || exit 1
+    cd "$LIND_BASE" || exit 1
+    . ./virtualenvwrapper.sh
+    mkvirtualenv lind
+    workon lind
     # get gclient and dependencies
-    if ! "$pip_bin" install gclient --user || ! "$pip_bin" install gclient; then
+    if ! "$pip_bin" install -U SCons gclient; then
       print "Need to \`pip2 install gclient\` in order to build Lind"
       exit 1
     fi
@@ -359,7 +378,7 @@ function build_nacl {
 
      # build NaCl with glibc tests
      PATH="$LIND_BASE:$PATH" \
-         ./scons --verbose --mode="$MODE,nacl" \
+         python2 ./scons.py --verbose --mode="$MODE,nacl" \
          nacl_pic=1 werror=0 \
          platform=x86-64 --nacl_glibc -j4
 
