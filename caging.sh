@@ -184,22 +184,25 @@ function download_src {
   fi
 
   # clone nacl
-  if [[ ! -e "$LIND_BASE/native_client" ]]; then
+  if [[ ! -e "$LIND_BASE/native_client" || ! -e "$NACL_BASE" ]]; then
     mkdir -p "$NACL_SRC"
     cd "$LIND_BASE" || exit 1
     gclient config --name=native_client "$NACL_GCLIENT_URL"  --git-deps
     gclient sync
     ln -Trsfv "$LIND_BASE/native_client" "$NACL_BASE"
-    cd "$NACL_TOOLCHAIN_BASE" && rm -fr SRC
-    make sync-pinned
-    cd SRC || exit 1
-    mv glibc glibc_orig
-    ln -Trsfv "$LIND_GLIBC_SRC" glibc
-    mv gcc gcc_orig
-    ln -Trsfv "$NACL_GCC_SRC" gcc
-    mv binutils binutils_orig
-    ln -Trsfv "$NACL_BINUTILS_SRC" binutils
   fi
+  cd "$NACL_BASE" || exit 1
+  git fetch --all
+  git checkout fork || git reset --hard origin/fork
+  cd "$NACL_TOOLCHAIN_BASE" && rm -fr SRC
+  make sync-pinned
+  cd SRC || exit 1
+  mv glibc glibc_orig
+  ln -Trsfv "$LIND_GLIBC_SRC" glibc
+  mv gcc gcc_orig
+  ln -Trsfv "$NACL_GCC_SRC" gcc
+  mv binutils binutils_orig
+  ln -Trsfv "$NACL_BINUTILS_SRC" binutils
 
   # clone nacl external ports
   if [[ ! -e "$NACL_PORTS_DIR/src" ]]; then
