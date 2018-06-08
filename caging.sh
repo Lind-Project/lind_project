@@ -177,7 +177,7 @@ function download_src {
     mkvirtualenv lind || exit 1
     workon lind || exit 1
     # get gclient and dependencies
-    if ! "$pip_bin" install -U SCons gclien virtualenv2 virtualenvwrapper; then
+    if ! "$pip_bin" install -U SCons gclient virtualenv2 virtualenvwrapper; then
       print "Need to \`pip2 install gclient\` in order to build Lind"
       exit 1
     fi
