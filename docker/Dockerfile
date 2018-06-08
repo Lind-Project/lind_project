@@ -4,6 +4,7 @@ ENV LIND_BASE=/usr/lind_project LIND_SRC=/usr/lind_project/lind
 ENV REPY_PATH=/usr/lind_project/lind/repy NACL_SDK_ROOT=/usr/lind_project/repy/sdk
 ENV LIND_MONITOR=/usr/lind_project/reference_monitor LD_LIBRARY_PATH=/lib/glibc
 ENV NACL_SDK_ROOT=/usr/lind_project/lind/repy/sdk PNACLPYTHON=python2
+Env PATH="/root/.local/bin:$PATH"
 
 WORKDIR /usr
 RUN sed -i '/\[multilib\]/,/^$/ s/^#//' /etc/pacman.conf
