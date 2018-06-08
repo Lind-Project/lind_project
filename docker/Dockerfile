@@ -7,10 +7,10 @@ ENV NACL_SDK_ROOT=/usr/lind_project/lind/repy/sdk PNACLPYTHON=python2
 
 WORKDIR /usr
 RUN sed -i '/\[multilib\]/,/^$/ s/^#//' /etc/pacman.conf
-RUN pacman -Syu --noconfirm base-devel subversion git rsync make autotools gcc-libs lib32-gcc-libs
+RUN pacman -Syu --noconfirm base-devel subversion git rsync make gcc-libs lib32-gcc-libs
 RUN pacman -Syu --noconfirm python2 python2-pip python2-setuptools python2-virtualenv
 RUN git clone https://github.com/Lind-Project/lind_project.git
 RUN ln -Trsfv /usr/bin/python2 /usr/bin/python
 
 WORKDIR /usr/lind_project
-RUN ./caging.sh all
+CMD ['./caging.sh', 'all']
