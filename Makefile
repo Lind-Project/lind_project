@@ -3,19 +3,28 @@
 #
 # AUTHOR: Joey Pabalinas <alyptik@protonmail.com>
 
-all:
-	$(MAKE) lind
 
-.PHONY: lind shell bash run container build swarm stack deploy manager pull clean
+%: | pull
+	@$(MAKE) "lind/$(basename $(notdir $*))"
 
-lind: pull
-	docker run --rm -it alyptik/lind:latest /bin/bash -c 'git pull && ./caging.sh'
+lind/%:
+	docker run --label=lind -it alyptik/lind:latest /bin/bash -c './caging.sh $*'
 
-shell bash run: pull
-	docker run --rm -it alyptik/lind:latest /bin/bash
+.PHONY: Makefile lind run shell bash list show container build push swarm stack deploy manager pull clean
+
+lind run: | pull
+	docker run --label=lind -it alyptik/lind:latest /bin/bash -c './caging.sh'
+
+shell bash: | pull
+	docker run --label=lind -it alyptik/lind:latest /bin/bash
+
+list show:
+	docker container list -f=label=lind -sa
 
 container build:
-	docker build --no-cache --rm -t lind:latest -f ./docker/Dockerfile ./docker
+	docker build -t lind:latest -f ./docker/Dockerfile ./docker
+
+push:
 	docker tag lind:latest alyptik/lind:latest
 	docker push alyptik/lind:latest
 
