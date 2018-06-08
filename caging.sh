@@ -524,7 +524,8 @@ for word in "$@"; do
         build_nacl
         build_glibc
         build_repy
-        install_to_path;;
+        install_to_path
+        build_liblind;;
     install)
         print "Installing libs into install dir"
         install_to_path;;
