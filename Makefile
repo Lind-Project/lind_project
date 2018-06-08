@@ -9,10 +9,10 @@ all:
 .PHONY: lind shell bash run container build swarm stack deploy manager pull clean
 
 lind: pull
-	docker run -it alyptik/lind:latest /bin/bash -c 'git pull && ./caging.sh'
+	docker run --rm -it alyptik/lind:latest /bin/bash -c 'git pull && ./caging.sh'
 
 shell bash run: pull
-	docker run -it alyptik/lind:latest /bin/bash
+	docker run --rm -it alyptik/lind:latest /bin/bash
 
 container build:
 	docker build --no-cache --rm -t lind:latest -f ./docker/Dockerfile ./docker
