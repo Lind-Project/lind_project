@@ -122,7 +122,7 @@ function download_src {
   # clone and symlink dependencies
   mkdir -p "$LIND_SRC"
   cd "$LIND_BASE" || exit 1
-  git submodule update --init --checkout --remote --recursive .
+  git submodule update --checkout --init --recursive --remote .
   git_deps[misc]="$LIND_MISC_URL"
   git_deps[third_party]="$THIRD_PARTY_URL"
   git_deps[lss]="$LSS_URL"
@@ -132,7 +132,7 @@ function download_src {
   git_deps[lind_glibc]="$LIND_GLIBC_URL"
   for dir in "${!git_deps[@]}"; do
     [[ ! -e "$dir" ]] && git clone -b lind_fork "${git_deps[$dir]}" "$dir"
-    rm -rf "$LIND_SRC/$dir"
+    rm -rf "${LIND_SRC:?}/$dir"
     ln -Tsfv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
   done
 
@@ -170,7 +170,7 @@ function download_src {
     PATH="$HOME/.local/bin:$PATH"
     export PATH WORKON_HOME VIRTUALENVWRAPPER_PYTHON VIRTUALENVWRAPPER_VIRTUALENV
     mkdir -p "$WORKON_HOME" || exit 1
-    rm -rf "$WORKON_HOME/lind"
+    rm -rf "${WORKON_HOME:?}/lind"
     if type -P >/dev/null 2>&1; then
       venvwrap="$(command -v virtualenvwrapper.sh)"
     else
