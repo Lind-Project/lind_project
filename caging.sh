@@ -148,8 +148,8 @@ function download_src {
       print "Need python2 version of pip in order to build Lind"
       exit 1
     fi
-    if ! "$pip_bin" install --user virtualenv2 || ! "$pip_bin" install virtualenv2; then
-      print "Need python virtualenv2 in order to build Lind"
+    if ! "$pip_bin" install --user virtualenv || ! "$pip_bin" install virtualenv; then
+      print "Need python virtualenv in order to build Lind"
       exit 1
     fi
     if ! "$pip_bin" install --user virtualenvwrapper || ! "$pip_bin" install virtualenvwrapper; then
@@ -159,9 +159,9 @@ function download_src {
 
     # start up virtualenv
     unset WORKON_HOME
-    WORKON_HOME="$LIND_BASE/.virtualenvs"
+    WORKON_HOME="$LIND_BASE/virtualenvs"
     VIRTUALENVWRAPPER_PYTHON=python2
-    VIRTUALENVWRAPPER_VIRTUALENV=virtualenv2
+    VIRTUALENVWRAPPER_VIRTUALENV=virtualenv
     export VIRTUALENVWRAPPER_PYTHON VIRTUALENVWRAPPER_VIRTUALENV WORKON_HOME
     mkdir -p "$WORKON_HOME" || exit 1
     rm -rf "$WORKON_HOME/lind"
