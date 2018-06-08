@@ -25,6 +25,9 @@ validator_snapshots/
 repy/
 nacl/
 /lind/*/
+/virtualenvs/*/
+!/virtualenvs/
+/docker/
 
 # workspaces
 /build/

@@ -166,8 +166,8 @@ function download_src {
     unset WORKON_HOME
     export WORKON_HOME="$LIND_BASE/.virtualenvs"
     mkdir -p "$WORKON_HOME" || exit 1
-    . "$LIND_BASE/virtualenvwrapper.sh" || exit 1
     rm -rf "$WORKON_HOME/lind"
+    . "$LIND_BASE/virtualenvwrapper.sh" || exit 1
     mkvirtualenv lind || exit 1
     workon lind || exit 1
     # get gclient and dependencies
