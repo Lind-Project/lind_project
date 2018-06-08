@@ -8,7 +8,7 @@ ENV PYTHON=/usr/bin/python2 PNACLPYTHON=/usr/bin/python2
 
 WORKDIR /usr
 RUN sed -i '/\[multilib\]/,/^$/ s/^#//' /etc/pacman.conf
-RUN pacman -Syu --noconfirm base-devel subversion git rsync make gcc-libs lib32-gcc-libs
+RUN pacman -Syu --noconfirm base-devel subversion git rsync make gcc-libs lib32-gcc-libs gperf gperftools texinfo
 RUN pacman -Syu --noconfirm python2 python2-pip python2-setuptools python2-virtualenv python-virtualenvwrapper
 RUN git clone https://github.com/Lind-Project/lind_project.git
 RUN ln -Trsfv /usr/bin/python2 /usr/bin/python
@@ -16,4 +16,3 @@ RUN ln -Trsfv /usr/bin/python2 /usr/bin/python
 WORKDIR /usr/lind_project
 RUN git fetch --all
 RUN git reset --hard origin/master
-RUN git pull
