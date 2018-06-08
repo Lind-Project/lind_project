@@ -79,10 +79,6 @@ readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 
 readonly -a RSYNC=(rsync '-akpvAP' '--progress=status2' '--force')
 
-export VIRTUALENVWRAPPER_PYTHON=python2
-export VIRTUALENVWRAPPER_VIRTUALENV=virtualenv2
-export WORKON_HOME="$LIND_BASE/.virtualenvs"
-
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
   echo "You need to set $NACL_SDK_ROOT to $REPY_PATH_SDK"
   exit 1
@@ -162,11 +158,18 @@ function download_src {
     fi
 
     # start up virtualenv
+    if ! type -P virtualenv2 >/dev/null 2>&1; then
+      VIRTUALENVWRAPPER_PYTHON=python2
+      VIRTUALENVWRAPPER_VIRTUALENV=virtualenv2
+      export VIRTUALENVWRAPPER_PYTHON VIRTUALENVWRAPPER_VIRTUALENV
+    fi
+    unset WORKON_HOME
+    export WORKON_HOME="$LIND_BASE/.virtualenvs"
     mkdir -p "$WORKON_HOME" || exit 1
-    cd "$LIND_BASE" || exit 1
-    . ./virtualenvwrapper.sh
-    mkvirtualenv lind
-    workon lind
+    . "$LIND_BASE/virtualenvwrapper.sh" || exit 1
+    rm -rf "$WORKON_HOME/lind"
+    mkvirtualenv lind || exit 1
+    workon lind || exit 1
     # get gclient and dependencies
     if ! "$pip_bin" install -U SCons gclient; then
       print "Need to \`pip2 install gclient\` in order to build Lind"
