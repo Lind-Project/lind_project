@@ -60,10 +60,6 @@ readonly REPY_PATH_REPY="$REPY_PATH/repy"
 readonly REPY_PATH_LIB="$REPY_PATH/lib"
 readonly REPY_PATH_SDK="$REPY_PATH/sdk"
 
-readonly VIRTUALENVWRAPPER_PYTHON=python2
-readonly VIRTUALENVWRAPPER_VIRTUALENV=virtualenv2
-readonly WORKON_HOME="$LIND_BASE/.virtualenvs"
-
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly THIRD_PARTY_URL='https://github.com/Lind-Project/third_party.git'
 readonly LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git'
@@ -82,6 +78,10 @@ readonly -a PNACLGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
 
 readonly -a RSYNC=(rsync '-akpvAP' '--progress=status2' '--force')
+
+export VIRTUALENVWRAPPER_PYTHON=python2
+export VIRTUALENVWRAPPER_VIRTUALENV=virtualenv2
+export WORKON_HOME="$LIND_BASE/.virtualenvs"
 
 if [[ "$NACL_SDK_ROOT" != "$REPY_PATH_SDK" ]]; then
   echo "You need to set $NACL_SDK_ROOT to $REPY_PATH_SDK"
