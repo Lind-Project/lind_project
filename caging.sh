@@ -33,6 +33,8 @@ if [[ -z "$LIND_SRC" ]]; then
    exit 1
 fi
 
+export PYTHON=/usr/bin/python2
+
 readonly OS_NAME="$(uname -s)"
 if [[ "$OS_NAME" == Darwin ]]; then
   readonly OS_SUBDIR="mac"
@@ -110,7 +112,7 @@ function clean_src {
 # download sources
 #
 function download_src {
-  local pip_bin pip_ver
+  local pip_bin pip_ver venvwrap
   local -A git_deps
 
   mkdir -p "$LIND_SRC"
@@ -148,8 +150,8 @@ function download_src {
       print "Need python2 version of pip in order to build Lind"
       exit 1
     fi
-    if ! "$pip_bin" install -U --user virtualenv || ! "$pip_bin" install -U virtualenv; then
-      print "Need python virtualenv in order to build Lind"
+    if ! "$pip_bin" install -U --user virtualenv2 || ! "$pip_bin" install -U virtualenv2; then
+      print "Need python virtualenv2 in order to build Lind"
       exit 1
     fi
     if ! "$pip_bin" install -U --user virtualenvwrapper || ! "$pip_bin" install -U virtualenvwrapper; then
@@ -160,17 +162,22 @@ function download_src {
     # start up virtualenv
     unset WORKON_HOME
     WORKON_HOME="$LIND_BASE/virtualenvs"
-    VIRTUALENVWRAPPER_PYTHON=python2
-    VIRTUALENVWRAPPER_VIRTUALENV=virtualenv
+    VIRTUALENVWRAPPER_PYTHON="$(command -v python2)"
+    VIRTUALENVWRAPPER_VIRTUALENV="$(command -v virtualenv2)"
     PATH="$HOME/.local/bin:$PATH"
     export PATH WORKON_HOME VIRTUALENVWRAPPER_PYTHON VIRTUALENVWRAPPER_VIRTUALENV
     mkdir -p "$WORKON_HOME" || exit 1
     rm -rf "$WORKON_HOME/lind"
-    . "$LIND_BASE/virtualenvwrapper.sh" || exit 1
+    venvwrap="$(command -v virtualenvwrapper.sh)"
+    if [[ -z "$venvwrap" ]]; then
+      venvwrap="$LIND_BASE/virtualenvwrapper.sh"
+    fi
+    deactivate >/dev/null 2>&1 || true
+    .  "$venvwrap" || exit 1
     mkvirtualenv lind || exit 1
     workon lind || exit 1
     # get gclient and dependencies
-    if ! "$pip_bin" install -U SCons gclient; then
+    if ! "$pip_bin" install -U SCons gclien virtualenv2 virtualenvwrapper; then
       print "Need to \`pip2 install gclient\` in order to build Lind"
       exit 1
     fi
