@@ -14,3 +14,6 @@ RUN git clone https://github.com/Lind-Project/lind_project.git
 RUN ln -Trsfv /usr/bin/python2 /usr/bin/python
 
 WORKDIR /usr/lind_project
+RUN git fetch --all
+RUN git reset --hard origin/master
+RUN git pull
