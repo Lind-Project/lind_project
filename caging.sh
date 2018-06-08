@@ -184,19 +184,17 @@ function download_src {
   fi
 
   # clone nacl
-  if [[ ! -e "$LIND_BASE/native_client" || ! -e "$NACL_BASE" ]]; then
-    mkdir -p "$NACL_SRC"
-    cd "$LIND_BASE" || exit 1
-    gclient config --name=native_client "$NACL_GCLIENT_URL"  --git-deps
-    gclient sync
-    ln -Trsfv "$LIND_BASE/native_client" "$NACL_BASE"
-  fi
+  mkdir -p "$NACL_SRC"
+  cd "$LIND_BASE" || exit 1
+  gclient config --name=native_client "$NACL_GCLIENT_URL"  --git-deps
+  gclient sync
+  ln -Trsfv "$LIND_BASE/native_client" "$NACL_BASE"
+  cd "$NACL_TOOLCHAIN_BASE" && rm -fr SRC
+  make sync-pinned
   cd "$NACL_BASE" || exit 1
   git fetch --all
   git checkout fork || git reset --hard origin/fork
-  cd "$NACL_TOOLCHAIN_BASE" && rm -fr SRC
-  make sync-pinned
-  cd SRC || exit 1
+  cd "$NACL_TOOLCHAIN_BASE/SRC" || exit 1
   mv glibc glibc_orig
   ln -Trsfv "$LIND_GLIBC_SRC" glibc
   mv gcc gcc_orig
@@ -227,11 +225,11 @@ function clean_toolchain {
 # Compile liblind and the compoent programs.
 #
 function build_liblind {
-    echo -ne "Building liblind... "
+    print "Building liblind... "
     cd "$MISC_DIR/liblind" || exit 1
     make clean
     make all
-    echo "done."
+    print "done."
 
 }
 
@@ -424,9 +422,9 @@ function build_glibc {
          print "Fortune Not Found. Skipping."
      fi
 
-     print -ne "Copy component.h header to glibc: "
+     print "Copy component.h header to glibc: "
      cd "$MISC_DIR/liblind" || exit 1
-     mkdir -p "$LIND_GLIBC_SRC/sysdeps/nacl//sysdeps/nacl/"
+     mkdir -p "$LIND_GLIBC_SRC/sysdeps/nacl/sysdeps/nacl/"
      cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
 
      print "Building glibc"
