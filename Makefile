@@ -15,7 +15,7 @@ shell bash run: pull
 	docker run --rm -it alyptik/lind:latest /bin/bash
 
 container build:
-	docker build --pull -t alyptik/lind:latest ./docker
+	docker build -t alyptik/lind:latest -f ./docker/Dockerfile ./docker
 
 swarm stack deploy:
 	docker stack deploy -c ./docker/docker-compose.yml lindstack
