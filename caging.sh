@@ -194,13 +194,6 @@ function download_src {
   cd "$NACL_BASE" || exit 1
   git fetch --all
   git checkout fork || git reset --hard origin/fork
-  cd "$NACL_TOOLCHAIN_BASE/SRC" || exit 1
-  mv glibc glibc_orig
-  ln -Trsfv "$LIND_GLIBC_SRC" glibc
-  mv gcc gcc_orig
-  ln -Trsfv "$NACL_GCC_SRC" gcc
-  mv binutils binutils_orig
-  ln -Trsfv "$NACL_BINUTILS_SRC" binutils
 
   # clone nacl external ports
   if [[ ! -e "$NACL_PORTS_DIR/src" ]]; then
@@ -446,6 +439,12 @@ function build_glibc {
          && cat <Makefile.new >Makefile \
          && rm -f Makefile.new
      make clean
+     for dir in glibc gcc binutils; do
+         [[ -d "SRC/$dir" ]] && rm -rf "SRC/$dir"
+     done
+     ln -Trsfv "$LIND_GLIBC_SRC" SRC/glibc
+     ln -Trsfv "$NACL_GCC_SRC" SRC/gcc
+     ln -Trsfv "$NACL_BINUTILS_SRC" SRC/binutils
      # ??? not quite sure why these weird constructs are needed but they are -jp
      PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
          || PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
