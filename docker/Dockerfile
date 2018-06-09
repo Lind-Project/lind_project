@@ -1,7 +1,6 @@
 FROM archlinux/base
 
 ENV PATH="$HOME/.local/bin:$PATH"
-env CFLAGS= CPATH= CPPFLAGS= CXXFLAGS= LDFLAGS= LIBRARY_PATH=
 ENV LIND_BASE=/usr/lind_project
 ENV LIND_SRC=/usr/lind_project/lind
 ENV LIND_MONITOR=/usr/lind_project/reference_monitor
@@ -46,11 +45,11 @@ WORKDIR /usr
 RUN git clone --recursive https://github.com/Lind-Project/lind_project.git
 
 WORKDIR /usr/lind_project
-RUN bash -c './mklind download || true'
-RUN bash -c './mklind nacl || true'
-RUN bash -c './mklind repy || true'
-RUN bash -c './mklind buildglibc || true'
-RUN bash -c './mklind install || true'
-RUN bash -c './mklind liblind || true'
+RUN ./mklind download
+RUN ./mklind nacl
+RUN ./mklind repy
+RUN ./mklind buildglibc
+RUN ./mklind install
+RUN ./mklind liblind
 
 ENTRYPOINT /bin/bash
