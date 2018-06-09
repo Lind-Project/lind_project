@@ -30,8 +30,8 @@ RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/.bash_fun
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/terminfo-italics.pkg.tar.xz
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/screen-256color-italic.terminfo
 RUN tar xvf texinfo-4.13.tar.gz
-RUN bash -c 'cd texinfo-4.13 &&./configure --prefix=~/.local && make && PREFIX=~/.local make install'
-RUN pacman -U --noconfirm /root/terminfo-italics.pkg.tar.xz
+RUN bash -c 'cd texinfo-4.13 &&./configure --PREfix=/root/.local && PREFIX=/root/.local make install'
+RUN pacman -U --noconfirm /root/terminfox-italics.pkg.tar.xz
 RUN tic screen-256color-italic
 RUN ip a
 RUN passwd -d
