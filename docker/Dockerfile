@@ -43,7 +43,7 @@ RUN ln -Trsfv /usr/bin/pip{2,}
 RUN git clone https://github.com/Lind-Project/lind_project.git
 
 WORKDIR /usr/lind_project
-RUN screen -dmS lind env -u CFLAGS CPATH CPPFLAGS CXXFLAGS LDFLAGS LIBRARY_PATH /caging.sh all
+RUN screen -dmLS lind env -u CFLAGS CPATH CPPFLAGS CXXFLAGS LDFLAGS LIBRARY_PATH /caging.sh all
 RUN screen -x lind
 
 ENTRYPOINT /bin/bash
