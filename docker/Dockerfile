@@ -46,6 +46,11 @@ WORKDIR /usr
 RUN git clone --recursive https://github.com/Lind-Project/lind_project.git
 
 WORKDIR /usr/lind_project
-RUN bash -c './mklind all || true'
+RUN bash -c './mklind download || true'
+RUN bash -c './mklind nacl || true'
+RUN bash -c './mklind repy || true'
+RUN bash -c './mklind buildglibc || true'
+RUN bash -c './mklind install || true'
+RUN bash -c './mklind liblind || true'
 
 ENTRYPOINT /bin/bash
