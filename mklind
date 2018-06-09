@@ -122,7 +122,7 @@ function download_src {
   # clone and symlink dependencies
   mkdir -p "$LIND_SRC"
   cd "$LIND_BASE" || exit 1
-  git submodule update --checkout --init --recursive --remote .
+  git submodule update --init --recursive --remote .
   git_deps[misc]="$LIND_MISC_URL"
   git_deps[third_party]="$THIRD_PARTY_URL"
   git_deps[lss]="$LSS_URL"
@@ -194,14 +194,13 @@ function download_src {
     gclient config --name=native_client "$NACL_GCLIENT_URL"  --git-deps
     gclient sync
     ln -Tsfv "$LIND_BASE/native_client" "$NACL_BASE"
-    cd "$NACL_BASE" || exit 1
+    cd "$NACL_TOOLCHAIN_BASE" || exit 1
+    rm -rf SRC
+    make sync-pinned
     git fetch --all
     git reset --hard @
     git clean -df
     git checkout fork
-    cd "$NACL_TOOLCHAIN_BASE" || exit 1
-    rm -rf SRC
-    make sync-pinned
     cd SRC || exit 1
     rm -rf glibc gcc binutils
     ln -Tsfv "$LIND_GLIBC_SRC" glibc
