@@ -22,7 +22,7 @@ list show:
 	docker container list -f=label=lind -sa
 
 container build:
-	docker build -t lind:latest -f ./docker/Dockerfile ./docker
+	docker build --label=lind -t lind:latest -f ./docker/Dockerfile ./docker
 
 push:
 	docker tag lind:latest alyptik/lind:latest
