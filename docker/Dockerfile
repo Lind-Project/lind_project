@@ -53,7 +53,7 @@ WORKDIR /usr/lind_project
 RUN ./mklind download
 RUN ./mklind nacl
 RUN ./mklind repy
-RUN bash -c './mklind buildglibc || true'
+RUN ./mklind buildglibc
 RUN ./mklind install
 RUN ./mklind liblind
 
