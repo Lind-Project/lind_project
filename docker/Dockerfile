@@ -13,7 +13,7 @@ ENV PNACLPYTHON=/usr/bin/python2
 
 WORKDIR /usr/bin
 RUN sed -i '/^#\[multilib\]/,/^$/ s/^#//' /etc/pacman.conf
-RUN pacman -Syu --noconfirm base-devel subversion git rsync make screen ncurses iproute2 \
+RUN pacman -Syu --noconfirm base-devel subversion git rsync make screen ncurses \
     clang compiler-rt lib32-clang lib32-llvm lib32-llvm-libs llvm llvm-libs openmp \
     elfutils libelf gdb gnu-netcat vim zsh zsh-completions grml-zsh-config vim ed \
     gcc-libs lib32-gcc-libs gperf gperftools texinfo fortune-mod bash-completion \
@@ -35,9 +35,6 @@ RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/terminfo-
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/screen-256color-italic.terminfo
 RUN pacman -U --noconfirm /root/terminfo-italics.pkg.tar.xz
 RUN tic /root/screen-256color-italic.terminfo
-RUN ip addr
-RUN passwd -d
-RUN systemctl enable --now sshd.socket
 RUN tar xvf texinfo-4.13.tar.gz
 
 WORKDIR /root/texinfo-4.13
