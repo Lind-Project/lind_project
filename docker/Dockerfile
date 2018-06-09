@@ -1,6 +1,9 @@
 FROM archlinux/base
 
 ENV PATH="$HOME/.local/bin:$PATH"
+ENV WORKON_HOME=/usr/lind_project/virtualenvs
+ENV VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2
+ENV VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2
 ENV LIND_BASE=/usr/lind_project
 ENV LIND_SRC=/usr/lind_project/lind
 ENV LIND_MONITOR=/usr/lind_project/reference_monitor
@@ -40,16 +43,15 @@ RUN tar xvf texinfo-4.13.tar.gz
 WORKDIR /root/texinfo-4.13
 RUN ./configure --prefix=/root/.local
 RUN make install PREFIX=/root/.local
-RUN pacman -Rdd --noconfirm texinfo
 
 WORKDIR /usr
-RUN git clone --recursive https://github.com/Lind-Project/lind_project.git
+RUN git clone --shallow-submodules --recursive -j4 https://github.com/Lind-Project/lind_project.git
 
 WORKDIR /usr/lind_project
 RUN ./mklind download
 RUN ./mklind nacl
 RUN ./mklind repy
-RUN ./mklind buildglibc
+RUN bash -c './mklind buildglibc || true'
 RUN ./mklind install
 RUN ./mklind liblind
 
