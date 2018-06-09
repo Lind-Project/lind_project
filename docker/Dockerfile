@@ -1,6 +1,6 @@
 FROM archlinux/base
 
-ENV PATH="$HOME/.local/bin:$PATH"
+ENV PATH="/root/.local/bin:$PATH"
 ENV WORKON_HOME=/usr/lind_project/virtualenvs
 ENV VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2
 ENV VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2
