@@ -201,9 +201,8 @@ function download_src {
     rm -rf SRC
     make sync-pinned
     git fetch --all
-    git reset --hard @
     git clean -df
-    git checkout fork
+    git reset --hard origin/fork
     cd SRC || exit 1
     rm -rf glibc gcc binutils
     ln -Tsfv "$LIND_GLIBC_SRC" glibc
@@ -447,10 +446,6 @@ function build_glibc {
 
   # turns out this works better if you do it from the nacl base dir
   cd "$NACL_TOOLCHAIN_BASE" && rm -fr BUILD out
-  sed 's!http://git\.chromium\.org!https://chromium.googlesource.com!g' \
-    <Makefile >Makefile.new \
-    && cat <Makefile.new >Makefile \
-    && rm -f Makefile.new
   make clean
   # ??? not quite sure why these weird constructs are needed but they are -jp
   PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
