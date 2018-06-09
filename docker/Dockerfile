@@ -46,6 +46,6 @@ WORKDIR /usr
 RUN git clone https://github.com/Lind-Project/lind_project.git
 
 WORKDIR /usr/lind_project
-RUN screen -S lind -t build ./mklind all
+RUN ./mklind all
 
 ENTRYPOINT /bin/bash
