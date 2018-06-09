@@ -45,6 +45,8 @@ RUN ./configure --prefix=/root/.local
 RUN make install PREFIX=/root/.local
 
 WORKDIR /usr
+RUN git config --global user.email "nomail@nomail.com"
+RUN git config --global user.name "Lind Docker Build"
 RUN git clone --shallow-submodules --recursive -j4 https://github.com/Lind-Project/lind_project.git
 
 WORKDIR /usr/lind_project
