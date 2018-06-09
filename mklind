@@ -519,8 +519,8 @@ for word in "$@"; do
   all)
      download_src
      build_nacl
-     build_glibc
      build_repy
+     build_glibc
      install_to_path
      build_liblind;;
   install)
