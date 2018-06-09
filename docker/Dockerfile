@@ -40,6 +40,7 @@ RUN tar xvf texinfo-4.13.tar.gz
 WORKDIR /root/texinfo-4.13
 RUN ./configure --prefix=/root/.local
 RUN make install PREFIX=/root/.local
+RUN pacman -Rdd --noconfirm texinfo
 
 WORKDIR /usr
 RUN git clone --recursive https://github.com/Lind-Project/lind_project.git
