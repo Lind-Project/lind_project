@@ -45,8 +45,6 @@ WORKDIR /usr
 RUN git clone https://github.com/Lind-Project/lind_project.git
 
 WORKDIR /usr/lind_project
-RUN screen -dmLS lind
-RUN screen -S lind -t build -X screen bash -c './caging.sh all; read -rsn1 -p$"Press any key to exit."; echo'
-RUN screen -x lind -t build
+RUN screen -S lind -t build ./mklind all
 
 ENTRYPOINT /bin/bash
