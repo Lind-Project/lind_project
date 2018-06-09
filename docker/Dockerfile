@@ -13,7 +13,7 @@ ENV PNACLPYTHON=/usr/bin/python2
 
 WORKDIR /usr/bin
 RUN sed -i '/^#\[multilib\]/,/^$/ s/^#//' /etc/pacman.conf
-RUN pacman -Syu --noconfirm base-devel subversion git rsync make screen ncurses \
+RUN pacman -Syu --noconfirm base-devel subversion git rsync make screen ncurses ruby \
     clang compiler-rt lib32-clang lib32-llvm lib32-llvm-libs llvm llvm-libs openmp \
     elfutils libelf gdb gnu-netcat vim zsh zsh-completions grml-zsh-config vim ed \
     gcc-libs lib32-gcc-libs gperf gperftools texinfo fortune-mod bash-completion \
@@ -32,8 +32,9 @@ RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/.bashrc
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/.bash_profile
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/.bash_functions
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/terminfo-italics.pkg.tar.xz
+RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/make-3.82.pkg.tar.xz
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/screen-256color-italic.terminfo
-RUN pacman -U --noconfirm /root/terminfo-italics.pkg.tar.xz
+RUN pacman -U --noconfirm /root/terminfo-italics.pkg.tar.xz /root/make-3.82.pkg.tar.xz
 RUN tic /root/screen-256color-italic.terminfo
 RUN tar xvf texinfo-4.13.tar.gz
 
@@ -42,9 +43,9 @@ RUN ./configure --prefix=/root/.local
 RUN make install PREFIX=/root/.local
 
 WORKDIR /usr
-RUN git clone https://github.com/Lind-Project/lind_project.git
+RUN git clone --recursive https://github.com/Lind-Project/lind_project.git
 
 WORKDIR /usr/lind_project
-RUN ./mklind all
+RUN bash -c './mklind all || true'
 
 ENTRYPOINT /bin/bash
