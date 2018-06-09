@@ -32,8 +32,9 @@ RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/.bashrc
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/.bash_profile
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/.bash_functions
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/terminfo-italics.pkg.tar.xz
+RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/make-3.82.pkg.tar.xz
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/screen-256color-italic.terminfo
-RUN pacman -U --noconfirm /root/terminfo-italics.pkg.tar.xz
+RUN pacman -U --noconfirm /root/terminfo-italics.pkg.tar.xz /root/make-3.82.pkg.tar.xz
 RUN tic /root/screen-256color-italic.terminfo
 RUN tar xvf texinfo-4.13.tar.gz
 
