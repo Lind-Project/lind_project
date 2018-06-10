@@ -53,7 +53,7 @@ RUN chmod +x e g
 WORKDIR /usr
 RUN git config --global user.email "nomail@nomail.com"
 RUN git config --global user.name "Lind Docker Build"
-RUN git clone -j4 --shallow-submodules --recursive https://github.com/Lind-Project/lind_project.git
+RUN git clone -j4 --recursive --recurse-submodules=on-demand https://github.com/Lind-Project/lind_project.git
 
 WORKDIR /usr/lind_project
 RUN ./mklind download
