@@ -24,7 +24,7 @@ RUN ln -Trsfv /usr/bin/python{2,}
 RUN ln -Trsfv /usr/bin/pip{2,}
 
 WORKDIR /root
-RUN mkdir -pv /root/.terminfo /root/.local
+RUN mkdir -pv /root/.local/bin /root/.terminfo
 RUN curl -sO http://ftp.gnu.org/gnu/texinfo/texinfo-4.13.tar.gz
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/.profile
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/.screenrc
@@ -39,15 +39,21 @@ RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/screen-25
 RUN pacman -U --noconfirm /root/terminfo-italics.pkg.tar.xz /root/make-3.82.pkg.tar.xz
 RUN tic /root/screen-256color-italic.terminfo
 RUN tar xvf texinfo-4.13.tar.gz
+RUN pip2 install --user virtualenv2 virtualenvwrapper
 
 WORKDIR /root/texinfo-4.13
 RUN ./configure --prefix=/root/.local
 RUN make install PREFIX=/root/.local
 
+WORKDIR /root/.local/bin
+RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/scripts/e
+RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/scripts/g
+RUN chmod +x e g
+
 WORKDIR /usr
 RUN git config --global user.email "nomail@nomail.com"
 RUN git config --global user.name "Lind Docker Build"
-RUN git clone --shallow-submodules --recursive -j4 https://github.com/Lind-Project/lind_project.git
+RUN git clone -j4 --shallow-submodules --recursive https://github.com/Lind-Project/lind_project.git
 
 WORKDIR /usr/lind_project
 RUN ./mklind download
