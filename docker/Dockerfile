@@ -15,13 +15,15 @@ ENV PNACLPYTHON=/usr/bin/python2
 
 WORKDIR /usr/bin
 RUN sed -i '/^#\[multilib\]/,/^$/ s/^#//' /etc/pacman.conf
-RUN pacman -Syu --noconfirm base-devel subversion rsync make screen git perl ruby \
+RUN pacman -Syu --noconfirm base-devel subversion git mercurial rsync make perl ruby \
     clang compiler-rt lib32-clang lib32-llvm lib32-llvm-libs llvm llvm-libs openmp \
     elfutils libelf gdb gnu-netcat zsh zsh-completions grml-zsh-config ncurses vim ed \
-    gcc-libs lib32-gcc-libs gperf gperftools texinfo fortune-mod bash-completion \
-    python2 python2-pip python2-setuptools python2-virtualenv python-virtualenvwrapper
+    gcc-libs lib32-gcc-libs gperf gperftools texinfo fortune-mod bash-completion screen \
+    python2 python2-pip python2-setuptools python2-virtualenv python-virtualenvwrapper \
+    pkgfile iproute2 iputils net-tools dhcpcd openresolv openssh inetutils
 RUN ln -Trsfv /usr/bin/python{2,}
 RUN ln -Trsfv /usr/bin/pip{2,}
+RUN pkgfile --update
 
 WORKDIR /root
 RUN mkdir -pv /root/.local/bin /root/.terminfo
