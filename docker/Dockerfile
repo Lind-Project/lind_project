@@ -48,7 +48,8 @@ RUN make install PREFIX=/root/.local
 WORKDIR /root/.local/bin
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/scripts/e
 RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/scripts/g
-RUN chmod +x e g
+RUN curl -sO https://raw.githubusercontent.com/alyptik/dotfiles/master/scripts/tl
+RUN chmod +x e g tl
 
 WORKDIR /usr
 RUN git config --global user.email "nomail@nomail.com"
