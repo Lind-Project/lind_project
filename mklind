@@ -122,7 +122,7 @@ function download_src {
   # clone and symlink dependencies
   mkdir -p "$LIND_SRC"
   cd "$LIND_BASE" || exit 1
-  git submodule update -j4 --checkout --init --recommend-shallow --recursive --remote .
+  git submodule update -j4 --checkout --init --recursive --remote .
   git_deps[misc]="$LIND_MISC_URL"
   git_deps[third_party]="$THIRD_PARTY_URL"
   git_deps[lss]="$LSS_URL"
