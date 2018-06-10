@@ -116,13 +116,13 @@ function clean_src {
 # download sources
 #
 function download_src {
-  local pip_bin pip_ver venvwrap
+  local pip_bin pip_ver venv_script
   local -A git_deps
 
   # clone and symlink dependencies
   mkdir -p "$LIND_SRC"
   cd "$LIND_BASE" || exit 1
-  git submodule update --checkout --init --recommend-shallow --recursive --remote -j4 .
+  git submodule update -j4 --checkout --init --recommend-shallow --recursive --remote .
   git_deps[misc]="$LIND_MISC_URL"
   git_deps[third_party]="$THIRD_PARTY_URL"
   git_deps[lss]="$LSS_URL"
@@ -137,11 +137,11 @@ function download_src {
   done
 
   # install gclient
-  if ! type -P gclient >/dev/null 2>&1; then
+  if ! command -v gclient >/dev/null 2>&1; then
     # find pip executable
-    if type -P pip2 >/dev/null 2>&1; then
+    if command -v pip2 >/dev/null 2>&1; then
       pip_bin="pip2"
-    elif type -P pip >/dev/null 2>&1; then
+    elif command -v pip >/dev/null 2>&1; then
       pip_bin="pip"
     else
       print "Need to install pip/pip2 in order to build Lind"
@@ -163,26 +163,24 @@ function download_src {
     fi
 
     # start up virtualenv
-    unset WORKON_HOME
-    WORKON_HOME="$LIND_BASE/virtualenvs"
-    WORKON_HOME="$LIND_BASE/virtualenvs"
-    VIRTUALENVWRAPPER_PYTHON="$(command -v python2)"
-    VIRTUALENVWRAPPER_VIRTUALENV="$(command -v virtualenv2)"
-    VIRTUALENVWRAPPER_PYTHON="$(command -v python2)"
-    VIRTUALENVWRAPPER_VIRTUALENV="$(command -v virtualenv2)"
     PATH="$HOME/.local/bin:$PATH"
-    export PATH WORKON_HOME VIRTUALENVWRAPPER_PYTHON VIRTUALENVWRAPPER_VIRTUALENV
-    mkdir -p "$WORKON_HOME" || exit 1
+    VIRTUALENVWRAPPER_PYTHON="$(command -v python2)"
+    VIRTUALENVWRAPPER_VIRTUALENV="$(command -v virtualenv2)"
+    if [[ -z "$WORKON_HOME" ]]; then
+      WORKON_HOME="$LIND_BASE/virtualenvs"
+    fi
+    export PATH VIRTUALENVWRAPPER_PYTHON VIRTUALENVWRAPPER_VIRTUALENV WORKON_HOME
+    mkdir -pv "$WORKON_HOME" || exit 1
     rm -rf "${WORKON_HOME:?}/lind"
-    if type -P >/dev/null 2>&1; then
-      venvwrap="$(command -v virtualenvwrapper.sh)"
-    else
-      venvwrap="$LIND_BASE/virtualenvwrapper.sh"
+    venv_script="$(command -v virtualenvwrapper.sh)"
+    if [[ -z "$venv_script" ]]; then
+      venv_script="$LIND_BASE/virtualenvwrapper.sh"
     fi
     deactivate >/dev/null 2>&1 || true
-    .  "$venvwrap" || exit 1
+    .  "$venv_script" || exit 1
     mkvirtualenv lind || exit 1
     workon lind || exit 1
+
     # install pip dependencies
     if ! "$pip_bin" install -U SCons gclient virtualenv2 virtualenvwrapper; then
       print "Need to \`pip2 install gclient\` in order to build Lind"
@@ -194,7 +192,7 @@ function download_src {
   if [[ ! -e "$NACL_BASE" ]]; then
     mkdir -p "$NACL_SRC"
     cd "$LIND_BASE" || exit 1
-    gclient config --name=native_client "$NACL_GCLIENT_URL"  --git-deps
+    gclient config --name=native_client "$NACL_GCLIENT_URL" --git-deps
     gclient sync
     ln -Tsfv "$LIND_BASE/native_client" "$NACL_BASE"
     cd "$NACL_TOOLCHAIN_BASE" || exit 1
@@ -421,7 +419,7 @@ function clean_nacl {
 #
 function build_glibc {
   # the build is long and borning, so execute this first if it exists
-  if type -P fortune >/dev/null 2>&1; then
+  if command -v fortune >/dev/null 2>&1; then
     fortune
   else
     print "Fortune Not Found. Skipping."
