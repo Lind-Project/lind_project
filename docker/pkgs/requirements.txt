@@ -1,2 +1,2 @@
-virtualenv
+virtualenv2
 virtualenvwrapper

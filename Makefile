@@ -8,33 +8,36 @@
 	@$(MAKE) "lind/$(basename $(notdir $*))"
 
 lind/%:
-	docker run --compress --label=lind -it alyptik/lind:latest /bin/bash -c './caging.sh $*'
+	docker run --compress -it alyptik/lind /bin/bash -c './caging.sh $*'
 
-.PHONY: Makefile lind run shell bash list show container build push swarm stack deploy manager pull clean
+.PHONY: Makefile lind run shell bash list show build container push swarm stack deploy manager pull clean prune
 
 lind run shell bash: | pull
-	docker run --compress --label=lind -it alyptik/lind:latest /bin/bash
+	docker run --compress -it alyptik/lind /bin/bash
 
 list show:
+	docker image list -f=label=lind -a
 	docker container list -f=label=lind -a
 
-container build:
-	docker build --compress --label=lind -t lind:latest -f ./docker/Dockerfile ./docker
+build container:
+	@cd ./docker
+	docker build --compress -t alyptik/lind .
 
 push:
-	docker tag lind:latest alyptik/lind:latest
-	docker push alyptik/lind:latest
+	docker push alyptik/lind
 
 swarm stack deploy:
-	docker stack deploy -c ./docker/docker-compose.yml lindstack
+	@cd ./docker
+	docker stack deploy -c ./docker-compose.yml lindstack
 
 manager:
 	docker swarm join-token manager
 
 pull:
-	docker pull alyptik/lind:latest
+	docker pull alyptik/lind
 
-clean:
+clean prune:
 	docker image prune
 	docker container prune
+	docker stack rm lindstack
 	docker swarm leave --force
