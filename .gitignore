@@ -1,3 +1,8 @@
+# docker files
+/docker/root/.vim/view/
+/docker/root/.vim/session/
+/docker/root/.vim/__archive/
+
 # lind specific files
 list.txt
 build.log
@@ -101,5 +106,8 @@ typescript
 *.dSYM/
 *.su
 *.tar.gz
+
+# docker archive exceptions
+!/docker/pkgs/*.tar.gz
 
 # vi:ft=cfg:
