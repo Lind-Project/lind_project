@@ -32,6 +32,9 @@ nacl/
 /lind/*/
 /virtualenvs/*/
 !/virtualenvs/
+/test_cases/*
+!/test_cases/*.c
+!/test_cases/*.s
 
 # workspaces
 /build/
