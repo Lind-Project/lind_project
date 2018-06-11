@@ -14,6 +14,8 @@ ADD ["pkgs/requirements.txt", \
     "pkgs/texinfo-4.13.tar.gz", \
     "/root/build/"]
 
+ENV PATH "/usr/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
+ENV PATH "/usr/lind_project/lind/repy/bin:$PATH"
 ENV PATH "/root/.local/bin:$PATH"
 ENV WORKON_HOME "/root/.virtualenvs"
 ENV VIRTUALENVWRAPPER_PYTHON "/usr/bin/python2"
@@ -71,9 +73,14 @@ RUN ["./mklind", "repy"]
 RUN ["./mklind", "buildglibc"]
 RUN ["./mklind", "install"]
 RUN ["./mklind", "liblind"]
+RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork.nexe"]
 WORKDIR /usr/bin/
-RUN ["/usr/bin/ln",  "-Trsfv",  "python3", "python"]
-WORKDIR /usr/lind_project/
+RUN ["/usr/bin/ln", "-Trsfv",  "python3", "python"]
+RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
+WORKDIR /usr/lind_project/lind/repy/repy/
+RUN ["/usr/bin/python2", "./lind_fs_utils.py", "cp", "/", "./fork.nexe"]
+RUN ["/usr/bin/python2", "./lind_fs_utils.py", "cp", "/", "../lib/"]
+RUN ["/usr/bin/env", "lind", "fork.nexe"]
 RUN ["/usr/bin/bash"]
 
 CMD ["/usr/bin/bash"]
