@@ -8,12 +8,12 @@
 	@$(MAKE) "lind/$(basename $(notdir $*))"
 
 lind/%:
-	docker run --compress -it alyptik/lind /bin/bash -c './caging.sh $*'
+	docker run -it alyptik/lind /bin/bash -c './caging.sh $*'
 
 .PHONY: Makefile lind run shell bash list show build container push swarm stack deploy manager pull clean prune
 
 lind run shell bash: | pull
-	docker run --compress -it alyptik/lind /bin/bash
+	docker run -it alyptik/lind /bin/bash
 
 list show:
 	docker image list -f=label=lind -a
@@ -21,7 +21,7 @@ list show:
 
 build container:
 	@cd ./docker
-	docker build --compress -t alyptik/lind .
+	docker build -t alyptik/lind .
 
 push:
 	docker push alyptik/lind
