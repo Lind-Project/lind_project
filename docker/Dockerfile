@@ -71,20 +71,19 @@ RUN ["./mklind", "download"]
 RUN ["./mklind", "nacl"]
 RUN ["./mklind", "repy"]
 RUN ["./mklind", "buildglibc"]
-RUN ["./mklind", "install"]
-RUN ["./mklind", "liblind"]
 WORKDIR /usr/bin/
 RUN ["/usr/bin/ln", "-Trsfv",  "python3", "python"]
 RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
 
-ADD ["pkgs/tls.tar.gz", "/usr/lind_project/lind/repy/lib/glibc/tls/"]
-
 WORKDIR /usr/lind_project/
+RUN ["/usr/bin/git", "pull"]
+RUN ["./mklind", "install"]
+RUN ["./mklind", "liblind"]
+ADD ["pkgs/tls.tar.gz", "/usr/lind_project/lind/repy/lib/glibc/tls/"]
 RUN ["/usr/bin/env", "-u", "CFLAGS", "-u", "CPPFLAGS", \
     "-u", "CXXFLAGS", "-u", "LDFLAGS", "x86_64-nacl-gcc", \
     "test_cases/hello.c", "-o", "lind/repy/repy/hello.nexe"]
 RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/repy/hello.nexe"]
 RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/lib/"]
-RUN ["/usr/bin/env", "lind", "/hello.nexe"]
 
 CMD ["/usr/bin/bash"]
