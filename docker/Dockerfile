@@ -80,12 +80,11 @@ RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
 ADD ["pkgs/tls.tar.gz", "/usr/lind_project/lind/repy/lib/glibc/tls/"]
 
 WORKDIR /usr/lind_project/
-RUN ["/usr/bin/git", "pull"]
-RUN ["/usr/bin/env", "-u", "CFLAGS", "CPPFLAGS", "CXXFLAGS", "LDFLAGS", \
-    "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork.nexe"]
-WORKDIR /usr/lind_project/lind/repy/repy/
-RUN ["/usr/bin/env", "lindfs", "cp", "./fork.nexe"]
-RUN ["/usr/bin/env", "lindfs", "cp", "../lib/"]
-RUN ["/usr/bin/env", "lind", "/fork.nexe"]
+RUN ["/usr/bin/env", "-u", "CFLAGS", "-u", "CPPFLAGS", \
+    "-u", "CXXFLAGS", "-u", "LDFLAGS", "x86_64-nacl-gcc", \
+    "test_cases/hello.c", "-o", "lind/repy/repy/hello.nexe"]
+RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/repy/hello.nexe"]
+RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/lib/"]
+RUN ["/usr/bin/env", "lind", "/hello.nexe"]
 
 CMD ["/usr/bin/bash"]
