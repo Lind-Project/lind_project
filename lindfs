@@ -35,8 +35,8 @@ if test "$1" = cp || test "$1" = update; then
 fi
 
 if command -v tput >/dev/null 2>&1; then
-	reset="$(tput sgr0)"
-	purple="$(tput setaf 13)"
+	reset="$(tput -T xterm sgr0)"
+	purple="$(tput -T xterm setaf 13)"
 fi
 
 printf 'running: [%s%s%s]\n' "$reset$purple" "python2 lind_fs_utils.py $*" "$reset"
