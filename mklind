@@ -265,9 +265,10 @@ function install_to_path {
   # ${RSYNC} ${NACL_BASE}/scons-out/${MODE}-x86-64/staging/* ${REPY_PATH_BIN}
   "${RSYNC[@]}" "$NACL_BASE/scons-out/${MODE}-x86-64/staging"/* "$REPY_PATH_BIN"
 
-  #install script
+  #install scripts
   cp -fv "$MISC_DIR/lind.sh" "$REPY_PATH_BIN/lind"
-  chmod +x "$REPY_PATH_BIN/lind"
+  cp -fv "$LIND_BASE/lindfs" "$REPY_PATH_BIN/lindfs"
+  chmod +x "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
 
   # ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
   "${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib"/*  "$REPY_PATH_LIB/glibc"
