@@ -1,0 +1,42 @@
+#!/bin/sh
+
+cwd="$PWD"
+reset=""
+purple=""
+
+LIND_BASE="${LIND_BASE:-/usr/lind_project}"
+LIND_SRC="${LIND_SRC:-/usr/lind_project/lind}"
+REPY_PATH="${REPY_PATH:-/usr/lind_project/lind/repy}"
+LIND_MONITOR="${LIND_MONITOR:-/usr/lind_project/reference_monitor}"
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
+NACL_SDK_ROOT="${NACL_SDK_ROOT:-/usr/lind_project/lind/repy/sdk}"
+PNACLPYTHON="${PNACLPYTHON:-python2}"
+export LIND_BASE LIND_SRC REPY_PATH LIND_MONITOR
+export LD_LIBRARY_PATH NACL_SDK_ROOT PNACLPYTHON
+
+if test $# -ge 0; then
+	args=''
+	for i in $(seq -s' ' 1 $#); do
+		eval "arg=\"\$(realpath -qe --relative-to \"\$REPY_PATH/repy\" \$$i)\""
+		eval "args=\"\$args \${arg:-\$$i}\""
+	done
+	set -- $args
+fi
+
+cd "$REPY_PATH/repy" || exit 1
+
+if test "$1" = cp || test "$1" = update; then
+	action="$1"
+	shift
+	set -- "$action" "$REPY_PATH/repy" "$@"
+fi
+
+if command -v tput >/dev/null 2>&1; then
+	reset="$(tput sgr0)"
+	purple="$(tput setaf 13)"
+fi
+
+printf 'running: [%s%s%s]\n' "$reset$purple" "python2 lind_fs_utils.py $*" "$reset"
+python2 lind_fs_utils.py "$@"
+
+cd "$cwd" || exit 1

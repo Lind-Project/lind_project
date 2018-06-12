@@ -77,10 +77,9 @@ RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/re
 WORKDIR /usr/bin/
 RUN ["/usr/bin/ln", "-Trsfv",  "python3", "python"]
 RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
-WORKDIR /usr/lind_project/lind/repy/repy/
-RUN ["/usr/bin/python2", "./lind_fs_utils.py", "cp", "/", "./fork.nexe"]
-RUN ["/usr/bin/python2", "./lind_fs_utils.py", "cp", "/", "../lib/"]
-RUN ["/usr/bin/env", "lind", "fork.nexe"]
-RUN ["/usr/bin/bash"]
+WORKDIR /usr/lind_project/lind/lind/repy/repy/
+RUN ["/usr/bin/python2", "./lind_fs_utils.py", "cp", "/usr/lind_project/lind/repy/repy", "./fork.nexe"]
+RUN ["/usr/bin/python2", "./lind_fs_utils.py", "cp", "/usr/lind_project/lind/repy/repy", "../lib/"]
+RUN ["/usr/bin/env", "lind", "/fork.nexe"]
 
 CMD ["/usr/bin/bash"]
