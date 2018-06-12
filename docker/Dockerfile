@@ -76,9 +76,7 @@ RUN ["./mklind", "buildglibc"]
 RUN ["./mklind", "install"]
 RUN ["./mklind", "liblind"]
 RUN ["/usr/bin/mv", "-v", "/root/build/tls", "lind/repy/lib/glibc/"]
-RUN ["/usr/bin/env", "-u", "CFLAGS", "-u", "CPPFLAGS", \
-    "-u", "CXXFLAGS", "-u", "LDFLAGS", "x86_64-nacl-gcc", \
-    "test_cases/hello.c", "-o", "lind/repy/repy/hello.nexe"]
+RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello.nexe"]
 RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/repy/hello.nexe"]
 RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/lib/"]
 WORKDIR /usr/bin/
