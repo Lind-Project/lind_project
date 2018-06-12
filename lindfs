@@ -4,15 +4,14 @@ cwd="$PWD"
 reset=""
 purple=""
 
-LIND_BASE="${LIND_BASE:-/usr/lind_project}"
-LIND_SRC="${LIND_SRC:-/usr/lind_project/lind}"
-REPY_PATH="${REPY_PATH:-/usr/lind_project/lind/repy}"
-LIND_MONITOR="${LIND_MONITOR:-/usr/lind_project/reference_monitor}"
-LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
-NACL_SDK_ROOT="${NACL_SDK_ROOT:-/usr/lind_project/lind/repy/sdk}"
-PNACLPYTHON="${PNACLPYTHON:-python2}"
-export LIND_BASE LIND_SRC REPY_PATH LIND_MONITOR
-export LD_LIBRARY_PATH NACL_SDK_ROOT PNACLPYTHON
+export LIND_BASE="${LIND_BASE:-/usr/lind_project}"
+export LIND_SRC="${LIND_SRC:-/usr/lind_project/lind}"
+export LIND_MONITOR="${LIND_MONITOR:-/usr/lind_project/reference_monitor}"
+export NACL_SDK_ROOT="${NACL_SDK_ROOT:-/usr/lind_project/lind/repy/sdk}"
+export REPY_PATH="${REPY_PATH:-/usr/lind_project/lind/repy}"
+export PYTHON="${PYTHON:-/usr/bin/python2}"
+export PNACLPYTHON="${PNACLPYTHON:-/usr/bin/python2}"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
 
 if test $# -ge 0; then
 	args=''
@@ -26,7 +25,11 @@ fi
 cd "$REPY_PATH/repy" || exit 1
 
 if test "$1" = cp || test "$1" = update; then
-	action="$1"
+	if test "$1" = cp; then
+		action=update
+	else
+		action="$1"
+	fi
 	shift
 	set -- "$action" "$REPY_PATH/repy" "$@"
 fi

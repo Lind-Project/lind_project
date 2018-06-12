@@ -73,16 +73,19 @@ RUN ["./mklind", "repy"]
 RUN ["./mklind", "buildglibc"]
 RUN ["./mklind", "install"]
 RUN ["./mklind", "liblind"]
-RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork.nexe"]
 WORKDIR /usr/bin/
 RUN ["/usr/bin/ln", "-Trsfv",  "python3", "python"]
 RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
 
 ADD ["pkgs/tls.tar.gz", "/usr/lind_project/lind/repy/lib/glibc/tls/"]
 
+WORKDIR /usr/lind_project/
+RUN ["/usr/bin/git", "pull"]
+RUN ["/usr/bin/env", "-u", "CFLAGS", "CPPFLAGS", "CXXFLAGS", "LDFLAGS", \
+    "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork.nexe"]
 WORKDIR /usr/lind_project/lind/repy/repy/
-RUN ["/usr/bin/python2", "./lind_fs_utils.py", "cp", "/usr/lind_project/lind/repy/repy", "./fork.nexe"]
-RUN ["/usr/bin/python2", "./lind_fs_utils.py", "cp", "/usr/lind_project/lind/repy/repy", "../lib/"]
+RUN ["/usr/bin/env", "lindfs", "cp", "./fork.nexe"]
+RUN ["/usr/bin/env", "lindfs", "cp", "../lib/"]
 RUN ["/usr/bin/env", "lind", "/fork.nexe"]
 
 CMD ["/usr/bin/bash"]
