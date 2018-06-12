@@ -67,7 +67,8 @@ WORKDIR /usr/
 RUN ["/usr/bin/git", "config", "--global", "user.email", "wooo@weee.woah"]
 RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind NaCl Glibc Toolchain"]
 RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/root/.cvsignore"]
-RUN ["/usr/bin/git", "clone", "--recursive", "-j4", "https://github.com/Lind-Project/lind_project.git"]
+RUN ["/usr/bin/git", "clone", "--recursive", "--progress", "-j4", \
+    "https://github.com/Lind-Project/lind_project.git"]
 WORKDIR /usr/lind_project/
 RUN ["./mklind", "download"]
 RUN ["./mklind", "nacl"]
