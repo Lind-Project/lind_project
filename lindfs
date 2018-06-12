@@ -23,23 +23,24 @@ if test $# -ge 0; then
 fi
 
 cd "$REPY_PATH/repy" || exit 1
-
-if test "$1" = cp || test "$1" = update; then
-	if test "$1" = cp; then
-		action=update
-	else
-		action="$1"
-	fi
-	shift
-	set -- "$action" "$REPY_PATH/repy" "$@"
-fi
-
 if command -v tput >/dev/null 2>&1; then
 	reset="$(tput -T xterm sgr0)"
 	purple="$(tput -T xterm setaf 13)"
 fi
+if test "$1" = cp || test "$1" = rm; then
+	action="$1"
+	shift
+	set -- "$action" "$REPY_PATH/repy" "$@"
+fi
 
 printf 'running: [%s%s%s]\n' "$reset$purple" "python2 lind_fs_utils.py $*" "$reset"
 python2 lind_fs_utils.py "$@"
+ret=$?
+if test "$ret" -ne 0 && test "$1" = cp; then
+	shift
+	python2 lind_fs_utils.py update "$@"
+	ret=$?
+fi
 
 cd "$cwd" || exit 1
+exit "$ret"
