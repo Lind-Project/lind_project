@@ -7,7 +7,7 @@
 
 # version and usage strings
 readonly version=0.9.0-alpha
-usage+=$'\n'"Lind $version build script"$'\n'
+usage+=$'\n'"Lind $version NaCl Toolchain Build Script"$'\n'
 usage+=$'\n'
 usage+=$'Usage:\n'
 usage+=$'\t'"$0 [options] [commands]"$'\n'
@@ -17,13 +17,13 @@ usage+=$'\t-h, -H\tdisplay this help\n'
 usage+=$'\t-v, -V\tdisplay version\n'
 usage+=$'\t-e, -E\tuse the default evironment\n'
 
-# Uncomment this to print each command as they are executed
+# uncomment this to print each command as they are executed
 # ≈set -o xtrace
 
-# Uncomment this for debugging. Will stop B on any failed commands
+# uncomment this for debugging. will stop on any failed commands
 # set -o errexit
 
-# Uncomment this to dump time profiling information out to a file to see where the script is slow
+# uncomment this to dump time profiling information out to a file to see where the script is slow
 # PS4='+ $(date "+%s.%N")\011 '
 # exec 3>&2 2> bashstart.$$.log
 # set -x
@@ -31,11 +31,14 @@ usage+=$'\t-e, -E\tuse the default evironment\n'
 # wrapper for desired logging command
 #
 function print() {
-	printf '%s\n' "$@" >&2
+	printf '%s\n' "$@"
 	# notify-send \
 	#   --icon=/usr/share/icons/gnome/256x256/apps/utilities-terminal.png \
 	#   "Build Script" "$*" >/dev/null 2>&1
 }
+
+# guard against incompatible compiler flags
+unset CFLAGS CPATH CPPFLAGS CXXFLAGS LDFLAGS
 
 # Check for flags
 for word; do
@@ -76,7 +79,7 @@ for word; do
 
 	-*[vV]*)
 		# exit after printing version
-		print "lind $version glibc nacl toolchain build script"
+		print "Lind $version NaCl Toolchain Build Script"
 		exit
 		;;
 
@@ -95,7 +98,7 @@ for word; do
 			continue
 		fi
 		# otherwise exit after printing the bad option and usage
-		print "" "Unknown option letter: '${word//-/}'" "$usage"
+		print "" "Unknown option letter: '${word//-/}'" "$usage" >&2
 		exit 1
 		;;
 	esac
@@ -119,17 +122,15 @@ function get_build_time() {
 trap 'get_build_time' ERR EXIT
 
 if [[ -z "$REPY_PATH" ]]; then
-	print "Need to set REPY_PATH"
+	print "Need to set REPY_PATH" >&2
 	exit 1
 fi
-
 if [[ -z "$LIND_BASE" ]]; then
-	print "Need to set LIND_BASE"
+	print "Need to set LIND_BASE" >&2
 	exit 1
 fi
-
 if [[ -z "$LIND_SRC" ]]; then
-	print "Need to set LIND_SRC"
+	print "Need to set LIND_SRC" >&2
 	exit 1
 fi
 
@@ -227,23 +228,23 @@ function download_src() {
 		elif command -v pip >/dev/null 2>&1; then
 			pip_bin="pip"
 		else
-			print "Need to install pip/pip2 in order to build Lind"
+			print "Need to install pip/pip2 in order to build Lind" >&2
 			exit 1
 		fi
 		# check pip version
 		pip_ver="$("$pip_bin" --version | sed 's/.*(python \([0-9\.]\+\)).*/\1/')"
 		if [[ "$pip_ver" != 2* ]]; then
-			print "Need python2 version of pip in order to build Lind"
+			print "Need python2 version of pip in order to build Lind" >&2
 			exit 1
 		fi
 
 		# install virtualenv modules
 		if ! "$pip_bin" install -U --user virtualenv2; then
-			print "Need python virtualenv2 in order to build Lind"
+			print "Need python virtualenv2 in order to build Lind" >&2
 			exit 1
 		fi
 		if ! "$pip_bin" install -U --user virtualenvwrapper; then
-			print "Need python virtualenvwrapper in order to build Lind"
+			print "Need python virtualenvwrapper in order to build Lind" >&2
 			exit 1
 		fi
 
@@ -264,7 +265,7 @@ function download_src() {
 
 		# install pip dependencies
 		if ! "$pip_bin" install -U SCons gclient virtualenv2 virtualenvwrapper; then
-			print "Need to \`pip2 install gclient\` in order to build Lind"
+			print "Need to \`pip2 install gclient\` in order to build Lind" >&2
 			exit 1
 		fi
 	fi
@@ -304,7 +305,7 @@ function download_src() {
 # Warning: this can take a while!
 #
 function clean_toolchain() {
-		cd "$NACL_TOOLCHAIN_BASE" && rm -rf out BUILD
+	cd "$NACL_TOOLCHAIN_BASE" && rm -rf out BUILD
 }
 
 # Compile liblind and the compoent programs.
@@ -314,7 +315,7 @@ function build_liblind() {
 	cd "$MISC_DIR/liblind" || exit 1
 	make clean
 	make all
-	print "done."
+	print "Done."
 }
 
 # Copy the toolchain files into the repy subdir.
@@ -470,7 +471,7 @@ function build_nacl() {
 	# and check
 	rc="$?"
 	if (("$rc")); then
-		print "NaCl Build Failed($rc)" $'\a'
+		print "NaCl Build Failed($rc)" $'\a' >&2
 		exit "$rc"
 	fi
 
@@ -492,10 +493,9 @@ function build_glibc() {
 	if command -v fortune >/dev/null 2>&1; then
 		fortune
 	else
-		print "Fortune Not Found. Skipping."
+		print "Fortune Not Found. Skipping." >&2
 	fi
-
-	print "Copy component.h header to glibc: "
+	print "" "Copy component.h header to glibc: "
 	cd "$MISC_DIR/liblind" || exit 1
 	mkdir -p "$LIND_GLIBC_SRC/sysdeps/nacl/sysdeps/nacl/"
 	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
@@ -508,7 +508,7 @@ function build_glibc() {
 	cd "$LIND_GLIBC_SRC/sysdeps/nacl/" || exit 1
 	shopt -s nullglob
 	for f in .\#*; do
-		print "moving editor backupfile $f so it does not get caught in build."
+		print "Moving editor backupfile $f so it does not get caught in build."
 		mv -f "$f" .
 	done
 
@@ -551,10 +551,7 @@ function glibc_tester() {
 	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
 }
 
-# Show command that will be executed
-print "Command line arguments: $0 $*" ""
-
-PS3=$'\n'"build what: "
+PS3=$'\n'"Build which target? "
 list=(all repy nacl buildglibc updateglibc updateglibc2)
 list+=(download cleansources cleantoolchain cleannacl install)
 list+=(liblind sdk rpc)
@@ -569,7 +566,9 @@ fi
 # all scripts assume we start here
 start_time=$(date +%s)
 
-print "$0" "$@"
+# Show command that will be executed
+print "" "Command line arguments: $0 $*" ""
+
 for word in "$@"; do
 	case "$word" in
 	repy)
@@ -625,7 +624,7 @@ for word in "$@"; do
 		 print "Nightly Build"
 		 nightly_build;;
 	*)
-		 print "Error: Did not find a build target named $word. Exiting..."
+		 print "Error: Did not find a build target for that number. Exiting..." >&2
 		 exit 1;;
 	esac
 done
