@@ -1,6 +1,6 @@
 FROM archlinux/base
 LABEL lind "v0.9-alpha"
-LABEL description "Lind NaCl Glibc Toolchain"
+LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
 ADD ["pkgs/root.tar.gz", "/root/"]
@@ -31,7 +31,7 @@ ENV PNACLPYTHON "/usr/bin/python2"
 ENV PYTHON "/usr/bin/python2"
 ENV LD_LIBRARY_PATH "/lib/glibc"
 
-WORKDIR /usr/bin/
+WORKDIR /root/build/
 RUN ["/usr/bin/pacman", "-Syu", "--noconfirm", "inetutils", "procps-ng", "ruby"]
 RUN ["/usr/bin/pacman", "-S", "--noconfirm", "base-devel", "w3m", \
     "git", "mercurial", "rsync", "make", "perl", "clang", "lynx", "ed", \
@@ -45,12 +45,11 @@ RUN ["/usr/bin/pacman", "-S", "--noconfirm", "base-devel", "w3m", \
     "iputils","python", "iproute2", "net-tools", "openresolv", "ranger", \
     "openssh", "subversion", "pacman-contrib", "arch-wiki-docs"]
 RUN ["/usr/bin/pkgfile", "--update"]
-RUN ["/usr/bin/ln",  "-Trsfv",  "python2", "python"]
-
-WORKDIR /root/build/
+RUN ["/usr/bin/ln",  "-Trsfv", "/usr/bin/python2", "/usr/bin/python"]
 RUN ["/usr/bin/lesskey"]
 RUN ["/usr/bin/pip2", "install", "--user", "-Ur", "requirements.txt"]
 RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
+
 WORKDIR /root/build/terminfo-italics/
 RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 WORKDIR /root/build/cower/
@@ -79,9 +78,7 @@ RUN ["/usr/bin/mv", "-v", "/root/build/tls", "lind/repy/lib/glibc/"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello.nexe"]
 RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/repy/hello.nexe"]
 RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/lib/"]
-WORKDIR /usr/bin/
-RUN ["/usr/bin/ln", "-Trsfv",  "python3", "python"]
+RUN ["/usr/bin/ln", "-Trsfv",  "/usr/bin/python3", "/usr/bin/python"]
 RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
-WORKDIR /usr/lind_project/
 
 CMD ["/usr/bin/bash"]
