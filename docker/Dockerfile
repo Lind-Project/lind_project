@@ -63,10 +63,11 @@ RUN ["./configure", "--prefix=/root/.local"]
 RUN ["/usr/bin/make", "install", "PREFIX=/root/.local"]
 
 WORKDIR /usr/
+RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind"]
 RUN ["/usr/bin/git", "config", "--global", "user.email", "wooo@weee.woah"]
-RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind NaCl Glibc Toolchain"]
 RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/root/.cvsignore"]
 RUN ["/usr/bin/git", "clone", "--progress", "-j4", "https://github.com/Lind-Project/lind_project.git"]
+
 WORKDIR /usr/lind_project/
 RUN ["./mklind", "download"]
 RUN ["./mklind", "nacl"]
@@ -74,11 +75,11 @@ RUN ["./mklind", "repy"]
 RUN ["./mklind", "buildglibc"]
 RUN ["./mklind", "install"]
 RUN ["./mklind", "liblind"]
-RUN ["/usr/bin/mv", "-v", "/root/build/tls", "lind/repy/lib/glibc/"]
+RUN ["/usr/bin/mkdir", "-pv", "lind/repy/lib/glibc/"]
+RUN ["/usr/bin/cp", "-av", "/root/build/tls", "lind/repy/lib/glibc/"]
+RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello.nexe"]
 RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/repy/hello.nexe"]
 RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/lib/"]
-RUN ["/usr/bin/ln", "-Trsfv",  "/usr/bin/python3", "/usr/bin/python"]
-RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
 
 CMD ["/usr/bin/bash"]
