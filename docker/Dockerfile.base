@@ -70,19 +70,5 @@ RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/root/.cvsignor
 RUN ["/usr/bin/git", "clone", "--recursive", "--progress", "-j4", \
     "https://github.com/Lind-Project/lind_project.git"]
 WORKDIR /usr/lind_project/
-RUN ["./mklind", "download"]
-RUN ["./mklind", "nacl"]
-RUN ["./mklind", "repy"]
-RUN ["./mklind", "buildglibc"]
-RUN ["./mklind", "install"]
-RUN ["./mklind", "liblind"]
-RUN ["/usr/bin/mv", "-v", "/root/build/tls", "lind/repy/lib/glibc/"]
-RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello.nexe"]
-RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/repy/hello.nexe"]
-RUN ["/usr/bin/env", "lindfs", "cp", "lind/repy/lib/"]
-WORKDIR /usr/bin/
-RUN ["/usr/bin/ln", "-Trsfv",  "python3", "python"]
-RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
-WORKDIR /usr/lind_project/
 
 CMD ["/usr/bin/bash"]
