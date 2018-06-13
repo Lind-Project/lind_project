@@ -147,7 +147,8 @@ fi
 readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_BASE="$LIND_BASE"
 readonly LIND_SRC="$LIND_SRC"
-readonly MISC_DIR="$LIND_BASE/misc"
+readonly EXPERIMENTS_DIR="$LIND_BASE/lind_experiments"
+readonly MISC_DIR="$LIND_BASE/lind-misc"
 readonly NACL_SRC="$LIND_SRC/nacl_src"
 readonly NACL_BASE="$NACL_SRC/nacl"
 readonly NACL_TOOLCHAIN_BASE="$NACL_BASE/tools"
@@ -164,6 +165,7 @@ readonly REPY_PATH_LIB="$REPY_PATH/lib"
 readonly REPY_PATH_SDK="$REPY_PATH/sdk"
 readonly NACL_SDK_ROOT="$REPY_PATH_SDK"
 
+readonly LIND_EXPERIMENTS_URL='https://github.com/Lind-Project/lind_experiments.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly THIRD_PARTY_URL='https://github.com/Lind-Project/third_party.git'
 readonly LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git'
@@ -187,8 +189,8 @@ readonly -a RSYNC=(rsync '-akpvAP' '--progress=status2' '--force')
 function clean_src() {
 	print "Cleaning $LIND_BASE"
 	cd "$LIND_BASE" || exit 1
-	rm -rf lind_glibc misc nacl_repy nacl
-	rm -rf misc third_party lss nacl_repy nacl-gcc nacl-binutils lind_glibc
+	rm -rf lind_experiments lind-misc third_party lss
+	rm -rf nacl_repy nacl-gcc nacl-binutils lind_glibc
 	print "Cleaning $NACL_SRC"
 	cd "$NACL_SRC" || exit 1
 	rm -rf native_client
@@ -207,7 +209,8 @@ function download_src() {
 	mkdir -p "$LIND_SRC"
 	cd "$LIND_BASE" || exit 1
 	git submodule update --checkout --init --recursive --remote .
-	git_deps[misc]="$LIND_MISC_URL"
+	git_deps[lind_experiments]="$LIND_EXPERIMENTS_URL"
+	git_deps[lind-misc]="$LIND_MISC_URL"
 	git_deps[third_party]="$THIRD_PARTY_URL"
 	git_deps[lss]="$LSS_URL"
 	git_deps[nacl_repy]="$NACL_REPY_URL"

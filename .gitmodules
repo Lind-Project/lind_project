@@ -15,30 +15,11 @@
 [submodule "lind_experiments"]
 	path = lind_experiments
 	url = https://github.com/Lind-Project/lind_experiments.git
-	branch = master
-[submodule "misc"]
-	path = misc
-	url = https://github.com/Lind-Project/Lind-misc.git
 	branch = lind_fork
 [submodule "third_party"]
 	path = third_party
 	url = https://github.com/Lind-Project/third_party.git
 	branch = lind_fork
-[submodule "linux-syscall-support"]
-	path = lss
-	url = https://github.com/Lind-Project/linux-syscall-support.git
-	branch = lind_fork
-[submodule "googletest"]
-	path = googletest
-	url = https://github.com/Lind-Project/googletest.git
-	branch = lind_fork
-[submodule "google-breakpad"]
-	path = google-breakpad
-	url = https://github.com/Lind-Project/google-breakpad.git
-	branch = lind_fork
-[submodule "depot_tools"]
-	path = depot_tools
-	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
 [submodule "nacl-gcc"]
 	path = nacl-gcc
 	url = https://github.com/Lind-Project/nacl-gcc.git
@@ -50,4 +31,8 @@
 [submodule "lss"]
 	path = lss
 	url = https://github.com/Lind-Project/linux-syscall-support.git
+	branch = lind_fork
+[submodule "lind-misc"]
+	path = lind-misc
+	url = https://github.com/Lind-Project/Lind-misc.git
 	branch = lind_fork
