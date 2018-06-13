@@ -101,9 +101,6 @@ for word; do
 	esac
 done
 
-# Show command that will be executed
-print "Command line arguments: $0 $*"
-
 # set to zero until we actually start building
 start_time=0
 
@@ -120,7 +117,6 @@ function get_build_time() {
 
 # cleanup traps
 trap 'get_build_time' ERR EXIT
-trap '{ get_build_time; trap - INT; kill -INT $$; }' INT
 
 if [[ -z "$REPY_PATH" ]]; then
 	print "Need to set REPY_PATH"
@@ -555,7 +551,10 @@ function glibc_tester() {
 	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
 }
 
-PS3="build what: "
+# Show command that will be executed
+print "Command line arguments: $0 $*" ""
+
+PS3=$'\n'"build what: "
 list=(all repy nacl buildglibc updateglibc updateglibc2)
 list+=(download cleansources cleantoolchain cleannacl install)
 list+=(liblind sdk rpc)
@@ -630,5 +629,3 @@ for word in "$@"; do
 		 exit 1;;
 	esac
 done
-
-kill -INT $$
