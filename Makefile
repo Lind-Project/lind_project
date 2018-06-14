@@ -20,13 +20,13 @@ list show:
 	docker container list -f=label=lind -a
 
 latest: | prebuiltsdk
-	docker build --cache-from=alyptik/lind:prebuiltsdk -t alyptik/lind ./docker/prebuiltsdk
+	docker build --compress=true --cache-from=alyptik/lind:prebuiltsdk -t alyptik/lind ./docker/prebuiltsdk
 
 prebuiltsdk:
-	docker build -t alyptik/lind:$@ ./docker/prebuiltsdk
+	docker build --compress=true -t alyptik/lind:$@ ./docker/prebuiltsdk
 
 base:
-	docker build -t alyptik/lind:$@ ./docker/base
+	docker build --compress=true -t alyptik/lind:$@ ./docker/base
 
 stack deploy:
 	docker stack deploy -c ./docker/docker-compose.yml lindstack
