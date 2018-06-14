@@ -1,5 +1,5 @@
 #
-# Makefile for Docker build
+# Makefile - Docker commands for Lind
 #
 # AUTHOR: Joey Pabalinas <alyptik@protonmail.com>
 
@@ -10,8 +10,7 @@
 lind/%:
 	docker run -it alyptik/lind /bin/bash -c './caging.sh $*'
 
-.PHONY: Makefile lind run shell bash list show base latest prebuiltsdk \
-	push swarm stack deploy manager pull clean prune
+.PHONY: Makefile lind run shell bash list show latest prebuiltsdk base stack deploy pull clean prune
 
 lind run shell bash: | pull
 	docker run -it alyptik/lind /bin/bash
@@ -20,23 +19,17 @@ list show:
 	docker image list -f=label=lind -a
 	docker container list -f=label=lind -a
 
+latest: | prebuiltsdk
+	docker build -t alyptik/lind ./docker/prebuiltsdk
+
+prebuiltsdk:
+	docker build -t alyptik/lind:$@ ./docker/prebuiltsdk
+
 base:
-	@cd ./docker/base
-	docker build -t alyptik/lind:$@ .
+	docker build -t alyptik/lind:$@ ./docker/base
 
-latest prebuiltsdk:
-	@cd ./docker/prebuiltsdk
-	docker build -t alyptik/lind:$@ .
-
-push:
-	docker push alyptik/lind
-
-swarm stack deploy:
-	@cd ./docker
-	docker stack deploy -c ./docker-compose.yml lindstack
-
-manager:
-	docker swarm join-token manager
+stack deploy:
+	docker stack deploy -c ./docker/docker-compose.yml lindstack
 
 pull:
 	docker pull alyptik/lind
