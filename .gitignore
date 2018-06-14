@@ -110,7 +110,8 @@ typescript
 *.su
 *.tar.gz
 
-# docker archive exceptions
-!/docker/pkgs/*.tar.gz
+# docker pkg archive
+!/docker/pkgs.tar.xz
+pkgs/
 
 # vi:ft=cfg:

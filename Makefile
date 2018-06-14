@@ -22,8 +22,8 @@ list show:
 latest: | prebuiltsdk
 	docker build --compress=true --cache-from=alyptik/lind:prebuiltsdk -t alyptik/lind ./docker/prebuiltsdk
 
-prebuiltsdk:
-	docker build --compress=true -t alyptik/lind:$@ ./docker/prebuiltsdk
+prebuiltsdk: | base
+	docker build --compress=true --cache-from=alyptik/lind:base -t alyptik/lind:$@ ./docker/prebuiltsdk
 
 base:
 	docker build --compress=true -t alyptik/lind:$@ ./docker/base
