@@ -21,7 +21,8 @@ ENV PNACLPYTHON "/usr/bin/python2"
 ENV PYTHON "/usr/bin/python2"
 ENV LD_LIBRARY_PATH "/lib/glibc"
 
-WORKDIR /root/build/
+WORKDIR /
+RUN ["/usr/bin/bsdtar", "xvf", "pkgs.tar.xz"]
 RUN ["/usr/bin/pacman", "-Syu", "--noconfirm", "gawk", "inetutils", "procps-ng", "ruby"]
 RUN ["/usr/bin/pacman", "-S", "--noconfirm", "base-devel", "w3m", \
     "git", "mercurial", "rsync", "make", "perl", "clang", "lynx", "ed", \
@@ -35,7 +36,9 @@ RUN ["/usr/bin/pacman", "-S", "--noconfirm", "base-devel", "w3m", \
     "iputils","python", "iproute2", "net-tools", "openresolv", "ranger", \
     "openssh", "subversion", "pacman-contrib", "arch-wiki-docs"]
 RUN ["/usr/bin/pkgfile", "--update"]
-RUN ["/usr/bin/ln",  "-Trsfv", "/usr/bin/python2", "/usr/bin/python"]
+WORKDIR /usr/bin/
+RUN ["/usr/bin/ln",  "-Trsfv", "python2", "python"]
+WORKDIR /root/build/
 RUN ["/usr/bin/lesskey"]
 RUN ["/usr/bin/pip2", "install", "--user", "-Ur", "requirements.txt"]
 RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
