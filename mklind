@@ -10,12 +10,12 @@ readonly version=0.9.0-alpha
 usage+=$'\n'"Lind $version NaCl Toolchain Build Script"$'\n'
 usage+=$'\n'
 usage+=$'Usage:\n'
-usage+=$'\t'"$0 [options] [commands]"$'\n'
+usage+=$'\t'"$0 [-ehv] [commands]"$'\n'
 usage+=$'\n'
 usage+=$'Options:\n'
-usage+=$'\t-h, -H\tdisplay this help\n'
-usage+=$'\t-v, -V\tdisplay version\n'
-usage+=$'\t-e, -E\tuse the default evironment\n'
+usage+=$'\t-e, -E\tUse default environment.\n'
+usage+=$'\t-h, -H\tDisplay this help.\n'
+usage+=$'\t-v, -V\tDisplay script version.\n'
 
 # uncomment this to print each command as they are executed
 # ≈set -o xtrace
@@ -43,7 +43,7 @@ unset CFLAGS CPATH CPPFLAGS CXXFLAGS LDFLAGS
 # Check for flags
 for word; do
 	case "$word" in
-	-*[eE]*)
+	-*e*)
 		# setup and print out the default environment
 		export GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
 		export LIND_BASE="/usr/lind_project"
@@ -72,20 +72,20 @@ for word; do
 		print '======================================================'
 		print
 		# remove -e flag after setting up environment
-		mapfile -td ' ' args < <(printf '%s' "${@//-*[eE]*/}")
+		mapfile -td ' ' args < <(printf '%s' "${@//-*e*/}")
 		set -- "${args[@]}"
 		unset args
 		;;
 
-	-*[vV]*)
+	-*v*)
 		# exit after printing version
-		print "Lind $version NaCl Toolchain Build Script"
+		print "Lind $version NaCl Toolchain Build Script" >&2
 		exit
 		;;
 
-	-*[hH]*)
+	-*h*)
 		# exit after printing usage
-		print "$usage"
+		print "$usage" >&2
 		exit
 		;;
 
