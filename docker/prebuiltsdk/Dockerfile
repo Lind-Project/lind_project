@@ -22,7 +22,7 @@ ENV PYTHON "/usr/bin/python2"
 ENV LD_LIBRARY_PATH "/lib/glibc"
 
 WORKDIR /
-RUN ["/usr/bin/bsdtar", "xvf", "pkgs.tar.xz"]
+RUN ["/usr/bin/bsdtar", "--no-same-permissions", "-xvf", "pkgs.tar.xz"]
 RUN ["/usr/bin/pacman", "-Syu", "--noconfirm", "gawk", "inetutils", "procps-ng", "ruby"]
 RUN ["/usr/bin/pacman", "-S", "--noconfirm", "base-devel", "w3m", \
     "git", "mercurial", "rsync", "make", "perl", "clang", "lynx", "ed", \
