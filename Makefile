@@ -23,10 +23,10 @@ latest: | prebuiltsdk
 	docker build --compress=true --cache-from=alyptik/lind:prebuiltsdk -t alyptik/lind ./docker/prebuiltsdk
 
 prebuiltsdk: | base
-	docker build --compress=true --cache-from=alyptik/lind:base -t alyptik/lind:$@ ./docker/prebuiltsdk
+	docker build --compress=true --cache-from=alyptik/lind:base -t alyptik/lind:$@ ./docker/$@
 
 base:
-	docker build --compress=true -t alyptik/lind:$@ ./docker/base
+	docker build --compress=true -t alyptik/lind:$@ ./docker/$@
 
 stack deploy:
 	docker stack deploy -c ./docker/docker-compose.yml lindstack
