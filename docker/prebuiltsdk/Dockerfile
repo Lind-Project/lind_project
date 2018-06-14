@@ -3,16 +3,16 @@ LABEL lind "v0.9-alpha"
 LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
-ADD ["pkgs/root.tar.gz", "/root/"]
-ADD ["pkgs/etc.tar.gz", "/etc/"]
-ADD ["pkgs/requirements.txt", \
-    "pkgs/screen-256color-italic.terminfo", \
-    "pkgs/terminfo-italics.tar.gz", \
-    "pkgs/cower.tar.gz", \
-    "pkgs/pacaur.tar.gz", \
-    "pkgs/make-3.82.tar.gz", \
-    "pkgs/texinfo-4.13.tar.gz", \
-    "pkgs/tls.tar.gz", \
+ADD ["../pkgs/root.tar.gz", "/root/"]
+ADD ["../pkgs/etc.tar.gz", "/etc/"]
+ADD ["../pkgs/requirements.txt", \
+    "../pkgs/screen-256color-italic.terminfo", \
+    "../pkgs/terminfo-italics.tar.gz", \
+    "../pkgs/cower.tar.gz", \
+    "../pkgs/pacaur.tar.gz", \
+    "../pkgs/make-3.82.tar.gz", \
+    "../pkgs/texinfo-4.13.tar.gz", \
+    "../pkgs/tls.tar.gz", \
     "/root/build/"]
 
 ENV PATH "/usr/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
