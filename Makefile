@@ -20,10 +20,10 @@ list show:
 	docker container list -f=label=lind -a
 
 latest: | prebuiltsdk
-	docker build -t alyptik/lind ./docker/prebuiltsdk
+	docker build --cache-from=alyptik/lind:prebuiltsdk -t alyptik/lind ./docker/prebuiltsdk
 
-prebuiltsdk:
-	docker build -t alyptik/lind:$@ ./docker/prebuiltsdk
+prebuiltsdk: | base
+	docker build --cache-from=alyptik/lind:base -t alyptik/lind:$@ ./docker/prebuiltsdk
 
 base:
 	docker build -t alyptik/lind:$@ ./docker/base
