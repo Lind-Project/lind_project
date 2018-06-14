@@ -65,6 +65,5 @@ RUN ["/usr/bin/git", "clone", "--progress", "-j4", "https://github.com/Lind-Proj
 WORKDIR /usr/lind_project/
 RUN ["/usr/bin/mkdir", "-pv", "lind/repy/lib/glibc/"]
 RUN ["/usr/bin/cp", "-av", "/root/build/tls", "lind/repy/lib/glibc/"]
-RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
 
 CMD ["/usr/bin/bash"]
