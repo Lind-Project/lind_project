@@ -7,9 +7,9 @@ ADD ["https://raw.githubusercontent.com/Lind-Project/lind_project/master/docker/
 
 WORKDIR /
 RUN ["/usr/bin/bsdtar", "--no-same-permissions", "-xf", "pkgs.tar.xz"]
-RUN ["/usr/bin/chown", "-RL","root:root", "/etc/", "/romklindot/"]
-RUN ["/usr/bin/pacman", "-Sy", "--noconfirm", "gawk", "inetutils", "procps-ng", "ruby"]
-RUN ["/usr/bin/pacman", "-Syu", "--noconfirm", "base-devel", "w3m", \
+RUN ["/usr/bin/chown", "-RL","root:root", "/etc/", "/root/"]
+RUN ["/usr/bin/pacman", "-Sy", "--needed", "--noconfirm", "gawk", "inetutils", "procps-ng", "ruby"]
+RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", "w3m", \
     "git", "mercurial", "rsync", "make", "perl", "clang", "lynx", "ed", \
     "compiler-rt", "lib32-clang", "lib32-llvm", "lib32-llvm-libs", "vim", \
     "llvm", "llvm-libs", "openmp", "elfutils", "libelf", "gdb", "less", \
