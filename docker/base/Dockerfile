@@ -64,9 +64,6 @@ RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/root/.cvsignor
 RUN ["/usr/bin/git", "clone", "--progress", "-j4", "https://github.com/Lind-Project/lind_project.git"]
 
 WORKDIR /usr/lind_project/
-RUN ["/usr/bin/mkdir", "-pv", "lind/repy/lib/glibc/"]
-RUN ["/usr/bin/ln", "-sv", "test_cases", "lind/repy/"]
-RUN ["/usr/bin/rsync", "--info=progress2", "--msgs2stderr", "-ahhpvA", "/root/build/tls", "lind/repy/lib/glibc/"]
-RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
+RUN ["/usr/bin/rm", "-rf", "/var/cache/pacman/pkg/"]
 
 CMD ["/usr/bin/bash"]

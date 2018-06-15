@@ -27,7 +27,7 @@ if command -v tput >/dev/null 2>&1; then
 	reset="$(tput -T xterm sgr0)"
 	purple="$(tput -T xterm setaf 13)"
 fi
-if test "$1" = cp || test "$1" = rm; then
+if test "$1" = cp || test "$1" = update; then
 	action="$1"
 	shift
 	set -- "$action" "$REPY_PATH/repy" "$@"
