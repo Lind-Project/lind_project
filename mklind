@@ -301,7 +301,8 @@ function download_src() {
 		gclient sync
 	fi
 
-	cd "$LIND_SRC" || exit 1
+	cd "$LIND_BASE" || exit 1
+	rm -rfv _gclient_*
 }
 
 # wipe the entire modular build toolchain build tree, then rebuild it

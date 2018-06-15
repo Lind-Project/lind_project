@@ -16,14 +16,14 @@ lind run shell bash: | pull
 	docker run -it alyptik/lind /bin/bash
 
 list show:
-	docker image list -f=label=lind -a
-	docker container list -f=label=lind -a
+	docker image list -f label=lind -a
+	docker container list -f label=lind -a
 
 latest: | prebuiltsdk
-	docker build --compress=true --cache-from=alyptik/lind:prebuiltsdk -t alyptik/lind ./docker/prebuiltsdk
+	docker build --compress=true --cache-from=alyptik/lind:$| -t alyptik/lind:$@ ./docker/$|
 
 prebuiltsdk: | base
-	docker build --compress=true --cache-from=alyptik/lind:base -t alyptik/lind:$@ ./docker/$@
+	docker build --compress=true -t alyptik/lind:$@ ./docker/$@
 
 base:
 	docker build --compress=true -t alyptik/lind:$@ ./docker/$@
@@ -38,4 +38,3 @@ clean prune:
 	docker image prune
 	docker container prune
 	docker stack rm lindstack
-	docker swarm leave --force
