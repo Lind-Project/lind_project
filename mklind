@@ -79,10 +79,10 @@ for word; do
 		export LIND_BASE="/usr/lind_project"
 		export LIND_SRC="/usr/lind_project/lind"
 		export LIND_MONITOR="/usr/lind_project/lind/reference_monitor"
-		export REPY_PATH="/usr/lind_project/lind/repy"
 		export NACL_SDK_ROOT="/usr/lind_project/lind/repy/sdk"
-		export PYTHON="/usr/bin/python2"
+		export REPY_PATH="/usr/lind_project/lind/repy"
 		export PNACLPYTHON="/usr/bin/python2"
+		export PYTHON="/usr/bin/python2"
 		export LD_LIBRARY_PATH="/lib/glibc"
 		print
 		print '======================================================'
@@ -94,10 +94,10 @@ for word; do
 			export LIND_BASE="$LIND_BASE"
 			export LIND_SRC="$LIND_SRC"
 			export LIND_MONITOR="$LIND_MONITOR"
-			export REPY_PATH="$REPY_PATH"
 			export NACL_SDK_ROOT="$NACL_SDK_ROOT"
-			export PYTHON="$PYTHON"
+			export REPY_PATH="$REPY_PATH"
 			export PNACLPYTHON="$PNACLPYTHON"
+			export PYTHON="$PYTHON"
 			export LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 		EOF
 		print
