@@ -24,9 +24,17 @@ usage+=$'\t-v\tDisplay script version.\n'
 # set -o errexit
 
 # uncomment this to dump time profiling information out to a file to see where the script is slow
-# PS4='+ $(date "+%s.%N")\011 '
+# ps4='+ $(date "+%s.%n")\011 '
 # exec 3>&2 2> bashstart.$$.log
 # set -x
+
+# track currently executing function
+cur_func="${FUNCNAME[0]}"
+cur_line="$LINENO"
+args="$*"
+
+# set to zero until we actually start building
+start_time=0
 
 # wrapper for desired logging command
 #
@@ -34,13 +42,35 @@ function print() {
 	printf '%s\n' "$@"
 	# notify-send \
 	#   --icon=/usr/share/icons/gnome/256x256/apps/utilities-terminal.png \
-	#   "Build Script" "$*" >/dev/null 2>&1
+	#   "build script" "$*" >/dev/null 2>&1
 }
+
+# calculate total build time
+#
+function get_build_time() {
+	if ((start_time)); then
+		end_time="$(date +%s)"
+		diff_time="$((end_time - start_time))"
+		print $'\a' "It took $diff_time seconds"
+	fi
+	print "" "All done."
+}
+
+# print out error information and abort
+#
+function abort() {
+	print "" "[$0:$cur_line] Error: [function: $cur_func()] [arguments: '$args']." >&2
+	exit 1
+}
+
+# cleanup traps
+trap -- 'get_build_time' EXIT
+trap -- 'cur_line="$LINENO" args="$*" abort' ERR
 
 # guard against incompatible compiler flags
 unset CFLAGS CPATH CPPFLAGS CXXFLAGS LDFLAGS
 
-# Check for flags
+# check for flags
 for word; do
 	case "$word" in
 	-*e*)
@@ -51,6 +81,7 @@ for word; do
 		export LIND_MONITOR="/usr/lind_project/lind/reference_monitor"
 		export REPY_PATH="/usr/lind_project/lind/repy"
 		export NACL_SDK_ROOT="/usr/lind_project/lind/repy/sdk"
+		export PYTHON="/usr/bin/python2"
 		export PNACLPYTHON="/usr/bin/python2"
 		export LD_LIBRARY_PATH="/lib/glibc"
 		print
@@ -65,16 +96,17 @@ for word; do
 			export LIND_MONITOR="$LIND_MONITOR"
 			export REPY_PATH="$REPY_PATH"
 			export NACL_SDK_ROOT="$NACL_SDK_ROOT"
+			export PYTHON="$PYTHON"
 			export PNACLPYTHON="$PNACLPYTHON"
 			export LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 		EOF
 		print
 		print '======================================================'
 		print
-		# remove -e flag after setting up environment
-		mapfile -td ' ' args < <(printf '%s' "${@//-*e*/}")
-		set -- "${args[@]}"
-		unset args
+		# remove -e flag after setting up environment using '!' as the sentinel
+		mapfile -t argv < <(printf '%s\n' "${@//-*e*/!}" | sed '/!/d' | sort | uniq)
+		set -- "${argv[@]}"
+		unset argv
 		;;
 
 	-*v*)
@@ -99,42 +131,23 @@ for word; do
 		fi
 		# otherwise exit after printing the bad option and usage
 		print "" "Unknown option letter: '${word//-/}'" "$usage" >&2
-		exit 1
+		abort
 		;;
 	esac
 done
 
-# set to zero until we actually start building
-start_time=0
-
-# calculate total build time
-#
-function get_build_time() {
-	if ((start_time)); then
-		end_time="$(date +%s)"
-		diff_time="$((end_time - start_time))"
-		print $'\a' "It took $diff_time seconds"
-	fi
-	print "" "All done."
-}
-
-# cleanup traps
-trap 'get_build_time' ERR EXIT
-
 if [[ -z "$REPY_PATH" ]]; then
 	print "Need to set REPY_PATH" >&2
-	exit 1
+	abort
 fi
 if [[ -z "$LIND_BASE" ]]; then
 	print "Need to set LIND_BASE" >&2
-	exit 1
+	abort
 fi
 if [[ -z "$LIND_SRC" ]]; then
 	print "Need to set LIND_SRC" >&2
-	exit 1
+	abort
 fi
-
-export PYTHON=/usr/bin/python2
 
 readonly OS_NAME="$(uname -s)"
 if [[ "$OS_NAME" == Darwin ]]; then
@@ -150,7 +163,7 @@ readonly LIND_SRC="$LIND_SRC"
 readonly EXPERIMENTS_DIR="$LIND_BASE/lind_experiments"
 readonly MISC_DIR="$LIND_BASE/lind-misc"
 readonly NACL_SRC="$LIND_SRC/nacl_src"
-readonly NACL_BASE="$NACL_SRC/nacl"
+readonly NACL_BASE="$NACL_SRC/native_client"
 readonly NACL_TOOLCHAIN_BASE="$NACL_BASE/tools"
 readonly LIND_GLIBC_SRC="$LIND_BASE/lind_glibc"
 readonly NACL_GCC_SRC="$LIND_BASE/nacl-gcc"
@@ -187,27 +200,35 @@ readonly -a RSYNC=(rsync '-akpvAP' '--progress=status2' '--force')
 # clean downloaded sources
 #
 function clean_src() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	print "Cleaning $LIND_BASE"
-	cd "$LIND_BASE" || exit 1
+	cd "$LIND_BASE" || abort
 	rm -rf lind_experiments lind-misc third_party lss
 	rm -rf nacl_repy nacl-gcc nacl-binutils lind_glibc
 	print "Cleaning $NACL_SRC"
-	cd "$NACL_SRC" || exit 1
+	cd "$NACL_SRC" || abort
 	rm -rf native_client
 	print "Cleaning $NACL_PORTS_DIR"
-	cd "$NACL_PORTS_DIR"  || exit 1
+	cd "$NACL_PORTS_DIR"  || abort
 	rm -rfv src
+
+	cur_func="${FUNCNAME[1]}"
 }
 
 # download sources
 #
 function download_src() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	local pip_bin pip_ver venv_script
 	local -A git_deps
 
 	# clone and symlink dependencies
 	mkdir -p "$LIND_SRC"
-	cd "$LIND_BASE" || exit 1
+	cd "$LIND_BASE" || abort
 	git submodule update --checkout --init --recursive --remote .
 	git_deps[lind_experiments]="$LIND_EXPERIMENTS_URL"
 	git_deps[lind-misc]="$LIND_MISC_URL"
@@ -232,23 +253,22 @@ function download_src() {
 			pip_bin="pip"
 		else
 			print "Need to install pip/pip2 in order to build Lind" >&2
-			exit 1
+			abort
 		fi
 		# check pip version
 		pip_ver="$("$pip_bin" --version | sed 's/.*(python \([0-9\.]\+\)).*/\1/')"
 		if [[ "$pip_ver" != 2* ]]; then
 			print "Need python2 version of pip in order to build Lind" >&2
-			exit 1
+			abort
 		fi
-
 		# install virtualenv modules
 		if ! "$pip_bin" install -U --user virtualenv2; then
 			print "Need python virtualenv2 in order to build Lind" >&2
-			exit 1
+			abort
 		fi
 		if ! "$pip_bin" install -U --user virtualenvwrapper; then
 			print "Need python virtualenvwrapper in order to build Lind" >&2
-			exit 1
+			abort
 		fi
 
 		# start up virtualenv
@@ -257,36 +277,36 @@ function download_src() {
 		VIRTUALENVWRAPPER_VIRTUALENV="$(command -v virtualenv2)"
 		WORKON_HOME="${WORKON_HOME:-$LIND_BASE/virtualenvs}"
 		export PATH VIRTUALENVWRAPPER_PYTHON VIRTUALENVWRAPPER_VIRTUALENV WORKON_HOME
-		mkdir -pv "$WORKON_HOME" || exit 1
+		mkdir -pv "$WORKON_HOME" || abort
 		rm -rf "${WORKON_HOME:?}/lind"
 		venv_script="$(command -v virtualenvwrapper.sh 2>/dev/null)"
 		venv_script="${venv_script:-$LIND_BASE/virtualenvwrapper.sh}"
 		deactivate >/dev/null 2>&1 || true
-		.  "$venv_script" || exit 1
-		mkvirtualenv lind || exit 1
-		workon lind || exit 1
+		.  "$venv_script" || abort
+		mkvirtualenv lind || abort
+		workon lind || abort
 
 		# install pip dependencies
 		if ! "$pip_bin" install -U SCons gclient virtualenv2 virtualenvwrapper; then
 			print "Need to \`pip2 install gclient\` in order to build Lind" >&2
-			exit 1
+			abort
 		fi
 	fi
 
 	# clone nacl
 	if [[ ! -e "$NACL_BASE" ]]; then
 		mkdir -p "$NACL_SRC"
-		cd "$LIND_BASE" || exit 1
+		cd "$LIND_BASE" || abort
 		gclient config --name=native_client "$NACL_GCLIENT_URL" --git-deps
 		gclient sync
 		ln -Tsfv "$LIND_BASE/native_client" "$NACL_BASE"
-		cd "$NACL_TOOLCHAIN_BASE" || exit 1
+		cd "$NACL_TOOLCHAIN_BASE" || abort
 		rm -rf SRC
 		make sync-pinned
 		git fetch --all
 		git clean -df
 		git reset --hard origin/fork
-		cd SRC || exit 1
+		cd SRC || abort
 		rm -rf glibc gcc binutils
 		ln -Tsfv "$LIND_GLIBC_SRC" glibc
 		ln -Tsfv "$NACL_GCC_SRC" gcc
@@ -296,131 +316,174 @@ function download_src() {
 	# clone nacl external ports
 	if [[ ! -e "$NACL_PORTS_DIR/src" ]]; then
 		mkdir -p "$NACL_PORTS_DIR"
-		cd "$NACL_PORTS_DIR" || exit 1
+		cd "$NACL_PORTS_DIR" || abort
 		gclient config --name=src "$NACL_PORTS_URL" --git-deps
 		gclient sync
 	fi
 
-	cd "$LIND_BASE" || exit 1
+	cd "$LIND_BASE" || abort
 	rm -rfv _gclient_*
+
+	cur_func="${FUNCNAME[1]}"
 }
 
 # wipe the entire modular build toolchain build tree, then rebuild it
-# Warning: this can take a while!
+# warning: this can take a while!
 #
 function clean_toolchain() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	cd "$NACL_TOOLCHAIN_BASE" && rm -rf out BUILD
+
+	cur_func="${FUNCNAME[1]}"
 }
 
-# Compile liblind and the compoent programs.
+# compile liblind and the component programs.
 #
 function build_liblind() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	print "Building liblind... "
-	cd "$MISC_DIR/liblind" || exit 1
+	cd "$MISC_DIR/liblind" || abort
 	make clean
 	make all
 	print "Done."
+
+	cur_func="${FUNCNAME[1]}"
 }
 
-# Copy the toolchain files into the repy subdir.
+# copy the toolchain files into the repy subdir.
 #
 function install_to_path() {
-	# nothing should fail here.
-	set -o errexit
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
 
-	print "Injecting Libs into RePy install"
+	print "Injecting Libs into Repy install"
 
-	print "**Sending NaCl stuff to $REPY_PATH"
+	print "** Sending NaCl files to $REPY_PATH **"
 
-	# print "Deleting all directories in the $REPY_PATH (except repy folder)"
-	# rm -rf "${REPY_PATH_BIN:?}"
-	# rm -rf "${REPY_PATH_LIB:?}"
-	# rm -rf "${REPY_PATH_SDK:?}"
+	# print "deleting all directories in the $repy_path (except repy folder)"
+	# rm -rf "${repy_path_bin:?}"
+	# rm -rf "${repy_path_lib:?}"
+	# rm -rf "${repy_path_sdk:?}"
 
 	mkdir -p "$REPY_PATH_BIN"
 	mkdir -p "$REPY_PATH_LIB/glibc"
 	mkdir -p "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
 	mkdir -p "$REPY_PATH_SDK/tools"
 
-	# ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/* ${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc
-	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk"/* "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
+	# ${rsync} ${nacl_toolchain_base}/out/nacl-sdk/* ${repy_path_sdk}/toolchain/${os_subdir}_x86_glibc
+	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/" "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
 
-	# ${RSYNC} ${NACL_BASE}/scons-out/${MODE}-x86-64/staging/* ${REPY_PATH_BIN}
-	"${RSYNC[@]}" "$NACL_BASE/scons-out/${MODE}-x86-64/staging"/* "$REPY_PATH_BIN"
+	# ${rsync} ${nacl_base}/scons-out/${mode}-x86-64/staging/* ${repy_path_bin}
+	"${RSYNC[@]}" "$NACL_BASE/scons-out/${MODE}-x86-64/staging/" "$REPY_PATH_BIN"
 
 	#install scripts
+	rm -fv "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
 	cp -fv "$MISC_DIR/lind.sh" "$REPY_PATH_BIN/lind"
 	cp -fv "$LIND_BASE/lindfs" "$REPY_PATH_BIN/lindfs"
 	chmod +x "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
 
-	# ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
-	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib"/*  "$REPY_PATH_LIB/glibc"
+	# ${rsync} ${nacl_toolchain_base}/out/nacl-sdk/x86_64-nacl/lib/*  ${repy_path_lib}/glibc
+	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"  "$REPY_PATH_LIB/glibc"
+
+	cur_func="${FUNCNAME[1]}"
 }
 
-# Run the RePy unit tests.
+# run the repy unit tests.
 #
 function test_repy() {
-	cd "$REPY_PATH/repy/" || exit 1
-	set +o errexit  # some of our unit tests fail
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
+	# some of our unit tests fail
+	set +o errexit
+
+	cd "$REPY_PATH/repy" || abort
+
 	for file in ut_lind_*; do
-		 print "$file"
-		 trap '' TERM
-		 python "$file"
-	# trap 'python2 "$file"' INT TERM EXIT
+		print "$file"
+		trap '' TERM
+		python2 "$file"
+		# trap 'python2 "$file"' int term exit
+		trap - TERM
 	done
 
 	# run the struct test
-	file=ut_seattlelibtests_teststruct.py
+	file="ut_seattlelibtests_teststruct.py"
 	print "$file"
 	python "$file"
+
+	cur_func="${FUNCNAME[1]}"
 }
 
-# Run the applications test stuites.
+# run the applications test stuites.
 #
 function test_apps() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	set +o errexit
+
 	cd "$MISC_DIR/tests" && ./test.sh
+
+	cur_func="${FUNCNAME[1]}"
 }
 
-# Check the REPY_PATH location to make sure it is safe to be installing stuff there.
+# check the $repy_path location to make sure it is safe to be installing stuff there.
 #
 function check_install_dir() {
-	[[ ! -d "$REPY_PATH" && -e "$REPY_PATH" ]] && exit -2
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
+	[[ ! -d "$REPY_PATH" && -e "$REPY_PATH" ]] && abort
 	# and if it does not exit, make it.
 	mkdir -p "$REPY_PATH"
+
+	cur_func="${FUNCNAME[1]}"
 }
 
-# Install repy into $REPY_PATH with the prepare_tests script.
+# install repy into $repy_path with the prepare_tests script.
 #
 function build_repy() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
 
 	set -o errexit
 
 	mkdir -p "$REPY_PATH_REPY"
 	print "Building Repy in $REPY_SRC to $REPY_PATH"
-	cd "$NACL_REPY" || exit 1
+	cd "$NACL_REPY" || abort
 	cp -v seattlelib/xmlrpc* "$REPY_PATH_REPY/"
 	python2 preparetest.py -t -f "$REPY_PATH_REPY"
 	print "Done building Repy in \"$REPY_PATH_REPY\""
-	cd seattlelib || exit 1
+	cd seattlelib || abort
 	set -o errexit
 	for file in *.mix; do
 		"$MISC_DIR/check_includes.sh" "$file"
 	done
 	set +o errexit
 	ctags  --language-force=python ./*.mix ./*.repy || true
+
+	cur_func="${FUNCNAME[1]}"
 }
 
-# Update, build and test everything. If there is a problem, freak out.
+# update, build and test everything. if there is a problem, freak out.
 #
 function nightly_build() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	set -o errexit
-	# Clean
+
+	# clean
 	# clean_install
 	# clean_nacl
 	# clean_toolchain
 	# check_install_dir
-	# Update
+	# update
 	~/lind/misc/global_update.sh
 
 	# build
@@ -440,23 +503,33 @@ function nightly_build() {
 
 	# test applications
 	test_apps
+
+	cur_func="${FUNCNAME[1]}"
 }
 
 # clean repy install
 #
 function clean_install() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	rm -rf "$REPY_PATH"
 	mkdir -p "$REPY_PATH"
+
+	cur_func="${FUNCNAME[1]}"
 }
 
-# Run the NaCl build.
+# run the nacl build.
 #
 function build_nacl() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	print "Building NaCl"
-	cd "$NACL_BASE" || exit -1
+	cd "$NACL_BASE" || abort
 
 	# convert files from python to python2
-	cd "$NATIVE_CLIENT_SRC" || exit 1
+	cd "$NATIVE_CLIENT_SRC" || abort
 	"${PYGREPL[@]}" 2>/dev/null | \
 	"${PYGREPV[@]}" | \
 	while read -r file; do
@@ -466,95 +539,117 @@ function build_nacl() {
 		rm -f "$file.new"
 	done
 
-	# build NaCl with glibc tests
+	# build nacl with glibc tests
 	PATH="$LIND_BASE:$PATH" \
 		python2 ./scons.py --verbose --mode="$MODE,nacl" \
 		nacl_pic=1 werror=0 \
 		platform=x86-64 --nacl_glibc -j4
-
-	# and check
 	rc="$?"
-	if (("$rc")); then
-		print "NaCl Build Failed($rc)" $'\a' >&2
-		exit "$rc"
+	if ((rc)); then
+		print "" "NaCl Build Failed: exit status [$rc]" $'\a' >&2
+		abort
 	fi
 
 	print "Done building NaCl $rc"
+
+	cur_func="${FUNCNAME[1]}"
 }
 
-# Run clean on nacl build.
+# run clean on nacl build.
 #
 function clean_nacl() {
-	cd "$NACL_BASE" || exit 1
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
+	cd "$NACL_BASE" || abort
 	./scons --mode="$MODE,nacl" platform=x86-64 --nacl_glibc -c
 	print "Done Cleaning NaCl"
+
+	cur_func="${FUNCNAME[1]}"
 }
 
-# Build glibc from source
+# build glibc from source
 #
 function build_glibc() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	# the build is long and borning, so execute this first if it exists
+	print ""
 	if command -v fortune >/dev/null 2>&1; then
 		fortune
 	else
 		print "Fortune Not Found. Skipping." >&2
 	fi
 	print "" "Copy component.h header to glibc: "
-	cd "$MISC_DIR/liblind" || exit 1
+	cd "$MISC_DIR/liblind" || abort
 	mkdir -p "$LIND_GLIBC_SRC/sysdeps/nacl/sysdeps/nacl/"
 	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
 
 	print "Building glibc"
 
-	# if extra files (like editor temp files) are
-	# in the subdir glibc tries to compile them too.
-	# move them here so they dont cause a problem
-	cd "$LIND_GLIBC_SRC/sysdeps/nacl/" || exit 1
-	shopt -s nullglob
-	for f in .\#*; do
-		print "Moving editor backupfile $f so it does not get caught in build."
-		mv -f "$f" .
-	done
-
 	# turns out this works better if you do it from the nacl base dir
-	cd "$NACL_TOOLCHAIN_BASE" && rm -fr BUILD out
+	cd "$NACL_TOOLCHAIN_BASE" || abort
+	rm -fr BUILD out
 	make clean
-	# ??? not quite sure why these weird constructs are needed but they are -jp
+
+	# ??? not quite sure why these
+	# weird constructs are needed
+	#
+	# -jp
 	PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
 		|| PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
-		|| exit -1
+		|| abort
 
 	print "Done building toolchain"
+
+	cur_func="${FUNCNAME[1]}"
 }
 
 # perform an incremental glibc compile
 #
 function update_glibc() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	cd "$NACL_TOOLCHAIN_BASE" \
 		 && PATH="$LIND_BASE:$PATH" make updateglibc
+
+	cur_func="${FUNCNAME[1]}"
 }
 
 # perform a clean glibc compile
 #
 function update_glibc2() {
-	cd "$NACL_TOOLCHAIN_BASE" || exit 1
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
+	cd "$NACL_TOOLCHAIN_BASE" || abort
 	rm -rf BUILD/stamp-glibc64
 	PATH="$LIND_BASE:$PATH" make BUILD/stamp-glibc64
+
+	cur_func="${FUNCNAME[1]}"
 }
 
+# run the glibc tester
 #
-# Run the glibc tester
 function glibc_tester() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
 	set -o errexit
 
-	cd "$MISC_DIR/glibc_test/" || exit 1
+	cd "$MISC_DIR/glibc_test" || abort
 	make clean
 	PATH="$LIND_BASE:$PATH" make all
-	cd .. || exit 1
+	cd .. || abort
 	rm -rfv lind.metadata linddata.*
 	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
+
+	cur_func="${FUNCNAME[1]}"
 }
 
+# prompt for target if none given on command line
 PS3=$'\n'"Build which target? "
 list=(all repy nacl buildglibc updateglibc updateglibc2)
 list+=(download cleansources cleantoolchain cleannacl install)
@@ -570,65 +665,59 @@ fi
 # all scripts assume we start here
 start_time=$(date +%s)
 
-# Show command that will be executed
+# show command that will be executed
 print "" "Command line arguments: $0 $*" ""
+printf '%s\n' "$@"
 
 for word in "$@"; do
 	case "$word" in
 	repy)
-		 build_repy;;
+		build_repy;;
 	nacl)
-		 build_nacl;;
+		build_nacl;;
 	buildglibc)
-		 build_glibc;;
+		build_glibc;;
 	updateglibc)
-		 update_glibc;;
+		update_glibc;;
 	updateglibc2)
-		 update_glibc2;;
+		update_glibc2;;
 	all)
-		 download_src
-		 build_nacl
-		 build_repy
-		 build_glibc
-		 install_to_path
-		 build_liblind;;
+		download_src
+		build_nacl
+		build_repy
+		build_glibc
+		install_to_path
+		build_liblind;;
 	install)
-		 print "Installing libs into install dir"
-		 install_to_path;;
+		install_to_path;;
 	download)
-		 print "Downloading Sources"
-		 download_src;;
+		download_src;;
 	cleansources)
-		 print "Cleaning Downloaded Sources"
-		 clean_src;;
+		clean_src;;
 	cleantoolchain)
-		 print "Cleaning Toolchain"
-		 clean_toolchain;;
+		clean_toolchain;;
 	cleannacl)
-		 print "Cleaning NaCl"
-		 clean_nacl;;
+		clean_nacl;;
 	liblind)
-		 print "Building LibLind"
-		 build_liblind;;
+		build_liblind;;
 	test_repy)
-		 print "Testing Repy"
-		 test_repy;;
+		test_repy;;
 	test_glibc)
-		 print "Testing GLibC"
-		 glibc_tester;;
+		print "Testing GLibC"
+		glibc_tester;;
 	test_apps)
-		 print "Testing Applications"
-		 test_apps;;
+		print "Testing Applications"
+		test_apps;;
 	test_all)
-		 print "Testing All"
-		 test_repy
-		 glibc_tester
-		 test_apps;;
+		print "Testing All"
+		test_repy
+		glibc_tester
+		test_apps;;
 	nightly)
-		 print "Nightly Build"
-		 nightly_build;;
+		print "Nightly Build"
+		nightly_build;;
 	*)
-		 print "Error: Did not find a build target for that number. Exiting..." >&2
-		 exit 1;;
+		print "Error: Did not find a build target for that number. Exiting..." >&2
+		abort;;
 	esac
 done
