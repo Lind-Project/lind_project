@@ -25,9 +25,7 @@ RUN ["./mklind", "repy"]
 RUN ["./mklind", "buildglibc"]
 RUN ["./mklind", "install"]
 RUN ["./mklind", "liblind"]
-RUN ["/usr/bin/rsync", "--info=progress2", "-ahhpvA", "/root/build/glibc/", "lind/repy/lib/glibc/"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello"]
-RUN ["/usr/bin/rm", "-rf", "/root/build/"]
 
 WORKDIR /usr/lind_project/lind/repy/repy/
 RUN ["/usr/bin/env", "lindfs", "cp", "./hello"]
