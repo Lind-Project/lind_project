@@ -667,7 +667,6 @@ start_time=$(date +%s)
 
 # show command that will be executed
 print "" "Command line arguments: $0 $*" ""
-printf '%s\n' "$@"
 
 for word in "$@"; do
 	case "$word" in
