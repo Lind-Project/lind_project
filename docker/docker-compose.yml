@@ -1,11 +1,29 @@
+version: "3.6"
+
 services:
-  web:
+
+  base:
+    image: alyptik/lind:base
+    build:
+      context: base
+      dockerfile: Dockerfile
+    volumes:
+      - ./lind_project:/usr/lind_project
+
+  prebuiltsdk:
+    image: alyptik/lind:prebuiltsdk
+    build:
+      context: prebuiltsdk
+      dockerfile: Dockerfile
+    volumes:
+      - ./lind_project:/usr/lind_project
+
+  latest:
     image: alyptik/lind:latest
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          cpus: "0.1"
-          memory: 50M
-      restart_policy:
-        condition: on-failure
+    volumes:
+      - ./lind_project:/usr/lind_project
+    build:
+      context: prebuiltsdk
+      dockerfile: Dockerfile
+      cache_from:
+        - alyptik/lind:prebuiltsdk
