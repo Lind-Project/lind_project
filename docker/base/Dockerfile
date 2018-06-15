@@ -7,22 +7,21 @@ ADD ["https://raw.githubusercontent.com/Lind-Project/lind_project/master/docker/
 
 WORKDIR /
 RUN ["/usr/bin/bsdtar", "--no-same-permissions", "-xf", "pkgs.tar.xz"]
-RUN ["/usr/bin/chown", "-RL","root:root", "/etc/", "/root/"]
+RUN ["/usr/bin/chown", "-RL","root:root", "/etc/", "/romklindot/"]
 RUN ["/usr/bin/pacman", "-Sy", "--noconfirm", "gawk", "inetutils", "procps-ng", "ruby"]
 RUN ["/usr/bin/pacman", "-Syu", "--noconfirm", "base-devel", "w3m", \
     "git", "mercurial", "rsync", "make", "perl", "clang", "lynx", "ed", \
     "compiler-rt", "lib32-clang", "lib32-llvm", "lib32-llvm-libs", "vim", \
     "llvm", "llvm-libs", "openmp", "elfutils", "libelf", "gdb", "less", \
     "gnu-netcat", "zsh", "zsh-completions", "grml-zsh-config", "htop", \
-    "ncurses", "gcc-libs", "lib32-gcc-libs", "gperf", "diffutils", \
-    "gperftools", "texinfo", "fortune-mod", "fortune-mod-psych", "gnupg", \
-    "linux-manpages", "python2", "python2-pip", "python2-setuptools", "p7zip", \
+    "ncurses", "gcc-libs", "lib32-gcc-libs", "gperf", "diffutils", "fzf", \
+    "gperftools", "texinfo", "fortune-mod", "gnupg", "highlight", "fasd", \
+    "python2", "python2-pip", "python2-setuptools", "p7zip", "fuse3", "ack", \
     "python2-virtualenv", "python-virtualenvwrapper", "pkgfile", "dhcpcd", \
     "iputils","python", "iproute2", "net-tools", "openresolv", "ranger", \
-    "openssh", "subversion", "pacmaan-contrib", "arch-wiki-docs", "tree", \
+    "openssh", "subversion", "pacman-contrib", "arch-wiki-docs", "tree", \
     "psmisc", "lsof", "wget", "pinfo", "asp", "bc", "unrar", "expac", \
-    "mlocate",  "tmux", "screen", "bash-git-prompt", "bash-completion", \
-    "fuse3", "fasd", "fzf", "the_silver_searcher", "highlight", "ack"]
+    "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate"]
 RUN ["/usr/bin/pkgfile", "--update"]
 WORKDIR /usr/bin/
 RUN ["/usr/bin/ln",  "-Trsfv", "python2", "python"]
