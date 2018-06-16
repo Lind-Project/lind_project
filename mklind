@@ -189,12 +189,12 @@ readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@for
 readonly NACL_PORTS_URL='https://chromium.googlesource.com/external/naclports.git'
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 
-readonly -a PYGREPL=(grep '-lIPR' '(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)' './')
+readonly -a PYGREPL=(grep '-lIPR' -- '(^|[\s'"'"'"/-])(python)(\s|\.exe|\b)' './')
 readonly -a PYGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
-readonly -a PYSED=(sed '-r' 's_(^|'"'"'|"|[[:space:]]|/)(python)([[:space:]]|\.exe|$)_\1\22\3_g')
-readonly -a PNACLGREPL=(grep '-IFRlw' -- "\${PNACLPYTHON}" './')
+readonly -a PYSED=(sed '-r' 's_(^|[\s'"'"'"/-])(python)(\.exe|\b)_\1\22\3_g')
+readonly -a PNACLGREPL=(grep '-IFRlw' -- 'PNACLPYTHON' './')
 readonly -a PNACLGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
-readonly -a PNACLSED=(sed "s_\${PNACLPYTHON}_python2_g")
+readonly -a PNACLSED=(sed -r 's_$\{?PNACLPYTHON\}?_python2_g')
 readonly -a RSYNC=(rsync '-akpvAP' '--progress=status2' '--force')
 
 # clean downloaded sources
@@ -526,20 +526,20 @@ function build_nacl() {
 	cur_func="${FUNCNAME[0]}"
 
 	print "Building NaCl"
-	cd "$NACL_BASE"
 
-	# convert files from python to python2
-	cd "$NATIVE_CLIENT_SRC"
-	"${PYGREPL[@]}" 2>/dev/null | \
-	"${PYGREPV[@]}" | \
-	while read -r file; do
-		# preserve executability
-		"${PYSED[@]}" <"$file" >"$file.new"
-		cat <"$file.new" >"$file"
-		rm -f "$file.new"
-	done
+	# the pnacl script doesn't respect PYTHON or PNACLPYTHON
+	cd "$NACL_BASE/toolchain/pnacl_linux_x86/newlib/bin"
+	"${PYGREPL[@]}" 2>/dev/null \
+		| "${PYGREPV[@]}" \
+		| while read -r file; do
+			# preserve executability
+			"${PYSED[@]}" <"$file" >"$file.new"
+			cat <"$file.new" >"$file"
+			rm -f "$file.new"
+		done
 
 	# build nacl with glibc tests
+	cd "$NACL_BASE"
 	PATH="$LIND_BASE:$PATH" \
 		python2 ./scons.py --verbose --mode="$MODE,nacl" \
 		nacl_pic=1 werror=0 \
