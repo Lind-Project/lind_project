@@ -204,14 +204,14 @@ function clean_src() {
 	cur_func="${FUNCNAME[0]}"
 
 	print "Cleaning $LIND_BASE"
-	cd "$LIND_BASE" || false
+	cd "$LIND_BASE"
 	rm -rf lind_experiments lind-misc third_party lss
 	rm -rf nacl_repy nacl-gcc nacl-binutils lind_glibc
 	print "Cleaning $NACL_SRC"
-	cd "$NACL_SRC" || false
+	cd "$NACL_SRC"
 	rm -rf native_client
 	print "Cleaning $NACL_PORTS_DIR"
-	cd "$NACL_PORTS_DIR"  || false
+	cd "$NACL_PORTS_DIR"
 	rm -rfv src
 
 	cur_func="${FUNCNAME[1]}"
@@ -228,7 +228,7 @@ function download_src() {
 
 	# clone and symlink dependencies
 	mkdir -p "$LIND_SRC"
-	cd "$LIND_BASE" || false
+	cd "$LIND_BASE"
 	git submodule update --checkout --init --recursive --remote .
 	git_deps[lind_experiments]="$LIND_EXPERIMENTS_URL"
 	git_deps[lind-misc]="$LIND_MISC_URL"
@@ -277,14 +277,14 @@ function download_src() {
 		VIRTUALENVWRAPPER_VIRTUALENV="$(command -v virtualenv2)"
 		WORKON_HOME="${WORKON_HOME:-$LIND_BASE/virtualenvs}"
 		export PATH VIRTUALENVWRAPPER_PYTHON VIRTUALENVWRAPPER_VIRTUALENV WORKON_HOME
-		mkdir -pv "$WORKON_HOME" || false
+		mkdir -pv "$WORKON_HOME"
 		rm -rf "${WORKON_HOME:?}/lind"
 		venv_script="$(command -v virtualenvwrapper.sh 2>/dev/null)"
 		venv_script="${venv_script:-$LIND_BASE/virtualenvwrapper.sh}"
 		deactivate >/dev/null 2>&1 || true
-		.  "$venv_script" || false
-		mkvirtualenv lind || false
-		workon lind || false
+		.  "$venv_script"
+		mkvirtualenv lind
+		workon lind
 
 		# install pip dependencies
 		if ! "$pip_bin" install -U SCons gclient virtualenv2 virtualenvwrapper; then
@@ -296,17 +296,17 @@ function download_src() {
 	# clone nacl
 	if [[ ! -e "$NACL_BASE" ]]; then
 		mkdir -p "$NACL_SRC"
-		cd "$LIND_BASE" || false
+		cd "$LIND_BASE"
 		gclient config --name=native_client "$NACL_GCLIENT_URL" --git-deps
 		gclient sync
 		ln -Tsfv "$LIND_BASE/native_client" "$NACL_BASE"
-		cd "$NACL_TOOLCHAIN_BASE" || false
+		cd "$NACL_TOOLCHAIN_BASE"
 		rm -rf SRC
 		make sync-pinned
 		git fetch --all
 		git clean -df
 		git reset --hard origin/fork
-		cd SRC || false
+		cd SRC
 		rm -rf glibc gcc binutils
 		ln -Tsfv "$LIND_GLIBC_SRC" glibc
 		ln -Tsfv "$NACL_GCC_SRC" gcc
@@ -316,12 +316,12 @@ function download_src() {
 	# clone nacl external ports
 	if [[ ! -e "$NACL_PORTS_DIR/src" ]]; then
 		mkdir -p "$NACL_PORTS_DIR"
-		cd "$NACL_PORTS_DIR" || false
+		cd "$NACL_PORTS_DIR"
 		gclient config --name=src "$NACL_PORTS_URL" --git-deps
 		gclient sync
 	fi
 
-	cd "$LIND_BASE" || false
+	cd "$LIND_BASE"
 	rm -rfv _gclient_*
 
 	cur_func="${FUNCNAME[1]}"
@@ -346,7 +346,7 @@ function build_liblind() {
 	cur_func="${FUNCNAME[0]}"
 
 	print "Building liblind... "
-	cd "$MISC_DIR/liblind" || false
+	cd "$MISC_DIR/liblind"
 	make clean
 	make all
 	print "Done."
@@ -401,7 +401,7 @@ function test_repy() {
 	# some of our unit tests fail
 	set +o errexit
 
-	cd "$REPY_PATH/repy" || false
+	cd "$REPY_PATH/repy"
 
 	for file in ut_lind_*; do
 		print "$file"
@@ -455,11 +455,11 @@ function build_repy() {
 
 	mkdir -p "$REPY_PATH_REPY"
 	print "Building Repy in $REPY_SRC to $REPY_PATH"
-	cd "$NACL_REPY" || false
+	cd "$NACL_REPY"
 	cp -v seattlelib/xmlrpc* "$REPY_PATH_REPY/"
 	python2 preparetest.py -t -f "$REPY_PATH_REPY"
 	print "Done building Repy in \"$REPY_PATH_REPY\""
-	cd seattlelib || false
+	cd seattlelib
 	set -o errexit
 	for file in *.mix; do
 		"$MISC_DIR/check_includes.sh" "$file"
@@ -526,10 +526,10 @@ function build_nacl() {
 	cur_func="${FUNCNAME[0]}"
 
 	print "Building NaCl"
-	cd "$NACL_BASE" || false
+	cd "$NACL_BASE"
 
 	# convert files from python to python2
-	cd "$NATIVE_CLIENT_SRC" || false
+	cd "$NATIVE_CLIENT_SRC"
 	"${PYGREPL[@]}" 2>/dev/null | \
 	"${PYGREPV[@]}" | \
 	while read -r file; do
@@ -561,7 +561,7 @@ function clean_nacl() {
 	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
 	cur_func="${FUNCNAME[0]}"
 
-	cd "$NACL_BASE" || false
+	cd "$NACL_BASE"
 	./scons --mode="$MODE,nacl" platform=x86-64 --nacl_glibc -c
 	print "Done Cleaning NaCl"
 
@@ -582,14 +582,14 @@ function build_glibc() {
 		print "Fortune Not Found. Skipping." >&2
 	fi
 	print "" "Copy component.h header to glibc: "
-	cd "$MISC_DIR/liblind" || false
+	cd "$MISC_DIR/liblind"
 	mkdir -p "$LIND_GLIBC_SRC/sysdeps/nacl/sysdeps/nacl/"
 	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
 
 	print "Building glibc"
 
 	# turns out this works better if you do it from the nacl base dir
-	cd "$NACL_TOOLCHAIN_BASE" || false
+	cd "$NACL_TOOLCHAIN_BASE"
 	rm -fr BUILD out
 	make clean
 
@@ -624,7 +624,7 @@ function update_glibc2() {
 	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
 	cur_func="${FUNCNAME[0]}"
 
-	cd "$NACL_TOOLCHAIN_BASE" || false
+	cd "$NACL_TOOLCHAIN_BASE"
 	rm -rf BUILD/stamp-glibc64
 	PATH="$LIND_BASE:$PATH" make BUILD/stamp-glibc64
 
@@ -639,10 +639,10 @@ function glibc_tester() {
 
 	set -o errexit
 
-	cd "$MISC_DIR/glibc_test" || false
+	cd "$MISC_DIR/glibc_test"
 	make clean
 	PATH="$LIND_BASE:$PATH" make all
-	cd .. || false
+	cd ..
 	rm -rfv lind.metadata linddata.*
 	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
 
