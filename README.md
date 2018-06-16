@@ -17,7 +17,7 @@ respectively.
 
 * python 2
 * virtualenv2 and virtualenvwrapper
-	- install using `pip2 install --user virtualenvwrapper virtualenv2`
+        - install using `pip2 install --user virtualenvwrapper virtualenv2`
 * gcc
 * clang
 
@@ -39,9 +39,9 @@ or `./mklind -e` to start the build script using the default environment.
 
 #### Options
 
-	-e	Use default environment.
-	-h	Display this help.
-	-v	Display script version.
+        -e        Use default environment.
+        -h        Display this help.
+        -v        Display script version.
 
 #### Custom Environment
 
