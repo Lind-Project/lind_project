@@ -45,7 +45,7 @@ int main(void)
 		write(STDOUT_FILENO, c1, sizeof c1 - 1);
 		printf("child wait ret: %d\n", wait(&cret));
 		/* printf("child waitpid ret: %d\n", waitpid(cpid, &cret, 0)); */
-		perror("child");
+		/* perror("child"); */
 		fflush(0);
 		printf("child %d succeeded after waiting on %d\n", getpid(), cpid);
 		fflush(0);
@@ -58,7 +58,7 @@ int main(void)
 	write(STDOUT_FILENO, p1, sizeof p1 - 1);
 	/* printf("parent wait ret: %d\n", wait(&pret)); */
 	printf("parent waitpid ret: %d\n", waitpid(ppid, &pret, 0));
-	perror("parent");
+	/* perror("parent"); */
 	fflush(0);
 	printf("parent %d succeeded after waiting on %d\n", getpid(), ppid);
 	fflush(0);
