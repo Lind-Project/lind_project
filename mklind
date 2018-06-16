@@ -59,7 +59,7 @@ function get_build_time() {
 # print out error information and abort
 #
 function abort() {
-	print "" "[$0:$cur_line] Error: [function: $cur_func()] [arguments: '$args']." >&2
+	print "" "[$0:$cur_line] Error: [function: $cur_func()] [arguments: $args]." >&2
 	exit 1
 }
 
