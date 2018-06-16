@@ -303,7 +303,7 @@ function download_src() {
 		make sync-pinned
 		git fetch --all
 		git clean -df
-		git reset --hard origin/fork
+		git reset --hard origin/lind_fork
 		cd SRC
 		rm -rf glibc gcc binutils
 		ln -Tsfv "$LIND_GLIBC_SRC" glibc
