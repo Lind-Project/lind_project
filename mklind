@@ -187,13 +187,13 @@ readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@lin
 readonly NACL_PORTS_URL='https://chromium.googlesource.com/external/naclports.git'
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 
-readonly -a PYGREPL=(grep '-lIPR' -- '(^|[\s'"'"'"/-])(python)(\s|\.exe|\b)' './')
-readonly -a PYGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
+readonly -a PYGREPL=(grep '-RPIl' -- '(^|[\s'"'"'"/-])(python)(\s|\.exe|\b)' './')
+readonly -a PYGREPV=(grep '-Pv' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PYSED=(sed '-r' 's_(^|[\s'"'"'"/-])(python)(\.exe|\b)_\1\22\3_g')
-readonly -a PNACLGREPL=(grep '-IFRlw' -- 'PNACLPYTHON' './')
-readonly -a PNACLGREPV=(grep '-vP' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
+readonly -a PNACLGREPL=(grep '-RIFwl' -- 'PNACLPYTHON' './')
+readonly -a PNACLGREPV=(grep '-Pv' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PNACLSED=(sed -r 's_$\{?PNACLPYTHON\}?_python2_g')
-readonly -a RSYNC=(rsync '-akpvAP' '--progress=status2' '--force')
+readonly -a RSYNC=(rsync '-Avpa' '--progress=status2' '--force')
 
 # clean downloaded sources
 #
