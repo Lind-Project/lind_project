@@ -183,7 +183,7 @@ readonly LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_GCC_URL='https://github.com/Lind-Project/nacl-gcc.git'
 readonly NACL_BINUTILS_URL='https://github.com/Lind-Project/nacl-binutils.git'
-readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@fork'
+readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@lind_fork'
 readonly NACL_PORTS_URL='https://chromium.googlesource.com/external/naclports.git'
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 
