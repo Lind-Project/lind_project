@@ -53,8 +53,8 @@ export LIND_SRC="/usr/lind_project/lind"
 export LIND_MONITOR="/usr/lind_project/lind/reference_monitor"
 export NACL_SDK_ROOT="/usr/lind_project/lind/repy/sdk"
 export REPY_PATH="/usr/lind_project/lind/repy"
-export PNACLPYTHON="/usr/bin/python2"
-export PYTHON="/usr/bin/python2"
+export PYTHON="python2"
+export PNACLPYTHON="python2"
 export LD_LIBRARY_PATH="/lib/glibc"
 ```
 

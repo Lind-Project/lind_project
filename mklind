@@ -75,29 +75,27 @@ for word; do
 	case "$word" in
 	-*e*)
 		# setup and print out the default environment
-		export GIT_SSH_COMMAND='ssh -o VisualHostKey=no -o Tunnel=no'
-		export LIND_BASE="/usr/lind_project"
-		export LIND_SRC="/usr/lind_project/lind"
-		export LIND_MONITOR="/usr/lind_project/lind/reference_monitor"
-		export NACL_SDK_ROOT="/usr/lind_project/lind/repy/sdk"
-		export REPY_PATH="/usr/lind_project/lind/repy"
-		export PNACLPYTHON="/usr/bin/python2"
-		export PYTHON="/usr/bin/python2"
-		export LD_LIBRARY_PATH="/lib/glibc"
+		export LIND_BASE="${LIND_BASE:-/usr/lind_project}"
+		export LIND_SRC="${LIND_SRC:-/usr/lind_project/lind}"
+		export LIND_MONITOR="${LIND_MONITOR:-/usr/lind_project/reference_monitor}"
+		export NACL_SDK_ROOT="${NACL_SDK_ROOT:-/usr/lind_project/lind/repy/sdk}"
+		export REPY_PATH="${REPY_PATH:-/usr/lind_project/lind/repy}"
+		export PYTHON="${PYTHON:-python2}"
+		export PNACLPYTHON="${PNACLPYTHON:-python2}"
+		export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
 		print
 		print '======================================================'
 		print 'USING DEFAULT NACL ENVIRONMENT:'
 		print '======================================================'
 		print
 		cat <<-EOF
-			export GIT_SSH_COMMAND="$GIT_SSH_COMMAND"
 			export LIND_BASE="$LIND_BASE"
 			export LIND_SRC="$LIND_SRC"
 			export LIND_MONITOR="$LIND_MONITOR"
 			export NACL_SDK_ROOT="$NACL_SDK_ROOT"
 			export REPY_PATH="$REPY_PATH"
-			export PNACLPYTHON="$PNACLPYTHON"
 			export PYTHON="$PYTHON"
+			export PNACLPYTHON="$PNACLPYTHON"
 			export LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 		EOF
 		print

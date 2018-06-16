@@ -16,8 +16,8 @@ ENV LIND_SRC "/usr/lind_project/lind"
 ENV LIND_MONITOR "/usr/lind_project/reference_monitor"
 ENV NACL_SDK_ROOT "/usr/lind_project/lind/repy/sdk"
 ENV REPY_PATH "/usr/lind_project/lind/repy"
-ENV PNACLPYTHON "/usr/bin/python2"
-ENV PYTHON "/usr/bin/python2"
+ENV PYTHON "python2"
+ENV PNACLPYTHON "python2"
 ENV LD_LIBRARY_PATH "/lib/glibc"
 
 WORKDIR /
