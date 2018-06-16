@@ -1,8 +1,12 @@
 #
-# Makefile - Docker commands for Lind
+# Makefile - Builds the Docker images and host SDK for Lind
 #
 # AUTHOR: Joey Pabalinas <alyptik@protonmail.com>
 
+all lind:
+	@./mklind -e
+
+.PHONY: Makefile all lind run shell bash list show latest prebuiltsdk base stack deploy pull clean prune
 
 %: | pull
 	@$(MAKE) "lind/$(basename $(notdir $*))"
@@ -10,9 +14,7 @@
 lind/%:
 	docker run -it alyptik/lind /bin/bash -c './caging.sh $*'
 
-.PHONY: Makefile lind run shell bash list show latest prebuiltsdk base stack deploy pull clean prune
-
-lind run shell bash: | pull
+run shell bash: | pull
 	docker run -it alyptik/lind /bin/bash
 
 list show:
