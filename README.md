@@ -34,14 +34,14 @@ using `pip2 install --user virtualenvwrapper virtualenv`, and finally run  `make
 or `./mklind -e` to start the build script using the default environment.
 
 ```bash
-./mklind [-ehv] [commands]
+./mklind [-ehv] [targets]
 ```
 
 #### Options
 
-        -e        Use default environment.
-        -h        Display this help.
-        -v        Display script version.
+        -e    Use default environment.
+        -h    Display this help.
+        -v    Display script version.
 
 #### Custom Environment
 
