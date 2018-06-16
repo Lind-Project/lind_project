@@ -38,8 +38,6 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", "w3m", 
     "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", "inetutils", \
     "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate"]
 RUN ["/usr/bin/pkgfile", "--update"]
-WORKDIR /usr/bin/
-RUN ["/usr/bin/ln",  "-Trsfv", "python2", "python"]
 WORKDIR /root/build/
 RUN ["/usr/bin/lesskey"]
 RUN ["/usr/bin/pip2", "install", "--user", "-Ur", "requirements.txt"]
