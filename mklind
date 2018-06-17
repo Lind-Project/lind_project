@@ -230,11 +230,15 @@ function download_src() {
 	cd "$LIND_BASE"
 
 	# make sure we are in the git root of "Lind-Project/lind_project"
-	if git remote add origin "$LIND_URL"; then
+	if [[ "$(git config remote.origin.url)" != *lind_project* ]]; then
+		if ! git remote add origin "$LIND_URL"; then
+			print "LIND_BASE already an initialized git directory" >&2
+			false
+		fi
 		git fetch --all
 		git checkout master
 	fi
-	git submodule update --checkout --init --recursive --remote . || true
+	git submodule update --checkout --init --recursive --remote .
 	git_deps[lind_experiments]="$LIND_EXPERIMENTS_URL"
 	git_deps[lind-misc]="$LIND_MISC_URL"
 	git_deps[third_party]="$THIRD_PARTY_URL"
