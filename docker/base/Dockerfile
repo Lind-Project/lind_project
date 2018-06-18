@@ -11,11 +11,12 @@ ENV PATH "/usr/lind_project:$PATH"
 ENV PATH "/root/.local/bin:$PATH"
 ENV VIRTUALENVWRAPPER_PYTHON "/usr/bin/python2"
 ENV VIRTUALENVWRAPPER_VIRTUALENV "/usr/bin/virtualenv2"
-ENV LIND_BASE "/usr/lind_project"
-ENV LIND_SRC "/usr/lind_project/lind"
-ENV LIND_MONITOR "/usr/lind_project/reference_monitor"
-ENV NACL_SDK_ROOT "/usr/lind_project/lind/repy/sdk"
-ENV REPY_PATH "/usr/lind_project/lind/repy"
+ENV LIND_PREFIX "$HOME"
+ENV LIND_BASE "$LIND_PREFIX/lind_project"
+ENV LIND_SRC "$LIND_PREFIX/lind_project/lind"
+ENV LIND_MONITOR "$LIND_PREFIX/lind_project/reference_monitor"
+ENV NACL_SDK_ROOT "$LIND_PREFIX/lind_project/lind/repy/sdk"
+ENV REPY_PATH "$LIND_PREFIX/lind_project/lind/repy"
 ENV PYTHON "python2"
 ENV PNACLPYTHON "python2"
 ENV LD_LIBRARY_PATH "/lib/glibc"
@@ -55,13 +56,13 @@ WORKDIR /root/build/texinfo-4.13/
 RUN ["./configure", "--prefix=/root/.local"]
 RUN ["/usr/bin/make", "install", "PREFIX=/root/.local"]
 
-WORKDIR /usr/
+WORKDIR /root/
 RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind"]
 RUN ["/usr/bin/git", "config", "--global", "user.email", "wooo@weee.woah"]
 RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/root/.cvsignore"]
 RUN ["/usr/bin/git", "clone", "--progress", "-j4", "https://github.com/Lind-Project/lind_project.git"]
 
-WORKDIR /usr/lind_project/
+WORKDIR /root/lind_project/
 RUN ["/usr/bin/rm", "-rf", "/root/build/", "/var/cache/pacman/pkg/"]
 
 CMD ["/usr/bin/bash"]
