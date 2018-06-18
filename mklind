@@ -233,6 +233,7 @@ function download_src() {
 	cd "$LIND_BASE"
 
 	# make sure we are in the git root of "Lind-Project/lind_project"
+	git init
 	if [[ "$(git config remote.origin.url)" != *lind_project* ]]; then
 		if ! git remote add origin "$LIND_URL"; then
 			print "LIND_BASE already an initialized git directory" >&2
