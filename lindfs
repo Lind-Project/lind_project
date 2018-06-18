@@ -1,14 +1,16 @@
 #!/bin/sh
 
+ret=0
 cwd="$PWD"
-reset=""
-purple=""
 
-export LIND_BASE="${LIND_BASE:-/usr/lind_project}"
-export LIND_SRC="${LIND_SRC:-/usr/lind_project/lind}"
-export LIND_MONITOR="${LIND_MONITOR:-/usr/lind_project/reference_monitor}"
-export NACL_SDK_ROOT="${NACL_SDK_ROOT:-/usr/lind_project/lind/repy/sdk}"
-export REPY_PATH="${REPY_PATH:-/usr/lind_project/lind/repy}"
+trap 'cd "$cwd"; exit "$ret"' EXIT
+
+export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
+export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
+export LIND_SRC="${LIND_SRC:-$LIND_PREFIX/lind_project/lind}"
+export LIND_MONITOR="${LIND_MONITOR:-$LIND_PREFIX/lind_project/reference_monitor}"
+export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$LIND_PREFIX/lind_project/lind/repy/sdk}"
+export REPY_PATH="${REPY_PATH:-$LIND_PREFIX/lind_project/lind/repy}"
 export PYTHON="${PYTHON:-python2}"
 export PNACLPYTHON="${PNACLPYTHON:-python2}"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
@@ -23,9 +25,13 @@ if test $# -ge 0; then
 fi
 
 cd "$REPY_PATH/repy" || exit 1
+
 if command -v tput >/dev/null 2>&1; then
 	reset="$(tput -T xterm sgr0)"
 	purple="$(tput -T xterm setaf 13)"
+else
+	reset=""
+	purple=""
 fi
 if test "$1" = cp || test "$1" = update; then
 	action="$1"
@@ -42,5 +48,4 @@ if test "$ret" -ne 0 && test "$1" = cp; then
 	ret=$?
 fi
 
-cd "$cwd" || exit 1
 exit "$ret"
