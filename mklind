@@ -75,20 +75,23 @@ for word; do
 	case "$word" in
 	-*e*)
 		# setup and print out the default environment
-		export LIND_BASE="${LIND_BASE:-/usr/lind_project}"
-		export LIND_SRC="${LIND_SRC:-/usr/lind_project/lind}"
-		export LIND_MONITOR="${LIND_MONITOR:-/usr/lind_project/reference_monitor}"
-		export NACL_SDK_ROOT="${NACL_SDK_ROOT:-/usr/lind_project/lind/repy/sdk}"
-		export REPY_PATH="${REPY_PATH:-/usr/lind_project/lind/repy}"
+		export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
+		export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
+		export LIND_SRC="${LIND_SRC:-$LIND_PREFIX/lind_project/lind}"
+		export LIND_MONITOR="${LIND_MONITOR:-$LIND_PREFIX/lind_project/reference_monitor}"
+		export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$LIND_PREFIX/lind_project/lind/repy/sdk}"
+		export REPY_PATH="${REPY_PATH:-$LIND_PREFIX/lind_project/lind/repy}"
 		export PYTHON="${PYTHON:-python2}"
 		export PNACLPYTHON="${PNACLPYTHON:-python2}"
 		export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
+
 		print
 		print '======================================================'
 		print 'USING DEFAULT NACL ENVIRONMENT:'
 		print '======================================================'
 		print
 		cat <<-EOF
+			export LIND_PREFIX="$LIND_PREFIX"
 			export LIND_BASE="$LIND_BASE"
 			export LIND_SRC="$LIND_SRC"
 			export LIND_MONITOR="$LIND_MONITOR"
@@ -226,7 +229,7 @@ function download_src() {
 	local -A git_deps
 
 	# clone and symlink dependencies
-	mkdir -p "$LIND_SRC"
+	mkdir -p "$LIND_BASE" "$LIND_SRC"
 	cd "$LIND_BASE"
 
 	# make sure we are in the git root of "Lind-Project/lind_project"
@@ -311,9 +314,6 @@ function download_src() {
 		cd "$NACL_TOOLCHAIN_BASE"
 		rm -rf SRC
 		make sync-pinned
-		git fetch --all
-		git clean -df
-		git reset --hard origin/lind_fork
 		cd SRC
 		rm -rf glibc gcc binutils
 		ln -Tsfv "$LIND_GLIBC_SRC" glibc
