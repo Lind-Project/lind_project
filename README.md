@@ -1,6 +1,6 @@
 # Lind
 
-Lind is a single process sandbox that provides an option to safely execute
+Lind is a single-process sandbox that provides an option to safely execute
 programs and control its resource (network, file, memory, cpu, etc.) usage
 at the process granularity. Lind executes applications in an isolated
 environment from the rest of the applications in the system, and thus
@@ -29,9 +29,11 @@ found in `docker/pkgs.tar.xz`
 
 ## Usage
 
-Clone this repository to `/usr/lind_project` install the python dependencies
-using `pip2 install --user virtualenvwrapper virtualenv`, and finally run  `make`
-or `./mklind -e` to start the build script using the default environment.
+Clone the [main Lind repository](https://github.com/Lind-Project/lind_project)
+to `~/lind_project`, install the python dependencies using
+`pip2 install --user virtualenvwrapper virtualenv`, and finally
+run `make` or `./mklind -e` to start the build script using the default
+environment.
 
 ```bash
 ./mklind [-ehv] [targets]
@@ -48,14 +50,16 @@ or `./mklind -e` to start the build script using the default environment.
 The default environment of `./mklind -e` consists of
 
 ```bash
-export LIND_BASE="/usr/lind_project"
-export LIND_SRC="/usr/lind_project/lind"
-export LIND_MONITOR="/usr/lind_project/lind/reference_monitor"
-export NACL_SDK_ROOT="/usr/lind_project/lind/repy/sdk"
-export REPY_PATH="/usr/lind_project/lind/repy"
+export LIND_PREFIX="$HOME"
+export LIND_BASE="$LIND_PREFIX/lind_project"
+export LIND_SRC="$LIND_PREFIX/lind_project/lind"
+export LIND_MONITOR="$LIND_PREFIX/lind_project/reference_monitor"
+export NACL_SDK_ROOT="$LIND_PREFIX/lind_project/lind/repy/sdk"
+export REPY_PATH="$LIND_PREFIX/lind_project/lind/repy"
 export PYTHON="python2"
 export PNACLPYTHON="python2"
 export LD_LIBRARY_PATH="/lib/glibc"
+
 ```
 
 as the default set of sane paths for the build.
