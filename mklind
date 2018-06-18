@@ -87,7 +87,7 @@ for word; do
 
 		print
 		print '======================================================'
-		print 'USING DEFAULT NACL ENVIRONMENT:'
+		print 'USING DEFAULT LIND ENVIRONMENT:'
 		print '======================================================'
 		print
 		cat <<-EOF
