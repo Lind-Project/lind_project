@@ -12,10 +12,10 @@ all lind:
 	@$(MAKE) "lind/$(basename $(notdir $*))"
 
 lind/%:
-	docker run -it alyptik/lind /bin/bash -c './caging.sh $*'
+	docker run --privileged --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind /bin/bash -c './caging.sh $*'
 
 run shell bash: | pull
-	docker run -it alyptik/lind /bin/bash
+	docker run --privileged --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind /bin/bash
 
 list show:
 	docker image list -f label=lind -a

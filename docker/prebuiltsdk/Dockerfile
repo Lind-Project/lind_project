@@ -28,11 +28,14 @@ RUN ["./mklind", "repy"]
 RUN ["./mklind", "buildglibc"]
 RUN ["./mklind", "install"]
 RUN ["./mklind", "liblind"]
+RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello"]
 
 WORKDIR /home/lind/lind_project/lind/repy/repy/
+RUN ["/usr/bin/env", "lindfs", "cp", "./fork"]
 RUN ["/usr/bin/env", "lindfs", "cp", "./hello"]
 RUN ["/usr/bin/env", "lindfs", "cp", "../lib"]
+RUN ["/usr/bin/env", "script", "-qfc", "lind /fork", "/dev/null"]
 RUN ["/usr/bin/env", "script", "-qfc", "lind /hello", "/dev/null"]
 
 USER root

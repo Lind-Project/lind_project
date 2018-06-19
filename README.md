@@ -13,10 +13,25 @@ the Docker Hub Lind repository at [alyptik/lind](https://hub.docker.com/r/alypti
 with ` docker pull alyptik/lind:base` and `docker pull alyptik/lind:prebuiltsdk`
 respectively.
 
-Container is started as root in order to avoid needing to setup `sudo`, so
-please `su lind` before any building/testing.
+You can either `make run` or start the container yourself using:
 
-## Dependencies
+```bash
+docker pull alyptik/lind:prebuiltsdk
+docker run --privileged --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind /bin/bash
+```
+
+The `--privileged` option is so that /proc is writable, the `--ipc=host` option
+is needed to avoid mounting /dev/shm with `noexec` (NaCl needs to be able to
+execute mmap()'d sections of /dev/shm) and the `--cap-add=SYS_PTRACE` allows
+debugging with applications that use ptrace() such as gdb.
+
+The container is started logged into root in order to avoid needing to
+setup `sudo`, so please `su lind` before any building/testing.
+
+## Build Script Dependencies
+
+If you decide to instead build Lind on your host system, the following
+dependencies are required:
 
 * python 2
 * virtualenv2 and virtualenvwrapper
