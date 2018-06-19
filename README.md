@@ -52,14 +52,13 @@ The default environment of `./mklind -e` consists of
 ```bash
 export LIND_PREFIX="$HOME"
 export LIND_BASE="$LIND_PREFIX/lind_project"
-export LIND_SRC="$LIND_PREFIX/lind_project/lind"
-export LIND_MONITOR="$LIND_PREFIX/lind_project/reference_monitor"
-export NACL_SDK_ROOT="$LIND_PREFIX/lind_project/lind/repy/sdk"
-export REPY_PATH="$LIND_PREFIX/lind_project/lind/repy"
+export LIND_SRC="$LIND_BASE/lind"
+export LIND_MONITOR="$LIND_BASE/reference_monitor"
+export REPY_PATH="$LIND_SRC/repy"
+export NACL_SDK_ROOT="$REPY_PATH/sdk"
 export PYTHON="python2"
 export PNACLPYTHON="python2"
 export LD_LIBRARY_PATH="/lib/glibc"
-
 ```
 
 as the default set of sane paths for the build.
@@ -67,4 +66,4 @@ as the default set of sane paths for the build.
 You can also export these environment variables yourself and use `./mklind`
 without the `-e` flag to use custom paths for the build.
 
-##### n.b. `LD_LIBRARY_PATH` needs to be set to `/lib/glibc` unless you are modifying the target installation directory for Repy's modified glibc toolchain.
+##### n.b. `LD_LIBRARY_PATH` needs to be set to `/lib/glibc` unless you are modifying the target directory for Repy's modified glibc toolchain installation.
