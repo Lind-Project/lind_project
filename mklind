@@ -391,7 +391,7 @@ function install_to_path() {
 
 	#install scripts
 	rm -fv "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
-	cp -fv "$MISC_DIR/lind.sh" "$REPY_PATH_BIN/lind"
+	cp -fv "$MISC_DIR/lind" "$REPY_PATH_BIN/lind"
 	cp -fv "$LIND_BASE/lindfs" "$REPY_PATH_BIN/lindfs"
 	chmod +x "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
 
