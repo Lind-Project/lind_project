@@ -13,6 +13,9 @@ the Docker Hub Lind repository at [alyptik/lind](https://hub.docker.com/r/alypti
 with ` docker pull alyptik/lind:base` and `docker pull alyptik/lind:prebuiltsdk`
 respectively.
 
+Container is started as root in order to avoid needing to setup `sudo`, so
+please `su lind` before any building/testing.
+
 ## Dependencies
 
 * python 2
