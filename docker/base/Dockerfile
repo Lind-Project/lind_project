@@ -49,6 +49,9 @@ WORKDIR /home/lind/build/
 RUN ["/usr/bin/lesskey"]
 RUN ["/usr/bin/pip2", "install", "--user", "-Ur", "requirements.txt"]
 RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
+
+USER root
+
 WORKDIR /home/lind/build/terminfo-italics/
 RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 WORKDIR /home/lind/build/cower/
@@ -57,19 +60,22 @@ WORKDIR /home/lind/build/pacaur/
 RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 WORKDIR /home/lind/build/make-3.82/
 RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+
+USER lind
+
 WORKDIR /home/lind/build/texinfo-4.13/
 RUN ["./configure", "--prefix=/home/lind/.local"]
 RUN ["/usr/bin/make", "install", "PREFIX=/home/lind/.local"]
-
 WORKDIR /home/lind/
 RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind"]
 RUN ["/usr/bin/git", "config", "--global", "user.email", "wooo@weee.woah"]
 RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/home/lind/.cvsignore"]
 RUN ["/usr/bin/git", "clone", "--progress", "-j4", "https://github.com/Lind-Project/lind_project.git"]
 
+USER root
+
 WORKDIR /home/lind/lind_project/
 RUN ["/usr/bin/rm", "-rf", "/home/lind/build/", "/var/cache/pacman/pkg/"]
 
-USER root
 
 CMD ["/usr/bin/bash"]
