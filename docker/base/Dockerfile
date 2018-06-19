@@ -5,21 +5,21 @@ MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
 ADD ["https://raw.githubusercontent.com/Lind-Project/lind_project/master/docker/pkgs.tar.xz", "/"]
 
-ENV PATH "/usr/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
-ENV PATH "/usr/lind_project/lind/repy/bin:$PATH"
-ENV PATH "/usr/lind_project:$PATH"
-ENV PATH "/root/.local/bin:$PATH"
 ENV VIRTUALENVWRAPPER_PYTHON "/usr/bin/python2"
 ENV VIRTUALENVWRAPPER_VIRTUALENV "/usr/bin/virtualenv2"
-ENV LIND_PREFIX "$HOME"
+ENV LIND_PREFIX "/root"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
-ENV LIND_SRC "$LIND_PREFIX/lind_project/lind"
-ENV LIND_MONITOR "$LIND_PREFIX/lind_project/reference_monitor"
-ENV NACL_SDK_ROOT "$LIND_PREFIX/lind_project/lind/repy/sdk"
-ENV REPY_PATH "$LIND_PREFIX/lind_project/lind/repy"
+ENV LIND_SRC "$LIND_BASE/lind"
+ENV LIND_MONITOR "$LIND_BASE/reference_monitor"
+ENV REPY_PATH "$LIND_SRC/repy"
+ENV NACL_SDK_ROOT "$REPY_PATH/sdk"
 ENV PYTHON "python2"
 ENV PNACLPYTHON "python2"
 ENV LD_LIBRARY_PATH "/lib/glibc"
+ENV PATH "$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:$PATH"
+ENV PATH "$REPY_PATH/bin:$PATH"
+ENV PATH "$LIND_BASE:$PATH"
+ENV PATH "/root/.local/bin:$PATH"
 
 WORKDIR /
 RUN ["/usr/bin/bsdtar", "--no-same-permissions", "-xf", "pkgs.tar.xz"]
