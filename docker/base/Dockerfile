@@ -85,7 +85,7 @@ WORKDIR /tmp/cepl-git/
 RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 
 WORKDIR /home/lind/lind_project/
-RUN ["/usr/bin/ln", "-rsv", "$LIND_BASE", "/root/"]
+RUN ["/usr/bin/ln", "-rsv", "/home/lind/lind_project", "/root/"]
 RUN ["/usr/bin/rm", "-rf", "/home/lind/build/", "/root/build/", "/var/cache/pacman/pkg/"]
 
 CMD ["/usr/bin/bash"]
