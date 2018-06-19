@@ -21,15 +21,17 @@ ENV PATH "$REPY_PATH/bin:$PATH"
 ENV PATH "$LIND_BASE:$PATH"
 ENV PATH "/home/lind/.local/bin:$PATH"
 
+USER root
+
 WORKDIR /
-RUN ["/usr/bin/useradd", "-m", "-U", "-s", "/bin/bash", "lind"]
+RUN ["/usr/bin/useradd", "-Um", "-s/bin/bash", "-u1000", "lind"]
 RUN ["/usr/bin/mkdir", "-pv", "/root/.local/etc/", "/home/lind/.local/etc/"]
 RUN ["/usr/bin/bsdtar", "--no-same-permissions", "-xf", "pkgs.tar.xz"]
-RUN ["/usr/bin/chown", "-RL","lind:lind", "/home/lind/"]
-RUN ["/usr/bin/chown", "-RL","root:root", "/etc/", "/root/"]
-RUN ["/usr/bin/pacman", "-Sy", "--needed", "--noconfirm", "gawk", "procps-ng", "ruby"]
-RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", "w3m", \
-    "git", "mercurial", "rsync", "make", "perl", "clang", "lynx", "ed", \
+RUN ["/usr/bin/chown", "-LR","lind:lind", "/home/lind/"]
+RUN ["/usr/bin/chown", "-LR","root:root", "/etc/", "/root/"]
+RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
+    "git", "mercurial", "rsync", "make", "perl", "clang", "lynx", "ltrace", \
+    "w3m", "gawk", "procps-ng", "ruby", "strace", "gdb", "reptyr", "ed", \
     "compiler-rt", "lib32-clang", "lib32-llvm", "lib32-llvm-libs", "vim", \
     "llvm", "llvm-libs", "openmp", "elfutils", "libelf", "gdb", "less", \
     "gnu-netcat", "zsh", "zsh-completions", "grml-zsh-config", "htop", "bc", \
@@ -45,13 +47,33 @@ RUN ["/usr/bin/pkgfile", "--update"]
 
 USER lind
 
+WORKDIR /home/lind/
+RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind"]
+RUN ["/usr/bin/git", "config", "--global", "user.email", "wooo@weee.woah"]
+RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/home/lind/.cvsignore"]
+RUN ["/usr/bin/git", "clone", "--progress", "-j4", "https://github.com/Lind-Project/lind_project.git"]
 WORKDIR /home/lind/build/
 RUN ["/usr/bin/lesskey"]
 RUN ["/usr/bin/pip2", "install", "--user", "-Ur", "requirements.txt"]
 RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
+WORKDIR /home/lind/build/texinfo-4.13/
+RUN ["./configure", "--prefix=/home/lind/.local"]
+RUN ["/usr/bin/make", "install", "PREFIX=/home/lind/.local"]
+RUN ["/usr/bin/cower", "-t", "/home/lind/build/", "-dd", "cepl-git"]
 
 USER root
 
+WORKDIR /root/
+RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind"]
+RUN ["/usr/bin/git", "config", "--global", "user.email", "wooo@weee.woah"]
+RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/root/.cvsignore"]
+RUN ["/usr/bin/git", "clone", "--progress", "-j4", "https://github.com/Lind-Project/lind_project.git"]
+WORKDIR /root/build/
+RUN ["/usr/bin/lesskey"]
+RUN ["/usr/bin/pip2", "install", "--user", "-Ur", "requirements.txt"]
+RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
+WORKDIR /home/lind/build/cepl-git/
+RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 WORKDIR /home/lind/build/terminfo-italics/
 RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 WORKDIR /home/lind/build/cower/
@@ -61,21 +83,7 @@ RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchec
 WORKDIR /home/lind/build/make-3.82/
 RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 
-USER lind
-
-WORKDIR /home/lind/build/texinfo-4.13/
-RUN ["./configure", "--prefix=/home/lind/.local"]
-RUN ["/usr/bin/make", "install", "PREFIX=/home/lind/.local"]
-WORKDIR /home/lind/
-RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind"]
-RUN ["/usr/bin/git", "config", "--global", "user.email", "wooo@weee.woah"]
-RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/home/lind/.cvsignore"]
-RUN ["/usr/bin/git", "clone", "--progress", "-j4", "https://github.com/Lind-Project/lind_project.git"]
-
-USER root
-
 WORKDIR /home/lind/lind_project/
-RUN ["/usr/bin/rm", "-rf", "/home/lind/build/", "/var/cache/pacman/pkg/"]
-
+RUN ["/usr/bin/rm", "-rf", "/home/lind/build/", "/root/build/", "/var/cache/pacman/pkg/"]
 
 CMD ["/usr/bin/bash"]
