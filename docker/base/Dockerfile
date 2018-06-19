@@ -23,6 +23,7 @@ ENV PATH "/home/lind/.local/bin:$PATH"
 
 WORKDIR /
 RUN ["/usr/bin/useradd", "-m", "-U", "-s", "/bin/bash", "lind"]
+RUN ["/usr/bin/mkdir", "-pv", "/root/.local/etc/", "/home/lind/.local/etc/"]
 RUN ["/usr/bin/bsdtar", "--no-same-permissions", "-xf", "pkgs.tar.xz"]
 RUN ["/usr/bin/chown", "-RL","lind:lind", "/home/lind/"]
 RUN ["/usr/bin/chown", "-RL","root:root", "/etc/", "/root/"]
