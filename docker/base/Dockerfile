@@ -5,7 +5,7 @@ MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
 ADD ["etc/", "/etc/"]
 ADD ["home/", "/home/"]
-ADD "root/", "/root/"]
+ADD ["root/", "/root/"]
 
 ENV VIRTUALENVWRAPPER_PYTHON "/usr/bin/python2"
 ENV VIRTUALENVWRAPPER_VIRTUALENV "/usr/bin/virtualenv2"

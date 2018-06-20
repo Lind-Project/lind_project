@@ -114,6 +114,6 @@ typescript
 docker/etc/
 docker/home/
 docker/root/
-docker/pkgs/
+pkgs/
 
 # vi:ft=cfg:
