@@ -75,8 +75,6 @@ USER lind
 
 WORKDIR /home/lind/build/cower/
 RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
-WORKDIR /home/lind/build/pacaur/
-RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 WORKDIR /home/lind/build/make-3.82/
 RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 WORKDIR /home/lind/build/texinfo-4.13/
