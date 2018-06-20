@@ -38,6 +38,4 @@ RUN ["/usr/bin/env", "lindfs", "cp", "../lib"]
 RUN ["/usr/bin/env", "script", "-qfc", "lind /fork", "/dev/null"]
 RUN ["/usr/bin/env", "script", "-qfc", "lind /hello", "/dev/null"]
 
-USER root
-
 CMD ["/usr/bin/bash"]
