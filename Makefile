@@ -8,11 +8,11 @@ all lind:
 
 .PHONY: Makefile all lind run shell bash list show latest prebuiltsdk base stack deploy pull clean prune
 
-%: | pull
+%:
 	@$(MAKE) "lind/$(basename $(notdir $*))"
 
 lind/%:
-	docker run --privileged --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind /bin/bash -c './caging.sh $*'
+	@./mklind -e $*
 
 run shell bash: | pull
 	docker run --privileged --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind /bin/bash
