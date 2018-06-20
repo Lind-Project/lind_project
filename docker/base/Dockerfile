@@ -92,4 +92,6 @@ USER root
 WORKDIR /home/lind/lind_project/
 RUN ["/usr/bin/rm", "-rf", "/home/lind/build/", "/root/build/", "/var/cache/pacman/pkg/"]
 
+USER lind
+
 CMD ["/usr/bin/bash"]
