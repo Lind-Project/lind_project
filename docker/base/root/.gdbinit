@@ -55,10 +55,10 @@ end
 
 define run-lind
 	if $argc > 1
-		run -a -- /lib/glibc/runnable-ld.so --library-path /lib/glibc /test_cases/$arg1
+		run -a -- /lib/glibc/runnable-ld.so --library-path /lib/glibc /$arg1
 		thread $arg0 attach
 	else
-		run -a -- /lib/glibc/runnable-ld.so --library-path /lib/glibc /test_cases/fork
+		run -a -- /lib/glibc/runnable-ld.so --library-path /lib/glibc /fork
 		if $argc > 0
 			thread $arg0 attach
 		end

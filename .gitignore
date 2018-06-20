@@ -107,7 +107,6 @@ typescript
 
 # docker files
 !docker/base/**/build/
-!docker/prebuiltsdk/**/build/
 docker/etc/
 docker/home/
 docker/root/
