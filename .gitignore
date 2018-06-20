@@ -111,7 +111,9 @@ typescript
 *.tar.gz
 
 # docker pkg archive
-!/docker/pkgs.tar.xz
-pkgs/
+docker/etc/
+docker/home/
+docker/root/
+docker/pkgs/
 
 # vi:ft=cfg:
