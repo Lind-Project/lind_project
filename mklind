@@ -553,12 +553,6 @@ function build_nacl() {
 		python2 ./scons.py --verbose --mode="$MODE,nacl" \
 		nacl_pic=1 werror=0 \
 		platform=x86-64 --nacl_glibc -j4
-	rc="$?"
-	if ((rc)); then
-		print "" "NaCl Build Failed: exit status [$rc]" $'\a' >&2
-		false
-	fi
-
 	print "Done building NaCl $rc"
 
 	cur_func="${FUNCNAME[1]}"
@@ -606,9 +600,7 @@ function build_glibc() {
 	# weird constructs are needed
 	#
 	# -jp
-	PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
-		|| PATH="$LIND_BASE:$PATH" make build-with-glibc -j4 \
-		|| false
+	PATH="$LIND_BASE:$PATH" make build-with-glibc -j4
 
 	print "Done building toolchain"
 
