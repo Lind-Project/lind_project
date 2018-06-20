@@ -25,9 +25,6 @@ is needed to avoid mounting /dev/shm with `noexec` (NaCl needs to be able to
 execute mmap()'d sections of /dev/shm) and the `--cap-add=SYS_PTRACE` allows
 debugging with applications that use ptrace() such as gdb.
 
-The container is started logged into root in order to avoid needing to
-setup `sudo`, so please `su lind` before any building/testing.
-
 ## Build Script Dependencies
 
 If you decide to instead build Lind on your host system, the following
