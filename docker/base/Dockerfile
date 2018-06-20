@@ -3,7 +3,7 @@ LABEL lind "v0.9-alpha"
 LABEL description "Lind NaCl Glibc Toolchain (Base)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
-ADD ["https://raw.githubusercontent.com/Lind-Project/lind_project/master/docker/pkgs.tar.xz", "/"]
+ADD ["etc/", "home/", "root/", "/"]
 
 ENV VIRTUALENVWRAPPER_PYTHON "/usr/bin/python2"
 ENV VIRTUALENVWRAPPER_VIRTUALENV "/usr/bin/virtualenv2"
@@ -26,7 +26,6 @@ USER root
 WORKDIR /
 RUN ["/usr/bin/useradd", "-Um", "-s/bin/bash", "-u1000", "lind"]
 RUN ["/usr/bin/mkdir", "-pv", "/root/.local/etc/", "/home/lind/.local/etc/"]
-RUN ["/usr/bin/bsdtar", "--no-same-permissions", "-xf", "pkgs.tar.xz"]
 RUN ["/usr/bin/chown", "-LR","lind:lind", "/home/lind/"]
 RUN ["/usr/bin/chown", "-LR","root:root", "/etc/", "/root/"]
 RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
@@ -42,7 +41,8 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
     "iputils","python", "iproute2", "net-tools", "openresolv", "ranger", \
     "openssh", "subversion", "pacman-contrib", "arch-wiki-docs", "tree", \
     "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", "inetutils", \
-    "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate"]
+    "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate", \
+    "sudo", "shadow"]
 RUN ["/usr/bin/pkgfile", "--update"]
 
 USER lind
@@ -56,9 +56,6 @@ WORKDIR /home/lind/build/
 RUN ["/usr/bin/lesskey"]
 RUN ["/usr/bin/pip2", "install", "--user", "-Ur", "requirements.txt"]
 RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
-WORKDIR /home/lind/build/texinfo-4.13/
-RUN ["./configure", "--prefix=/home/lind/.local"]
-RUN ["/usr/bin/make", "install", "PREFIX=/home/lind/.local"]
 
 USER root
 
@@ -66,26 +63,33 @@ WORKDIR /root/
 RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind"]
 RUN ["/usr/bin/git", "config", "--global", "user.email", "wooo@weee.woah"]
 RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/root/.cvsignore"]
-RUN ["/usr/bin/git", "clone", "--progress", "-j4", "https://github.com/Lind-Project/lind_project.git"]
+RUN ["/usr/bin/ln", "-rsv", "/home/lind/lind_project", "./"]
 WORKDIR /root/build/
 RUN ["/usr/bin/lesskey"]
 RUN ["/usr/bin/pip2", "install", "--user", "-Ur", "requirements.txt"]
 RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
-WORKDIR /home/lind/build/terminfo-italics/
-RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+
+USER lind
+
 WORKDIR /home/lind/build/cower/
-RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 WORKDIR /home/lind/build/pacaur/
-RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
 WORKDIR /home/lind/build/make-3.82/
-RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
-WORKDIR /tmp/
-RUN ["/usr/bin/cower", "-dd", "cepl-git"]
-WORKDIR /tmp/cepl-git/
-RUN ["/usr/bin/env", "EUID=1000", "/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+WORKDIR /home/lind/build/texinfo-4.13/
+RUN ["./configure", "--prefix=/home/lind/.local"]
+RUN ["/usr/bin/make", "install", "PREFIX=/home/lind/.local"]
+WORKDIR /home/lind/build/
+RUN ["/usr/bin/cower", "-dd", "cepl-git", "terminfo-italics"]
+WORKDIR /home/lind/build/cepl-git/
+RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+WORKDIR /home/lind/build/terminfo-italics/
+RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+
+USER root
 
 WORKDIR /home/lind/lind_project/
-RUN ["/usr/bin/ln", "-rsv", "/home/lind/lind_project", "/root/"]
 RUN ["/usr/bin/rm", "-rf", "/home/lind/build/", "/root/build/", "/var/cache/pacman/pkg/"]
 
 CMD ["/usr/bin/bash"]
