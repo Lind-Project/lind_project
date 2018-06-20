@@ -1,0 +1,54 @@
+#line-edit
+\t        forw-complete
+\17       back-complete
+\e\t      back-complete
+^L        expand
+^V        literal
+\el       right
+\kr       right
+\eh       left
+\kl       left
+\eb       word-left
+\e\kl     word-left
+\e[1;5D   word-left
+\e[1;3D   word-left
+\e[1;2D   word-left
+\ew       word-right
+\e\kr     word-right
+\e[1;5C   word-right
+\e[1;3C   word-right
+\e[1;2C   word-right
+\ei       insert
+\ex       delete
+\kx       delete
+\eX       word-delete
+\ekx      word-delete
+\ed       word-delete
+\e\b      word-backspace
+^W        word-backspace
+\e0       home
+\kh       home
+^A        home
+\e[1;5B   home
+\e[1;3B   home
+\e[1;2B   home
+\e$       end
+\ke       end
+^E        end
+\e[1;5A   end
+\e[1;3A   end
+\e[1;2A   end
+\ek       up
+\ku       up
+\ej       down
+^G        abort
+
+#command
+\kx       back-line
+\\        back-line
+\177      back-line
+\b        back-line
+^H        back-line
+^?        back-line
+
+# vi:ft=terminfo:
