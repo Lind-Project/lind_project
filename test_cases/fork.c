@@ -55,7 +55,7 @@ int main(void)
 		exit(EXIT_SUCCESS);
 	}
 
-	printf("%d\n", getpid());
+	/* printf("%d\n", getpid()); */
 	fflush(0);
 	write(STDOUT_FILENO, p1, sizeof p1 - 1);
 	if (waitpid(ppid, &pret, 0) == -1)
