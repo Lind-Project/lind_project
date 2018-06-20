@@ -1458,18 +1458,6 @@ let g:startify_session_delete_buffers	=1
 let g:startify_change_to_vcs_root	=0
 
 let g:session_autosave='no'
-au SessionLoadPost * let g:session_autosave=!empty(xolox#session#find_current_session())
-	\ ? 'prompt'
-	\ : 'no'
-" prompt for autosave if g:CurSession is set
-" augroup HasSession
-"         au!
-"         au SessionLoadPost * let s:InSession=xolox#session#find_current_session()
-"         au SessionLoadPost * let g:session_autosave=s:InSession ? 'prompt' : 'no'
-"         " au SessionLoadPost * silent!  let s:HasSession={-> !empty(g:CurSession) ? 1 : 0}()
-"         " au SessionLoadPost * let g:session_autosave=s:HasSession ? 'prompt' : 'no'
-" augroup END
-
 let g:session_autoload='no'
 let g:session_command_aliases=1
 " disable all session locking - I know what I'm doing :)
@@ -1483,19 +1471,22 @@ let g:session_default_name='last'
 let g:session_directory='~/.vim/sessions'
 let g:startify_session_dir='~/.vim/sessions'
 " persist all options related to :make
-let g:session_persist_globals = ['&makeprg', '&makeef']
+let g:session_persist_globals = ['&makeprg', '&makeef', '&expandtab']
+
+" au SessionLoadPost * let g:session_autosave=!empty(xolox#session#find_current_session())
+"         \ ? 'prompt'
+"         \ : 'no'
 
 " view options
 set viewdir=~/.vim/view
 " save :lcd cwd
 set vop+=curdir
-" don't save cwd
-set vop-=options
+set vop+=options
 
 " session options
-set ssop+=winpos ssop+=globals ssop+=resize
+set ssop+=winpos ssop+=globals ssop+=options ssop+=resize
 " ssop+=localoptions
-set ssop-=blank ssop-=help ssop-=options ssop-=buffers
+set ssop-=blank ssop-=help ssop-=localoptions ssop-=buffers
 " only include current tab page
 " set ssop-=tabpages
 
