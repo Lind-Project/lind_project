@@ -496,11 +496,12 @@ function test_syscalls() {
 	# ignore these signals during testing
 	trap '' ERR TERM
 	for file in *.c; do
-		print "testing $file"
+		print "" "** Testing $file **" ""
 		"$cc_cmd" "$file" -o "$REPY_PATH/repy/${file%%.c}"
 		"$REPY_PATH_BIN/lindfs" update "$REPY_PATH/repy/${file%%.c}"
 		"$REPY_PATH_BIN/lind" "/${file%%.c}"
 	done
+	print ""
 	# reset signal dispositions
 	trap - ERR INT TERM
 
