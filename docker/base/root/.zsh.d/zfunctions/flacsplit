@@ -1,0 +1,7 @@
+
+	local cuef="$1"
+	local flacf="$2"
+	[[ -z "${1?Error: No cue file specifed}" || -z "${2?Error: No flac file specified}" ]] && return 1
+	cuebreakpoints "$cuef" | shnsplit -o flac "$flacf" -f "$cuef" -t '%n.%t' && \
+		cuetag.sh "$cuef" [0-9]*.*.flac && \
+		kid3-cli -c 'select [0-9]*.*.flac' -c 'fromtag "%{artist} - %{title}" 2' -c 'ls' -c 'save'

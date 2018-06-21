@@ -1,0 +1,33 @@
+## Usage: spice-kvm <disk.img> <(cd.iso|-)> <#>[memory (MB)] <#>[number of CPUs] <(#|tmp)>[spice port or tmp for socket]
+
+local -a args
+args=("$1" "$1" "${@:3}")
+[[ "$(file -Lb "${args[2]}")" =~ '(^data$|^DOS/MBR boot sector)' ]] && \
+	args[2]="raw" || \
+	args[2]="qcow2,l2-cache-size=4M"
+[[ -z "$2" || "$2" =~ '^(-|[Nn]|[Nn][Uu][Ll][Ll])$' ]] && \
+	args+=("-boot" "order=d") || \
+	args+=("-cdrom" "$2")
+[[ "${args[5]:-tmp}" =~ ^[0-9*]$ ]] && \
+	args[5]="port=${args[5]}" || \
+	args[5]="unix,addr=/tmp/vm_spice.socket,playback-compression=off"
+qemu-system-x86_64 \
+	-drive file="${args[1]?No image specified!}",format="${args[2]}",aio=native,cache.direct=on \
+	-m "${args[3]:-2048}" -smp "${args[4]:-4}" -vga qxl "${args[6]}" "${args[7]}" \
+	-boot menu=on -enable-kvm -machine type=pc,accel=kvm -show-cursor -usbdevice tablet \
+	-cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time -soundhw hda \
+	-net nic -net bridge,br=virbr0 -monitor stdio -monitor pty \
+	-spice "${args[5]}",disable-ticketing -device virtio-serial-pci \
+	-device virtserialport,chardev=spicechannel0,name=com.redhat.spice.0 \
+	-device ich9-usb-ehci1,id=usb \
+	-device ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on \
+	-device ich9-usb-uhci2,masterbus=usb.0,firstport=2 \
+	-device ich9-usb-uhci3,masterbus=usb.0,firstport=4 \
+	-chardev spicevmc,name=usbredir,id=usbredirchardev1 \
+	-device usb-redir,chardev=usbredirchardev1,id=usbredirdev1 \
+	-chardev spicevmc,name=usbredir,id=usbredirchardev2 \
+	-device usb-redir,chardev=usbredirchardev2,id=usbredirdev2 \
+	-chardev spicevmc,name=usbredir,id=usbredirchardev3 \
+	-device usb-redir,chardev=usbredirchardev3,id=usbredirdev3 \
+	-chardev spicevmc,id=spicechannel0,name=vdagent
+	# -net nic -net bridge,br=virbr0,smb=/mnt/shared -device intel-iommu -monitor stdio -monitor pty \

@@ -1,0 +1,13 @@
+## fix for broken cgmanager
+
+while :; do
+	if mount | grep -wq cgmfs; then
+		#sudo umount /sys/fs/cgroup || sudo umount /run/cgmanager/fs
+		sudo umount "$(mount | awk '/cgmfs/ { print $3 }' | sed -n '$ p')" || sudo umount /sys/fs/cgroup
+		sleep 1
+	else
+		sudo mount -t tmpfs cgmfs /sys/fs/cgroup
+		break
+	fi
+done
+

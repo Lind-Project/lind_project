@@ -1,0 +1,26 @@
+local GIT_STATE GIT_DIR NUM_AHEAD NUM_BEHIND
+
+GIT_DIR="$(git rev-parse --git-dir 2> /dev/null)"
+NUM_AHEAD="$(git log --oneline @{u}.. 2> /dev/null | wc -l | tr -d ' ')"
+if [[ "$NUM_AHEAD" -gt 0 ]]; then
+	GIT_STATE="$GIT_STATE${GIT_PROMPT_AHEAD//NUM/$NUM_AHEAD}"
+fi
+	NUM_BEHIND="$(git log --oneline ..@{u} 2> /dev/null | wc -l | tr -d ' ')"
+if [[ "$NUM_BEHIND" -gt 0 ]]; then
+	GIT_STATE="$GIT_STATE${GIT_PROMPT_BEHIND//NUM/$NUM_BEHIND}"
+fi
+if [[ -e "$GIT_DIR/MERGE_HEAD" ]]; then
+	GIT_STATE="$GIT_STATE$GIT_PROMPT_MERGING"
+fi
+if [[ -n "$(git ls-files --other --exclude-standard 2> /dev/null)" ]]; then
+	GIT_STATE="$GIT_STATE$GIT_PROMPT_UNTRACKED"
+fi
+if ! git diff --quiet 2>/dev/null; then
+	GIT_STATE="$GIT_STATE$GIT_PROMPT_MODIFIED"
+fi
+if ! git diff --cached --quiet 2>/dev/null; then
+	GIT_STATE="$GIT_STATE$GIT_PROMPT_STAGED"
+fi
+if [[ -n "$GIT_STATE" ]]; then
+	print -n -- "$GIT_PROMPT_PREFIX$GIT_STATE$GIT_PROMPT_SUFFIX"
+fi

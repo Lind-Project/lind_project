@@ -1,0 +1,1 @@
+echo | mutt -a "$*" -- alyptik@kindle.com

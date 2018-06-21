@@ -1,0 +1,17 @@
+
+	if [[ "${#}" -lt 1 ]]; then
+		printf "\033[31m %s \n\033[0m" "Error: no arguments..."
+		return 1
+	else
+		local url="${1}"
+		printf " \033[32m %s \033[0m" "[Continue executing script at: \"${url}\"? (Y/n)] "; read -r
+		#read -r -n 1 -p "${1:-Continue?} [y/n]: " REPLY
+		case "$REPLY" in
+			[Yy]*|'') : ;; ## Continue
+			[Nn]*) printf " \033[31m %s \n\033[0m" "Exiting..."; return 1 ;;
+			*) printf " \033[31m %s \n\033[0m" "Invalid input..."; return 1 ;;
+		esac
+		sh -c "$(curl --progress-bar -fsSL "${url}")"
+		return 0
+	fi
+

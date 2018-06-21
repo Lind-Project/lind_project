@@ -1,0 +1,2 @@
+# Store dirs stack
+# dirpersiststore

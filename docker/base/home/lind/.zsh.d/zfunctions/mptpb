@@ -1,0 +1,12 @@
+local comp id
+comp=1
+pidof compton >/dev/null && killall compton || comp=0
+[[ -z "$*" ]] && id="/tmp/$$.png" || id="$*"
+maim -d 2 "$id" && \
+	curl --progress-bar -F"c=@$id" https://ptpb.pw/ \
+	| tee >(awk '/http/ {sub("url: ",""); print}' \
+		| awk 'NR>1{print PREV} {PREV=$0} END{printf("%s",$0)}' \
+		| xsel -ib)
+if ((comp != 0)); then
+	compton -cCGfF -b -i 0.85
+fi

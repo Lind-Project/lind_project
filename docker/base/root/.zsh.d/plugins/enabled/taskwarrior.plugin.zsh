@@ -1,0 +1,1 @@
+../taskwarrior.plugin.zsh

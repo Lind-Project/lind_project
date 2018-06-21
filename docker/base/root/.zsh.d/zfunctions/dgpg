@@ -1,0 +1,7 @@
+if ((!$#)); then
+	return 1
+fi
+
+for key; do
+	gpg2 --armor --export $key | gpg2 --list-packets --verbose
+done

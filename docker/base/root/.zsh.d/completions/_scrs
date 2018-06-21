@@ -1,0 +1,5 @@
+#compdef scrs pscrs
+
+((CURRENT++))
+words=(systemctl restart "${words[@]:1}")
+_normal

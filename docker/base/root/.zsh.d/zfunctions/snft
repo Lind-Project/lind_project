@@ -1,0 +1,9 @@
+
+	if [[ -e "/tmp/nft" ]]; then
+		printf '%s\n' '/tmp/nft exists!'
+	else
+		printf '%s\n' 'Writing nftables ruleset to /tmp/nft.'
+		sudo printf '%s\n' "nft flush ruleset" >/tmp/nft
+		sudo nft list ruleset -annn >>/tmp/nft
+		sudo vim /tmp/nft
+	fi

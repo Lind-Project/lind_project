@@ -1,0 +1,10 @@
+setescapes
+case "$KEYMAP" in
+vicmd)
+	printf "$cblock"; printf "$cred" ;;
+emacs|$_emacs)
+	printf "$cblock"; printf "$cyellow" ;;
+viins|$_vi)
+	printf "$cline"; printf "$cgrey" ;;
+esac
+zle -R

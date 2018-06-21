@@ -1,0 +1,54 @@
+[[ "$#" -eq 0 ]] && return 1
+local -a src flags cmd
+local dest num
+cmd=( "rsync" )
+
+for i in "$@"; do case "$i" in
+--)
+	shift
+	break ;;
+-???*)
+	printf "\033[31m%s\033[0m\n" 'Error: malformed flags';
+	return 4 ;;
+-*)
+	shift
+	flags+=( "${(s::@u)${i//-/}//[^nt]/}" ) ;;
+	# if [[ "$i" =~ t ]]; dest="${@[-1]}" && shift -p; fi ;;
+esac; done
+
+if [[ "$flags" =~ n ]]; then
+	cmd=( "echo" "$cmd[@]" )
+fi
+
+if [[ "$flags" =~ t ]]; then
+	dest="$1" && shift
+else
+	dest="${@[-1]}" && shift -p
+fi
+
+if [[ ! -e "$dest" ]]; then
+	printf "\033[31m%s\033[0m\n" 'Error: target file/directory not found!'
+	return 2
+elif ( [[ -d "$dest" ]] && [[ ! -x "$dest" ]] ) || ( [[ -f "$dest" ]] && [[ ! -w "$dest" ]] ); then
+	printf "\033[31m%s\033[0m\n" 'Error: target file/directory not writeable!'
+	return 3
+fi
+
+num="$#"
+for ((i=0; i<num; i++)); do
+	if [[ ! -e "$1" ]]; then
+		printf "\033[31m%s\033[0m\n" 'Error: one or more source files/directories not found!'
+		return 4
+	elif ( [[ -d "$1" ]] && [[ ! -x "$1" ]] ) || ( [[ -f "$1" ]] && [[ ! -r "$1" ]] ); then
+		printf "\033[31m%s\033[0m\n" 'Error: one or more source files/directories not readable!'
+		return 5
+	fi
+	# test -d "$1" && src+=( "$1/" ) || src+=( "$1" )
+	src+=( "$1" )
+	shift
+done
+
+# test -d "$dest" && dest="$dest/"
+for d in "${src[@]}"; do
+	"$cmd[@]" -avP --remove-source-files --info=progress2 "$d" "$dest"
+done

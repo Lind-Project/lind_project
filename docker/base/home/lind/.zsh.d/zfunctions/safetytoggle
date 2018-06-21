@@ -1,0 +1,72 @@
+## Safety nets - originally commented out to build good habits
+
+local usagedoc unset_flag
+usagedoc+=$'usage: safetytoggle [option(s)]\n'
+usagedoc+=$'\ttoggle or set/unset "safety" aliases (toggle by default)\n'
+usagedoc+=$'options:\n'
+usagedoc+=$'\t-s,--safe\t\tForce enable all safety aliases.\n'
+usagedoc+=$'\t-n,--notsafe\t\tForce disable all safety aliases.\n'
+usagedoc+=$'\t-h,--help,--usage\tView this help/usage examples (overrides other options.)\n'
+usagedoc+=$'examples:\n'
+usagedoc+=$'\tsafetytoggle\n'
+usagedoc+=$'\tsafetytoggle -s|--set\n'
+usagedoc+=$'\tsafetytoggle -n|--noset\n'
+usagedoc+=$'\tsafetytoggle -h|--help|--usage\n'
+usagedoc+=$'List of aliases toggled: [rm,mv,cp,ln,chown,chmod,chgrp]\n'
+usagedoc+=$'\trm -vI --preserve-root\n'
+usagedoc+=$'\tmv -vi\n'
+usagedoc+=$'\tcp -vi\n'
+usagedoc+=$'\tln -vi\n'
+usagedoc+=$'\tchown -v --preserve-root\n'
+usagedoc+=$'\tchmod -v --preserve-root\n'
+usagedoc+=$'\tchgrp -v --preserve-root\n'
+
+## Parse options
+while getopts :hns opt; do
+	case "$opt" in
+	(n)
+		unset_flag=1
+		;;
+	(s)
+		unalias rm mv cp ln chown chmod chgrp &>/dev/null
+		;;
+	(:|?)
+		print -u 2 -r - "illegal option: '$OPTARG'"
+		;&
+	# fallthrough
+	(h)
+		print -u 2 -r - "$usagedoc"
+		return 2
+		;;
+	esac
+done
+shift "$((OPTIND - 1))"
+
+## unset aliases
+if [[ -n "$unset_flag" || "$(type rm)" == *-vI* ]]; then
+	# return early on error
+	if [[ ! -f "$HOME/.aliases" ]]; then
+		unalias rm mv cp ln chown chmod chgrp &>/dev/null
+		printf "\n $(tput setaf 10) %s ($funcsourcetrace) \e[0m\n" 'Safety aliases: [ERROR]'
+		return 1
+	fi
+
+	. "$HOME/.aliases" || return 1
+	print -nrf "\n $(tput setaf 10) %s $(tput sgr0)\n" 'Safety aliases: [Disabled]'
+	return
+fi
+
+## else start from scratch
+unalias rm wget mv cp ln chown chmod chgrp &>/dev/null
+## do not delete / or prompt if deleting more than 3 files at a time
+alias rm='rm -vI --preserve-root '
+## confirmatiob
+alias mv='mv -vi '
+alias cp='cp -vi '
+alias cp='cp -vi --reflink=auto '
+alias ln='ln -vi '
+## Parenting changing permissions on root
+alias chown='chown -v --preserve-root '
+alias chmod='chmod -v --preserve-root '
+alias chgrp='chgrp -v --preserve-root '
+print -nrf "\n $(tput setaf 9) %s $(tput sgr0)\n" 'Safety aliases: [Enabled]'

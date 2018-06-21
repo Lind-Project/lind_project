@@ -1,0 +1,8 @@
+
+	url="$(curl "$1" | grep '<meta property="og:image"')"
+	url="${url/*content=\"/}"
+	url="${url/*\" \/>$/}"
+	feh "$url"
+	[[ -z "$2" ]] && return 0
+	shift
+	imgurredirect "$@"

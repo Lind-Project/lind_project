@@ -1,0 +1,3 @@
+parallel --will-cite systemctl --user ::: restart ::: "$@"
+systemctl status --user --full --no-pager "$@"
+echo

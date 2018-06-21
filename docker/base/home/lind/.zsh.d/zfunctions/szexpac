@@ -1,0 +1,7 @@
+
+	echo -n "$@" '[perform size-sorted search for:] '; read -r
+	expac -s "%-30n %m" | sort -hk 2 | awk '{printf "%s %.0f MiB\n", $1, $2/1024/1024}' | column -t | grep "$REPLY"
+	#case "$ans" in
+			#*) return 1 ;;
+			#) return 0 ;;
+	#esac

@@ -1,0 +1,10 @@
+
+	# for i in /var/lib/dkms/*/[^k]*/source; do [ -e "$i" ] || printf '%s\n' "$i"; done
+	find /var/lib/dkms/ \
+		\( \
+		-regextype egrep \
+		-regex '^.*/dkms/[^k]*/source$' \
+		\! -exec test -e {} \; \
+		\) \
+		-exec ls -Al --color=always {} \;
+

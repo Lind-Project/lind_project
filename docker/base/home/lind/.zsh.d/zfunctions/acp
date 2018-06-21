@@ -1,0 +1,11 @@
+[[ -z "$*" ]] && return 1
+
+arg1="${${1:t}// /_}"
+
+for i in "$@"; do
+	scp "$i" "rarch:/srv/http/uhr/${${i:t}// /_}" && \
+		ssh rarch chown -v http:http "/srv/http/uhr/${${i:t}// /_}" && \
+
+done
+
+<<<"https://alyp.tk/uhr/${arg1}" tee >(perl -pe 'chomp if eof' | xsel -ib)

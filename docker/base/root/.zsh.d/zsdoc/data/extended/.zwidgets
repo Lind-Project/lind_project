@@ -1,0 +1,386 @@
+#!/usr/bin/env zsh
+#
+# .zwidgets
+#
+# ZLE shell function section
+
+# inline calculator `= 4 * 2`
+function = () { print -r -- "$(($@))"; }
+aliases[=]='noglob ='
+
+function zle-fman {
+	local -a cmdline mansects
+	local cmd glob section
+	[[ -z "$MANSECT" ]] && \
+		mansects=(${${(R)${(M)$(print -- /usr/share/man/man* 2>/dev/null)%man*}#man}/\//}) || \
+		mansects=(${(s|:|)MANSECT[@]})
+	cmdline=("${(z)=BUFFER}")
+	if [[ -z "$BUFFER" ]]; then
+		LBUFFER="fman zshall "
+		return
+	fi
+	case "${cmdline[1]}" in
+	(${~${(j:|:)mansects[@]}})
+		section="${cmdline[1]}"
+		shift cmdline
+		cmd="${cmdline[1]}" ;;
+	(*)
+		# Brute force search because “man -w”
+		# breaks when stdin isn't a terminal
+		cmd="${cmdline[1]}"
+		for i in ${^manpath}/man*/${(q)cmd}.*(N); do
+			test -f "$i" && section="${${i%/*}##*/man}" && break
+		done ;;
+	esac
+	[[ "$cmd" == zsh ]] && cmd="zshall"
+	# Setting “section=zshall” is a bit misleading but
+	# this approach removes the need for “if” nesting
+	(( ${#cmdline[@]} > 1 )) && \
+		BUFFER="fman ${section:-zshall} $cmd '${cmdline[@]:1}'" || \
+		BUFFER="fman ${section:-zshall} '$cmd'"
+	zle redisplay
+	# zle accept-line
+}
+
+function zle-zaw-help {
+	[[ -n "$BUFFER" ]] && zle push-input
+	BUFFER="man zaw"
+	zle accept-line
+}
+
+function zle-less {
+	local -a args
+	[[ -z "$BUFFER" ]] && args=("${(z)=history[$((HISTCMD-1))]}") || args=("${(z)=BUFFER}")
+	# eval needed to resolve static named directories
+	until ( [[ ! "${args[1]}" =~ ^..?$ ]] && eval "[[ -e ${args[1]} ]]" ); do
+		# Prevent infinite loop
+		((${#args} > 1)) || return
+		shift args
+	done
+	BUFFER="less -JRMXs ${args[1]}"
+	zle accept-line
+}
+
+function zle-vim {
+	local -a args
+	[[ -z "$BUFFER" ]] && args=("${(z)=history[$((HISTCMD-1))]}") || args=("${(z)=BUFFER}")
+	# eval needed to resolve static named directories
+	until ( [[ ! "${args[1]}" =~ ^..?$ ]] && eval "[[ -e ${args[1]} ]]" ); do
+		# Prevent infinite loop
+		((${#args} > 1)) || return
+		shift args
+	done
+	BUFFER="vim ${args[1]}"
+	zle accept-line
+}
+
+function zle-compdef {
+	local cmd
+	if [[ -z "$BUFFER" ]]; then
+		LBUFFER="compdef _gnu_generic "
+	else
+		# isolate the actual command
+		cmd="${${${BUFFER#*_[[:blank:]]}##(*)(;|&|\(|\)|\{|\}|\`|do|then|else|time|sudo)}%%[[:blank:]]*}"
+		zle push-input
+		BUFFER="compdef _gnu_generic $cmd"
+		zle accept-line
+	fi
+}
+
+function zle-backwards-delete-to-char {
+	[[ -z "$BUFFER" ]] && return
+	read -k 1 -s -r
+	LBUFFER="${LBUFFER%${REPLY}*}"
+
+}
+
+function zle-backwards-zap-to-char {
+	[[ -z "$BUFFER" ]] && return
+	read -k 1 -s -r
+	LBUFFER="${LBUFFER%${REPLY}*}$REPLY"
+}
+
+# X clipboard functions
+function insert-x-selection { LBUFFER="${LBUFFER}$(xsel -op </dev/null 2>/dev/null)"; }
+function append-x-selection { RBUFFER="$(xsel -op </dev/null 2>/dev/null)${RBUFFER}"; }
+function yank-x-selection { print -rn -- "$CUTBUFFER" | xsel -ib; }
+
+function zle-keymap-select {
+	setescapes
+	case "$KEYMAP" in
+	vicmd)
+		printf "$cblock"; printf "$cred" ;;
+	emacs|$_emacs)
+		printf "$cblock"; printf "$cyellow" ;;
+	viins|$_vi)
+		printf "$cline"; printf "$cgrey" ;;
+	esac
+	zle -R
+}
+
+function zle-line-init {
+	setescapes
+	case "$KEYMAP" in
+	vicmd)
+		printf "$cblock"; printf "$cred" ;;
+	emacs|$_emacs)
+		printf "$cblock"; printf "$cyellow" ;;
+	viins|$_vi)
+		printf "$cline"; printf "$cgrey" ;;
+	esac
+	# It should be noted that the O / [ confusion can occur with other keys such as Home and End
+	# http://zsh.sourceforge.net/FAQ/zshfaq03.html#l25
+	# It should be noted that the O / [ confusion can occur with other
+	# keys such as Home and End …
+	#
+	# http://zsh.sourceforge.net/FAQ/zshfaq03.html#l25
+	#
+	# echoti smkx
+	zle -R
+}
+
+function zle-line-finish {
+	setescapes
+	case "$KEYMAP" in
+	vicmd)
+		printf "$cblock"; printf "$cred" ;;
+	emacs|$_emacs)
+		printf "$cblock"; printf "$cyellow" ;;
+	viins|$_vi)
+		printf "$cline"; printf "$cgrey" ;;
+	esac
+	# It should be noted that the O / [ confusion can occur with other
+	# keys such as Home and End …
+	#
+	# http://zsh.sourceforge.net/FAQ/zshfaq03.html#l25
+	#
+	# echoti rmkx
+	zle -R
+}
+
+function zle-toggle-keymap {
+	setescapes
+	case "$_km" in
+	vi)
+		bindkey -e; printf "$cblock"; printf "$cyellow"; _km=emacs; _vi=; _emacs=main ;;
+	emacs)
+		bindkey -v; printf "$cline"; printf "$cgrey"; _km=vi; _vi=main; _emacs= ;;
+	esac
+	zle -R
+}
+
+function zle-emacs-keymap {
+	setescapes
+	bindkey -e; printf "$cblock"; printf "$cyellow"; _km=emacs; _vi=; _emacs=main
+}
+
+function zle-vi-keymap {
+	setescapes
+	bindkey -v; printf "$cline"; printf "$cgrey"; _km=vi; _vi=main; _emacs=
+}
+
+# ALT-I - Paste the selected entry from locate output into the command line
+function fzf-locate-widget {
+	local selected
+	# if selected=$(locate / | fzf -q "$LBUFFER"); then
+	selected=$(locate / | \
+		FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" \
+		$(__fzfcmd) -q "$LBUFFER")
+	LBUFFER=$selected
+	zle redisplay
+}
+
+function zle-fh { print -z -- "$(fc -l 1 | fzf +s --tac | sed 's/ *[0-9]* *//')"; }
+
+function zle-youtube-helper {
+	[[ -z "$BUFFER" ]] && return
+	local -a links
+	local i
+	links=("${(z)=BUFFER}")
+	# links=("${=$(<<<$links sed -r 's/([^ '\'']*)/'\''\1'\''/g')}")
+	links=("${links[@]//(#m)*/'$MATCH'}")
+	#BUFFER="youtube-dl -f 22 $links"
+	BUFFER="youtube-dl $links"
+	CURSOR="${#BUFFER}"
+}
+
+# .zwidgets
+#
+# Non-ZLE shell function section
+
+# Make history entries from other zsh instances immediately visible
+function zshreadhist () { fc -p "$HISTFILE"; }
+
+# Set term escape strings
+function setescapes () {
+	[[ "$TERM" =~ ^linux.*$ ]] && return
+	local i
+	typeset -g cblock cline cred cgrey cyellow
+	cblock='[1 q'
+	cline='[5 q'
+	# cred=']12;#ff0000'
+	# cgrey=']12;#a0a0a0'
+	cgrey=']12;Grey'
+	cred=']12;Red'
+	cyellow=']12;#b58900'
+	if (pstree -s "$$" | grep -wq '\(stjerm\|qterminal\)' || [[ "$TERM" =~ linux ]]); then
+		cblock= cline=
+		return
+	elif pstree -s "$$" | grep -wq 'screen'; then
+		for i in cblock cline cred cgrey cyellow; do
+			eval "$i="'\033P'"\${$i}"'\033\\'
+		done
+	elif ([[ -n "$TMUX" ]] && [[ -z "$STY" ]]); then
+		for i in cblock cline cred cgrey cyellow; do
+			eval "$i="'\033Ptmux\;\033'"\${$i}"'\033\\'
+		done
+	fi
+}
+
+# Function to capture exit code of later command.
+function check_last_exit_code () {
+	local LAST_EXIT_CODE=$?
+	local EXIT_CODE_PROMPT=' '
+	if [[ ${LAST_EXIT_CODE} -ne 0 ]]; then
+	EXIT_CODE_PROMPT+="%{$fg[yellow]%}«%{$reset_color%}"
+	EXIT_CODE_PROMPT+="%{$fg_bold[yellow]%}$LAST_EXIT_CODE%{$reset_color%}"
+	EXIT_CODE_PROMPT+="%{$fg[yellow]%}»%{$reset_color%}"
+	fi
+	print -n -- "$EXIT_CODE_PROMPT"
+}
+
+# Show Git branch/tag, or name-rev if on detached head
+function parse_git_branch () {
+	(git symbolic-ref -q HEAD || git name-rev --name-only --no-undefined --always HEAD) 2>/dev/null
+}
+
+# Show different symbols as appropriate for various Git repository states
+function parse_git_state () {
+	# Compose GIT_STATE via multiple conditional appends.
+	local GIT_STATE GIT_DIR NUM_AHEAD NUM_BEHIND
+
+	GIT_DIR="$(git rev-parse --git-dir 2> /dev/null)"
+	NUM_AHEAD="$(git log --oneline @{u}.. 2> /dev/null | wc -l | tr -d ' ')"
+	if [[ "$NUM_AHEAD" -gt 0 ]]; then
+		GIT_STATE="$GIT_STATE${GIT_PROMPT_AHEAD//NUM/$NUM_AHEAD}"
+	fi
+		NUM_BEHIND="$(git log --oneline ..@{u} 2> /dev/null | wc -l | tr -d ' ')"
+	if [[ "$NUM_BEHIND" -gt 0 ]]; then
+		GIT_STATE="$GIT_STATE${GIT_PROMPT_BEHIND//NUM/$NUM_BEHIND}"
+	fi
+	if [[ -e "$GIT_DIR/MERGE_HEAD" ]]; then
+		GIT_STATE="$GIT_STATE$GIT_PROMPT_MERGING"
+	fi
+	if [[ -n "$(git ls-files --other --exclude-standard 2> /dev/null)" ]]; then
+		GIT_STATE="$GIT_STATE$GIT_PROMPT_UNTRACKED"
+	fi
+	if ! git diff --quiet 2>/dev/null; then
+		GIT_STATE="$GIT_STATE$GIT_PROMPT_MODIFIED"
+	fi
+	if ! git diff --cached --quiet 2>/dev/null; then
+		GIT_STATE="$GIT_STATE$GIT_PROMPT_STAGED"
+	fi
+	if [[ -n "$GIT_STATE" ]]; then
+		print -n -- "$GIT_PROMPT_PREFIX$GIT_STATE$GIT_PROMPT_SUFFIX"
+	fi
+}
+
+# If inside a Git repository, print its branch and state
+function git_prompt_string () {
+	local git_where="$(parse_git_branch)"
+	[[ -n "$git_where" ]] && print -n -- "$GIT_PROMPT_SYMBOL$(parse_git_state)$GIT_PROMPT_PREFIX%{$fg[yellow]%}${git_where#(refs/heads/|tags/)}$GIT_PROMPT_SUFFIX"
+}
+
+# Arch latest news
+# The characters "£, §" are used as metacharacters. They should not be encountered in a feed...
+function news_short () {
+	print -n -- "$(print -- $(curl -m 5 -s ${1:-'https://www.archlinux.org/feeds/news/'} | \
+		sed -e ':a;N;$!ba;s/
+/ /g') | \
+			sed -e '
+			s/&amp;/\&/g
+			s/&lt;\|&#60;/</g
+			s/&gt;\|&#62;/>/g
+			s/<\/a>/£/g
+			s/href\=\"g/§/
+			s/<title>/\e[01;29m \
+   ::\e[01;31m /g; s/<\/title>/ \[00m:: \[00m\n/g
+			s/<link>/ [[ \e[01;36m/g; s/<\/link>/\e[00m ]]\e[00m/g
+			s/<description>/\n\n\e[00;37m/g; s/<\/description>/\e[00m\n\n/g
+			s/<p\( [^>]*\)\?>\|<br\s*\/\?>/
+/g
+			s/<b\( [^>]*\)\?>\|<strong\( [^>]*\)\?>/\e[01;30m/g; s/<\/b>\|<\/strong>/\e[00;37m/g
+			s/<i\( [^>]*\)\?>\|<em\( [^>]*\)\?>/\e[41;37m/g; s/<\/i>\|<\/em>/\e[00;37m/g
+			s/<u\( [^>]*\)\?>/\e[4;37m/g; s/<\/u>/\e[00;37m/g
+			s/<code\( [^>]*\)\?>/\e[00m/g; s/<\/code>/\e[00;37m/g
+			s/<a[^§|t]*§\([^\"]*\)\"[^>]*>\([^£]*\)[^£]*£/\e[01;31m\2\e[00;37m \[01;34m[\e[00;37m \[04m\1\e[00;37m\e[01;34m ]]\e[00;37m/g
+			s/<li\( [^>]*\)\?>/
+ \[01;34m*\e[00;37m /g
+			s/<!\[CDATA\[\|\]\]>//g
+			s/\|>\s*<//g
+			s/ *<[^>]\+> */ /g
+			s/[<>£§]//g
+		')
+
+" | \
+		grep --line-buffered -E '^(   :| \[)' | \
+		sed 's/^.*\(:.*::\)/:\1/g' | \
+		awk '{ line[NR] = $0 } END { for (i = NR; i > 0; i -= 2) { print line[i-1]; print line[i] } }'
+}
+
+function news_long () {
+	print -n -- "$(print -- $(curl -m 5 -s ${1:-'https://www.archlinux.org/feeds/news/'} | \
+		sed -e ':a;N;$!ba;s/
+/ /g') | \
+			sed -e '
+			s/&amp;/\&/g
+			s/&lt;\|&#60;/</g
+			s/&gt;\|&#62;/>/g
+			s/<\/a>/£/g
+			s/href\=\"g/§/
+			s/<title>/\e[01;29m \
+   ::\e[01;31m /g; s/<\/title>/ \[00m:: \[00m\n/g
+			s/<link>/ [[ \e[01;36m/g; s/<\/link>/\e[00m ]]\e[00m/g
+			s/<description>/\n\n\e[00;37m/g; s/<\/description>/\e[00m\n\n/g
+			s/<p\( [^>]*\)\?>\|<br\s*\/\?>/
+/g
+			s/<b\( [^>]*\)\?>\|<strong\( [^>]*\)\?>/\e[01;30m/g; s/<\/b>\|<\/strong>/\e[00;37m/g
+			s/<i\( [^>]*\)\?>\|<em\( [^>]*\)\?>/\e[41;37m/g; s/<\/i>\|<\/em>/\e[00;37m/g
+			s/<u\( [^>]*\)\?>/\e[4;37m/g; s/<\/u>/\e[00;37m/g
+			s/<code\( [^>]*\)\?>/\e[00m/g; s/<\/code>/\e[00;37m/g
+			s/<a[^§|t]*§\([^\"]*\)\"[^>]*>\([^£]*\)[^£]*£/\e[01;31m\2\e[00;37m \[01;34m[\e[00;37m \[04m\1\e[00;37m\e[01;34m ]]\e[00;37m/g
+			s/<li\( [^>]*\)\?>/
+ \[01;34m*\e[00;37m /g
+			s/<!\[CDATA\[\|\]\]>//g
+			s/\|>\s*<//g
+			s/ *<[^>]\+> */ /g
+			s/[<>£§]//g
+		')
+
+" | \
+		grep --line-buffered '' | \
+		awk '{ line[NR] = $0 } END { for (i = NR; i > 0; i--) { print line[i]; } }' | \
+		sed '/^$/d'
+}
+
+function cleanup () {
+	[[ -t 9 ]] || return
+	## cleanup env and temp files
+	if (exec </dev/stdin; read -u 0) <&2; then
+		perl -e 'print "
+
+" . "—"x72 . "
+"' >> "/store/zsh-log-${UID}.log"
+		date +'%a %d %b %I:%M:%S%P %Z %Y-%m-%d' >> "/store/zsh-log-${UID}.log"
+		printf "
+[31m%s
+" 'zshrc: the following errors were detected:'
+		( exec </dev/stdin; cat | sed 's/^.*$/	&/' | tee -a /store/zsh-log-${UID}.log ) <&2
+		printf "[0m"
+		perl -e 'print "—"x72 . "
+
+"' >> "/store/zsh-log-${UID}.log"
+	fi
+	exec 2>&9
+	exec 9>&-
+}

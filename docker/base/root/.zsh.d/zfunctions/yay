@@ -1,0 +1,5 @@
+
+	mpv --lavfi-complex="[aid1] asplit [ao], afifo, \
+	showcqt=fps=60:size=2160x1280:count=2:bar_g=2:sono_g=4:sono_v=9:text=1:tc=0.33:tlength='st(0,0.17); \
+	384*tc / (384 / ld(0) + tc*f /(1-ld(0))) + 384*tc / (tc*f / ld(0) + 384 /(1-ld(0)))', \
+	format=yuv420p [vo]" "$@"

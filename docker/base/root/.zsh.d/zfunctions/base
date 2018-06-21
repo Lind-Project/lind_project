@@ -1,0 +1,52 @@
+
+for i in "$@"; do
+	# print character representation and formatted decimal
+	print -f "[%s]: '%s' - %s - " \
+		"$i" \
+		"$(print -f '%q' ${(#)$((i % 256))} | tr -d $'\'$')" \
+		"$(numfmt --grouping "$(([#10] i))")"
+
+	# print formatted hex
+	perl -e '
+		my $a = shift;
+		while ($a =~ m/^[^_]{2}/) {
+			$a =~ s/([^_]{2})(_|$)/_$1$2/;
+		}
+		$a =~ s/^[^x]*x_?//;
+		my @b = split /_/, $a;
+		$b[0] = sprintf "%02s", $b[0] unless !$b[0];
+		print "0x" . lc join("", @b) . " - ";
+	' "${$(([#16] i))//16\#/}"
+
+	# print formatted octal
+	print -f "\\%s - " "${$(([#8] i))//8\#/0}"
+
+	# print formatted binary
+	perl -e '
+		my $a = shift;
+		while ($a =~ m/^[^_]{8}/) {
+			$a =~ s/([^_]{8})(_|$)/_$1$2/;
+		}
+		$a =~ s/^_?/0b_/;
+		my @b = split /_/, $a;
+		$b[1] = sprintf "%08s", $b[1];
+		print join("_", @b) . "\n";
+	' "${$(([#2] i))//2\#/}"
+
+	# alternate binary methods
+	# perl -E 'say "0b", sprintf("%0*b", (log($_)/log(2) + 7) & ~7, $_) =~ s/.{8}/_$&/gr for map oct, @ARGV' $i
+	# perl -E 'say "0b", sprintf("%b", oct $_) =~ s/.{8}/_$&/gr for @ARGV' $i
+
+	# print formatted octal
+	# perl -e '
+	#         my $a = shift;
+	#         while ($a =~ m/^[^_]{3}/) {
+	#                 $a =~ s/([^_]{3})(_|$)/_$1$2/;
+	#         }
+	#         $a =~ s/^_?//;
+	#         my @b = split /_/, $a;
+	#         $b[0] = sprintf "%03s", $b[0];
+	#         # $b[0] = sprintf "%03s", $b[0] unless !$b[0];
+	#         print "0_" . lc join("_", @b) . " - ";
+	# ' "${$(([#8] i))//8\#/}"
+done

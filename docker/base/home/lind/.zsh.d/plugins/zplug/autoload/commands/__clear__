@@ -1,0 +1,33 @@
+#!/usr/bin/env zsh
+# Description:
+#   Remove the cache file
+
+local arg
+
+while (( $# > 0 ))
+do
+    arg="$1"
+    case "$arg" in
+        -*|--*)
+            __zplug::core::options::unknown "$arg"
+            return $status
+            ;;
+        "")
+            # Invalid
+            return 1
+            ;;
+        */*)
+            # Unexpect
+            return 1
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+    shift
+done
+
+rm -rf \
+    "$ZPLUG_CACHE_DIR" \
+    "$ZPLUG_HOME/zcompdump" \
+    "$ZPLUG_HOME/zcompdump.zwc"

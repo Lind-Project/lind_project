@@ -1,0 +1,7 @@
+if (($# < 2)); then
+	return 1
+fi
+
+icdiff \
+	 =(objdump "${@:2}" "$1") \
+	 =(objdump "${@:2}" "$2")

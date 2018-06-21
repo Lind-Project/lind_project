@@ -1,0 +1,1 @@
+ man -t "${1?Error: No manpage provided.}" | groff -man -Tps | lpr

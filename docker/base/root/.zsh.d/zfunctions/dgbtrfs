@@ -1,0 +1,1 @@
+ find / -xdev -type d -print -exec sudo btrfs filesystem defragment -r -v -clzo "{}" \;

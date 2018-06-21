@@ -1,0 +1,30 @@
+
+	[[ ! "$0" =~ ^.*zsh$ ]] || return 1
+	emulate -L zsh
+	typeset -A urls
+	urls[so]="https://stackoverflow.com/search?q="
+	urls[stack]="https://stackoverflow.com/search?q="
+	urls[ddg]="https://www.duckduckgo.com/?q="
+	urls[duckduckgo]="https://www.duckduckgo.com/?q="
+	urls[bzz]="https://www.duckduckgo.com/?q=%21bzz+"
+	urls[g]="https://www.google.com/search?q="
+	urls[google]="https://www.google.com/search?q="
+	urls[github]="https://github.com/search?q="
+	urls[reddit]="https://www.google.com/search?q=site:reddit.com+"
+	urls[bing]="https://www.bing.com/search?q="
+	urls[yahoo]="https://search.yahoo.com/search?p="
+	urls[yandex]="https://yandex.ru/yandsearch?text="
+	urls[baidu]="https://www.baidu.com/s?wd="
+	urls[ecosia]="https://www.ecosia.org/search?q="
+	if [[ -z "$urls[$1]" ]]
+	then
+		echo "Search engine $1 not supported."
+		return 1
+	fi
+	if [[ "$#" -gt 1 ]]
+	then
+		url="${urls[$1]}${(j:+:)@[2,-1]}"
+	else
+		url="${(j://:)${(s:/:)urls[$1]}[1,2]}"
+	fi
+	open_command "$url"

@@ -1,0 +1,9 @@
+if [[ $1 == -*v* || $2 == -*v* ]]; then
+	if [[ $2 == -*v* ]]; then
+		set -- "$2" "$1" "${@:3}"
+	fi
+	cgasm "${@:1:2}" | LESS= less -MNRis "${@:3}"
+	return
+fi
+
+cgasm "$@"

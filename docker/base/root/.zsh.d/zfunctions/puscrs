@@ -1,0 +1,1 @@
+ { parallel --will-cite systemctl --user ::: restart status ::: "$@"; } | LESS= less -FKMRins

@@ -1,0 +1,17 @@
+
+	#### For 16 Million colors use \e[0;38;2;R;G;Bm each RGB is {0..255}
+	## reset the colors.
+	printf '\e[0m%59s\n' "Some samples of colors for r;g;b. Each one may be 000..255"
+	printf '\e[0m%59s\n' " for the ansi option: \e[0;38;2;r;g;bm or \e[0;48;2;r;g;bm :"
+	## foreground or background (only 3 or 4 are accepted)
+	local fb
+	[[ "$1" =~ ^(fg|38?)$ ]] && fb=3 || fb=4
+	# [[ $fb != 3 ]] && fb=4
+	local samples=(0 63 127 191 255)
+	for r in "${samples[@]}"; do
+		for g in "${samples[@]}"; do
+			for b in "${samples[@]}"; do
+				printf '\t\e[0;%s8;2;%s;%s;%sm%03d;%03d;%03d ' "$fb" "$r" "$g" "$b" "$r" "$g" "$b"
+			done; printf '\e[m\n'
+		done; printf '\e[m'
+	done; printf '\e[m Reset\n'

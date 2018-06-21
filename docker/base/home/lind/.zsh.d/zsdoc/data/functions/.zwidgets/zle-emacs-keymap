@@ -1,0 +1,2 @@
+setescapes
+bindkey -e; printf "$cblock"; printf "$cyellow"; _km=emacs; _vi=; _emacs=main

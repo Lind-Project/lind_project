@@ -1,0 +1,8 @@
+local caps attrs
+for cmd; do
+	((${+commands[$cmd]})) || continue
+	caps="$(getcap ="$cmd" 2>/dev/null)"
+	attrs="$({ getfattr --absolute-names -d -m '^security\.' =$cmd | sed '1 d'; } 2>/dev/null)"
+	print -rf "\n[%s]: %s\n" "capabilities" "$caps"
+	print -rf "[%s]: %s = %s\n" "attribute encoding" =$cmd "$attrs"
+done

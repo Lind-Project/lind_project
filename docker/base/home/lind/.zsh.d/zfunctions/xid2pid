@@ -1,0 +1,4 @@
+[[ -z "$*" ]] && return 1
+for i in "$@"; do
+	printf "id %s: %s\n" "$i" "$(xprop -id "$i" _NET_WM_PID | cut -d' ' -f3)"
+done

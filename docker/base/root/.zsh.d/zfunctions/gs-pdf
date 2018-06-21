@@ -1,0 +1,4 @@
+
+	printf '%b' "Input file: $1\nOutput file: ${1/.pdf/-gs.pdf}\n"
+	gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen \
+		-dNOPAUSE -dQUIET -dBATCH -sOutputFile="${1/.pdf/-gs.pdf}" "$1"

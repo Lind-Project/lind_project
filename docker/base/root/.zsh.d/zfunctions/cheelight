@@ -1,0 +1,13 @@
+# spam da blinken lights
+
+trap '{ ztcp -c "${fd:-3}"; trap -; }' INT EXIT ERR
+
+local cnt fd
+
+ztcp police.computer 17000 && fd="$REPLY" || return 1
+
+while :; do
+	((cnt++ % 10000 != 0)) || print -- "iteration: $((cnt - 1))"
+	print -u "$fd" "#00000000"
+	usleep 1 || break
+done

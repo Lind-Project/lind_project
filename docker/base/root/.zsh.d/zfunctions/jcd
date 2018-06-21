@@ -1,0 +1,10 @@
+if [[ -z "$*" ]]; then
+	printf '%s' "No packages specified!"
+	return 1
+fi
+
+javac *.java -d .
+
+for i in "$@"; do
+	java -cp . "$i"
+done

@@ -1,0 +1,10 @@
+local comp id
+comp=1
+pidof compton >/dev/null && killall compton || comp=0
+[[ -z "$*" ]] && id="/tmp/$$.png" || id="$*"
+maim --nokeyboard -s "$id" && \
+	curl --progress-bar -F"c=@$id" https://pb.gehidore.net/ | \
+		tee >(awk '/http/ {sub("url: ",""); print}' | \
+		awk 'NR>1{print PREV} {PREV=$0} END{printf("%s",$0)}' | \
+		xsel -ib)
+[[ "$comp" -ne 0 ]] && compton -cCGfF -b -i 0.85

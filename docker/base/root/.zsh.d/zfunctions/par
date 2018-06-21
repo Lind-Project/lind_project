@@ -1,0 +1,12 @@
+
+	pulseaudio --check && pulseaudio --kill
+	sleep 1
+	[ $# -eq 0 ] && {
+		pulseaudio --start
+		printf '\n \033[32m %s \n\033[0m' "Realtime: Disabled"
+		return 0
+		} || {
+		pulseaudio --start --realtime
+		printf '\n \033[31m %s \n\033[0m' "Realtime: Enabled"
+		return 1
+		}

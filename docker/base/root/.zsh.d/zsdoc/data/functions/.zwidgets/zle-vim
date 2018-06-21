@@ -1,0 +1,8 @@
+local -a args
+[[ -z "$BUFFER" ]] && args=("${(z)=history[$((HISTCMD-1))]}") || args=("${(z)=BUFFER}")
+until ( [[ ! "${args[1]}" =~ ^..?$ ]] && eval "[[ -e ${args[1]} ]]" ); do
+	((${#args} > 1)) || return
+	shift args
+done
+BUFFER="vim ${args[1]}"
+zle accept-line

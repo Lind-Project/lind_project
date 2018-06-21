@@ -1,0 +1,15 @@
+
+	#alsa_out -j DeckA_Out -d "hw:2,0" &> /dev/null &
+	#alsa_in -j DeckA_In -d "hw:2,0" &> /dev/null &
+	#alsa_out -j DeckB_Out -d "hw:3,0" &> /dev/null &
+	#alsa_in -j DeckB_In -d "hw:3,0" &> /dev/null &
+	#alsa_out -j Cue_Out -d "hw:4,0" &> /dev/null &
+	#alsa_in -j Cue_In -d "hw:4,0" &> /dev/null &
+	alsa_out -j DeckA_Out -d "hw:2" &>/dev/null &
+	alsa_out -j DeckB_Out -d "hw:3" &>/dev/null &
+	#alsa_out -j Cue_Out -d "hw:4,0" &>/dev/null &
+	#alsa_out -j Cue_Out -d "hw:5,0" &>/dev/null &
+	alsa_in -j DeckA_In -d "hw:2" &>/dev/null &
+	alsa_in -j DeckB_In -d "hw:3" &>/dev/null &
+	#alsa_in -j Cue_In -d "hw:4,0" &>/dev/null &
+	#alsa_in -j Cue_In -d "hw:5,0" &>/dev/null &

@@ -1,0 +1,15 @@
+local -a args
+args=("$1" "$1" "${@:3}")
+[[ "$(file -Lb "${args[2]}")" =~ '(^data$|^DOS/MBR boot sector)' ]] && \
+	args[2]="raw" || \
+	args[2]="qcow2,l2-cache-size=4M"
+[[ -z "$2" || "$2" =~ '^(-|[Nn]|[Nn][Uu][Ll][Ll])$' ]] && \
+	args+=("-boot" "order=d") || \
+	args+=("-cdrom" "$2")
+qemu-system-x86_64 \
+	-drive file="${args[1]?No image specified!}",format="${args[2]}",aio=native,cache.direct=on \
+	-m "${args[3]:-2048}" -smp "${args[4]:-4}" -vga "${args[5]:-virtio}" "${args[6]}" "${args[7]}" \
+	-boot menu=on -enable-kvm -machine type=pc,accel=kvm -show-cursor -usbdevice tablet \
+	-cpu host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time -soundhw hda \
+	-net nic -net bridge,br=virbr0 -monitor stdio -monitor pty
+	# -net nic -net bridge,br=virbr0,smb=/mnt/shared -device intel-iommu -monitor stdio -monitor pty
