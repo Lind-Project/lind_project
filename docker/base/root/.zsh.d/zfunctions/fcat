@@ -1,0 +1,31 @@
+# usage fcat [gif|mp4] out.<extension>
+
+local output
+local -a extinput
+
+if [[ -z "$2" ]]; then
+	if [[ "${1##*.}" == "gif" ]]; then
+		ext+=('gif')
+	else
+		ext+=('copy')
+	fi
+	output="$1"
+else
+	if [[ "${2##*.}" == "$1" ]]; then
+		ext+=('copy')
+	else
+		if [[ "${2##*.}" == "gif" ]]; then
+			ext+=('gif')
+		else
+			ext+=('hevc')
+			ext+=('-preset' 'ultrafast' '-pix_fmt' 'yuv420p')
+			ext+=('-tune' 'psnr' '-b:a' '192k')
+			ext+=('-strict' 'experimental')
+		fi
+	fi
+	output="$2"
+fi
+
+ffmpeg -safe 0 -f concat \
+	-i <(find . -name "*.${1##*.}" -printf "file '${PWD}/%P'\n" | sort) \
+	-c:a copy -c:v $ext -threads 0 "$output"

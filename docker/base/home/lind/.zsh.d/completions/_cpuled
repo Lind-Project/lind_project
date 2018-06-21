@@ -1,0 +1,13 @@
+#compdef cpuled
+
+local curcontext="$curcontext" state line settings ttys
+typeset -A opt_args
+
+settings="$(print -r - {n,f}{n,f}{n,f})"
+ttys="${$(print -r - /dev/tty*(%))//\n/ }"
+
+_arguments \
+  "-c[num, caps and scroll-lock. f = flash, n = no flash]:settings:($settings)" \
+  '-i[invert LEDs.]' \
+  '-f[fork program into background.]' \
+  ":tty to flash LEDs on; use \"console\" for current.:(console $ttys)"

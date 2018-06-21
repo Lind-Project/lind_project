@@ -1,0 +1,4 @@
+[[ -z "$*" ]] && return 1
+pacman -Ql "$@" | \
+	highlight --out-format=truecolor --syntax=conf --style=xoria256 | \
+	LESS= less -RMRins

@@ -1,0 +1,5 @@
+curl https://0x0.st --progress-bar -F"file=@-" | \
+	tee >(awk '/https/ {sub("url: ",""); print}' | \
+		awk 'NR>1{print PREV} {PREV=$0} END{printf("%s",$0)}' | \
+		xsel -ib)
+

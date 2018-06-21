@@ -1,0 +1,2 @@
+## Fix zsh annoying history behavior
+ if [[ -z "$*" ]]; then history; else egrep "$*" <(fc -l 1); fi

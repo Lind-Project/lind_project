@@ -1,0 +1,4 @@
+
+	echo -n "$@" '[# of recently installed entries to list:] '; read -r
+	expac --timefmt='%y-%m-%d %T' '%l\t%n' | sort | tail "-$REPLY"
+	#expac --timefmt=%s '%l\t%n' | sort -n | tail -20 | grep "$ans"

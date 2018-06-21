@@ -1,0 +1,22 @@
+local -a keys
+
+if ((!$#)); then
+	keys=($({ gpg2 --list-secret-keys \
+			| perl -ne '
+				BEGIN { my @key_ids; }
+
+				if (/^sec/../^$/) {
+					my $len = scalar @key_ids;
+					$key_ids[$len + 1] = $_ if s!^secs+(?:[^/s]+/)?([^/s]+)s+.*!$1!;
+					pop @key_ids if /expired|revoked/;
+				}
+
+				END { map { print s/s+/ /gr; } grep { !/^$/ } @key_ids; }'
+		} 2>/dev/null));
+	set -- $keys
+fi
+
+for key; do
+	gpg2 --list-key $1
+done
+gpg2 --list-secret-keys

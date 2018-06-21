@@ -1,0 +1,1 @@
+ eval cat $( printf '%s' `eval "{ <<<"${@}" sed 's/\<\([a-zA-Z0-9]*\)\>/<(<<<\"\1\")/g;s@\-@/dev/stdin@g' }"`)

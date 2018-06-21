@@ -1,0 +1,1 @@
+print -rn -- "$CUTBUFFER" | xsel -ib;

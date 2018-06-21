@@ -1,0 +1,1 @@
+ chromium "https://google.com/search?q=site:stackexchange.com+$(<<<"$*" tr ' ' '+')" >/dev/null 2>&1

@@ -1,0 +1,8 @@
+local LAST_EXIT_CODE=$?
+local EXIT_CODE_PROMPT=' '
+if [[ ${LAST_EXIT_CODE} -ne 0 ]]; then
+EXIT_CODE_PROMPT+="%{$fg[yellow]%}«%{$reset_color%}"
+EXIT_CODE_PROMPT+="%{$fg_bold[yellow]%}$LAST_EXIT_CODE%{$reset_color%}"
+EXIT_CODE_PROMPT+="%{$fg[yellow]%}»%{$reset_color%}"
+fi
+print -n -- "$EXIT_CODE_PROMPT"

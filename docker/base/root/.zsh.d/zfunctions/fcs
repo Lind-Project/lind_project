@@ -1,0 +1,8 @@
+## fcs - get git commit sha
+
+## example usage: git rebase -i `fcs`
+local commits commit
+commits=$(git log --color=always --pretty=oneline --abbrev-commit --reverse) && \
+commit=$(echo "$commits" | fzf --tac +s +m -e --ansi --reverse) && \
+printf '%s' $(echo "$commit" | sed "s/ .*//") | tee >(xclip -i -selection clipboard)
+

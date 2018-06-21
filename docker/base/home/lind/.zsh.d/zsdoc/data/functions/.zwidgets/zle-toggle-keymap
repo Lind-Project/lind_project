@@ -1,0 +1,8 @@
+setescapes
+case "$_km" in
+vi)
+	bindkey -e; printf "$cblock"; printf "$cyellow"; _km=emacs; _vi=; _emacs=main ;;
+emacs)
+	bindkey -v; printf "$cline"; printf "$cgrey"; _km=vi; _vi=main; _emacs= ;;
+esac
+zle -R

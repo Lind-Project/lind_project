@@ -1,0 +1,5 @@
+
+	convert -resize x16 -gravity center -crop 16x16+0+0 \
+	"${1:?Error: no input file specified!}" \
+	-transparent white -colors 256 \
+	"${2:-${1%.*}.ico}"

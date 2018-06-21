@@ -35,7 +35,7 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
     "w3m", "gawk", "procps-ng", "ruby", "strace", "gdb", "reptyr", "ed", \
     "compiler-rt", "lib32-clang", "lib32-llvm", "lib32-llvm-libs", "vim", \
     "llvm", "llvm-libs", "openmp", "elfutils", "libelf", "gdb", "less", \
-    "gnu-netcat", "zsh", "zsh-completions", "grml-zsh-config", "htop", "bc", \
+    "gnu-netcat", "zsh", "zsh-completions", "htop", "bc", "ctags", "sudo", \
     "ncurses", "gcc-libs", "lib32-gcc-libs", "gperf", "diffutils", "fzf", \
     "gperftools", "texinfo", "fortune-mod", "gnupg", "highlight", "fasd", \
     "python2", "python2-pip", "python2-setuptools", "p7zip", "fuse3", "ack", \
@@ -44,8 +44,10 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
     "openssh", "subversion", "pacman-contrib", "arch-wiki-docs", "tree", \
     "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", "inetutils", \
     "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate", \
-    "sudo", "shadow"]
+    "shadow"]
 RUN ["/usr/bin/pkgfile", "--update"]
+RUN ["/usr/bin/chsh", "-s/bin/zsh", "lind"]
+RUN ["/usr/bin/chsh", "-s/bin/zsh", "root"]
 
 USER lind
 

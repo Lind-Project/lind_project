@@ -1,0 +1,5 @@
+[[ -z "$*" ]] && return 1
+for i in "$@"; do
+	mv -i "$i" "${C:-/store/dotfiles}/" || continue
+	ln -isv "${C:-/store/dotfiles}/${i:t}" "${i:h}/" || continue
+done

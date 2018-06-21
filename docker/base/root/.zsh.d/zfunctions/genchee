@@ -1,0 +1,6 @@
+
+	#awk -F'\t' $'$3 ~ /^what if/ {print $3}' $HOME/.weechat/logs/irc.znc.\#archlinux-offtopic.weechatlog
+	[[ "${#}" -lt 2 ]] && return 1
+	local logfile="$1"
+	shift
+	awk -F'\t' $'$3 ~ /^'"${*}"$'/ {print $3}' "$logfile"

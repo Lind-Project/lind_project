@@ -1,0 +1,9 @@
+#compdef npm
+
+# Node Package Manager completion, letting npm do all the completion work
+
+if type npm > /dev/null; then
+  eval "$(npm completion)"
+
+  _npm_completion "$@"
+fi

@@ -1,0 +1,19 @@
+
+	while true; do
+	echo -n "${1:-Continue?} [y/n]: "; read -r -q REPLY
+	case $REPLY in
+		[Yy]) echo ; return 0;;
+		[Nn]) echo ; return 1;;
+		*) printf " \033[31m %s \n\033[0m" "invalid input" ;;
+	esac
+	done
+	return 2 # Nothing executed past this point
+	## Example usage
+	# command prompt_confirm "Overwrite File?" || exit 0
+	#
+	# ## For Bash >= version 3.2:
+	# [[ $REPLY =~ ^([yY][eE][sS]|[yY])$ ]] && true || false
+	# ## For Bash 4.x:
+	# REPLY=${REPLY,,}	# to lower
+	# [[ $REPLY =~ ^(yes|y)$ ]] && true || false
+

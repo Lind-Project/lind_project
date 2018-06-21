@@ -1,0 +1,11 @@
+
+		[[ "${#}" -ne 3 ]] && { printf " \033[31m %s \n\033[0m" "Need 3 arguments..."; return 1; } || {
+				as "$1" -o "$2"
+				ld --dynamic-linker="/lib64/ld-linux-x86-64.so.2" \
+						/usr/lib/crt1.o /usr/lib/crti.o \
+						-lc "$2" /usr/lib/crtn.o -o "$3"
+				printf " \033[32m %s \033[0m\n" "Assembling \"${1}\" into \"${2}\"..."
+				printf " \033[32m %s \033[0m\n" "Linking \"${2}\" into \"${3}\"..."
+				printf " \033[32m %s \033[0m\n" "Done, created \"${PWD}/${3}\""'!'
+				return 0
+	}

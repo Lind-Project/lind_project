@@ -1,0 +1,23 @@
+local -a repos
+repos=("${C:-/store/dotfiles}" "${P:-/store/code/projects}")
+
+(
+for i in $repos; do
+	cd $i || continue
+	git add .
+	if ((!$#)); then
+		if (git commit -v -a -S && git push); then
+			print "\n $(tput setaf 10) $i commit successful! \n$(tput sgr0)"
+		else
+			print "\n $(tput setaf 9) nothing to commit... \n$(tput sgr0)"
+		fi
+	else
+		if (git commit -v -a -S -m "$1" && git push); then
+			print "\n $(tput setaf 10) $i commit successful! \n$(tput sgr0)"
+		else
+			print "\n $(tput setaf 9) nothing to commit... \n$(tput sgr0)"
+		fi
+		shift
+	fi
+done
+)

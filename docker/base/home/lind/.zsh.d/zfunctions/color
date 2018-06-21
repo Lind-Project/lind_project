@@ -1,0 +1,5 @@
+
+	for c in "$@"; do
+		printf '\e[48;5;%dm%03d' "$c" "$c"
+	done
+	printf '\e[0m \n'

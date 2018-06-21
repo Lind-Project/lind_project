@@ -1,0 +1,107 @@
+#!/usr/bin/env zsh
+# Description:
+#   Return true if all packages are installed, false otherwise
+
+local     is_verbose=false is_debug=false
+local     arg repo
+local -aU repos not_installed_repos not_found_repos
+local -A  tags
+local -i  ret=0
+
+while (( $# > 0 ))
+do
+    arg="$1"
+    case "$arg" in
+        --verbose)
+            is_verbose=true
+            ;;
+        --debug)
+            is_debug=true
+            ;;
+        -*|--*)
+            __zplug::core::options::unknown "$arg"
+            return $status
+            ;;
+        "")
+            # Invalid
+            return 1
+            ;;
+        */*)
+            repos+=( "${arg:gs:@::}" )
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+    shift
+done
+
+if (( $#repos == 0 )); then
+    repos=( "${(k)zplugs[@]:gs:@::}" )
+fi
+
+for repo in "${repos[@]}"
+do
+    # Evaluate IF tag and bypass existence check if conditions are not met
+    tags[if]="$(__zplug::core::core::run_interfaces 'if' "$repo")"
+    if [[ -n $tags[if] ]]; then
+        if ! eval "$tags[if]" 2> >(__zplug::log::capture::error) >/dev/null; then
+            $is_verbose && __zplug::io::print::die "$fg[red]$repo$reset_color: (bypassed check)\n"
+            continue
+        fi
+    fi
+
+    tags[from]="$(__zplug::core::core::run_interfaces 'from' "$repo")"
+    if [[ -z "$tags[from]" ]]; then
+        not_installed_repos+=( "$repo" )
+        continue
+    fi
+
+    if __zplug::core::sources::is_handler_defined "check" "$tags[from]"; then
+        __zplug::core::sources::use_handler \
+            "check" \
+            "$tags[from]" \
+            "$repo"
+
+        if (( $status != 0 )); then
+            if [[ $tags[from] == 'local' ]]; then
+                # FIXME: use $_ZPLUG_STATUS_*
+                not_found_repos+=( "$repo" )
+            else
+                not_installed_repos+=( "$repo" )
+            fi
+        fi
+    fi
+done
+
+if (( $#not_found_repos > 0 )); then
+    if $is_verbose; then
+        __zplug::io::print::put \
+            "- $fg[red]%s$reset_color: no such directory\n" \
+            "${not_found_repos[@]}"
+    fi
+
+    ret=0
+fi
+
+# Initialize
+if (( $#not_installed_repos > 0 )); then
+    # Share not installed repos information
+    # e.g. for __install__ command
+    #reply=( "${not_installed_repos[@]}" )
+
+    if $is_debug; then
+        echo "$not_installed_repos[@]"
+        return 0
+    fi
+
+    if $is_verbose; then
+        __zplug::io::print::put \
+            "- $fg[red]%s$reset_color: not installed\n" \
+            "${not_installed_repos[@]}"
+    fi
+
+    ret=1
+fi
+
+return $ret

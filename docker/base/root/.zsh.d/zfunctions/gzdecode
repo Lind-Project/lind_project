@@ -1,0 +1,6 @@
+## decode a base64 string to plaintext
+
+[[ -z "$*" ]] && local str="$(</dev/stdin)" || local str="$*"
+<<<"$str" base64 -d | gzip -d
+#<<<"$str" tr '-' '\n' | base64 -d | gzip -d
+

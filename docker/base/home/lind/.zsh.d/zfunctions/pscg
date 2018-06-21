@@ -1,0 +1,17 @@
+local -a repos
+repos=("${C:-/store/dotfiles}" "${P:-/store/code/projects}")
+
+(
+for i in $repos; do
+	cd $i || continue
+	if ! git pull 2>/dev/null; then
+		if git stash && git pull; then
+			print "\n $(tput setaf 10) $i stash and pull successful! \n$(tput sgr0)"
+		else
+			print "\n $(tput setaf 9) error during pull... \n$(tput sgr0)"
+		fi
+		continue
+	fi
+	print "\n $(tput setaf 10) $i pull successful! \n$(tput sgr0)"
+done
+)

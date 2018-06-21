@@ -1,0 +1,5 @@
+
+	[[ -z "$1" ]] && dlist=( "${PWD}" ) || dlist=( "${@}" )
+	for ((i=1;i<$((${#dlist[@]}+1));i++)); do
+		echo find "$dlist[$i]" -maxdepth 1 -type l -exec ls {} \;
+	done

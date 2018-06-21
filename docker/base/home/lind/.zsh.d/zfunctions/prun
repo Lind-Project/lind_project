@@ -1,0 +1,21 @@
+[[ -z "$*" ]] && return 1
+
+objs=()
+cflags=
+args=("$@")
+idx=0
+
+for ((idx=0; idx<$#; idx++)); do case "$args[$idx]" in
+-c)
+	cflags="$CFLAGS"
+	args[$idx]= ;;
+esac; done
+
+gcc -o /dev/stdout "$@" | piperun && return 0
+
+for i in "${objs[@]}"; do
+	gcc -o /dev/stdout "$@" | piperun && shift || return
+	echo
+done
+
+unset objs cflags args idx

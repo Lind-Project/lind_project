@@ -1,0 +1,1 @@
+ chromium "http://b-ok.org/s/?q=$(<<<"$*" tr ' ' '+')" >/dev/null 2>&1

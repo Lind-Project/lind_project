@@ -1,0 +1,14 @@
+
+	local pidlist
+	pidlist=$(for i in "$@"; do
+			ps -C "$i" -o pid=
+			#ps c -u ${USER} -o pid= | uniq
+		done)
+	if [[ `<<<"$pidlist" wc -w` -eq 0 ]]; then
+		echo "No PIDs found."
+	elif [[ `<<<"$pidlist" wc -w` -eq 1 ]]; then
+		echo sudo reptyr -T "$pidlist"
+	else
+		echo `<<<"$pidlist" wc -w`" PIDs found:"
+		printf '\n%s\n' "$pidlist"
+	fi

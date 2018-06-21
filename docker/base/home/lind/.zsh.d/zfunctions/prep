@@ -1,0 +1,2 @@
+## Perl grep, because 'grep -P' is terrible. Lets you work with pipes or files.
+ perl -nle 'print if /'"$1"'/;' "$2"

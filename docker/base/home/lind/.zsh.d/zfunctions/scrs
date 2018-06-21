@@ -1,0 +1,3 @@
+sudo parallel --will-cite systemctl ::: restart ::: "$@"
+systemctl status --full --no-pager "$@"
+echo

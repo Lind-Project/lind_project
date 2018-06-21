@@ -1,0 +1,26 @@
+local -a cmdline mansects
+local cmd glob section
+[[ -z "$MANSECT" ]] && \
+	mansects=(${${(R)${(M)$(print -- /usr/share/man/man* 2>/dev/null)%man*}#man}/\//}) || \
+	mansects=(${(s|:|)MANSECT[@]})
+cmdline=("${(z)=BUFFER}")
+if [[ -z "$BUFFER" ]]; then
+	LBUFFER="fman zshall "
+	return
+fi
+case "${cmdline[1]}" in
+(${~${(j:|:)mansects[@]}})
+	section="${cmdline[1]}"
+	shift cmdline
+	cmd="${cmdline[1]}" ;;
+(*)
+	cmd="${cmdline[1]}"
+	for i in ${^manpath}/man*/${(q)cmd}.*(N); do
+		test -f "$i" && section="${${i%/*}##*/man}" && break
+	done ;;
+esac
+[[ "$cmd" == zsh ]] && cmd="zshall"
+(( ${#cmdline[@]} > 1 )) && \
+	BUFFER="fman ${section:-zshall} $cmd '${cmdline[@]:1}'" || \
+	BUFFER="fman ${section:-zshall} '$cmd'"
+zle redisplay

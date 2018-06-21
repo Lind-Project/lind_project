@@ -1,0 +1,71 @@
+
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed  -n 's/\bem\([A-Za-z0-9\;\#]*\)em\b/\1/gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed  -n 's/\bem\([A-Za-z0-9\;\#]*\)em/\1/gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/\<[Ff][Ee][Aa][Tt][\.]*\>/ft\./gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/\<[Vv]S[\.]*\>/vs\./gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/\<V[Ss][\.]*\>/vs\./gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/\<presents\>/pres\./gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/\<\(ft\)\>/\1./gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/\<\(vs\)\>/\1./gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/ \[MP3FY\.COM\]//gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/  / \& /gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	#&amp; becomes & (ampersand)
+	#&quot; becomes " (double quote)
+	#&#039; becomes ' (single quote)
+	#&lt; becomes < (less than)
+	#&gt; becomes > (greater than)
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/\#039\;/'\''/gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/amp\;/\&/gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done
+	find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' first; do
+	printf '"%s" ' "${first}"; printf \"; printf "${first}" | sed -n 's/\<\(.\)/\u\1/gp'; printf "\"\n"
+	done | \
+	awk '! /\"\"/ {print}'  | while read -r final; do eval "mv --verbose ${final}"
+	done

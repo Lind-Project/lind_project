@@ -1,0 +1,100 @@
+#compdef man apropos whatis
+
+local -A opt_args
+local -a sections
+sections=(${${(R)${(M)$(print -- /usr/share/man/man* 2>/dev/null)%man*}#man}/\//})
+
+_arguments -C \
+	'-C[use this user configuration file]' \
+	'--config-file=FILE[use this user configuration file]' \
+	'-d[emit debugging messages]' \
+	'--debug[emit debugging messages]' \
+	'-D[reset all options to their default values]' \
+	'--default[reset all options to their default values]' \
+	'--warnings[enable warnings from groff]' \
+	'-f[equivalent to whatis]' \
+	'--whatis[equivalent to whatis]' \
+	'-k[equivalent to apropos]' \
+	'--apropos[equivalent to apropos]' \
+	'-K[search for text in all pages]' \
+	'--global-apropos[search for text in all pages]' \
+	'-l[interpret PAGE argument(s) as local filename(s)]' \
+	'--local-file[interpret PAGE argument(s) as local filename(s)]' \
+	'-w[print physical location of man page(s)]' \
+	'--where[print physical location of man page(s)]' \
+	'--path[print physical location of man page(s)]' \
+	'--location[print physical location of man page(s)]' \
+	'-W[print physical location of cat file(s)]' \
+	'--where-cat[print physical location of cat file(s)]' \
+	'--location-cat[print physical location of cat file(s)]' \
+	'-c[used by catman to reformat out of date cat pages]' \
+	'--catman[used by catman to reformat out of date cat pages]' \
+	'-R[output source page encoded in ENCODING]' \
+	'--recode[output source page encoded in ENCODING]' \
+	'-L[define the locale for this particular man search]' \
+	'--locale[define the locale for this particular man search]' \
+	'-m[use manual pages from other systems]' \
+	'--systems[use manual pages from other systems]' \
+	'-M[set search path for manual pages to PATH]' \
+	'--manpath[set search path for manual pages to PATH]' \
+	'-S[use colon separated section list]' \
+	'-s[use colon separated section list]' \
+	'--sections[use colon separated section list]' \
+	'-e[limit search to extension type EXTENSION]' \
+	'--extension[limit search to extension type EXTENSION]' \
+	'-i[look for pages case-insensitively (default)]' \
+	'--ignore-case[look for pages case-insensitively (default)]' \
+	'-I[look for pages case-sensitively]' \
+	'--match-case[look for pages case-sensitively]' \
+	'--regex[show all pages matching regex]' \
+	'--wildcard[show all pages matching wildcard]' \
+	'--names-only[match page names only, not descriptions]' \
+	'-a[find all matching manual pages]' \
+	'--all[find all matching manual pages]' \
+	'-u[force a cache consistency check]' \
+	'--update[force a cache consistency check]' \
+	$'--no-subpages[don\'t try subpages, e.g. \'man foo bar\' => \'man foo-bar\']' \
+	'-P[Use program PAGER to display output]' \
+	'--pager[use program PAGER to display output]' \
+	$'-r[provide the `less\' pager with a prompt]' \
+	$'--prompt[provide the `less\' pager with a prompt]' \
+	'-7[display ASCII translation of certain latin1 chars]' \
+	'--ascii[display ASCII translation of certain latin1 chars]' \
+	'-E[use selected output encoding]' \
+	'--encoding[use selected output encoding]' \
+	'--no-hyphenation[turn off hyphenation]' \
+	'--nh[turn off hyphenation]' \
+	'--no-justification[turn off justification]' \
+	'--nj[turn off justification]' \
+	'-p[STRING indicates which preprocessors to run:]' \
+	'--preprocessor[STRING indicates which preprocessors to run:]' \
+	'-t[use groff to format pages]' \
+	'--troff[use groff to format pages]' \
+	'-T[use groff with selected device]' \
+	'--troff-device[use groff with selected device]' \
+	'-H[use  or BROWSER to display HTML output]' \
+	'--html[use  or BROWSER to display HTML output]' \
+	'-Z[use groff and force it to produce ditroff]' \
+	'--ditroff[use groff and force it to produce ditroff]' \
+	'-?[give this help list]' \
+	'--help[give this help list]' \
+	'--usage[give a short usage message]' \
+	'-V[print program version]' \
+	'--version[print program version]' \
+	"1:sections:->section" "*:manpages:->page" && ret=0
+
+case "$state" in
+	(section) local -a sects
+		sects=($sections)
+		_describe -t sects "sections" sects && ret=0
+		;;
+	(page) local -a manpgs
+		for i in $manpath
+		do
+			manpgs+=(${(f@)$(print ${i}/man${line[1]}/*(:t))%%.${line[1]}*.*})
+		done
+		_describe -t manpgs "manpages" manpgs && ret=0
+		;;
+esac
+
+return 1

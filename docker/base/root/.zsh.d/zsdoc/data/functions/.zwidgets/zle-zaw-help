@@ -1,0 +1,3 @@
+[[ -n "$BUFFER" ]] && zle push-input
+BUFFER="man zaw"
+zle accept-line

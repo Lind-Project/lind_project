@@ -1,0 +1,11 @@
+local cur_dir="$PWD"
+
+mkdir -p /tmp/aur &>/dev/null
+cower -t /tmp/aur -dd "$@"
+
+for i; do
+	cd "/tmp/aur/$1" &>/dev/null || continue
+	return 0
+done
+
+cd "$cur_dir" || return 2

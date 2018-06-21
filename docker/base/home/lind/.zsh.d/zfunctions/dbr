@@ -1,0 +1,19 @@
+
+	find /@media/microSDXC/audio -maxdepth 1 -name "*TSL*" -type d -print | \
+		sed 's/^.*\/\(TSL.*\)$/\1/' | \
+		while read -r; do
+			rclone move "/@media/microSDXC/audio/${REPLY}" dropbox:/EDM/TSL/${REPLY} && \
+			rmdir "/@media/microSDXC/audio/${REPLY}"
+		done
+	find /@media/microSDXC/audio -maxdepth 1 -name "*alyptik*" -type d -print | \
+		sed 's/^.*\/alyptik - \(.*\)$/\1/' | \
+		while read -r; do
+			rclone move "/@media/microSDXC/audio/alyptik - ${REPLY}" \
+			"dropbox:/edm/audio/$(<<<${REPLY/*- /} \
+			sed 's/./\l&/g;s/ (.*//')" && \
+			rmdir "/@media/microSDXC/audio/alyptik - ${REPLY}"
+		done
+	#rclone sync /@media/microSDXC/audio/ dropbox:/EDM/audio/
+	rclone sync "/@media/microSDXC/Music/djzomg/" "dropbox:/EDM/djzomg/"
+	rclone move "/@media/microSDXC/Practice Mixes/" "dropbox:/EDM/practice/"
+	#rclone move /@media/microSDXC/Practice\ Mixes/ dropbox:/EDM/practice/

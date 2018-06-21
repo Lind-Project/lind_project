@@ -1,0 +1,1 @@
+../fzf-completion.zsh

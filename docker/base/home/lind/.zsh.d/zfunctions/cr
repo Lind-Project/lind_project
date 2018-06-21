@@ -1,0 +1,2 @@
+# chromium "https://google.com/search?q=site:en.cppreference.com+$(<<<"$*" tr ' ' '+')" >/dev/null 2>&1
+ chromium "http://en.cppreference.com/mwiki/index.php?search=$(<<<"$*" tr ' ' '+')" >/dev/null 2>&1

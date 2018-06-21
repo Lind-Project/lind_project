@@ -1,0 +1,4 @@
+
+	pump scons asmlib=0 virtualize=0 localecompare=1 qt_sqlite_plugin=0 opus=1 faad=1 wv=1 ffmpeg=1 \
+		optimize=native build=release battery=1 perftools=0 perftools_profiler=0 modplug=1 \
+		qtdir=/usr/lib/qt4  install_root="${1:-/opt/mixxx}" prefix="${2:-/opt/mixxx}"

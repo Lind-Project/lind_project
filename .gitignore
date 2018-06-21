@@ -107,6 +107,8 @@ typescript
 
 # docker files
 !docker/base/**/build/
+!docker/base/**/.zsh.d/
+!docker/base/home/lind/.zsh.d/plugins/zplug/.git/
 docker/etc/
 docker/home/
 docker/root/

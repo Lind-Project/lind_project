@@ -1,0 +1,24 @@
+local pchar
+
+if ((EUID)); then
+	pchar='$ '
+else
+	pchar='# '
+fi
+
+if [[ -n "$ZSH_NAME" ]]; then
+	cat <(printf "%s -> " "${pchar}${history[$HISTCMD]}" | sed \
+			"s/[[:space:]]*|[^[:space:]]*[[:space:]]*cxi//") - | \
+		paste -sd ';' | \
+		perl -pe 's/\;/$& /g; s/;\s+$// if eof; chomp if eof;' | \
+		tee >(xsel -ib)
+elif [[ -n "$BASh" ]]; then
+	cat <(printf "%s -> " "${pchar}$(history 1 | sed \
+			"s/[0-9]* *\(.*[^[:space:]]\)[[:space:]]*|[^[:space:]][[:space:]]*cxi/\1/")") - | \
+		paste -sd ';' | \
+		perl -pe 's/\;/$& /g; s/;\s+$// if eof; chomp if eof;' | \
+		tee >(xsel -ib)
+else
+	printf "$(tput setaf 9)$(tput bold)%s$(tput sgr0)\n" 'Error: bash/zsh not found!'
+	return 1
+fi

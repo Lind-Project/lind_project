@@ -1,0 +1,7 @@
+[[ -z "$BUFFER" ]] && return
+local -a links
+local i
+links=("${(z)=BUFFER}")
+links=("${links[@]//(#m)*/'$MATCH'}")
+BUFFER="youtube-dl $links"
+CURSOR="${#BUFFER}"

@@ -1,0 +1,11 @@
+
+	#xrandr -q | grep "eDP1" | grep "panning"
+	#xrandr --fb 4096x2560 --output eDP1 --mode 2160x1440 --panning 4096x2560+0+0/4096x2560+0+0/0/0/0/0
+	local vres
+	## check if force arg is given
+	[[ ! -z "$1" ]] && {
+	[[ "$1" -ne 1 ]] && vres=2160x1440 || vres=4096x2560; } || {
+	## if not currently using panning enable it with xrandr
+	xrandr -q | awk 'BEGIN {f=0} /eDP1/ && /2160x1440/ {f=1} END {exit f}' && vres=2160x1440 || vres=4096x2560; }
+	xrandr --fb "$vres" --output eDP1 --panning "${vres}+0+0/${vres}+0+0/0/0/0/0/"
+	#xrandr --fb 2160x1440 --output eDP1 --panning 2160x1440+0+0/2160x1440+0+0/0/0/0/0/

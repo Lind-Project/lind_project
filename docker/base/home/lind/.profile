@@ -186,7 +186,7 @@ fi
 # PATH="/usr/lib/distcc/bin:$PATH"
 PATH="/usr/lib/ccache/bin:$PATH"
 PATH="/opt/cross/bin:$PATH"
-PATH="$HOME/lind_project/native_client/tools/out/nacl-sdk/bin:$PATH"
+PATH="$HOME/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
 PATH="$HOME/lind_project/lind/repy/bin:$PATH"
 export PATH
 # shellcheck disable=SC2039
