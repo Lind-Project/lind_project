@@ -348,113 +348,58 @@ function clean_toolchain() {
 	cur_func="${FUNCNAME[1]}"
 }
 
-# compile liblind and the component programs.
-#
-function build_liblind() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
-
-	print "Building liblind... "
-	cd "$MISC_DIR/liblind"
-	make clean
-	make all
-	print "Done."
-
-	cur_func="${FUNCNAME[1]}"
-}
-
-# copy the toolchain files into the repy subdir.
+# copy the toolchain and liblind into the repy subdir
 #
 function install_to_path() {
 	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
 	cur_func="${FUNCNAME[0]}"
 
-	print "Injecting Libs into Repy install"
-
 	print "** Sending NaCl files to $REPY_PATH **"
-
-	# print "deleting all directories in the $repy_path (except repy folder)"
-	# rm -rf "${repy_path_bin:?}"
-	# rm -rf "${repy_path_lib:?}"
-	# rm -rf "${repy_path_sdk:?}"
 
 	mkdir -p "$REPY_PATH_BIN"
 	mkdir -p "$REPY_PATH_LIB/glibc"
 	mkdir -p "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
 	mkdir -p "$REPY_PATH_SDK/tools"
 
-	# ${rsync} ${nacl_toolchain_base}/out/nacl-sdk/* ${repy_path_sdk}/toolchain/${os_subdir}_x86_glibc
 	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/" "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
 
-	# ${rsync} ${nacl_base}/scons-out/${mode}-x86-64/staging/* ${repy_path_bin}
 	"${RSYNC[@]}" "$NACL_BASE/scons-out/${MODE}-x86-64/staging/" "$REPY_PATH_BIN"
 
 	#install scripts
-	rm -fv "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
 	cp -fv "$MISC_DIR/lind" "$REPY_PATH_BIN/lind"
 	cp -fv "$LIND_BASE/lindfs" "$REPY_PATH_BIN/lindfs"
 	chmod +x "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
 
-	# ${rsync} ${nacl_toolchain_base}/out/nacl-sdk/x86_64-nacl/lib/*  ${repy_path_lib}/glibc
 	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"  "$REPY_PATH_LIB/glibc"
 
-	cur_func="${FUNCNAME[1]}"
-}
+	print "Building liblind... "
+	cd "$MISC_DIR/liblind"
+	make clean
+	make all
 
-# run the repy unit tests.
-#
-function test_repy() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
-
-	# some of our unit tests fail
-	set +o errexit
-
+	print "Copying glibc into repy virtual filesytem"
 	cd "$REPY_PATH/repy"
+	"$REPY_PATH_BIN/lindfs" cp "$REPY_PATH_LIB/"
 
-	for file in ut_lind_*; do
-		print "$file"
-		trap '' TERM
-		python2 "$file"
-		# trap 'python2 "$file"' int term exit
-		trap - TERM
-	done
-
-	# run the struct test
-	file="ut_seattlelibtests_teststruct.py"
-	print "$file"
-	python "$file"
+	print "Done."
 
 	cur_func="${FUNCNAME[1]}"
 }
 
-# run the applications test stuites.
-#
-function test_apps() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
-
-	set +o errexit
-
-	cd "$MISC_DIR/tests" && ./test.sh
-
-	cur_func="${FUNCNAME[1]}"
-}
-
-# check the $repy_path location to make sure it is safe to be installing stuff there.
+# check the $REPY_PATH location to make sure it is safe to be installing stuff there.
 #
 function check_install_dir() {
 	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
 	cur_func="${FUNCNAME[0]}"
 
 	[[ ! -d "$REPY_PATH" && -e "$REPY_PATH" ]] && false
-	# and if it does not exit, make it.
+	# and if it does not exist, make it.
 	mkdir -p "$REPY_PATH"
 
 	cur_func="${FUNCNAME[1]}"
 }
 
-# install repy into $repy_path with the prepare_tests script.
+# install repy into $REPY_PATH with the prepare_tests script.
 #
 function build_repy() {
 	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
@@ -474,7 +419,90 @@ function build_repy() {
 		"$MISC_DIR/check_includes.sh" "$file"
 	done
 	set +o errexit
-	ctags  --language-force=python ./*.mix ./*.repy || true
+	ctags --language-force=python ./*.mix ./*.repy 2>/dev/null || true
+
+	cur_func="${FUNCNAME[1]}"
+}
+
+# run applications test suites.
+#
+function test_apps() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
+	set +o errexit
+
+	cd "$MISC_DIR/tests" && ./test.sh
+
+	cur_func="${FUNCNAME[1]}"
+}
+
+# run glibc test suites.
+#
+function test_glibc() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
+	set -o errexit
+
+	cd "$MISC_DIR/glibc_test"
+	make clean
+	PATH="$LIND_BASE:$PATH" make all
+	cd ..
+	rm -rfv lind.metadata linddata.*
+	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
+
+	cur_func="${FUNCNAME[1]}"
+}
+
+# run repy test suites.
+#
+function test_repy() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
+	# some of our unit tests fail
+	set +o errexit
+	cd "$REPY_PATH/repy"
+
+	# ignore these signals during testing
+	trap -- '' ERR TERM
+	for file in ut_lind_*; do
+		print "$file"
+		python2 "$file"
+	done
+	# reset signal dispositions
+	trap - ERR TERM
+
+	# run the struct test
+	file="ut_seattlelibtests_teststruct.py"
+	print "$file"
+	python2 "$file"
+
+	cur_func="${FUNCNAME[1]}"
+}
+
+# run system call test suites.
+#
+function test_syscalls() {
+	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+	cur_func="${FUNCNAME[0]}"
+
+	local cc_cmd
+
+	cd "$LIND_BASE/test_cases"
+	cc_cmd="$REPY_PATH_SDK/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc"
+
+	# ignore these signals during testing
+	trap '' ERR TERM
+	for file in *.c; do
+		print "testing $file"
+		"$cc_cmd" "$file" -o "$REPY_PATH/repy/${file%%.c}"
+		"$REPY_PATH_BIN/lindfs" update "$REPY_PATH/repy/${file%%.c}"
+		"$REPY_PATH_BIN/lind" "/${file%%.c}"
+	done
+	# reset signal dispositions
+	trap - ERR INT TERM
 
 	cur_func="${FUNCNAME[1]}"
 }
@@ -485,45 +513,22 @@ function nightly_build() {
 	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
 	cur_func="${FUNCNAME[0]}"
 
-	set -o errexit
+	clean_nacl
+	clean_src
+	clean_toolchain
 
-	# clean
-	# clean_install
-	# clean_nacl
-	# clean_toolchain
-	# check_install_dir
-	# update
-	~/lind/misc/global_update.sh
+	download_src
+	build_nacl
+	build_repy
+	build_glibc
+	install_to_path
 
-	# build
-	# build_toolchain
-	# build_rpc
-	# build_glibc
-	# build_nacl
-	# build_repy
-	# build_sdk
-	# install_to_path
+	build_docker
 
-	# test repy
-	test_repy
-
-	# test glibc
-	test_glibc
-
-	# test applications
-	test_apps
-
-	cur_func="${FUNCNAME[1]}"
-}
-
-# clean repy install
-#
-function clean_install() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
-
-	rm -rf "$REPY_PATH"
-	mkdir -p "$REPY_PATH"
+	# test_apps
+	# test_glibc
+	# test_repy
+	test_syscalls
 
 	cur_func="${FUNCNAME[1]}"
 }
@@ -553,7 +558,7 @@ function build_nacl() {
 		python2 ./scons.py --verbose --mode="$MODE,nacl" \
 		nacl_pic=1 werror=0 \
 		platform=x86-64 --nacl_glibc -j4
-	print "Done building NaCl $rc"
+	print "Done building NaCl"
 
 	cur_func="${FUNCNAME[1]}"
 }
@@ -565,7 +570,10 @@ function clean_nacl() {
 	cur_func="${FUNCNAME[0]}"
 
 	cd "$NACL_BASE"
-	./scons --mode="$MODE,nacl" platform=x86-64 --nacl_glibc -c
+	PATH="$LIND_BASE:$PATH" \
+		python2 ./scons.py --verbose --mode="$MODE,nacl" \
+		nacl_pic=1 werror=0 \
+		platform=x86-64 --nacl_glibc -j4 -c
 	print "Done Cleaning NaCl"
 
 	cur_func="${FUNCNAME[1]}"
@@ -579,15 +587,11 @@ function build_glibc() {
 
 	# the build is long and borning, so execute this first if it exists
 	print ""
-	if command -v fortune >/dev/null 2>&1; then
-		fortune
-	else
-		print "Fortune Not Found. Skipping." >&2
-	fi
-	print "" "Copy component.h header to glibc: "
+	fortune 2>/dev/null || print "Fortune Not Found. Skipping." >&2
+	print "" "Copying component.h header to glibc: "
 	cd "$MISC_DIR/liblind"
 	mkdir -p "$LIND_GLIBC_SRC/sysdeps/nacl/sysdeps/nacl/"
-	cp -fvp component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
+	cp -pfv component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
 
 	print "Building glibc"
 
@@ -596,30 +600,26 @@ function build_glibc() {
 	rm -fr BUILD out
 	make clean
 
-	# ??? not quite sure why these
-	# weird constructs are needed
-	#
-	# -jp
-	PATH="$LIND_BASE:$PATH" make build-with-glibc -j4
+	PATH="$LIND_BASE:$PATH" make -j4 build-with-glibc
 
 	print "Done building toolchain"
 
 	cur_func="${FUNCNAME[1]}"
 }
 
-# perform an incremental glibc compile
+# perform an incremental glibc build
 #
 function update_glibc() {
 	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
 	cur_func="${FUNCNAME[0]}"
 
-	cd "$NACL_TOOLCHAIN_BASE" \
-		 && PATH="$LIND_BASE:$PATH" make updateglibc
+	cd "$NACL_TOOLCHAIN_BASE"
+	PATH="$LIND_BASE:$PATH" make -j4 updateglibc
 
 	cur_func="${FUNCNAME[1]}"
 }
 
-# perform a clean glibc compile
+# perform a clean glibc build
 #
 function update_glibc2() {
 	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
@@ -627,35 +627,32 @@ function update_glibc2() {
 
 	cd "$NACL_TOOLCHAIN_BASE"
 	rm -rf BUILD/stamp-glibc64
-	PATH="$LIND_BASE:$PATH" make BUILD/stamp-glibc64
+	PATH="$LIND_BASE:$PATH" make -j4 BUILD/stamp-glibc64
 
 	cur_func="${FUNCNAME[1]}"
 }
 
-# run the glibc tester
+# build docker images
 #
-function glibc_tester() {
+function build_docker() {
 	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
 	cur_func="${FUNCNAME[0]}"
 
-	set -o errexit
-
-	cd "$MISC_DIR/glibc_test"
-	make clean
-	PATH="$LIND_BASE:$PATH" make all
-	cd ..
-	rm -rfv lind.metadata linddata.*
-	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
+	cd "$LIND_BASE"
+	docker image rm -f alyptik/lind:base alyptik/lind:prebuiltsdk alyptik/lind:latest
+	docker build -t alyptik/lind:base ./docker/base
+	docker build -t alyptik/lind:prebuiltsdk ./docker/prebuiltsdk
+	docker build --cache-from=alyptik/lind:prebuiltsdk -t alyptik/lind:latest ./docker/prebuiltsdk
 
 	cur_func="${FUNCNAME[1]}"
 }
 
 # prompt for target if none given on command line
 PS3=$'\n'"Build which target? "
-list=(all repy nacl buildglibc updateglibc updateglibc2)
-list+=(download cleansources cleantoolchain cleannacl install)
-list+=(liblind sdk rpc)
-list+=(test_repy test_glibc test_apps test_all nightly)
+list=(all download repy nacl glibc install)
+list+=(cleanall cleannacl cleansources cleantoolchain)
+list+=(updateglibc updateglibc2 docker nightly testall)
+list+=(testapps testglibc testrepy testsyscalls)
 if ((!$#)); then
 	select choice in "${list[@]}"; do
 		set -- "$choice"
@@ -664,58 +661,67 @@ if ((!$#)); then
 fi
 
 # all scripts assume we start here
-start_time=$(date +%s)
+start_time="$(date +%s)"
 
 # show command that will be executed
 print "" "Command line arguments: $0 $*" ""
 
 for word in "$@"; do
 	case "$word" in
+	download)
+		download_src;;
 	repy)
 		build_repy;;
 	nacl)
 		build_nacl;;
-	buildglibc)
+	glibc)
 		build_glibc;;
-	updateglibc)
-		update_glibc;;
-	updateglibc2)
-		update_glibc2;;
 	all)
 		download_src
 		build_nacl
 		build_repy
 		build_glibc
-		install_to_path
-		build_liblind;;
+		install_to_path;;
 	install)
 		install_to_path;;
-	download)
-		download_src;;
+	cleanall)
+		clean_nacl
+		clean_src
+		clean_toolchain;;
+	cleannacl)
+		clean_nacl;;
 	cleansources)
 		clean_src;;
 	cleantoolchain)
 		clean_toolchain;;
-	cleannacl)
-		clean_nacl;;
-	liblind)
-		build_liblind;;
-	test_repy)
-		test_repy;;
-	test_glibc)
-		print "Testing GLibC"
-		glibc_tester;;
-	test_apps)
-		print "Testing Applications"
-		test_apps;;
-	test_all)
-		print "Testing All"
-		test_repy
-		glibc_tester
-		test_apps;;
+	updateglibc)
+		update_glibc;;
+	updateglibc2)
+		update_glibc2;;
+	docker)
+		print "Building docker images"
+		build_docker;;
 	nightly)
-		print "Nightly Build"
+		print "Nightly build"
 		nightly_build;;
+	testall)
+		print "Testing all"
+		test_apps
+		test_glibc
+		test_repy
+		test_syscalls;;
+	testapps)
+		print "Testing applications"
+		test_apps;;
+	testglibc)
+		print "Testing glibc"
+		test_glibc;;
+	testrepy)
+		print "Testing repy"
+		test_repy;;
+	testsyscalls)
+		print "Testing syscalls"
+		test_syscalls;;
 	*)
 		print "Error: Did not find a build target for that number. Exiting..." >&2
 		abort;;
