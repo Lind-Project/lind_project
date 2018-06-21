@@ -35,8 +35,7 @@ int main(void)
 			fflush(0);
 			exit(EXIT_FAILURE);
 		case 0:
-			/* printf("child %d succeeded\n", getpid()); */
-			printf("child %d succeeded\n", 1);
+			printf("child %d succeeded\n", getpid());
 			fflush(0);
 			exit(EXIT_SUCCESS);
 		}
@@ -44,23 +43,19 @@ int main(void)
 		write(STDOUT_FILENO, c, sizeof c - 1);
 		if (waitpid(cpid, &cret, 0) == -1)
 			perror("child");
-		/* printf("child waitpid ret: %d\n", waitpid(cpid, &cret, 0)); */
 		fflush(0);
-		/* printf("child %d succeeded after waiting on %d\n", getpid(), cpid); */
-		printf("child %d succeeded after waiting on %d\n", 2, cpid);
+		printf("child %d succeeded after waiting on %d\n", getpid(), cpid);
 		fflush(0);
 		exit(EXIT_SUCCESS);
 	}
 
-	/* printf("%d\n", getpid()); */
 	fflush(0);
 	write(STDOUT_FILENO, p, sizeof p - 1);
 	if (waitpid(ppid, &pret, 0) == -1)
 		perror("1st parent");
 	/* printf("parent wait ret: %d\n", wait(&pret)); */
 	fflush(0);
-	/* printf("parent %d succeeded after waiting on %d\n", getpid(), ppid); */
-	printf("parent %d succeeded after waiting on %d\n", 1, ppid);
+	printf("parent %d succeeded after waiting on %d\n", getpid(), ppid);
 	fflush(0);
 
 	switch ((ppid = fork())) {
@@ -69,8 +64,7 @@ int main(void)
 		fflush(0);
 		exit(EXIT_FAILURE);
 	case 0:
-		/* printf("child %d succeeded\n", getpid()); */
-		printf("child %d succeeded\n", 3);
+		printf("child %d succeeded\n", getpid());
 		fflush(0);
 		exit(EXIT_SUCCESS);
 	}
@@ -79,8 +73,7 @@ int main(void)
 		perror("2nd parent");
 	/* printf("parent wait ret: %d\n", wait(&pret)); */
 	fflush(0);
-	/* printf("parent %d succeeded after waiting on %d\n", getpid(), ppid); */
-	printf("parent %d succeeded after waiting on %d\n", 2, ppid);
+	printf("parent %d succeeded after waiting on %d\n", getpid(), ppid);
 	fflush(0);
 
 	/* _exit(EXIT_SUCCESS); */

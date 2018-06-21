@@ -25,7 +25,7 @@ WORKDIR /home/lind/lind_project/
 RUN ["./mklind", "download"]
 RUN ["./mklind", "nacl"]
 RUN ["./mklind", "repy"]
-RUN ["./mklind", "buildglibc"]
+RUN ["./mklind", "glibc"]
 RUN ["./mklind", "install"]
 RUN ["./mklind", "liblind"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork"]
