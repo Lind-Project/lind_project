@@ -23,16 +23,6 @@ elseif (!has("nvim") && empty(glob('~/.vim/autoload/plug.vim')))
 	augroup END
 endif
 
-function! BuildYCM(info)
-	" info is a dictionary with 3 fields
-	" - name:   name of the plugin
-	" - status: 'installed', 'updated', or 'unchanged'
-	" - force:  set on PlugInstall! or PlugUpdate!
-	if (a:info.status== 'installed' || a:info.force)
-		silent !./install.py
-	endif
-endfunction
-
 if has("nvim") | let g:plugdir='~/.config/nvim/plugged' | else | let g:plugdir='~/.vim/plugged' | endif
 
 call plug#begin(g:plugdir)
@@ -67,11 +57,11 @@ call plug#begin(g:plugdir)
 	" Plug 'stevearc/vim-arduino'
 	" Plug 'eagletmt/ghcmod-vim'
 	" Plug 'eagletmt/neco-ghc'
-	" Plug 'lervag/vimtex'
+	Plug 'lervag/vimtex', {'for': ['tex', 'tex_LatexBox', 'latexdoc']}
 	Plug 'sheerun/vim-polyglot'
-	Plug 'xuhdev/vim-latex-live-preview'
-	" Plug 'justmao945/vim-clang'
-	Plug 'Rip-Rip/clang_complete'
+	Plug 'xuhdev/vim-latex-live-preview', {'for': ['tex', 'tex_LatexBox', 'latexdoc']}
+	Plug 'justmao945/vim-clang'
+	" Plug 'Rip-Rip/clang_complete'
 	" Plug 'mikelue/vim-maven-plugin'
 	" Plug 'vim-scripts/maven-ide'
 	" Plug 'chaoren/vim-wordmotion'
@@ -113,7 +103,6 @@ call plug#begin(g:plugdir)
 	" Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 	" Plug 'drmingdrmer/xptemplate'
 	" Plug 'Valloric/YouCompleteMe', {'do': './install.py'}
-	" Plug 'Valloric/YouCompleteMe', {'do': function('BuildYCM')}
 	" Plug 'ervandew/supertab'
 	Plug 'Shougo/vimproc.vim', {'do': 'make'}
 	Plug 'maralla/completor.vim'
@@ -186,7 +175,6 @@ let g:gruvbox_underline=1
 let g:gruvbox_inverse=1
 let g:gruvbox_italic=1
 let g:gruvbox_invert_indent_guides=1
-" let g:gruvbox_termcolors=256
 if &term =~ '256color'
 	let &t_ut=''
 	let &t_Co=256
@@ -199,6 +187,7 @@ colorscheme gruvbox
 filetype plugin indent on
 set grepprg=grep\ -nH\ $*
 let g:tex_flavor='latex'
+let g:polyglot_disabled=['latex']
 
 " Page keys http://sourceforge.net/p/tmux/tmux-code/ci/master/tree/FAQ
 execute 'set t_kP=[5;*~'
@@ -1479,16 +1468,13 @@ let g:session_persist_globals = ['&makeprg', '&makeef', '&expandtab']
 
 " view options
 set viewdir=~/.vim/view
-" save :lcd cwd
-set vop+=curdir
-set vop+=options
+" curdir saves :lcd cwd
+set vop+=curdir vop+=options
 
 " session options
-set ssop+=winpos ssop+=globals ssop+=options ssop+=resize
-" ssop+=localoptions
-set ssop-=blank ssop-=help ssop-=localoptions ssop-=buffers
-" only include current tab page
-" set ssop-=tabpages
+set ssop+=winpos ssop+=globals ssop+=resize ssop+=tabpages
+" 'options' can corrupt sessions
+set ssop-=blank ssop-=help ssop-=localoptions ssop-=options ssop-=buffers
 
 let g:startify_skiplist = [
 	\ 'COMMIT_EDITMSG',

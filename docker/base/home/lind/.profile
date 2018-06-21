@@ -3,23 +3,21 @@
 # .profile - environment configuration
 
 # conditionals
-if test "$(hostname)" = fedora -o "$(hostname)" = compiler; then TERM=screen-256color; fi
-if test "$(whoami)" = jp; then locale=C.utf8; else locale=en_US.UTF-8; fi
-# Disable toggling XON/XOFF with ^S/^Q
+if test "$(hostname)" = fedora -o "$(whoami)" = jp; then TERM="screen" locale="C"; else locale="en_US.UTF-8"; fi
 if test -t 0; then stty -ixon; fi
-# job number for threaded programs
 if command -v nproc >/dev/null 2>&1; then NPROC="$(nproc)"; else NPROC=4; fi
-export NPROC NCPU="$NPROC" nproc="$NPROC" ncpu="$NPROC"
+export NPROC
 
 # directory shortcut environment variables
-export H="$HOME" h="$HOME"
-export PROJECTS="/store/code/projects" P="$PROJECTS" p="$PROJECTS"
-export LINUX="$PROJECTS/linux" L="$LINUX" l="$LINUX"
-export CONFIG="/store/dotfiles" C="$CONFIG" c="$CONFIG"
+export CONFIG="/store/dotfiles"
+export LINUX="$PROJECTS/linux"
+export PROJECTS="/store/code/projects"
+export C="$CONFIG" H="$HOME" L="$LINUX" P="$PROJECTS"
 
 # compiler environment
-unset CARCH CCACHE_DISABLE CFLAGS CCFLAGS CHOST
-unset CPATH CPPFLAGS CXXFLAGS LDFLAGS LIBRARY_PATH
+unset CARCH CCACHE_DISABLE CFLAGS CCFLAGS
+unset CHOST C_INCLUDE_PATH CPATH CPPFLAGS
+unset CXXFLAGS LDFLAGS LIBRARY_PATH
 export ARCHFLAGS="-arch x86_64"
 # export CARCH="x86_64"
 export CCACHE_DIR="$HOME/.ccache"
@@ -54,11 +52,12 @@ CFLAGS="-fno-strict-aliasing -fno-plt -fPIC $CFLAGS"
 CFLAGS="-fuse-ld=gold -fuse-linker-plugin $CFLAGS"
 # CFLAGS="-pipe $CFLAGS"
 # CFLAGS="-march=native -gdwarf-4 -g3 -O3 $CFLAGS"
-# CFLAGS="-march=native -g3 -O3 $CFLAGS"
-CFLAGS="-march=x86-64 -mtune=intel -g3 -O3 $CFLAGS"
+# CFLAGS="-march=x86-64 -mtune=intel -g3 -O3 $CFLAGS"
+CFLAGS="-march=native -g3 -O3 $CFLAGS"
 export CFLAGS
 # export CHOST="x86_64-unknown-linux-gnu"
 # export CPATH=":$HOME/.local/include"
+# export C_INCLUDE_PATH=":$HOME/.local/include"
 # export CPPFLAGS="-D_FORTIFY_SOURCE=2"
 export CXXFLAGS="$CFLAGS"
 LDFLAGS="$CFLAGS"
@@ -74,17 +73,17 @@ export LDFLAGS
 export MAKEFLAGS="-j$NPROC"
 
 # Environment variables
-# export BROWSER=/usr/bin/firefox
-export BROWSER=/usr/bin/chromium
-# export BROWSER=/usr/bin/w3m
-# export BROWSER=/usr/bin/lynx
+# export BROWSER=firefox
+export BROWSER=chromium
+# export BROWSER=w3m
+# export BROWSER=lynx
 export CORRECT_IGNORE="_?*"
 # Audio plugins
 DSSI_PATH="/usr/local/lib/dssi:/usr/lib/dssi"
 DSSI_PATH="$HOME/dssi:/store/audio/dssi:$DSSI_PATH"
 export DSSI_PATH
 # Add vim as default editor
-export EDITOR=/usr/bin/vim
+export EDITOR=vim
 export FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" VISUAL="$EDITOR"
 export FREETYPE_PROPERTIES="truetype:interpreter-version=35"
 export FZF_DEFAULT_COMMAND="
@@ -110,7 +109,7 @@ export GIT_PAGER="less -MRins"
 export GOPATH="$HOME/.go"
 export GROFF_NO_SGR=1 man
 # Gtk themes
-export GTK_DEBUG=1
+# export GTK_DEBUG=all
 export GTK_IM_MODULE="xim" QT_IM_MODULE="xim" XMODIFIERS="@im=none"
 # export GTK_IM_MODULE="fcitx" QT_IM_MODULE="fcitx" XMODIFIERS="@im=fcitx"
 # export GTK_IM_MODULE="ibus" QT_IM_MODULE="ibus" XMODIFIERS="@im=ibus"
@@ -167,8 +166,8 @@ export MANPATH
 export MANSECT="1:2:3:9:0:7:5:4:n:l:8:6:3f"
 export MESA_GL_VERSION_OVERRIDE="4.5COMPAT"
 export npm_config_prefix="$HOME/.node_modules"
-# export PAGER=/usr/bin/vimpager
-export PAGER=/usr/bin/less
+# export PAGER=vimpager
+export PAGER=less
 # default PATH
 PATH="/bin:/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
 PATH="/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:$PATH"
@@ -201,7 +200,7 @@ PERL_LOCAL_LIB_ROOT="$HOME/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT//:
 PERL_LOCAL_LIB_ROOT="${PERL_LOCAL_LIB_ROOT:+${PERL_LOCAL_LIB_ROOT//:$HOME\/perl5}}"
 export PERL_LOCAL_LIB_ROOT
 export PERL_MB_OPT="--install_base \"$HOME/perl5\""
-export PERL_MM_OPT="INSTALL_BASE=$HOME/perl5"
+export PERL_MM_OPT="INSTALL_BASE=\"$HOME/perl5\""
 export PERLDOC="-i -oman"
 # export PERLDOC_PAGER="most -+C -E"
 # export PERLDOC_PAGER="less -+C -MRXs"
@@ -212,16 +211,13 @@ PKG_CONFIG_PATH="$HOME/GNUstep/Library/Libraries/pkgconfig:$PKG_CONFIG_PATH"
 PKG_CONFIG_PATH="$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH"
 export PKG_CONFIG_PATH
 # export PLAN9=/usr/lib/plan9 PATH="${PATH//:\/usr\/lib\/plan9\/bin}:$PLAN9/bin"
+export PLAN9=/opt/plan9
 # shellcheck disable=SC2039
-export PLAN9=/opt/plan9 PATH="${PATH//:\/opt\/plan9\/bin}:$PLAN9/bin"
-# shellcheck disable=SC2039
-export p9="$PLAN9" MANPATH="${MANPATH//:\/opt\/plan9\/share\/man}:$PLAN9/share/man"
+export PATH="${PATH//:$PLAN9\/bin}$PLAN9/bin" MANPATH="${MANPATH//:$PLAN9\/man}:$PLAN9/share/man"
 export PRE="$HOME/.local" pre="$PRE"
-# export PS_FORMAT="flags,uid,pid,ppid,tpgid,pgrp,session,pri,ni,utime,pcpu,addr,sz,wchan,stat,state,tname,time,comm"
-export PS_FORMAT="flags,uid,pid,ppid,tpgid,pgrp,session,pri,ni,utime,pcpu,addr,sz,wchan,stat,state,tname,time,args"
+export PS_FORMAT="flags,uid,pid,ppid,tpgid,pgrp,session,pri,ni,pcpu,sz,wchan,stat,state,tname,time,args"
 # Python2 compatibility
-# export PYTHON=/store/config/scripts/python-compat
-# export PYTHON="/usr/bin/python2.7"
+# export PYTHON="/usr/bin/python2"
 export PYTHONSTARTUP="$HOME/.pythonrc"
 export READNULLCMD=less
 export RLWRAP_EDITOR="vim '+call cursor(%L,%C)'"
