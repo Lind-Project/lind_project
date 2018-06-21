@@ -122,7 +122,9 @@ export -f which fh
 [[ "$-" == *i* ]] && bind '"\C-r": "\C-x1\e^\er"'
 ## History completion bound to arrow keys
 [[ "$-" == *i* ]] && bind '"\e[A": history-search-backward'
+[[ "$-" == *i* ]] && bind '"\eOA": history-search-backward'
 [[ "$-" == *i* ]] && bind '"\e[B": history-search-forward'
+[[ "$-" == *i* ]] && bind '"\eOB": history-search-forward'
 
 ## The following line may also be placed in bashrc to set the mode string
 #[[ "$-" == *i* ]] && bind "set vi-mode-str2 $(printf '1\033[37m\002+\001\033[0m\002')"
