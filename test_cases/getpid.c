@@ -9,6 +9,7 @@ int main(void)
 	puts("printing pid");
 
 	printf("%d\n", getpid());
+	perror("");
 
 	puts("getpid() succeeded");
 
