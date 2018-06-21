@@ -1,10 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
 #ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
 #endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 int main(void)
 {
