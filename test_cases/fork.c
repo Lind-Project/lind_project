@@ -46,14 +46,14 @@ int main(void)
 
 	fflush(0);
 	write(STDOUT_FILENO, p, sizeof p - 1);
+	if (waitpid(pid, &pret, 0) == -1)
+		perror("1st parent");
 	/*
-	 * if (waitpid(pid, &pret, 0) == -1)
+	 * if (wait(&pret) == -1)
 	 *         perror("1st parent");
 	 */
-	if (wait(&pret) == -1)
-		perror("1st parent");
 	fflush(0);
-	printf("1st parent %d succeeded after waiting on %d\n", getpid(), ppid);
+	printf("1st parent %d succeeded after waiting on %d\n", getpid(), pid);
 	fflush(0);
 
 	puts("2nd parent forking");
@@ -69,12 +69,10 @@ int main(void)
 		exit(EXIT_SUCCESS);
 	}
 	write(STDOUT_FILENO, p, sizeof p - 1);
-	/*
-	 * if (waitpid(ppid, &ppret, 0) == -1)
-	 *         perror("2nd parent");
-	 */
-	if (wait(&ppret) == -1)
+	if (waitpid(ppid, &ppret, 0) == -1)
 		perror("2nd parent");
+	/* if (wait(&ppret) == -1) */
+	/*         perror("2nd parent"); */
 	fflush(0);
 	printf("2nd parent %d succeeded after waiting on %d\n", getpid(), ppid);
 	fflush(0);
