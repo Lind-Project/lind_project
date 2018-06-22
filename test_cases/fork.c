@@ -35,8 +35,10 @@ int main(void)
 		write(STDOUT_FILENO, c, sizeof c - 1);
 		if (waitpid(cpid, &cret, 0) == -1)
 			perror("1st child");
-		if (wait(&cret) == -1)
-			perror("1st child");
+		/*
+		 * if (wait(&cret) == -1)
+		 *         perror("1st child");
+		 */
 		fflush(0);
 		printf("1st child %d succeeded after waiting on %d\n", getpid(), cpid);
 		fflush(0);
@@ -71,8 +73,10 @@ int main(void)
 	write(STDOUT_FILENO, p, sizeof p - 1);
 	if (waitpid(ppid, &ppret, 0) == -1)
 		perror("2nd parent");
-	/* if (wait(&ppret) == -1) */
-	/*         perror("2nd parent"); */
+	/*
+	 * if (wait(&ppret) == -1)
+	 *         perror("2nd parent");
+	 */
 	fflush(0);
 	printf("2nd parent %d succeeded after waiting on %d\n", getpid(), ppid);
 	fflush(0);
