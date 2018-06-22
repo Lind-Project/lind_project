@@ -1682,6 +1682,8 @@ command! Wq wq
 command! WQ wq
 command! Qall qall
 command! Qall qall
+command! Wall wqall
+command! WAll wqall
 command! Wqall wqall
 command! WQall wqall
 "cabbrev wQ <C-r>=(getcmdtype()==':' && getcmdpos()==1 ? 'wq' : 'wQ')<CR>
