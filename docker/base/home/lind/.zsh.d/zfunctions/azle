@@ -1,6 +1,0 @@
-[[ -z "$*" ]] && return 1
-
-for i; do
-	autoload -Uz "$i"
-	zle -N "$i"
-done

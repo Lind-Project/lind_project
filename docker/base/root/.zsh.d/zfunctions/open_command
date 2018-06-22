@@ -1,4 +1,0 @@
-[[ -z "$*" ]] && return
-gio open "$1" &>/dev/null &!
-shift
-$0 "$@"

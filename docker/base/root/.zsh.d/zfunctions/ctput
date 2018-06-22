@@ -1,7 +1,0 @@
-
-	## List Termcap colors'
-	local colorcount=${1:-16}
-	printf "Listing %s colors:\n" "$colorcount"
-	for ((i=0;i<=colorcount;i++)); do
-		printf "$(tput setaf $i)(tput setaf [%d])$(tput sgr0) $(tput setaf $i)%s$(tput sgr0)\n" "$i" "moretest"
-	done

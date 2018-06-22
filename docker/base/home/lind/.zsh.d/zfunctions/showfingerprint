@@ -1,4 +1,0 @@
-
-	openssl s_client -connect ${1?No IP specified!}:${2?No IP specified!} -showcerts 2>&1 | \
-		openssl x509 -sha1 -noout -fingerprint 2>&1 | \
-		sed -e ' s/^.*=//p; 1 s/://g; $ y/ABCDEF/abcdef/'

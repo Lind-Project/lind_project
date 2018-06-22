@@ -44,10 +44,8 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
     "openssh", "subversion", "pacman-contrib", "arch-wiki-docs", "tree", \
     "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", "inetutils", \
     "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate", \
-    "shadow"]
+    "shadow", "grml-zsh-config"]
 RUN ["/usr/bin/pkgfile", "--update"]
-RUN ["/usr/bin/chsh", "-s/bin/zsh", "lind"]
-RUN ["/usr/bin/chsh", "-s/bin/zsh", "root"]
 
 USER lind
 

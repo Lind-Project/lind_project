@@ -1,1 +1,0 @@
- gm import -window ${1:-root} /tmp/$$.png && <<<"/tmp/$$.png" xclip -i -selection clipboard

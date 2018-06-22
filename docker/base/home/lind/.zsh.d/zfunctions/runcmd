@@ -1,1 +1,0 @@
- perl -e 'ioctl STDOUT, 0x5412, $_ for split //, <>'

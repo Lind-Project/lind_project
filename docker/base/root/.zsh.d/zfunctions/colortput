@@ -1,9 +1,0 @@
-
-	local colorcount=${1:-25}
-	for ((i=0;i<${colorcount};i++)); do
-		#[[ "$colorcount" -lt 10 ]] && {
-			#printf "\e[38;4;29m[%d]$(tput sgr0)$(tput setaf $i)%s\t" "$i" "derp"
-			#printf '%s' "\e[38;4;29m[%d]$(tput sgr0)$(tput setaf $i)%s" "$i" "derp"; } || {
-			printf "\e[38;4;29m\n[%d]$(tput sgr0)$(tput setaf $i) %s" "$i" "derp"
-			printf '\t%s' "\e[38;4;29m\n[%d]$(tput sgr0)$(tput setaf $i)%s"
-	done

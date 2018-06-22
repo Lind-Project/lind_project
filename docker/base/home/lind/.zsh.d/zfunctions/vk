@@ -1,7 +1,0 @@
-local vkurl search="$1"
-
-while [[ ! -z "$2" ]]; do
-	shift && search="$search+$1"
-done
-vkurl='https://vk.com/audios361427414?q='"$search"'&section=recoms'
-xdg-open "$vkurl"

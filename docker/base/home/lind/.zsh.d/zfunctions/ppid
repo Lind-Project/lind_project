@@ -1,1 +1,0 @@
- sudo ps -p ${1:-$$} -o ppid=

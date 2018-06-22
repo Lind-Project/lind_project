@@ -1,2 +1,0 @@
-## Resume a background job
- if [ "${#1}" -ne 1 ]; then echo 'attempting to resume job "%1"'; local j=1; else local j="${1}"; fi; %"${j}" &

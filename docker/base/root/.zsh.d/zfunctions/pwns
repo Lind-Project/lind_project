@@ -1,1 +1,0 @@
- pacman -Qo "$@" 2>/dev/null || pacman -Qo $(which "$@" | sed 's/ .*//g')

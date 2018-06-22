@@ -1,1 +1,0 @@
-../jsontools.plugin.zsh

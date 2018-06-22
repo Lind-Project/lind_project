@@ -1,3 +1,0 @@
-## Open vim help page
-
-for i in "$@"; do vim +"help $i" -c 'bunload! 1'; done

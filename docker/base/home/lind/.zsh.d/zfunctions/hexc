@@ -1,5 +1,0 @@
-cat "${@:-/dev/stdin}" |
-	od -tx1 |
-	sed 's/^[0-9]* //;$ d;s/^/ /;s/ /\\x/g;s/\\/, 0/g;s/^, //' |
-	perl -pe 's/$/ / if not eof; chomp' |
-	sed 's/^/{/; s/$/}/';

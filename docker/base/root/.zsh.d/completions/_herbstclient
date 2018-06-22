@@ -1,7 +1,0 @@
-#compdef herbstclient
-#
-# zsh completion for herbstclient
-
-local cmds
-cmds="$(herbstclient -q list_commands)"
-_arguments "*:command:($cmds)" --

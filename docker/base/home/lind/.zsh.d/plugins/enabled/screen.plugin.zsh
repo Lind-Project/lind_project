@@ -1,1 +1,0 @@
-../screen.plugin.zsh

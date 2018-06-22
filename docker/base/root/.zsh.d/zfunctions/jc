@@ -1,5 +1,0 @@
-[[ -z "$*" ]] && return 1
-for i in "$@"; do
-	javac "$i" && java -cp . "${i:r}"
-done
-

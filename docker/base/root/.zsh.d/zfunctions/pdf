@@ -1,6 +1,0 @@
-[[ -z "$*" ]] && return
-(( $# < 2 )) && \
-	ebook-convert "$1" .pdf --enable-heuristics || \
-	ebook-convert "$1" .pdf --enable-heuristics &
-shift
-pdf "$@"

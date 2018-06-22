@@ -1,3 +1,0 @@
-
-	echo -n "$@" '[perform alphabetical search for:] '; read -r
-	expac -s "%-25n %v" | grep "$REPLY"

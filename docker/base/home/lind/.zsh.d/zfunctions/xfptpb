@@ -1,4 +1,0 @@
-curl https://0x0.st/ -sF "c=@$*" \
-	| tee >(awk '/http/ {sub("url: ",""); print}' \
-		| awk 'NR>1{print PREV} {PREV=$0} END{printf("%s",$0)}' \
-		| xclip -i -selection clipboard)

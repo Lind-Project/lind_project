@@ -1,1 +1,0 @@
-../fzf-key-bindings.zsh

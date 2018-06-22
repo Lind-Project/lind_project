@@ -1,7 +1,0 @@
-
-	asciinema rec -y "/tmp/$$.json"
-	asciinema upload "/tmp/$$.json" | \
-		grep --line-buffered -o 'http.*' | \
-		tee >(perl -pe 'chomp if eof' | \
-		xsel -ib)
-
