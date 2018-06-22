@@ -1,1 +1,0 @@
- npm -g install --prefix "${HOME}/.node_modules" "$@"

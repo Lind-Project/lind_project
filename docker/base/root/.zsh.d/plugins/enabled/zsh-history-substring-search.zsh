@@ -1,1 +1,0 @@
-../zsh-history-substring-search.zsh

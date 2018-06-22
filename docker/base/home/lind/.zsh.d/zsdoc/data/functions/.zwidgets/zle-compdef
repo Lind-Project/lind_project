@@ -1,9 +1,0 @@
-local cmd
-if [[ -z "$BUFFER" ]]; then
-	LBUFFER="compdef _gnu_generic "
-else
-	cmd="${${${BUFFER#*_[[:blank:]]}##(*)(;|&|\(|\)|\{|\}|\`|do|then|else|time|sudo)}%%[[:blank:]]*}"
-	zle push-input
-	BUFFER="compdef _gnu_generic $cmd"
-	zle accept-line
-fi

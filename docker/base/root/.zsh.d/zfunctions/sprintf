@@ -1,5 +1,0 @@
-
-	local sep=$'\n'
-	[[ ! -z "$2" ]] && { local sep="$1"; shift; }
-	[[ -z "${1?Error: No arguments}" ]] && return 1
-	printf "%s${sep}" "$@"

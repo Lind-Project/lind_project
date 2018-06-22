@@ -1,6 +1,0 @@
-local selected
-selected=$(locate / | \
-	FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" \
-	$(__fzfcmd) -q "$LBUFFER")
-LBUFFER=$selected
-zle redisplay

@@ -1,6 +1,0 @@
-## base64 encode a file to store in an env variable
-
-[[ -z "$*" ]] && local fname="/dev/stdin" || local fname="$*"
-gzip -c --best "$*" | base64 | perl -pe 'chomp if eof'
-
-

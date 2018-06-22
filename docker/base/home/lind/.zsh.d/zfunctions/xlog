@@ -1,1 +1,0 @@
- grep -i --color "$*" /var/log/Xorg.0.log

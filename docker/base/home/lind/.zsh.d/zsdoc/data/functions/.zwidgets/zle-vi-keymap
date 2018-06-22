@@ -1,2 +1,0 @@
-setescapes
-bindkey -v; printf "$cline"; printf "$cgrey"; _km=vi; _vi=main; _emacs=

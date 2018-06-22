@@ -1,2 +1,0 @@
-local git_where="$(parse_git_branch)"
-[[ -n "$git_where" ]] && print -n -- "$GIT_PROMPT_SYMBOL$(parse_git_state)$GIT_PROMPT_PREFIX%{$fg[yellow]%}${git_where#(refs/heads/|tags/)}$GIT_PROMPT_SUFFIX"

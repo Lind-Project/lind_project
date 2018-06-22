@@ -1,1 +1,0 @@
-../jake-node.plugin.zsh

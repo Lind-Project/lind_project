@@ -1,1 +1,0 @@
-print -z -- "$(fc -l 1 | fzf +s --tac | sed 's/ *[0-9]* *//')";

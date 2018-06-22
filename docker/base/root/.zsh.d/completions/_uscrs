@@ -1,5 +1,0 @@
-#compdef uscrs puscrs
-
-((CURRENT++))
-words=(systemctl --user restart "${words[@]:1}")
-_normal

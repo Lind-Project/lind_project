@@ -1,9 +1,0 @@
-for i; do
-	local title url
-	title="$(wget --quiet -O - "$i" | \
-		sed -n 'H;${x;s!.*<head[^>]*>\(.*\)</head>.*!\1!;tnext};
-			b;:next;s!.*<title>\(.*\) - Pornhub.com</title>.*!\1!p;' | \
-		sed 's!/! !g')"
-	url="$(youtube-dl --get-url "$i" | paste -sd' ' | perl -pe 'chomp if eof')"
-	saldl -ro "$title.mp4" "$url"
-done

@@ -1,1 +1,0 @@
- ls -dCX --color=auto "${*:-./}/"*/

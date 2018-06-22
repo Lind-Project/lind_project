@@ -1,1 +1,0 @@
- chromium "https://metacpan.org/search?size=50&q=$(<<<"$*" tr ' ' '+')" >/dev/null 2>&1

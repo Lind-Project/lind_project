@@ -1,5 +1,0 @@
-
-	printf '$*:\t'; printf '"%s" ' $*; echo
-	printf '"$*":\t'; printf '"%s" ' "$*"; echo
-	printf '$@:\t'; printf '"%s" ' $@; echo
-	printf '"$@":\t'; printf '"%s" ' "$@"; echo

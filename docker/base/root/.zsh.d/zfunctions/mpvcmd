@@ -1,2 +1,0 @@
- notify-send "mpv: loading..." "$@"
- mpv --loop-file=inf "$@"

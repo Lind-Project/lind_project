@@ -1,7 +1,0 @@
-
-	[[ ${#} -ge 1 ]] && local dpercent="$1" || local dpercent=100
-	[[ ${#} -ge 2 ]] && local mpercent="$2" || local mpercent=0
-	[[ ${#} -ge 3 ]] && local target="$3" || local target='/'
-	echo "Running balance on \"${target}\" with -dusage=${dpercent} and -musage=${mpercent}..."
-	sudo btrfs balance start -v -dusage="${dpercent}" -musage="${mpercent}" "${target}"
-	return 0

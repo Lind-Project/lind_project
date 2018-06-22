@@ -1,3 +1,0 @@
-
-	[[ -z "$(pgrep -fx "gvim --servername GVIM")" ]] || gvim --servername GVIM
-	[[ -z "$1" ]] || gvim --servername GVIM --remote-tab-silent "${@}"

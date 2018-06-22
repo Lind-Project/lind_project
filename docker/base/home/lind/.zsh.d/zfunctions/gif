@@ -1,1 +1,0 @@
- ffmpeg -i "${1:?Error: no input file specified!}" "${2:-${1%.*}.gif}" -threads 0

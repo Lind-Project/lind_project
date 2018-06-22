@@ -1,5 +1,0 @@
-
-	<<<$'\n' k2pdfopt -bpc 1 -dev kp2 -x "$1" >/dev/null 2>&1 &
-	[[ -z "$2" ]] && return 0
-	shift
-	kpdf "$@"

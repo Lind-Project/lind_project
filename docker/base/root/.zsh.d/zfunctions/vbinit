@@ -1,5 +1,0 @@
-
-	sudo modprobe vboxnetadp vboxnetflt vboxpci vboxdrv
-	sudo vboxreload
-	#VBoxManage hostonlyif create
-	#VBoxManage natnetwork start --netname vbnat

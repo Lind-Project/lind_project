@@ -1,1 +1,0 @@
- chromium " https://en.wikipedia.org/w/index.php?search=$(<<<"$*" tr ' ' '+')" >/dev/null 2>&1

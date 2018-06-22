@@ -1,2 +1,0 @@
-[[ -z "$*" ]] && return 1
-autoload -Uz +X "$@"
