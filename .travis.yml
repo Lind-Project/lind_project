@@ -108,7 +108,6 @@ before_install:
                 | sudo tee /usr/include/linux/memfd.h
 
 script:
-    - ls
-    - pwd
-    - printf '%s\n' '-------------------------------'
+    - ln -Tsv "$PWD" "$LIND_BASE"
+    - cd "$LIND_BASE"
     - ./mklind -e all
