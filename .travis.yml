@@ -89,7 +89,7 @@ before_install:
     - eval "${MATRIX_EVAL}"
     - sudo apt-get install -qq --fix-missing elfutils libelf-dev libreadline-dev
     - sudo apt-get install -qq --fix-missing linux-headers-generic linux-libc-dev
-    - sudo apt-get install -qq --fix-missing docker
+    - sudo apt-get install -qq --fix-missing docker virtualenvwrapper
     # - sudo apt-get install -qq --fix-missing
     # Generate the header since one is missing on the Travis instance
     - sudo mkdir -p /usr/include/linux
@@ -110,5 +110,5 @@ before_install:
 script:
     - ls
     - pwd
-    - mkdir -pv "$LIND_BASE"
+    - printf '%s\n' '-------------------------------'
     - ./mklind -e all
