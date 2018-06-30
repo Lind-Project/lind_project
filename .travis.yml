@@ -91,11 +91,6 @@ before_install:
     - sudo apt-get install -qq --fix-missing linux-headers-generic linux-libc-dev
     - sudo apt-get install -qq --fix-missing docker virtualenvwrapper npm help2man
     # - sudo apt-get install -qq --fix-missing
-    - ln -Tsv "$PWD" "$LIND_BASE"
-    - cd /
-    - sudo tar xvf "$LIND_BASE/docker/base/home/lind/build/make-3.82/make-3.82-3.82-1-x86_64.pkg.tar.xz"
-    - cd "$LIND_BASE/docker/base/home/lind/build/texinfo-4.13/"
-    - make install
     - printf "%s\n" 'prefix=${HOME}/.node_modules' | tee -a "$HOME/.npmrc"
     - npm install -g yarn
     - mkdir -pv "$HOME/bin/"
@@ -122,4 +117,9 @@ before_install:
                 | sudo tee /usr/include/linux/memfd.h
 
 script:
+    - ln -Tsfv "$PWD" "$LIND_BASE"
+    - cd /
+    - sudo tar xvf "$LIND_BASE/docker/base/home/lind/build/make-3.82/make-3.82-3.82-1-x86_64.pkg.tar.xz"
+    - cd "$LIND_BASE/docker/base/home/lind/build/texinfo-4.13/"
+    - make install
     - ./mklind -e all
