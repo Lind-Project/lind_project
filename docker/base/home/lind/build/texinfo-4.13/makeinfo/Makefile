@@ -171,7 +171,7 @@ BITSIZEOF_WCHAR_T =
 BITSIZEOF_WINT_T = 
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -march=native -g3 -O3 -fuse-ld=gold -fuse-linker-plugin -fno-strict-aliasing -fno-plt -fPIC -Wno-error -Wno-implicit-fallthrough
+CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -308,7 +308,7 @@ INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 INTLLIBS = 
 INTL_MACOSX_LIBS = 
-LDFLAGS = -Wl,--as-needed,--sort-common,--warn-common -Wl,-O3,-z,relro,-z,now,-z,noexecstack -march=native -g3 -O3 -fuse-ld=gold -fuse-linker-plugin -fno-strict-aliasing -fno-plt -fPIC -Wno-error -Wno-implicit-fallthrough
+LDFLAGS = 
 LIBGNU_LIBDEPS = 
 LIBGNU_LTLIBDEPS = 
 LIBICONV = -liconv
