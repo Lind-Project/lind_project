@@ -120,7 +120,7 @@ script:
     - ln -Tsv "$PWD" "$LIND_BASE"
     - cd "$LIND_BASE"
     - cd "$LIND_BASE/docker/base/home/lind/build/make-3.82/src/make-3.82"
-    - patch -p1 <../glob.patch
+    - yes "" | patch -p1 <../glob.patch
     - ./configure --prefix="$HOME/.local"
     - make install
     - cd "$LIND_BASE/docker/base/home/lind/build/texinfo-4.13/"
