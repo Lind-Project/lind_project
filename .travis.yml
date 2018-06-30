@@ -119,7 +119,9 @@ before_install:
 script:
     - ln -Tsfv "$PWD" "$LIND_BASE"
     - cd /
-    - sudo tar xvf "$LIND_BASE/docker/base/home/lind/build/make-3.82/make-3.82-3.82-1-x86_64.pkg.tar.xz"
+    - cd "$LIND_BASE/docker/base/home/lind/build/make-3.82/src/make-3.82/"
+    - ./configure --prefix="$HOME/.local"
+    - make install
     - cd "$LIND_BASE/docker/base/home/lind/build/texinfo-4.13/"
     - PREFIX="$HOME/.local" make install
     - cd "$LIND_BASE"
