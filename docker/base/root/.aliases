@@ -7,13 +7,6 @@ unalias md meminfo node o rd ru s sd sf si u v xi xo z zz 2>/dev/null
 
 ## Custom aliases
 
-alias reload='{ . ~/.aliases && . ~/.zsh.d/.zshenv && . ~/.profile && . ~/.zsh.d/.zwidgets; } 2>/dev/null;'
-alias dblind=$'curl -H "Content-Type: application/json" --data \'{"docker_tag": "prebuiltsdk"}\' -X POST https://registry.hub.docker.com/u/alyptik/lind_project/trigger/d3f56a1c-f8bb-4b41-a2cd-16fdee56cb48/'
-alias dbnacl=$'curl -H "Content-Type: application/json" --data \'{"docker_tag": "prebuiltsdk"}\' -X POST https://registry.hub.docker.com/u/alyptik/native_client/trigger/d9cf99ae-9123-4fbe-ac69-7c51d0415182/'
-# alias dblind=$'curl -H "Content-Type: application/json" --data \'{"build": "true"}\' -X POST https://registry.hub.docker.com/u/alyptik/lind_project/trigger/d3f56a1c-f8bb-4b41-a2cd-16fdee56cb48/'
-# alias dbnacl=$'curl -H "Content-Type: application/json" --data \'{"build": "true"}\' -X POST https://registry.hub.docker.com/u/alyptik/native_client/trigger/d9cf99ae-9123-4fbe-ac69-7c51d0415182/'
-# alias dblind=$'curl -H "Content-Type: application/json" --data \'{"docker_tag": "latest"}\' -X POST https://registry.hub.docker.com/u/alyptik/lind_project/trigger/d3f56a1c-f8bb-4b41-a2cd-16fdee56cb48/ && echo && curl -H "Content-Type: application/json" --data \'{"docker_tag": "prebuiltsdk"}\' -X POST https://registry.hub.docker.com/u/alyptik/lind_project/trigger/d3f56a1c-f8bb-4b41-a2cd-16fdee56cb48/ && echo && curl -H "Content-Type: application/json" --data \'{"docker_tag": "base"}\' -X POST https://registry.hub.docker.com/u/alyptik/lind_project/trigger/d3f56a1c-f8bb-4b41-a2cd-16fdee56cb48/ && echo'
-# alias dbnacl=$'curl -H "Content-Type: application/json" --data \'{"docker_tag": "latest"}\' -X POST https://registry.hub.docker.com/u/alyptik/native_client/trigger/d9cf99ae-9123-4fbe-ac69-7c51d0415182/ && echo && curl -H "Content-Type: application/json" --data \'{"docker_tag": "prebuiltsdk"}\' -X POST https://registry.hub.docker.com/u/alyptik/native_client/trigger/d9cf99ae-9123-4fbe-ac69-7c51d0415182/ && echo && curl -H "Content-Type: application/json" --data \'{"docker_tag": "base"}\' -X POST https://registry.hub.docker.com/u/alyptik/native_client/trigger/d9cf99ae-9123-4fbe-ac69-7c51d0415182/ && echo'
 alias d='docker'
 alias cnt='docker container'
 alias img='docker image'
@@ -22,6 +15,9 @@ alias dlsi='docker image ls -a'
 alias drm='docker rm --force $(docker container ls -qa)'
 alias drmi='docker rmi --force $(docker image ls -qa)'
 alias drma='{ docker rm -f $(docker container ls -qa); docker rmi -f $(docker image ls -qa); } 2>/dev/null'
+alias reload='{ . ~/.aliases && . ~/.zsh.d/.zshenv && . ~/.profile && . ~/.zsh.d/.zwidgets; } 2>/dev/null;'
+alias dblind=$'curl -H "Content-Type: application/json" --data \'{"docker_tag": "prebuiltsdk"}\' -X POST https://registry.hub.docker.com/u/alyptik/lind_project/trigger/d3f56a1c-f8bb-4b41-a2cd-16fdee56cb48/'
+alias dbnacl=$'curl -H "Content-Type: application/json" --data \'{"docker_tag": "prebuiltsdk"}\' -X POST https://registry.hub.docker.com/u/alyptik/native_client/trigger/d9cf99ae-9123-4fbe-ac69-7c51d0415182/'
 alias pc='pkg-config --libs --cflags'
 alias l='env LESS= less -CMNRis'
 alias ed='ed -vp\*\ '
