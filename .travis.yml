@@ -93,6 +93,13 @@ before_install:
     - sudo apt-get install -qq --fix-missing docker virtualenvwrapper npm help2man
     - printf "%s\n" 'prefix=${HOME}/.node_modules' | tee -a "$HOME/.npmrc"
     - npm install -g yarn
+    - mkdir -pv "$HOME/bin/"
+    - printf "%s\n" \
+             "!#/bin/sh" \
+             "" \
+             "exec /bin/help2man --no-discard-stderr \"$@\"" \
+             | tee "$HOME/bin/help2man"
+    - chmod +x "$HOME/bin/help2man"
     # generate the <linux/memfd.h> header since one is missing on the Travis instance
     - sudo mkdir -p /usr/include/linux
     - printf "%s\n" \
