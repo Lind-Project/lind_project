@@ -294,7 +294,7 @@ HAVE_WCHAR_H = 1
 HAVE_WCTYPE_H = 1
 HAVE_WINT_T = 1
 HAVE__BOOL = 1
-HELP2MAN = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run help2man
+HELP2MAN = ${SHELL} ./build-aux/missing --run help2man
 HEVEA = 
 INCLUDE_NEXT = include_next
 INSTALL = /bin/install -c
@@ -823,8 +823,7 @@ distclean: distclean-recursive
 distclean-am: clean-am distclean-generic distclean-hdr distclean-local \
 	distclean-tags
 
-# dvi: dvi-recursive
-dvi:
+dvi: dvi-recursive
 
 dvi-am:
 
@@ -836,8 +835,7 @@ info-am:
 
 install-data-am:
 
-# install-dvi: install-dvi-recursive
-install-dvi:
+install-dvi: install-dvi-recursive
 
 install-exec-am:
 
