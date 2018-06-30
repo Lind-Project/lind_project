@@ -17,7 +17,7 @@ matrix:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7"
         - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
         - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
-        - LIND_PREFIX="/home/lind"
+        - LIND_PREFIX="$HOME"
         - LIND_BASE="$LIND_PREFIX/lind_project"
         - LIND_SRC="$LIND_BASE/lind"
         - LIND_MONITOR="$LIND_BASE/reference_monitor"
@@ -44,7 +44,7 @@ matrix:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6"
         - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
         - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
-        - LIND_PREFIX="/home/lind"
+        - LIND_PREFIX="$HOME"
         - LIND_BASE="$LIND_PREFIX/lind_project"
         - LIND_SRC="$LIND_BASE/lind"
         - LIND_MONITOR="$LIND_BASE/reference_monitor"
@@ -71,7 +71,7 @@ matrix:
         - MATRIX_EVAL="export PREFIX=~/.local CC=clang-5.0 CXX=clang++-5.0"
         - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
         - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
-        - LIND_PREFIX="/home/lind"
+        - LIND_PREFIX="$HOME"
         - LIND_BASE="$LIND_PREFIX/lind_project"
         - LIND_SRC="$LIND_BASE/lind"
         - LIND_MONITOR="$LIND_BASE/reference_monitor"
@@ -89,6 +89,7 @@ before_install:
     - eval "${MATRIX_EVAL}"
     - sudo apt-get install -qq --fix-missing elfutils libelf-dev libreadline-dev
     - sudo apt-get install -qq --fix-missing linux-headers-generic linux-libc-dev
+    - sudo apt-get install -qq --fix-missing docker
     # - sudo apt-get install -qq --fix-missing
     # Generate the header since one is missing on the Travis instance
     - sudo mkdir -p /usr/include/linux
@@ -107,6 +108,7 @@ before_install:
                 | sudo tee /usr/include/linux/memfd.h
 
 script:
-    - type docker
-    - type pip
+    - ls
+    - pwd
+    - mkdir -pv "$LIND_BASE"
     - ./mklind -e all
