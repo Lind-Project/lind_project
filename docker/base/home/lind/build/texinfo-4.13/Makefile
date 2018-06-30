@@ -151,14 +151,14 @@ DIST_ARCHIVES = $(distdir).tar.gz $(distdir).tar.lzma
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run aclocal-1.10
+ACLOCAL = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run aclocal-1.10
 ALLOCA = 
 ALLOCA_H = alloca.h
-AMTAR = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run tar
+AMTAR = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run tar
 ARGZ_H = 
-AUTOCONF = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run automake-1.10
+AUTOCONF = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run automake-1.10
 AWK = gawk
 BITSIZEOF_PTRDIFF_T = 
 BITSIZEOF_SIG_ATOMIC_T = 
@@ -316,7 +316,7 @@ LTLIBICONV = -liconv
 LTLIBINTL = 
 LTLIBOBJS = 
 MAINT = #
-MAKEINFO = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run makeinfo
+MAKEINFO = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run makeinfo
 MKDIR_P = /bin/mkdir -p
 MSGFMT = /bin/msgfmt
 MSGFMT_015 = /bin/msgfmt
@@ -379,10 +379,10 @@ WINT_T_SUFFIX =
 XGETTEXT = /bin/xgettext
 XGETTEXT_015 = /bin/xgettext
 XGETTEXT_EXTRA_OPTIONS =  --flag=error:3:c-format --flag=error_at_line:5:c-format
-abs_builddir = /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13
-abs_srcdir = /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13
-abs_top_builddir = /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13
-abs_top_srcdir = /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13
+abs_builddir = /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13
+abs_srcdir = /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13
+abs_top_builddir = /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13
+abs_top_srcdir = /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
@@ -413,7 +413,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = $(SHELL) /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/install-sh
+install_sh = $(SHELL) /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -823,7 +823,8 @@ distclean: distclean-recursive
 distclean-am: clean-am distclean-generic distclean-hdr distclean-local \
 	distclean-tags
 
-dvi: dvi-recursive
+# dvi: dvi-recursive
+dvi:
 
 dvi-am:
 
@@ -835,7 +836,8 @@ info-am:
 
 install-data-am:
 
-install-dvi: install-dvi-recursive
+# install-dvi: install-dvi-recursive
+install-dvi:
 
 install-exec-am:
 

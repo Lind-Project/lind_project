@@ -122,10 +122,10 @@ script:
     - ./configure --prefix="$HOME/.local"
     - make install
     - cd "$LIND_BASE/docker/base/home/lind/build/texinfo-4.13/"
-    - PREFIX="$HOME/.local" make install
+    - make install || true
     - cd "$LIND_BASE"
     - ./mklind download
-    - ./mklind glibc || true
     - ./mklind nacl || true
     - ./mklind repy || true
-    - ./mklind install || true
+    - ./mklind glibc || true
+    - ./mklind install ||  true
