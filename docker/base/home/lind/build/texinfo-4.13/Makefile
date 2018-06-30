@@ -823,7 +823,8 @@ distclean: distclean-recursive
 distclean-am: clean-am distclean-generic distclean-hdr distclean-local \
 	distclean-tags
 
-dvi: dvi-recursive
+# dvi: dvi-recursive
+dvi:
 
 dvi-am:
 
@@ -835,7 +836,8 @@ info-am:
 
 install-data-am:
 
-install-dvi: install-dvi-recursive
+# install-dvi: install-dvi-recursive
+install-dvi:
 
 install-exec-am:
 
