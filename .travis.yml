@@ -95,7 +95,7 @@ before_install:
     - npm install -g yarn
     - mkdir -pv "$HOME/bin/"
     - printf "%s\n" \
-             "!#/bin/sh" \
+             "#!/bin/sh" \
              "" \
              "exec /bin/help2man --no-discard-stderr \"$@\"" \
              | tee "$HOME/bin/help2man"
