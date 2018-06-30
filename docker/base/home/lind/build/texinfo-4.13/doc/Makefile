@@ -147,14 +147,14 @@ man5dir = $(mandir)/man5
 NROFF = nroff
 MANS = $(man_MANS)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run aclocal-1.10
+ACLOCAL = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run aclocal-1.10
 ALLOCA = 
 ALLOCA_H = alloca.h
-AMTAR = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run tar
+AMTAR = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run tar
 ARGZ_H = 
-AUTOCONF = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run automake-1.10
+AUTOCONF = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run automake-1.10
 AWK = gawk
 BITSIZEOF_PTRDIFF_T = 
 BITSIZEOF_SIG_ATOMIC_T = 
@@ -290,7 +290,7 @@ HAVE_WCHAR_H = 1
 HAVE_WCTYPE_H = 1
 HAVE_WINT_T = 1
 HAVE__BOOL = 1
-HELP2MAN = ${SHELL} /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run help2man
+HELP2MAN = ${SHELL} /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/missing --run help2man
 HEVEA = 
 INCLUDE_NEXT = include_next
 INSTALL = /bin/install -c
@@ -378,10 +378,10 @@ WINT_T_SUFFIX =
 XGETTEXT = /bin/xgettext
 XGETTEXT_015 = /bin/xgettext
 XGETTEXT_EXTRA_OPTIONS =  --flag=error:3:c-format --flag=error_at_line:5:c-format
-abs_builddir = /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/doc
-abs_srcdir = /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/doc
-abs_top_builddir = /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13
-abs_top_srcdir = /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13
+abs_builddir = /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/doc
+abs_srcdir = /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/doc
+abs_top_builddir = /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13
+abs_top_srcdir = /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
@@ -412,7 +412,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = $(SHELL) /home/alyptik/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/install-sh
+install_sh = $(SHELL) /home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/build-aux/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -438,7 +438,8 @@ top_srcdir = ..
 info_TEXINFOS = texinfo.txi info-stnd.texi info.texi
 DISTCLEANFILES = texinfo texinfo-* info*.info*
 man_MANS = info.1 infokey.1 install-info.1 makeinfo.1 texindex.1 \
-	info.5 texinfo.5 texi2dvi.1 texi2pdf.1 pdftexi2dvi.1
+	info.5 texinfo.5 texi2pdf.1
+	# info.5 texinfo.5 texi2dvi.1 texi2pdf.1 pdftexi2dvi.1
 
 # We'd also like to use something like this, but Automake calls
 # "install-info" directly.
