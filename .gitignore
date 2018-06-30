@@ -106,6 +106,7 @@ typescript
 *.tar.gz
 
 # docker files
+!docker/base/home/lind/build/make-3.82/make-3.82-3.82-1-x86_64.pkg.tar.xz
 !docker/base/**/build/
 !docker/base/**/.zsh.d/
 !docker/base/home/lind/.zsh.d/plugins/zplug/.git/
