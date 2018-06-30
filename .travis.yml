@@ -15,6 +15,21 @@ matrix:
             - g++-7
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7"
+        - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
+        - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
+        - LIND_PREFIX="/home/lind"
+        - LIND_BASE="$LIND_PREFIX/lind_project"
+        - LIND_SRC="$LIND_BASE/lind"
+        - LIND_MONITOR="$LIND_BASE/reference_monitor"
+        - REPY_PATH="$LIND_SRC/repy"
+        - NACL_SDK_ROOT="$REPY_PATH/sdk"
+        - PYTHON="python2"
+        - PNACLPYTHON="python2"
+        - LD_LIBRARY_PATH="/lib/glibc"
+        - PATH="$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:$PATH"
+        - PATH="$REPY_PATH/bin:$PATH"
+        - PATH="$LIND_BASE:$PATH"
+        - PATH="/home/lind/.local/bin:$PATH"
 
     # works on Precise and Trusty
     - os: linux
@@ -27,6 +42,21 @@ matrix:
             - g++-6
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6"
+        - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
+        - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
+        - LIND_PREFIX="/home/lind"
+        - LIND_BASE="$LIND_PREFIX/lind_project"
+        - LIND_SRC="$LIND_BASE/lind"
+        - LIND_MONITOR="$LIND_BASE/reference_monitor"
+        - REPY_PATH="$LIND_SRC/repy"
+        - NACL_SDK_ROOT="$REPY_PATH/sdk"
+        - PYTHON="python2"
+        - PNACLPYTHON="python2"
+        - LD_LIBRARY_PATH="/lib/glibc"
+        - PATH="$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:$PATH"
+        - PATH="$REPY_PATH/bin:$PATH"
+        - PATH="$LIND_BASE:$PATH"
+        - PATH="/home/lind/.local/bin:$PATH"
 
     # works on Trusty
     - os: linux
@@ -39,10 +69,27 @@ matrix:
             - clang-5.0 lldb-5.0 lld-5.0
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=clang-5.0 CXX=clang++-5.0"
+        - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
+        - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
+        - LIND_PREFIX="/home/lind"
+        - LIND_BASE="$LIND_PREFIX/lind_project"
+        - LIND_SRC="$LIND_BASE/lind"
+        - LIND_MONITOR="$LIND_BASE/reference_monitor"
+        - REPY_PATH="$LIND_SRC/repy"
+        - NACL_SDK_ROOT="$REPY_PATH/sdk"
+        - PYTHON="python2"
+        - PNACLPYTHON="python2"
+        - LD_LIBRARY_PATH="/lib/glibc"
+        - PATH="$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:$PATH"
+        - PATH="$REPY_PATH/bin:$PATH"
+        - PATH="$LIND_BASE:$PATH"
+        - PATH="/home/lind/.local/bin:$PATH"
 
 before_install:
     - eval "${MATRIX_EVAL}"
-    - sudo apt-get install -qq --fix-missing elfutils libelf-dev libreadline-dev linux-headers-generic linux-libc-dev
+    - sudo apt-get install -qq --fix-missing elfutils libelf-dev libreadline-dev
+    - sudo apt-get install -qq --fix-missing linux-headers-generic linux-libc-dev
+    # - sudo apt-get install -qq --fix-missing
     # Generate the header since one is missing on the Travis instance
     - sudo mkdir -p /usr/include/linux
     - printf "%s\n" \
