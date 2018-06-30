@@ -288,7 +288,7 @@ function download_src() {
 		# start up virtualenv
 		PATH="$HOME/.local/bin:$PATH"
 		VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2
-		VIRTUALENVWRAPPER_VIRTUALENV="$(command -v virtualenv2)"
+		VIRTUALENVWRAPPER_VIRTUALENV="$(command -v virtualenv2 || command -v virtualenv)"
 		WORKON_HOME="${WORKON_HOME:-$LIND_BASE/virtualenvs}"
 		export PATH VIRTUALENVWRAPPER_PYTHON VIRTUALENVWRAPPER_VIRTUALENV WORKON_HOME
 		mkdir -pv "$WORKON_HOME"
