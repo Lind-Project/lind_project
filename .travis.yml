@@ -97,7 +97,7 @@ before_install:
     - printf "%s\n" \
              "#!/bin/sh" \
              "" \
-             "exec /bin/help2man --no-discard-stderr \"$@\"" \
+             "exec /usr/bin/help2man --no-discard-stderr \"$@\"" \
              | tee "$HOME/bin/help2man"
     - chmod +x "$HOME/bin/help2man"
     # generate the <linux/memfd.h> header since one is missing on the Travis instance
