@@ -121,6 +121,5 @@ script:
     - cd /
     - sudo tar xvf "$LIND_BASE/docker/base/home/lind/build/make-3.82/make-3.82-3.82-1-x86_64.pkg.tar.xz"
     - cd "$LIND_BASE/docker/base/home/lind/build/texinfo-4.13/"
-    - ./configure --prefix="$HOME/.local"
     - make install
     - ./mklind -e all
