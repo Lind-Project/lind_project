@@ -65,7 +65,7 @@ for func in $zle_arr $zle_cust; do
 	zle -N "$func"
 done
 for mod in $zmod_arr; do
-	zmodload "$1"
+	zmodload "$mod"
 done
 # equiv of bash's "help"
 unalias run-help help 2>/dev/null
