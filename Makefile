@@ -7,7 +7,9 @@
 all lind:
 	@./mklind -e
 
-.PHONY: Makefile all lind run shell bash list show latest prebuiltsdk base stack deploy pull clean prune
+.PHONY: Makefile all lind run shell bash list show
+.PHONY: latest prebuiltsdk naclruntime base
+.PHONY: stack deploy pull clean prune
 
 # targets like `make nacl` and `make lind/nacl` run their respective `./mklind -e nacl` command
 %:
@@ -24,8 +26,11 @@ list show:
 	docker image list -f label=lind -a
 	docker container list -f label=lind -a
 
-latest: | prebuiltsdk
+latest: | naclruntime
 	docker build -cache-from=alyptik/lind:$| -t alyptik/lind:$@ ./docker/$|
+
+naclruntime: | prebuiltsdk
+	docker build -t alyptik/lind:$@ ./docker/$@
 
 prebuiltsdk: | base
 	docker build -t alyptik/lind:$@ ./docker/$@
