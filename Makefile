@@ -7,23 +7,28 @@
 all lind:
 	@./mklind -e
 
-.PHONY: Makefile all lind run shell bash list show
-.PHONY: latest prebuiltsdk naclruntime base
-.PHONY: stack deploy pull clean prune
+.PHONY: Makefile all lind run shell list show latest naclruntime prebuiltsdk base stack deploy pull clean prune
 
 # targets like `make nacl` and `make lind/nacl` run their respective `./mklind -e nacl` command
 %:
 	@$(MAKE) "lind/$(basename $(notdir $*))"
 
 lind/%:
-	@./mklind -e $*
+	@./mklind $*
 
-# "--privileged" and "--ipc=host" are needed to set /dev/shm as PROT_EXEC
-run shell bash: | pull
-	docker run --privileged --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind /bin/bash
+# run a clean, temporary containter with target tag
+docker/%:
+	docker run --rm --label=lind --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind:$*
+
+# the `--ipc=host` flag is needed to mount /dev/shm with PROT_EXEC
+run shell: | pull
+	docker create --name=lind --label=lind --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind
+	docker start lind
+	docker exec -it lind
 
 list show:
 	docker image list -f label=lind -a
+	@echo
 	docker container list -f label=lind -a
 
 latest: | naclruntime
@@ -48,6 +53,6 @@ clean:
 	@$(MAKE) cleanall
 
 prune:
-	docker image prune
-	docker container prune
 	docker stack rm lindstack
+	docker container prune
+	docker image prune
