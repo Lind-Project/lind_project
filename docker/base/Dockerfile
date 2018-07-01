@@ -74,18 +74,18 @@ RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
 USER lind
 
 WORKDIR /home/lind/build/cower/
-RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-fsir"]
 WORKDIR /home/lind/build/make-3.82/
-RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-fsir"]
 WORKDIR /home/lind/build/texinfo-4.13/
 RUN ["./configure", "--prefix=/home/lind/.local"]
 RUN ["/usr/bin/make", "install", "PREFIX=/home/lind/.local"]
 WORKDIR /home/lind/build/
-RUN ["/usr/bin/cower", "-dd", "cepl-git", "terminfo-italics"]
+RUN ["/usr/bin/cower", "-fdd", "cepl-git", "terminfo-italics"]
 WORKDIR /home/lind/build/cepl-git/
-RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-fsir"]
 WORKDIR /home/lind/build/terminfo-italics/
-RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-sir"]
+RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-fsir"]
 
 USER root
 
