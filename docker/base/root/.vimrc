@@ -556,7 +556,8 @@ let g:airline#extensions#whitespace#trailing_regexp='\s$'
 let airline#extensions#c_like_langs=[
 	\ 'asm', 'c', 'cpp', 'cuda',
 	\ 'go', 'java', 'javascript',
-	\ 'lex', 'ld', 'php', 'yacc',
+	\ 'lex', 'ld', 'named', 'php',
+	\ 'yacc',
 	\ ]
 
 " Checking is enabled by default because b:airline_whitespace_disabled
