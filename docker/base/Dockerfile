@@ -44,7 +44,7 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
     "openssh", "subversion", "pacman-contrib", "arch-wiki-docs", "tree", \
     "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", "inetutils", \
     "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate", \
-    "shadow", "grml-zsh-config"]
+    "shadow", "grml-zsh-config", "ncdu"]
 RUN ["/usr/bin/pkgfile", "--update"]
 
 USER lind
@@ -91,7 +91,11 @@ USER root
 
 WORKDIR /home/lind/lind_project/
 RUN ["/usr/bin/rm", "-rf", "/home/lind/build/", "/root/build/", "/var/cache/pacman/pkg/"]
+RUN ["/usr/bin/cp", "-fv", "/etc/skel/.zshrc", "/home/lind"]
+RUN ["/usr/bin/cp", "-fv", "/etc/skel/.zshrc", "/root/"]
+RUN ["/usr/bin/chown", "-Rc", "lind:lind", "/home/lind/"]
 
 USER lind
 
-CMD ["/usr/bin/bash"]
+ENTRYPOINT ["/usr/bin/zsh"]
+CMD ["-c", "print -r '[lind /fork]'; lind /fork; print -r - '[lind /hello]'; lind /hello; exec zsh"]

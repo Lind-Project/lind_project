@@ -23,6 +23,11 @@ USER lind
 
 WORKDIR /home/lind/lind_project/
 RUN ["./mklind", "cleanall"]
+WORKDIR /home/lind/lind_project/native_client/tools
+RUN ["/usr/bin/rm", "-rfv", "BUILD/", "SRC/", "out/"]
+WORKDIR /home/lind/lind_project/native_client
+RUN ["/usr/bin/rm", "-rfv", "toolchain/"]
+WORKDIR /home/lind/lind_project/
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello"]
 
@@ -32,4 +37,5 @@ RUN ["/usr/bin/env", "lindfs", "cp", "./hello"]
 RUN ["/usr/bin/env", "script", "-qfc", "lind /fork", "/dev/null"]
 RUN ["/usr/bin/env", "script", "-qfc", "lind /hello", "/dev/null"]
 
-CMD ["/usr/bin/bash"]
+ENTRYPOINT ["/usr/bin/zsh"]
+CMD ["-c", "print -r '[lind /fork]'; lind /fork; print -r - '[lind /hello]'; lind /hello; exec zsh"]
