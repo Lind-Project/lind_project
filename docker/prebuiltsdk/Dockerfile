@@ -36,4 +36,5 @@ RUN ["/usr/bin/env", "lindfs", "cp", "./hello"]
 RUN ["/usr/bin/env", "script", "-qfc", "lind /fork", "/dev/null"]
 RUN ["/usr/bin/env", "script", "-qfc", "lind /hello", "/dev/null"]
 
-CMD ["/usr/bin/bash"]
+ENTRYPOINT ["/usr/bin/zsh"]
+CMD ["-c", "print -r '[lind /fork]'; lind /fork; print -r - '[lind /hello]'; lind /hello; exec zsh"]

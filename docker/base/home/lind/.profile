@@ -243,6 +243,10 @@ export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2
 # export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
 export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2
 # export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv
+# define word separators (for stuff like backward-word, forward-word, backward-kill-word,..)
+export WORDCHARS=
+# export WORDCHARS='_-*~'
+# export WORDCHARS='*?_-.[]~=/&;!#$%^ (){}<>'
 export WORKON_HOME="$HOME/.virtualenvs"
 # Set X cursor theme
 export XCURSOR_THEME=ArchCursorTheme
