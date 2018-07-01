@@ -91,8 +91,6 @@ USER root
 
 WORKDIR /home/lind/lind_project/
 RUN ["/usr/bin/rm", "-rf", "/home/lind/build/", "/root/build/", "/var/cache/pacman/pkg/"]
-RUN ["/usr/bin/cp", "-fv", "/etc/skel/.zshrc", "/home/lind"]
-RUN ["/usr/bin/cp", "-fv", "/etc/skel/.zshrc", "/root/"]
 RUN ["/usr/bin/chown", "-Rc", "lind:lind", "/home/lind/"]
 
 USER lind
