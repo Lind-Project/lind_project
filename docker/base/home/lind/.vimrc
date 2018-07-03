@@ -9,6 +9,8 @@ runtime! archlinux.vim
 set encoding=utf-8
 scriptencoding utf-8
 
+" let g:plug_url_format='https://git::@github.com/%s.git'
+
 if (has("nvim") && empty(glob('~/.config/nvim/autoload/plug.vim')))
 	silent !curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs
 		\ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
@@ -26,7 +28,7 @@ endif
 if has("nvim") | let g:plugdir='~/.config/nvim/plugged' | else | let g:plugdir='~/.vim/plugged' | endif
 
 call plug#begin(g:plugdir)
-" Neo-vim plugin handling
+	" Neo-vim plugin handling
 	if has("nvim")
 		function! DoRemote(arg)
 			UpdateRemotePlugins
@@ -41,8 +43,9 @@ call plug#begin(g:plugdir)
 	Plug 'JCLiang/vim-cscope-utils'
 	Plug 'hdima/python-syntax'
 	Plug 'jungomi/vim-mdnquery'
-	Plug 'osfameron/perl-tags-vim', {'for': 'perl'}
-	" Plug 'osfameron/perl-tags'
+	" Plug 'osfameron/perl-tags', {'for': 'perl'}
+	" Plug 'osfameron/perl-tags-vim', {'for': 'perl'}
+	Plug 'alyptik/perl-tags-vim', {'for': 'perl', 'branch': 'https'}
 	Plug 'c9s/perlomni.vim', {'for': 'perl'}
 	Plug 'brookhong/cscope.vim'
 	Plug 'xtal8/traces.vim'
@@ -55,11 +58,11 @@ call plug#begin(g:plugdir)
 	" Plug 'sudar/vim-arduino-syntax'
 	" Plug 'jplaut/vim-arduino-ino'
 	" Plug 'stevearc/vim-arduino'
-	" Plug 'eagletmt/ghcmod-vim'
-	" Plug 'eagletmt/neco-ghc'
+	" Plug 'eagletmt/ghcmod-vim', {'for': 'haskell'}
+	" Plug 'eagletmt/neco-ghc', {'for': 'haskell'}
 	Plug 'lervag/vimtex', {'for': ['tex', 'tex_LatexBox', 'latexdoc']}
-	Plug 'sheerun/vim-polyglot'
 	Plug 'xuhdev/vim-latex-live-preview', {'for': ['tex', 'tex_LatexBox', 'latexdoc']}
+	Plug 'sheerun/vim-polyglot'
 	Plug 'justmao945/vim-clang'
 	" Plug 'Rip-Rip/clang_complete'
 	" Plug 'mikelue/vim-maven-plugin'
@@ -82,9 +85,9 @@ call plug#begin(g:plugdir)
 	Plug 'morhetz/gruvbox'
 	Plug 'ryanoasis/vim-devicons'
 	Plug 'scrooloose/nerdtree', {'on': 'NERDTreeToggle'}
-	Plug 'subosito/nginx.vim'
+	Plug 'subosito/nginx.vim', {'for': 'nginx'}
 	Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
-	Plug 'ternjs/tern_for_vim', {'do': 'npm install && npm install -g tern'}
+	" Plug 'ternjs/tern_for_vim', {'for': ['json', 'json5'], 'do': 'npm install && npm install -g tern'}
 	" Plug 'terryma/vim-expand-region'
 	Plug 'tpope/vim-abolish'
 	" Plug 'tpope/vim-commentary'
@@ -96,7 +99,7 @@ call plug#begin(g:plugdir)
 	Plug 'vim-airline/vim-airline-themes'
 	Plug 'w0rp/ale'
 	Plug 'Xuyuanp/nerdtree-git-plugin'
-	Plug 'Terryma/vim-multiple-cursors'
+	" Plug 'Terryma/vim-multiple-cursors'
 	" Plug 'xolox/vim-notes'
 	" Group dependencies, vim-snippets depends on ultisnips
 	" Plug 'SirVer/ultisnips'
@@ -107,7 +110,7 @@ call plug#begin(g:plugdir)
 	Plug 'Shougo/vimproc.vim', {'do': 'make'}
 	Plug 'maralla/completor.vim'
 	" Plug 'FredKSchott/CoVim'
-	Plug 'ctrlpvim/ctrlp.vim'
+	" Plug 'ctrlpvim/ctrlp.vim'
 	Plug 'Rykka/riv.vim'
 	" Plug 'Rykka/InstantRst'
 	Plug 'scrooloose/nerdcommenter'
@@ -123,7 +126,7 @@ call plug#begin(g:plugdir)
 	Plug 'tpope/vim-fireplace', {'for': 'clojure'}
 	" Plug 'https://github.com/junegunn/vim-github-dashboard.git'
 	Plug 'nsf/gocode', {'tag': 'v.20150303', 'rtp': 'vim'}
-	Plug 'fatih/vim-go', {'do': ':GoInstallBinaries'}
+	" Plug 'fatih/vim-go', {'for': 'go', 'do': ':GoInstallBinaries'}
 	Plug 'junegunn/vim-github-dashboard', {'on': ['GHDashboard', 'GHActivity']}
 	Plug 'kovisoft/paredit', {'for': ['clojure', 'scheme']}
 	Plug 'junegunn/vader.vim',  {'on': 'Vader', 'for': 'vader'}
@@ -1391,17 +1394,34 @@ augroup END
 "    au BufWritePost .vimrc,_vimrc,vimrc,.gvimrc,_gvimrc,gvimrc so /etc/vimrc | if has('gui_running') | so /etc/gvimrc | endif
 "augroup END
 
-let g:rbpt_max=16
-let g:rbpt_loadcmd_toggle=0
-au VimEnter * RainbowParenthesesActivate
-au Syntax * RainbowParenthesesLoadRound
-au Syntax * RainbowParenthesesLoadSquare
-au Syntax * RainbowParenthesesLoadBraces
-":RainbowParenthesesToggle       " Toggle it on/off
-":RainbowParenthesesLoadRound    " (), the default when toggling
-":RainbowParenthesesLoadSquare   " []
-":RainbowParenthesesLoadBraces   " {}
-":RainbowParenthesesLoadChevrons " <>
+" better rainbow parentheses
+augroup rainbowparens
+	au!
+	au VimEnter * silent! RainbowParenthesesToggle
+	au Syntax * silent! RainbowParenthesesLoadRound
+	au Syntax * silent! RainbowParenthesesLoadSquare
+	au Syntax * silent! RainbowParenthesesLoadBraces
+augroup END
+let g:rbpt_colorpairs = [
+	\ ['brown',       'RoyalBlue3'],
+	\ ['Darkblue',    'SeaGreen3'],
+	\ ['darkgray',    'DarkOrchid3'],
+	\ ['darkgreen',   'firebrick3'],
+	\ ['darkcyan',    'RoyalBlue3'],
+	\ ['darkred',     'SeaGreen3'],
+	\ ['darkmagenta', 'DarkOrchid3'],
+	\ ['brown',       'firebrick3'],
+	\ ['gray',        'RoyalBlue3'],
+	\ ['black',       'SeaGreen3'],
+	\ ['darkmagenta', 'DarkOrchid3'],
+	\ ['Darkblue',    'firebrick3'],
+	\ ['darkgreen',   'RoyalBlue3'],
+	\ ['darkcyan',    'SeaGreen3'],
+	\ ['darkred',     'DarkOrchid3'],
+	\ ['red',         'firebrick3'],
+	\ ]
+let g:rbpt_max = 16
+let g:rbpt_loadcmd_toggle = 0
 
 " Set this. Airline will handle the rest. (ALE)
 let g:airline#extensions#ale#enabled=1
@@ -1415,12 +1435,12 @@ let g:promptline_preset='full'
 let g:promptline_theme='jelly'
 " other themes available in autoload/promptline/themes/*
 let g:promptline_preset={
-	\'a'	: [ promptline#slices#host() ],
-	\'b'    : [ promptline#slices#cwd() ],
-	\'c'	: [ promptline#slices#vcs_branch(), '$(git rev-parse --short HEAD 2>/dev/null)'],
-	\'warn' : [ promptline#slices#last_exit_code() ],
-	\'z'    : [ promptline#slices#host() ]
-	\}
+	\ 'a'	: [ promptline#slices#host() ],
+	\ 'b'    : [ promptline#slices#cwd() ],
+	\ 'c'	: [ promptline#slices#vcs_branch(), '$(git rev-parse --short HEAD 2>/dev/null)'],
+	\ 'warn' : [ promptline#slices#last_exit_code() ],
+	\ 'z'    : [ promptline#slices#host() ]
+	\ }
 
 " let g:ascii= [
 "   \ '        __',
