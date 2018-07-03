@@ -3,9 +3,24 @@
 # .profile - environment configuration
 
 # conditionals
-if test "$(hostname)" = fedora -o "$(whoami)" = jp; then TERM="screen" locale="C"; else locale="en_US.UTF-8"; fi
-if test -t 0; then stty -ixon; fi
-if command -v nproc >/dev/null 2>&1; then NPROC="$(nproc)"; else NPROC=4; fi
+if commmand -v ruby >/dev/null 2>&1; then
+	rubies="$(ruby -rrubygems -e "puts Gem.user_dir")/bin"
+else
+	rubies=""
+fi
+if test "$(hostname)" = fedora -o "$(hostname)" = fedoravm -o "$(whoami)" = jp; then
+	TERM="screen"
+else
+	locale="en_US.UTF-8"
+fi
+if command -v nproc >/dev/null 2>&1; then
+	NPROC="$(nproc)"
+else
+	NPROC=4
+fi
+if test -t 0; then
+	stty -ixon
+fi
 export NPROC
 
 # directory shortcut environment variables
@@ -170,24 +185,24 @@ export npm_config_prefix="$HOME/.node_modules"
 export PAGER=less
 # default PATH
 PATH="/bin:/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
-PATH="/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:$PATH"
-PATH="/usr/bin/core_perl:$HOME/code/go/bin:/opt/TIS-100:/opt/cuda/bin:$PATH"
-PATH="/store/local/bin:$HOME/.linuxbrew/bin:$HOME/GNUstep/Tools:$PATH"
-PATH="/usr/lib/surfraw:/store/local/Wolfram/CDFPlayer/10.3/Executables:$PATH"
-PATH="/opt/android-sdk/platform-tools:$HOME/.gem/ruby/2.3.0/bin:$PATH"
-PATH="$HOME/.local/bin:/usr/local/texlive/2016/bin/x86_64-linux:$PATH"
-PATH="$HOME/.cargo/bin:/opt/intel/bin:/store/config/scripts:$PATH"
-PATH="$HOME/.node_modules/bin:$HOME/perl5/bin:$PATH"
-PATH="$HOME/bin:$HOME/.zsh.d/plugins/zplug/bin:$PATH"
-PATH="$HOME/.zplug/bin:$HOME/bin/asski:$LINUX/scripts:$PATH"
-if commmand -v ruby >/dev/null 2>&1; then
-	PATH="$(ruby -rrubygems -e "puts Gem.user_dir")/bin:$PATH"
-fi
+PATH="/usr/bin/core_perl:/usr/bin/site_perl:/usr/bin/vendor_perl:$PATH"
+PATH="/usr/lib/surfraw:/usr/lib/jvm/default/bin:$PATH"
 # PATH="/usr/lib/distcc/bin:$PATH"
 PATH="/usr/lib/ccache/bin:$PATH"
-PATH="/opt/cross/bin:$PATH"
-PATH="$HOME/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
+PATH="/opt/android-sdk/platform-tool:$PATH"
+PATH="/opt/TIS-100:/opt/cuda/bin:$PATH"
+PATH="/opt/cross/bin:/opt/intel/bin:$PATH"
+PATH="$HOME/.node_modules/bin:$PATH"
+PATH="$HOME/.cargo/bin:$PATH"
+PATH="$HOME/perl5/bin:$PATH"
+PATH="$rubies:$PATH"
+PATH="$LINUX/scripts:$PATH"
+PATH="$HOME/.local/bin:$HOME/bin:$PATH"
 PATH="$HOME/lind_project/lind/repy/bin:$PATH"
+PATH="$HOME/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
+# shellcheck disable=SC2039
+# elide empty PATH components
+PATH="${PATH//::/:}"
 export PATH
 # shellcheck disable=SC2039
 PERL5LIB="$HOME/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB//:$HOME\/perl5\/lib\/perl5}}"
