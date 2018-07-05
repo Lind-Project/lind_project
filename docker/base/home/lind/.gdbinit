@@ -21,7 +21,6 @@ set history save on
 set history size unlimited
 set history remove-duplicates unlimited
 set history expansion on
-
 set print symbol-filename on
 set print symbol on
 set print array on
@@ -29,6 +28,16 @@ set print array-indexes on
 set print frame-arguments all
 set print entry-values if-needed
 set print object on
+set case-sensitive off
+
+# out paging and thread control
+set pagination off
+# set height unlimited
+# set non-stop on
+# set schedule-multiple on
+set scheduler-locking on
+set backtrace past-entry on
+set backtrace main on
 
 # set tui border-kind ascii
 set tui border-kind acs
@@ -39,6 +48,17 @@ set tui active-border-mode bold-standout
 
 # functions
 #
+define help-set
+	if $argc > 0
+		help set $arg0
+		print
+		show $arg0
+	end
+end
+document help-set
+	help-set <option>: List the help for <option> and prints current value
+end
+
 define locals-up
 	set $n = ($arg0)
 	set $upto = $n
@@ -222,5 +242,6 @@ alias -- pr = print-representations
 alias -- xr = examine-representations
 alias -- rip = examine-rip
 alias -- lu = locals-up
+alias -- hs = help-set
 
 # vi:ft=gdb:
