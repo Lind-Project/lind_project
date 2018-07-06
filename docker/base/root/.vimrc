@@ -251,7 +251,7 @@ set diffopt=filler,context:5,iwhite,vertical
 set concealcursor=inv
 " hide concealed text completely unless replacement character is defined
 set conceallevel=2
-set completeopt=menuone
+set completeopt=menuone,noinsert,noselect
 set nocp cpoptions-=d
 set verbose=0
 set updatetime=5000
@@ -759,6 +759,18 @@ let g:UltiSnipsListSnippets='<C-l>'
 " inoremap <C-x><C-k> <C-x><C-k>
 " inoremap <C-H> <C-h>
 
+" use neocomplete
+let g:clang_cpp_completeopt=&completeopt
+let g:clang_c_completeopt=&completeopt
+" let g:clang_auto = 0
+" default 'longest' can not work with neocomplete
+" input patterns
+if !exists('g:neocomplete#force_omni_input_patterns')
+	let g:neocomplete#force_omni_input_patterns={}
+endif
+let g:neocomplete#force_omni_input_patterns.c='[^.[:digit:] *\t]\%(\.\|->\)\w*'
+let g:neocomplete#force_omni_input_patterns.cpp= '[^.[:digit:] *\t]\%(\.\|->\)\w*\|\h\w*::\w*'
+
 let g:ale_c_flawfinder_executable=1
 let g:ale_c_flawfinder_error_severity=6
 let g:ale_c_cppcheck_options='--enable=style --std=gnu11 --std=posix'
@@ -768,7 +780,7 @@ let g:clang_cpp_options=''
 	\ . '-DNACL_TARGET_SUBARCH=64 '
 	\ . '-DNACL_LINUX=1 -DNACL_x86=1 '
 	\ . '-D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 '
-	\ . '-I./ -I../ -I../../ '
+	\ . '-I./ -I../ -I../../ -I../../../ '
 	\ . '-I./trusted/include/ -I./untrusted/include/ '
 	\ . '-I./include/ -I./src -I./t '
 	\ . '-I/usr/include/python2.7 -I/inc/python3.6m/ '
@@ -784,7 +796,7 @@ let g:ale_c_clang_options=''
 	\ . '-DNACL_TARGET_SUBARCH=64 '
 	\ . '-DNACL_LINUX=1 -DNACL_x86=1 '
 	\ . '-D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 '
-	\ . '-I./ -I../ -I../../ '
+	\ . '-I./ -I../ -I../../ -I../../../ '
 	\ . '-I./trusted/include/ -I./untrusted/include/ '
 	\ . '-I./include/ -I./src -I./t '
 	\ . '-I/usr/include/python2.7 -I/usr/include/python3.6m/ '
@@ -798,7 +810,8 @@ let g:ale_c_clang_options=''
 let g:ale_c_clangtidy_options=g:ale_c_clang_options
 let g:ale_c_gcc_options=g:ale_c_clang_options
 let g:clang_c_options=g:ale_c_clang_options
-let g:ale_linters = {'c': ['clang', 'gcc', 'clangtidy', 'flawfinder']}
+
+let g:ale_linters={'c': ['clang', 'gcc', 'clangtidy', 'flawfinder']}
 " let g:ale_linters = {'c': ['clang', 'gcc', 'clangtidy', 'flawfinder', 'cppcheck']}
 let g:ale_fixers={'c': ['clang-format']}
 let g:ale_c_clangtidy_checks=[
@@ -1750,21 +1763,15 @@ cnoremap %% <C-r>=expand('%:h').'/'<CR>
 "map ]] )
 "map ][ %
 "map [] %
-" map ; ^
-" map ' $
-nnoremap <Esc>; ;
-nnoremap <Esc>' '
 map [[ ?{<CR>w99[{
 map ][ /}<CR>b99]}
 map ]] j0[[%/{<CR>
 map [] k$][%?}<CR>
-" nnoremap <Esc>; ^
-" nnoremap <Esc>' $
-" nnoremap <Esc>; b
-" nnoremap <Esc>' e
-nnoremap ; :call comfortable_motion#flick(-50)<CR>
-nnoremap ' :call comfortable_motion#flick(50)<CR>
 map ,, %
+map ; :call comfortable_motion#flick(-50)<CR>
+map ' :call comfortable_motion#flick(50)<CR>
+map <Esc>; ^
+map <Esc>' $
 
 nnoremap <C-z> :stop<CR>
 
@@ -1954,23 +1961,6 @@ nnoremap <F5> :cnext<CR>
 vnoremap <F5> :cnext<CR>
 " nnoremap <C-F10> <C-w>=
 " vnoremap <C-F10> <C-w>=
-
-" pancake's exposee for vim:
-let g:fs=0
-function! Exposee()
-	if (g:fs == 0)
-		res 1000
-		vertical res 1000
-		let g:fs=1
-	else
-		exe "normal \<C-w>="
-		let g:fs=0
-	endif
-endfun
-nnoremap <F11> :call Exposee()<CR>
-vnoremap <F11> :call Exposee()<CR>
-nnoremap <C-F11> :make<CR>
-vnoremap <C-F11> :make<CR>
 
 noremap <Esc><F4> [c
 noremap <Esc><F5> ]c
