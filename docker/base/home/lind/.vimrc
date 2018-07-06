@@ -63,8 +63,8 @@ call plug#begin(g:plugdir)
 	Plug 'lervag/vimtex', {'for': ['tex', 'tex_LatexBox', 'latexdoc']}
 	Plug 'xuhdev/vim-latex-live-preview', {'for': ['tex', 'tex_LatexBox', 'latexdoc']}
 	Plug 'sheerun/vim-polyglot'
-	Plug 'justmao945/vim-clang'
-	" Plug 'Rip-Rip/clang_complete'
+	" Plug 'justmao945/vim-clang'
+	Plug 'Rip-Rip/clang_complete'
 	" Plug 'mikelue/vim-maven-plugin'
 	" Plug 'vim-scripts/maven-ide'
 	" Plug 'chaoren/vim-wordmotion'
@@ -251,7 +251,8 @@ set diffopt=filler,context:5,iwhite,vertical
 set concealcursor=inv
 " hide concealed text completely unless replacement character is defined
 set conceallevel=2
-set completeopt=menuone,noinsert,noselect
+set completeopt=menuone
+" set completeopt=menuone,noinsert,noselect
 set nocp cpoptions-=d
 set verbose=0
 set updatetime=5000
@@ -442,9 +443,9 @@ au FileType c set keywordprg=man\ -s
 au FileType c setl ofu=completor#action#completefunc cfu=completor#action#completefunc
 au FileType h set keywordprg=man\ -s
 " au FileType h setl ofu=completor#action#completefunc cfu=completor#action#completefunc
-" au FileType cpp setl ofu=ClangComplete cfu=ClangComplete
-" au FileType c setl ofu=ClangComplete cfu=ClangComplete
-" au FileType h setl ofu=ClangComplete cfu=ClangComplete
+au FileType cpp setl ofu=ClangComplete cfu=ClangComplete
+au FileType c setl ofu=ClangComplete cfu=ClangComplete
+au FileType h setl ofu=ClangComplete cfu=ClangComplete
 " au FileType cpp setl ofu=ClangComplete
 " au FileType c setl ofu=ccomplete#CompleteCpp
 " au FileType h setl ofu=ccomplete#CompleteCpp

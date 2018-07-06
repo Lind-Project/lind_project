@@ -32,32 +32,13 @@ int main(void)
 		case 0:
 			printf("pid = %d fork ret = %d\n", getpid(), cpid);
 			fflush(0);
-			sleep(2);
 			exit(EXIT_SUCCESS);
 		}
-		printf("pid %d waiting on %d\n", getpid(), cpid);
+		printf("pid = %d fork ret = %d\n", getpid(), cpid);
 		fflush(0);
-		if (waitpid(cpid, &cret, 0) == -1)
-			perror("waitpid()");
-		/*
-		 * if (wait(&cret) == -1)
-		 *         perror("wait()");
-		 */
-
-		printf("pid = %d fork ret = %d\n", getpid(), pid);
-		fflush(0);
-		sleep(5);
 		exit(EXIT_SUCCESS);
 	}
 
-	printf("pid %d waiting on %d\n", getpid(), pid);
-	fflush(0);
-	if (waitpid(pid, &pret, 0) == -1)
-		perror("waitpid()");
-	/*
-	 * if (wait(&pret) == -1)
-	 *         perror("wait()");
-	 */
 	printf("pid = %d fork ret = %d\n", getpid(), pid);
 	fflush(0);
 
@@ -72,15 +53,9 @@ int main(void)
 	case 0:
 		printf("pid = %d fork ret = %d\n", getpid(), ppid);
 		fflush(0);
-		sleep(2);
 		exit(EXIT_SUCCESS);
 	}
-	if (waitpid(ppid, &ppret, 0) == -1)
-		perror("waitpid()");
-	/*
-	 * if (wait(&ppret) == -1)
-	 *         perror("wait()");
-	 */
+
 	printf("pid = %d fork ret = %d\n", getpid(), ppid);
 	fflush(0);
 
