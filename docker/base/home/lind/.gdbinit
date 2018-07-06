@@ -35,9 +35,8 @@ set pagination off
 # set height unlimited
 # set non-stop on
 # set schedule-multiple on
-set scheduler-locking on
 set backtrace past-entry on
-set backtrace main on
+set backtrace past-main on
 
 # set tui border-kind ascii
 set tui border-kind acs
