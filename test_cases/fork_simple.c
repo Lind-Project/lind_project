@@ -12,39 +12,40 @@ int main(void)
 	(void)pret, (void)cret, (void)ppret;
 	(void)pid, (void)cpid, (void)ppid, (void)unused;
 
-	printf("pid %d forking\n", getpid());
+	printf("[1] pid %d forking\n", getpid());
 	fflush(0);
 
 	switch ((pid = fork())) {
-		case 0:
-		printf("pid %d forking\n", getpid());
+	case 0:
+		printf("[2] pid %d forking\n", getpid());
 		fflush(0);
+
 		switch ((cpid = fork())) {
 		case 0:
-			printf("pid = %d fork ret = %d\n", getpid(), cpid);
+			printf("[3] pid = %d fork ret = %d\n", getpid(), cpid);
 			fflush(0);
-			exit(EXIT_SUCCESS);
-		default:
-			printf("pid = %d fork ret = %d\n", getpid(), cpid);
-			fflush(0);
-			exit(EXIT_SUCCESS);
+			/* exit(EXIT_SUCCESS); */
 		}
+		printf("[4] pid = %d fork ret = %d\n", getpid(), cpid);
+		fflush(0);
+		exit(EXIT_SUCCESS);
+
 		puts("wtf");
 		fflush(0);
 		abort();
 	}
 
-	printf("pid %d forking again\n", getpid());
+	printf("[5]pid %d forking again\n", getpid());
 	fflush(0);
 
 	switch ((ppid = fork())) {
 	case 0:
-		printf("pid = %d fork ret = %d\n", getpid(), ppid);
+		printf("[6] pid = %d fork ret = %d\n", getpid(), ppid);
 		fflush(0);
 		exit(EXIT_SUCCESS);
 	}
 
-	printf("pid = %d fork ret = %d\n", getpid(), ppid);
+	printf("[7] pid = %d fork ret = %d\n", getpid(), ppid);
 	fflush(0);
 
 	return 0;

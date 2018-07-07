@@ -1497,9 +1497,9 @@ let g:startify_session_dir='~/.vim/sessions'
 " persist all options related to :make
 let g:session_persist_globals = ['&makeprg', '&makeef', '&expandtab']
 
-" au SessionLoadPost * let g:session_autosave=!empty(xolox#session#find_current_session())
-"         \ ? 'prompt'
-"         \ : 'no'
+au SessionLoadPost * let g:session_autosave=!empty(xolox#session#find_current_session())
+	\ ? 'prompt'
+	\ : 'no'
 
 " view options
 set viewdir=~/.vim/view
@@ -1507,9 +1507,9 @@ set viewdir=~/.vim/view
 set vop+=curdir vop+=options
 
 " session options
-set ssop+=winpos ssop+=globals ssop-=options ssop+=resize ssop+=tabpages
+set ssop+=winpos ssop+=globals ssop-=options ssop+=resize
 " 'options' can corrupt sessions
-set ssop-=blank ssop-=help ssop-=localoptions ssop-=buffers
+set ssop-=blank ssop-=help ssop-=localoptions ssop-=buffers ssop-=tabpages
 
 let g:startify_skiplist = [
 	\ 'COMMIT_EDITMSG',
@@ -1717,8 +1717,8 @@ command! Wq wq
 command! WQ wq
 command! Qall qall
 command! Qall qall
-command! Wall wqall
-command! WAll wqall
+command! Wall wall
+command! WAll wall
 command! Wqall wqall
 command! WQall wqall
 "cabbrev wQ <C-r>=(getcmdtype()==':' && getcmdpos()==1 ? 'wq' : 'wQ')<CR>
