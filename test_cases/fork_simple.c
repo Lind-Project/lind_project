@@ -20,14 +20,21 @@ int main(void)
 		printf("[2] pid %d forking\n", getpid());
 		fflush(0);
 
-		switch ((cpid = fork())) {
-		case 0:
-			printf("[3] pid = %d fork ret = %d\n", getpid(), cpid);
-			fflush(0);
-			exit(EXIT_SUCCESS);
-		}
-		printf("[4] pid = %d fork ret = %d\n", getpid(), cpid);
-		fflush(0);
+		/*
+		 * switch ((cpid = fork())) {
+		 * case 0:
+		 *         printf("[3] pid = %d fork ret = %d\n", getpid(), cpid);
+		 *         fflush(0);
+		 *         exit(EXIT_SUCCESS);
+		 * default:
+		 *         printf("[4] pid = %d fork ret = %d\n", getpid(), cpid);
+		 *         fflush(0);
+		 *         exit(EXIT_SUCCESS);
+		 * }
+		 */
+
+		fork();
+		printf("[3] [4] pid %d forking\n", getpid());
 		exit(EXIT_SUCCESS);
 
 		puts("wtf");
