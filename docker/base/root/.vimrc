@@ -251,8 +251,7 @@ set diffopt=filler,context:5,iwhite,vertical
 set concealcursor=inv
 " hide concealed text completely unless replacement character is defined
 set conceallevel=2
-set completeopt=menuone
-" set completeopt=menuone,noinsert,noselect
+set completeopt=menuone,noinsert,noselect
 set nocp cpoptions-=d
 set verbose=0
 set updatetime=5000
