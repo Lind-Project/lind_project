@@ -24,7 +24,7 @@ int main(void)
 		case 0:
 			printf("[3] pid = %d fork ret = %d\n", getpid(), cpid);
 			fflush(0);
-			/* exit(EXIT_SUCCESS); */
+			exit(EXIT_SUCCESS);
 		}
 		printf("[4] pid = %d fork ret = %d\n", getpid(), cpid);
 		fflush(0);
