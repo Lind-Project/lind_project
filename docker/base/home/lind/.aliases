@@ -7,6 +7,7 @@ unalias md meminfo node o rd ru s sd sf si u v xi xo z zz 2>/dev/null
 
 ## Custom aliases
 
+alias gdb='gdb -q'
 alias d='docker'
 alias cnt='docker container'
 alias img='docker image'
