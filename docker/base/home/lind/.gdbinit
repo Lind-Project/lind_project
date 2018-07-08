@@ -45,6 +45,9 @@ set tui border-mode bold
 # set tui active-border-mode reverse
 set tui active-border-mode bold-standout
 
+# thread number and frame
+set extended-prompt \[\] [#\t:\f()] \[\]
+
 # functions
 #
 define help-set

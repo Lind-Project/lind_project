@@ -5,8 +5,10 @@ unset -f define defrag fc java l sudo wd which 2>/dev/null
 unalias {1..9} c d es f gbr gco gcs gg gm h history java 2>/dev/null
 unalias md meminfo node o rd ru s sd sf si u v which-command xi xo z zz 2>/dev/null
 
-## Custom aliases
-
+# Custom aliases
+alias ngcc="gcc -v -E -x c -march=native - < /dev/null 2>&1 | grep cc1 | perl -pe 's/ -mno-\S+//g; s/^.* - //g;'"
+alias fzag='ag --nobreak --nonumbers --noheading . | fzf'
+alias fzgr='grep --line-buffered --color=never -r "" * | fzf'
 alias de='declare'
 alias ty='typeset'
 alias gdb='gdb -q'
@@ -47,7 +49,7 @@ alias fm='fman'
 alias rk='runkernel -s'
 alias nmu='neomutt'
 alias m='make clean && PREFIX=~/.local make install && scan-build make -B asan && /lib/ld-linux-x86-64.so.2'
-## quick opening files with mpv
+# quick opening files with mpv
 # alias m='f -e mpv'
 alias urb='define -u'
 alias thes='define -t'
@@ -107,19 +109,16 @@ alias sm='showmarks'
 alias dm='deletemark'
 alias ct='killall compton >/dev/null 2>/dev/null && compton -b || compton -b'
 alias kc='killall compton'
-# alias b='chromium'
 alias open_command='xdg-open'
 alias fort='fortune'
 alias pe='noglob perl -pe'
-## quick opening files with xdg-open
+# quick opening files with xdg-open
 alias x='a -e xdg-open'
 alias fpass='lpass show -c --password "$(lpass ls | fzf | awk "{print \$(NF)}" | sed "s/\]//g")"'
 alias rs='rsync --progress=status2,stats2 -ahhpvA'
 alias r-s='rsync --progress=status2,stats2 -ahhkpvA'
-# alias r-s='rsync -avzP --info=progress2 --partial'
 alias rorphans='pacman -Qdtq | paste -sd" " | tee >(perl -pe "chomp if eof" | xsel -ib) /dev/stderr | sudo pacman -Rs -'
 alias skvm='spicy --uri="spice+unix:///tmp/vm_spice.socket"'
-# alias high='highlight --out-format=truecolor --style=anotherdark'
 alias k='kill'
 alias ka='killall'
 alias pk='pkill'
@@ -128,13 +127,10 @@ alias socks='ssh -D 8888 -NC'
 alias nctl='networkctl'
 alias curl='curl'
 alias permcase=$'perl -pe \'my $result = $_ =~ s/([a-z])/sprintf "{%s,%s}", uc($1), lc($1)/iegr; print $result . "\n"; print $_ . " " for glob $result\''
-## use perl like awk/sed
-alias ple='perl -wlne'
 alias vman='PAGER=vimpager man'
 alias mnh='printf "%s" "mnh:/home/mnrmnaugh/" | tee >(xsel -ib)'
 alias it='indent -st -bad -bap -sc -bl -bli0 -ncdw -nce -cli0 -cbi0 -pcs -cs -npsl -bs -nbc -bls -blf -lp -i2 -ts2 -nut -l1024 -nbbo -fca -lc1024 -fc1'
 alias mptpb='maim -d 3 /tmp/$$.png && curl -F c=@/tmp/$$.png https://ptpb.pw/ | tee >(perl -ne "(s/url: // && chomp && print) if /url: /" | xsel -ib)'
-#alias mptpb='maim -d 3 /tmp/$$.png && curl -F c=@/tmp/$$.png https://0x0.st/ | tee >(sed -n "/url/ s/url: //p" | xi)'
 alias ucpan='yes "" | cpan -u'
 alias gla='glances --diskio-iops --diskio-show-ramfs -1 -6 --fs-free-space --enable-history'
 alias font='fc-list'
@@ -147,13 +143,10 @@ alias g-npm='npm -g'
 alias r-move='rsync -avP --remove-source-files --info=progress2'
 alias k-pdf='k2pdfopt -bpc 1 -dev kp2 -x'
 alias vp='vimpager -s -N'
-# alias rmdir='rmdir --ignore-fail-on-non-empty'
 alias pd='perldoc'
 alias vpd='PERLDOC_PAGER=vimpager perldoc'
-#alias excuse='curl -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" -s http://programmingexcuses.com/ | awk -F ">" "/a href/ {print substr(\$3,1,length(\$3)-3)}"'
 alias excuse='curl -s http://programmingexcuses.com/ | awk -F ">" "/a href/ {print substr(\$3,1,length(\$3)-3)}"'
 alias e-pump='eval $(pump --startup) && . ~/.aliases && . ~/.zsh.d/.zshenv'
-# alias r-certs='certbot --standalone certonly -d alyp.tk -d cube.alyp.tk -d mail.alyp.tk -d fsckingfu.tk -d cube.fsckingfu.tk -d mail.fsckingfu.tk -d ohfu.tk -d ohfu.tk -d cube.ohfu.tk -d mail.ohfu.tk'
 alias nb='newsboat -r'
 alias uniq-sed="sed 'h;:b;$ b;N;/^\(.*\)\n\1$/{g;bb};$ b;P;D'"
 alias uniqu-sed="sed '$ b;N;/^\(.*\)\n\1$/!{P;D;};:c;$ d;s/.*\n//;N;/^\(.*\)\n\1$/{bc;};D'"
@@ -161,93 +154,62 @@ alias fzero='find . -size 0'
 alias objd='objdump -Mintel,i8086 -D'
 alias cgf='cgasm -f'
 alias cgv='cgasm -v'
-# alias cg='grep --color=always'
-alias ngcc="gcc -v -E -x c -march=native - < /dev/null 2>&1 | grep cc1 | perl -pe 's/ -mno-\S+//g; s/^.* - //g;'"
-#alias ngcc="gcc -v -E -x c -march=native -mtune=native - </dev/null|&grep cc1|perl -pe 's/ -mno-\S+//g; s/^.* - //g;'"
 alias dperl='perl -MO=Deparse'
 alias xperl='PERLDB_OPTS="NonStop=1 AutoTrace=1 frame=2" perl -dS'
 alias rbinit='eval "$(rbenv init -)"'
-#alias rwget='wget --mirror --convert-links --adjust-extension --page-requisites --no-parent'
 alias awget='wget -mkEpnp -e robots=off'
 alias rwget='wget -mkEpnp -nd -nH -e robots=off --reject "index.html*"'
 alias s-t='/usr/bin/chromium "127.0.0.1:8384"'
-alias compose='env LESS= less -R ${HOME}/.XCompose'
+alias compose='env LESS= less -R "$HOME/.XCompose"'
 alias lcompose='env LESS= less -R "/usr/share/X11/locale/$(grep --max-count=1 "${LANG%.*}.UTF-8\$" /usr/share/X11/locale/locale.dir | cut --delimiter=/ --fields 1)/Compose"'
-#alias endiantest='echo -n i | od -to2 | awk "{ if(substr(\$2,6,1)){exit 1;} }" && echo "big" || echo "little"'
 alias endiantest='echo "I" | od -to2 | head -n1 | cut -f2 -d" " | cut -c6 | tr "10" "LB"'
 alias ntag='git tag -s -m "$(date +%a %d %b %I:%M:%S%P %Z %Y-%m-%d)"'
 alias tag='(set -o pipefail && git describe --long 2>/dev/null | sed "s/\([^-]*-g\)/r\1/;s/-/./g;s/^[A-Za-z]*\.//" || printf "r%s.%s\n" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)") 2>/dev/null | awk "NR>1{print PREV} {PREV=\$0} END{printf(\"%s\",\$0)}" | sed "/^r\.$/d;s/^[A-Za-z]*\.//" | tee >(xclip -i -selection clipboard) >&2 | grep -q "."'
-#alias tag='printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)" | tee >(xclip -i -selection clipboard)'
-#alias atag="git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g' | tee >(xclip -i -selection clipboard)"
-#alias utag="git describe --long --tags | sed 's/\([^-]*-g\)/r\1/;s/-/./g' | tee >(xclip -i -selection clipboard)"
 alias gdebug='GTK_MODULES=gtkparasite'
 alias xh='xhost +si:localuser:"alyptik"'
 alias pscons='CC=clang CXX=clang++ pump scons asan=1 asmlib=0 battery=1 buildtime=1 bulk=1 color=1 coreaudio=0 faad=1 ffmpeg=1 hid=1 hss1394=0 ipod=0 localecompare=1 macappstore=0 mad=1 mediafoundation=0 modplug=1 opengles=0 optimize=native opus=1 perftools=1 perftools_profiler=1 profiling=1 qdebug=1 qt_sqlite_plugin=0 shoutcast=1 test=0 vamp=1 verbose=1 vinylcontrol=1 virtualize=0 wv=1 qtdir=/usr/lib/qt4 prefix=/opt/mixxx install_root=/opt/mixxx'
 alias rekt='git commit --fixup @ && git rebase -i --autosquash @^^'
 alias ru='rustup'
-# alias e='vim -p'
 alias snc='openssl s_client -connect'
 alias slow='pv -qL 10'
 alias zspace='printf "\uFEFF" | xsel -ib'
 alias zspace2='printf "\u200B" | xsel-ib'
-#alias lptpb='printf "\n\033[32m%s\033[0m " "ptpb.pw /* lexers:" && find /usr/lib/python3.5/site-packages/pygments/lexers -maxdepth 1 -execdir echo {} \; | sed "s:^\./::;s:\.py::" | paste -s -d " " && echo'
-alias lptpb='gvim -p https://ptpb.pw/l'
+alias lptpb='curl -s https://ptpb.pw/l | env LESS= less -CMNRis'
 alias xi="perl -pe 'chomp if eof' | tee >(xsel -ib)"
-# alias xn="perl -pe 's/\n/ /g; s/[[:space:]]+/ /g; END { s/[[:space:]]*$//; chomp; }' | tee >(xsel -ib)"
 alias xn="paste -sd' ' | perl -pe 's/[[:space:]]*$//; s/[[:space:]]+/ /g; chomp' | tee >(xsel -ib)"
-#alias xo='xsel -bo'
-#alias xi="awk 'NR>1{print PREV} {PREV=\$0} END{printf(\"%s\",\$0)}' | xsel -bi"
-#alias xi="perl -0 -pe 's/\n\Z//' | xsel -ib"
-#alias xi="tr '\n' '☃' | sed -n 's/☃*$//;y/☃/\n/;P' | xsel -bi"
-#alias xi="tr $'\n' ';' | sed 's/\;$//' | tr ';' $'\n' | xclip -i -selection clipboard"
-#alias xi="tr '\n' '@' | sed 's/@*$//;y/@/\n/' | xclip -i -selection clipboard"
-#alias xn="sed ':a;N;$ !ba;s/\n/\; /g;s/\; $//' | xclip -i -selection clipboard"
-# alias xn="sed ':a; N; $ !ba; s/\n\n*/\; /g; s/\;[ 	]*\;* /\; /g; s/\; $//; s/\([ 	]\)[ 	]*/\1/g; s/{\; /{ /g' | tee >(xsel -ib)"
-#alias tptpb=" curl -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36' --progress-bar -F'c=@-' https://ptpb.pw/\?u=1 | sed 's:$:/text:'"
-#alias tptpb="curl -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" --progress-bar-F'c=@-'https://ptpb.pw/\?u=1 | sed 's:ptpb\.pw/:alyp.tk/pb/:g; s:$:/text:'"
 alias tptpb="curl --progress-bar -F'c=@-' https://ptpb.pw/\?u=1 | sed 's:$:/text:'"
 alias apb="sed 's:ptpb\.pw/:alyp.tk/pb/:g'"
 alias eth0='sudo ip link set eth0 down && sleep 2 && sudo ip link set eth0 up'
 alias cdef='compdef _gnu_generic'
 alias mime='xdg-mime'
-# alias o='xdg-open'
 alias zmv='zmv -v'
-## with ag - respects .agignore and .gitignore
+# with ag - respects .agignore and .gitignore
 alias fag='ag --nobreak --nonumbers --noheading . | fzf'
-alias fgr='grep --line-buffered --color=never -r "" * | fzf'
 alias psd="paste -sd' '"
 alias py='python'
 alias py2='python2'
 alias fbc='bc -l /store/scripts/funcs.bc'
 
-alias spump='eval $(pump --startup) && . ${HOME}/.profile && . ${HOME}/.aliases && . ${HOME}/.zshenv'
-alias zerospace='printf "\n%s\n%s\n" "In /usr/bin/chromium console:" "copy(String.fromCodePoint(0x200B)) or copy(String.fromCodePoint(0xFEFF))"'
-#alias acp='anamnesis'
 alias nem='sudo emerge --update --deep --newuse @world && sudo etc-update'
 alias gdistccmon='DISTCC_DIR="/var/tmp/portage/.distcc" distccmon-text'
 alias myuptime='uptime -p | cut -c 4-'
 alias pacawk="grep -v '^$\|^#' /etc/pacman.d/mirrorlist | awk '{print}' | awk -F '/' '{print}'"
-alias fem="find /etc -name '._cfg????_*'"
 alias showcert='openssl s_client -showcerts -connect'
-alias bsrv='sudo tar cvf /store/config/srvbak/$(date +"%Y-%d-%m").tar /srv'
-alias bhttpd='sudo tar cvf /store/config/srvbak/httpd-$(date +"%Y-%d-%m").tar /etc/httpd'
-alias bnginx='sudo tar cvf /store/config/srvbak/nginx-$(date +"%Y-%d-%m").tar /etc/nginx'
 alias em='emerge'
 alias ems='emerge -s'
 alias eq='equery'
-alias pmakepkg='eval $(pump --startup) && . ${HOME}/.profile && makepkg'
 
-alias xrc='vim ${HOME}/.Xresources'
-alias prc='vim ${HOME}/.profile'
-alias brc='vim ${HOME}/.bashrc'
-alias arc='vim ${HOME}/.aliases'
-alias vrc='vim ${HOME}/.vimrc'
-alias crc='vim ${HOME}/.screenrc'
-alias trc='vim ${HOME}/.tmux.conf'
+alias xrc='vim "$HOME/.Xresources"'
+alias prc='vim "$HOME/.profile"'
+alias brc='vim "$HOME/.bashrc"'
+alias arc='vim "$HOME/.aliases"'
+alias vrc='vim "$HOME/.vimrc"'
+alias crc='vim "$HOME/.screenrc"'
+alias trc='vim "$HOME/.tmux.conf"'
 
-alias zrc='vim ${ZDOTDIR}/.zshrc'
-alias erc='vim ${ZDOTDIR}/.zshenv'
-alias frc='vim ${ZDOTDIR}/.zwidgets'
+alias zrc='vim "$ZDOTDIR/.zshrc"'
+alias erc='vim "$ZDOTDIR/.zshenv"'
+alias frc='vim ""$ZDOTDIR/.zwidgets"'
 
 alias us='systemctl --user'
 alias uscdr='systemctl --user daemon-reload'
@@ -271,20 +233,20 @@ alias scr='sudo systemctl restart'
 alias scc='sudo systemctl cat'
 
 alias ls='ls --color=auto'
-## Long list
-alias la='ls -lAhiFtrs --color=auto --time-style=+"%a %d %b %I:%M:%S%P %Z %Y-%m-%d"'
-## Recursive
-alias lr='ls -lAhiFsR --color=auto --time-style=+"%a %d %b %I:%M:%S%P %Z %Y-%m-%d"'
-## Alphabetical
-alias lal='ls -lAhiFs --color=auto --time-style=+"%a %d %b %I:%M:%S%P %Z %Y-%m-%d"'
-## Date
-alias ldt='ls -lAhiFtrs --color=auto --time-style=+"%a %d %b %I:%M:%S%P %Z %Y-%m-%d"'
-## Size
-alias lsz='ls -lAhiFSrs --color=auto --time-style=+"%a %d %b %I:%M:%S%P %Z %Y-%m-%d"'
-## Extension
-alias lxt='ls -lAhiFXrs --color=auto --time-style=+"%a %d %b %I:%M:%S%P %Z %Y-%m-%d"'
+# Long list
+alias la='ls -lAhiFtrs --color=auto --time-style=+"%a %R %Z %Y-%m-%d"'
+# Recursive
+alias lr='ls -lAhiFsR --color=auto --time-style=+"%a %R %Z %Y-%m-%d"'
+# Alphabetical
+alias lal='ls -lAhiFs --color=auto --time-style=+"%a %R %Z %Y-%m-%d"'
+# Date
+alias ldt='ls -lAhiFtrs --color=auto --time-style=+"%a %R %Z %Y-%m-%d"'
+# Size
+alias lsz='ls -lAhiFSrs --color=auto --time-style=+"%a %R %Z %Y-%m-%d"'
+# Extension
+alias lxt='ls -lAhiFXrs --color=auto --time-style=+"%a %R %Z %Y-%m-%d"'
 
-## Colorize the grep command output for ease of use (good for log files)
+# Colorize the grep command output for ease of use (good for log files)
 alias grep='grep --color=auto'
 alias gr='grep --color=auto'
 alias egrep='egrep --color=auto'
@@ -292,29 +254,23 @@ alias egr='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias fgr='fgrep --color=auto'
 alias bc='bc -l'
-## Generate sha1 digest
+# Generate sha1 digest
 alias sha1='openssl sha1'
 alias mkdir='mkdir -pv'
 alias rm='rm -v'
 alias mv='mv -v'
 alias cp='cp -v --reflink=auto'
 alias ln='ln -v'
-## this one saved by butt so many times
+# this one saved by butt so many times
 alias wget='wget -c'
 
-## Stop after sending count ECHO_REQUEST packets
 alias pong='ping -c 5'
-# Do not wait interval 1 second, go fast #
 alias fastping='ping -c 100 -s1'
 alias fp='ping -c 100 -s1'
-# alias ports='netstat -tulanp'
 alias ports='ss -tulanp'
 
-# alias enft='sudo vim -p /etc/nftables.nft'
 alias enft='sudo vim /etc/nftables.nft'
 alias rnft='sudo nft -f /etc/nftables.nft'
-# alias lnft=sudo nft list ruleset -a | env LESS= less -R'
-# alias lnft='vim -p -c "setf nftables" <(sudo nft list ruleset -a)'
 alias lnft='vim -c "setf nftables" <(sudo nft list ruleset -a)'
 
 alias start-wmin='sudo /etc/webmin/start'
@@ -325,7 +281,6 @@ alias rl-wmin='sudo /etc/webmin/reload'
 alias lsinitcpio='ls -lAXh --color=auto /usr/lib/initcpio'
 alias cdinitcpio='cd /usr/lib/initcpio'
 alias esp-hook='sudo gvim /usr/lib/initcpio/install/esp-update-linux'
-#alias lurepos='curl -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" --progress-bar "https://wiki.archlinux.org/index.php/Unofficial_user_repositories" | grep -B1 "Server = " | sed "s/\$arch/$(uname -m)/g" | cut -f 3 -d" "'
 alias lurepos='curl --progress-bar "https://wiki.archlinux.org/index.php/Unofficial_user_repositories" | grep -B1 "Server = " | sed "s/\$arch/$(uname -m)/g" | cut -f 3 -d" "'
 alias nmwifi='sudo nmcli dev wifi connect'
 alias nmdwifi='sudo nmcli dev wifi disconnect'
@@ -349,12 +304,11 @@ alias jftrimstatus='journalctl -u fstrim'
 alias ftrimstatus='systemctl status fstrim.timer'
 
 alias newvnc='x11vnc -env FD_SDDM=1 -auth /tmp/xauth-1000-_0 -forever -shared -display :0 -autoport -6 -rfbauth /etc/x11vnc.pass -ncache 10 -ncache_cr -ssldir /home/alyptik/certs/vnc -ssl /home/alyptik/certs/vnc/server-vencrypt.pem -vencrypt support:nox509 -anontls support:nox509 -dhparams /home/alyptik/certs/vnc/dh.pem -noxdamage -noxkb -noxfixes -rmflag /tmp/x11vnc-alyptik.pid & disown'
-alias sedvnc="sudo sed -i '2,$ d; s/^.*$/$(pgrep x11vnc | paste -s -d " " | awk '{ print $NF }')/' /var/run/x11vnc.pid"
 alias killvnc='sudo killall x11vnc'
 alias updategrub='sudo grub-mkconfig -o /boot/grub/grub.cfg'
 alias efiupdategrub='sudo grub-mkconfig -o /boot/efi/EFI/grub/grub.cfg'
 
-## Shortcut for iptables and pass it via sudo
+# Shortcut for iptables and pass it via sudo
 alias ipt='sudo iptables --line-numbers -vnL'
 alias iptin='sudo iptables --line-numbers -vnL INPUT'
 alias iptout='sudo iptables --line-numbers -vnL OUTPUT'
@@ -373,23 +327,20 @@ alias 6routes='route -A inet6 -e -n'
 alias 6nroutes='route -A inet6 -e'
 alias 6iproutes='ip -6 route show'
 
-## pass options to free ##
-# alias meminfo='free -mlt'
-## get top process eating memory
+# get top process eating memory
 alias psmem='ps auxf | sort -nrk 4'
 alias psmem10='ps auxf | sort -nrk 4 | head -10'
-## get top process eating cpu ##
+# get top process eating cpu
 alias pscpu='ps auxf | sort -nrk 3'
 alias pscpu10='ps auxf | sort -nrk 3 | head -10'
-## older system use /proc/cpuinfo ##
+# older systems use /proc/cpuinfo
 alias cpuinfo='less /proc/cpuinfo'
 
 alias zswap='printf "\n\033[32m%s \033[31m%s\033[0m\n\n" "ZSWAP Enabled:" "$(grep --color=always "[YN]" /sys/module/zswap/parameters/enabled)" && sudo grep -R . /sys/module/zswap/parameters && echo && sudo grep -R . /sys/kernel/debug/zswap && echo'
-alias tzswap='sudo su -c "(sed 'y/NY/YN/' /sys/module/zswap/parameters/enabled >|/sys/module/zswap/parameters/enabled && cat /sys/module/zswap/parameters/enabled)"'
+alias tzswap="sudo su -c \"(sed 'y/NY/YN/' /sys/module/zswap/parameters/enabled >|/sys/module/zswap/parameters/enabled && cat /sys/module/zswap/parameters/enabled)\""
 alias slog='git log --show-signature'
 alias scommit='git commit -S'
 alias nmixxx='sudo renice -n -20 -p $(pgrep mixxx|paste -sd" ") && sudo ionice -c 1 -n 0 -p $(pgrep mixxx|paste -sd" ")'
-#alias nmixxx="mixxx >/dev/null 2>&1 & renice -n -20 -p $! && disown"
 alias kpulse='systemctl --user stop pulseaudio.socket && pulseaudio --kill || pulseaudio --kill'
 alias archchroot='sudo mount --rbind /sys /mnt/gentoo/sys/; sudo mount --make-rslave /mnt/gentoo/sys/; sudo mount --rbind /dev /mnt/gentoo/dev/; sudo mount --make-rslave /mnt/gentoo/dev/; sudo mount -t tmpfs tmpfs /mnt/gentoo/tmp/; sudo mount -t proc proc /mnt/gentoo/proc/; sudo chroot'
 alias ws='web_search_custom'
@@ -398,22 +349,18 @@ alias aw='arch-wiki'
 alias sefi="sed 's@/boot/@EFI/arch/@g' /boot/refind_linux.conf | sudo tee /boot/efi/EFI/arch/refind_linux.conf"
 alias tma='tmux attach'
 alias wm='wemux'
-#alias pix="curl -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36' --progress-bar -n -F'f:1=<-' ix.io"
 alias pix="curl --progress-bar -n -F'f:1=<-' ix.io"
 alias tbin='nc termbin.com 9999'
 
 alias p-scan='nmap -sV -A'
 alias pkgsize='expac -s "%-30n %m" | sort -hk 2 | awk '\''{printf "%s %.0f MiB\n", $1, $2/1024/1024}'\'' | column -t'
 alias fdf='echo && free -lth && echo && df -Th'
-#alias space='echo && free -ltwh && echo && df -Th'
-#alias dirlinks='find "${PWD}" -maxdepth 1 -type l -exec ls -al --color=always {} +'
 alias sdwim='antigen-bundle oknowton/zsh-dwim'
 alias ptpb='curl --progress-bar -F"c=@-" https://ptpb.pw/?u=1'
 alias aptpb="curl --progress-bar -F'c=@-' https://ptpb.pw/?u=1 | sed 's:ptpb\.pw/:alyp.tk/pb/:g'"
 alias pb='perlbrew'
 alias kindle='kindlegen -c0 -verbose'
 alias icast='sudo icecast -b -c /etc/icecast.xml'
-# alias gv='gvim -p'
 alias ep='vim -p'
 alias er='vim --remote'
 alias erp='vim -p --remote-tab'
@@ -440,7 +387,6 @@ alias sk='kdesudo kate'
 alias ltool='libtool --finish /usr/lib'
 alias ipc='pacaur -Si'
 alias qipc='pacman -Qi'
-# alias qpc='pacaur -Ql'
 alias dpc='pacaur -Syu --devel'
 alias rpc='pacaur -R'
 alias rcpc='pacaur -Rc'
@@ -449,14 +395,11 @@ alias npc='pacaur -Syu --noconfirm'
 alias upc='sudo pacman -Syu'
 alias sspc='pacaur --color=always -Ss'
 alias qspc='pacaur --color=always -Qs'
-# alias sspc='> >(env LESS= less -BFJKRMXs) pacaur -Ss --color=always'
-alias scow='cower --color=always -s'
 alias pa='pacaur'
 alias pm='sudo pacman'
 alias cow='cower'
 alias upc='sudo pacman -U'
 alias gpc='sudo apacman -G'
-#alias npac='pacaur --noconfirm --noedit -S'
 alias iapac='apacman --skipinteg -S'
 alias para='parallel'
 alias ping6='ping -6c 5'
@@ -464,8 +407,7 @@ alias ping6='ping -6c 5'
 alias cmount='mount | column -t'
 alias jo='jobs -l'
 alias path='echo -e ${PATH//:/\\n}'
-alias now="date +'%a %d %b %I:%M:%S%P %Z %Y-%m-%d'"
-alias dnow='date +"%Y-%m-%d"'
+alias now='date +"%a %R %Z %Y-%m-%d"'
 alias svi='vi "+set si"'
 alias fi-btrfs='sudo btrfs filesystem show'
 alias us-btrfs='sudo btrfs filesystem usage -T /'

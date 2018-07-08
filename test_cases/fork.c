@@ -4,9 +4,12 @@
 #include <unistd.h>
 #include <wait.h>
 
+static volatile size_t counter = 0;
+#define printf(s, ...) printf("[#%zu:L%u] " s, ++counter, __LINE__, __VA_ARGS__)
+
 int main(void)
 {
-	int pret = ~0, cret = ~1, ppret = ~2;
+	int pret = -1, cret = -1, ppret = -1;
 	int pid = -1, cpid = -1, ppid = -1, unused = -1;
 
 	(void)pret, (void)cret, (void)ppret;
@@ -32,7 +35,6 @@ int main(void)
 		case 0:
 			printf("pid = %d fork ret = %d\n", getpid(), cpid);
 			fflush(0);
-			sleep(2);
 			exit(EXIT_SUCCESS);
 		}
 		printf("pid %d waiting on %d\n", getpid(), cpid);
@@ -46,7 +48,6 @@ int main(void)
 
 		printf("pid = %d fork ret = %d\n", getpid(), pid);
 		fflush(0);
-		sleep(5);
 		exit(EXIT_SUCCESS);
 	}
 
@@ -72,7 +73,6 @@ int main(void)
 	case 0:
 		printf("pid = %d fork ret = %d\n", getpid(), ppid);
 		fflush(0);
-		sleep(2);
 		exit(EXIT_SUCCESS);
 	}
 	if (waitpid(ppid, &ppret, 0) == -1)
