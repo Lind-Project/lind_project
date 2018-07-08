@@ -19,29 +19,40 @@ int main(void)
 	fflush(0);
 
 	switch ((pid = fork())) {
+	case -1:
+		perror("fork() failed");
+		fflush(0);
+		exit(EXIT_FAILURE);
 	case 0:
 		printf("pid %d forking\n", getpid());
 		fflush(0);
 
-		/*
-		 * switch ((cpid = fork())) {
-		 * case 0:
-		 *         printf("pid = %d fork ret = %d\n", getpid(), cpid);
-		 *         fflush(0);
-		 *         exit(EXIT_SUCCESS);
-		 * }
-		 */
+		switch ((cpid = fork())) {
+		case -1:
+			perror("fork() failed");
+			fflush(0);
+			exit(EXIT_FAILURE);
+		case 0:
+			printf("pid = %d fork ret = %d\n", getpid(), cpid);
+			fflush(0);
+			exit(EXIT_SUCCESS);
+		}
 
-		cpid = fork();
 		printf("pid = %d fork ret = %d\n", getpid(), cpid);
 		fflush(0);
 		exit(EXIT_SUCCESS);
 	}
 
+	printf("pid = %d fork ret = %d\n", getpid(), pid);
+	fflush(0);
 	printf("pid %d forking again\n", getpid());
 	fflush(0);
 
 	switch ((ppid = fork())) {
+	case -1:
+		perror("fork() failed");
+		fflush(0);
+		exit(EXIT_FAILURE);
 	case 0:
 		printf("pid = %d fork ret = %d\n", getpid(), ppid);
 		fflush(0);
