@@ -89,7 +89,7 @@ export MAKEFLAGS="-j$NPROC"
 
 # Environment variables
 # export BROWSER=firefox
-export BROWSER=chromium
+# export BROWSER=chromium
 # export BROWSER=w3m
 # export BROWSER=lynx
 export CORRECT_IGNORE="_?*"

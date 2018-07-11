@@ -37,6 +37,7 @@ int main(void)
 			fflush(0);
 			exit(EXIT_SUCCESS);
 		}
+		cpid = -1;
 		printf("pid %d waiting on %d\n", getpid(), cpid);
 		fflush(0);
 		if (waitpid(cpid, &cret, 0) == -1)
