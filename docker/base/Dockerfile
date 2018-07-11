@@ -1,5 +1,5 @@
 FROM archlinux/base
-LABEL lind "v0.9-alpha"
+LABEL lind "v0.10-beta"
 LABEL description "Lind NaCl Glibc Toolchain (Base)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 

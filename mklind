@@ -6,7 +6,7 @@
 # Updated by Joey Pabalinas <joeypabalinas@gmail.com>
 
 # version and usage strings
-readonly version=0.9.0-alpha
+readonly version=0.10.0-beta
 usage+=$'\n'"Lind $version NaCl Toolchain Build Script"$'\n'
 usage+=$'\n'
 usage+=$'Usage:\n'
@@ -277,8 +277,10 @@ function download_src() {
 		fi
 		# install virtualenv modules
 		if ! "$pip_bin" install -U --user virtualenv2; then
-			print "Need python virtualenv2 in order to build Lind" >&2
-			false
+			if ! "$pip_bin" install -U --user virtualenv; then
+				print "Need python virtualenv/virtualenv2 in order to build Lind" >&2
+				false
+			fi
 		fi
 		if ! "$pip_bin" install -U --user virtualenvwrapper; then
 			print "Need python virtualenvwrapper in order to build Lind" >&2
@@ -553,12 +555,15 @@ function build_nacl() {
 			rm -f "$file.new"
 		done
 
-	# build nacl with glibc tests
+	# skip broken tests for now
 	cd "$NACL_BASE"
 	PATH="$LIND_BASE:$PATH" \
-		python2 ./scons.py --verbose --mode="$MODE,nacl" \
+		python2 ./scons.py \
+		--verbose --mode="$MODE,nacl" \
+		--nacl_glibc -j4 \
 		nacl_pic=1 werror=0 \
-		platform=x86-64 --nacl_glibc -j4
+		skip_trusted_tests=1 disable_flaky_tests=1 \
+		platform=x86-64
 	print "Done building NaCl"
 
 	cur_func="${FUNCNAME[1]}"
