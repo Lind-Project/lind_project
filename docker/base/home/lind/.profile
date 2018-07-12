@@ -122,7 +122,7 @@ export FZF_CTRL_T_OPTS="--preview '(highlight -O ansi -l {} || cat {} || tree -C
 # export GDK_SCALE=2.25
 export GIT_PAGER="less -MRins"
 export GOPATH="$HOME/.go"
-export GROFF_NO_SGR=1 man
+export GROFF_NO_SGR=1
 # Gtk themes
 # export GTK_DEBUG=all
 export GTK_IM_MODULE="xim" QT_IM_MODULE="xim" XMODIFIERS="@im=none"
