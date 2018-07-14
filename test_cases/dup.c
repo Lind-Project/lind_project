@@ -1,10 +1,9 @@
+#undef _GNU_SOURCE
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
 
 int main(void)
 {

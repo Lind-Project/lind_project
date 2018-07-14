@@ -9,6 +9,8 @@ shopt -s expand_aliases autocd hostcomplete histappend
 [[ "$-" == *i* ]] && bind 'set menu-complete-display-prefix on'
 [[ "$-" == *i* ]] && bind 'TAB:menu-complete'; [[ "$-" == *i* ]] && bind 'set show-all-if-ambiguous on'
 
+type pandoc &>/dev/null && eval "$(pandoc --bash-completion)"
+
 # shellcheck disable=SC1090 disable=SC1091
 [[ -f /usr/share/doc/find-the-command/ftc.bash ]] \
 	&& . /usr/share/doc/find-the-command/ftc.bash
