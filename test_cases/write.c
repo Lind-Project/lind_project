@@ -1,3 +1,6 @@
+#undef _GNU_SOURCE
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -8,10 +11,8 @@ int main(void)
 {
 	char str[] = "write succeeded\n";
 
-	puts("\nattempting to write to STDOUT_FILENO\n");
-	/* fflush(0); */
+	puts("attempting to write to STDOUT_FILENO");
 	write(STDOUT_FILENO, str, sizeof str);
-	/* fflush(0); */
 
 	return 0;
 }

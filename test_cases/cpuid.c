@@ -1,3 +1,6 @@
+#undef _GNU_SOURCE
+#define _GNU_SOURCE
+
 #include <stdint.h>
 #include <stdio.h>
 
