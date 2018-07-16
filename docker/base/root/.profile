@@ -253,7 +253,7 @@ export SURF_USERAGENT
 export SYSTEMD_LESS="FKMRins" journalctl
 export TERMINAL=st
 TIME='%J
-[system: %S] [elapsed: %E] [CPU: %P]
+[system: %S] [elapsed: %E] [cpu: %P]
 [swaps: %W] ([major: %F]+[minor: %R] pagefaults)
 [input: %I]+[output: %O] ([text: %Xk]+[data: %Dk] [max: %Mk] memory)
 [exit: %W] ([voluntary: %w]+[involuntary: %c] context-switches)'
