@@ -9,8 +9,6 @@ shopt -s expand_aliases autocd hostcomplete histappend
 [[ "$-" == *i* ]] && bind 'set menu-complete-display-prefix on'
 [[ "$-" == *i* ]] && bind 'TAB:menu-complete'; [[ "$-" == *i* ]] && bind 'set show-all-if-ambiguous on'
 
-type pandoc &>/dev/null && eval "$(pandoc --bash-completion)"
-
 # shellcheck disable=SC1090 disable=SC1091
 [[ -f /usr/share/doc/find-the-command/ftc.bash ]] \
 	&& . /usr/share/doc/find-the-command/ftc.bash
@@ -26,13 +24,9 @@ type pandoc &>/dev/null && eval "$(pandoc --bash-completion)"
 # shellcheck disable=SC1090 disable=SC1091
 [[ -f /etc/profile.d/cnf.sh ]] \
 	&& . /etc/profile.d/cnf.sh
-# setup python-virtualenvwrapper
 # shellcheck disable=SC1090 disable=SC1091
-[[ -f /usr/bin/virtualenvwrapper.sh ]] \
-	&& . /usr/bin/virtualenvwrapper.sh
-# shellcheck disable=SC1090 disable=SC1091
-# [[ -f /usr/bin/virtualenvwrapper_lazy.sh ]] \
-#         && . /usr/bin/virtualenvwrapper_lazy.sh
+[[ -f /usr/bin/virtualenvwrapper_lazy.sh ]] \
+	&& . /usr/bin/virtualenvwrapper_lazy.sh
 
 # shellcheck disable=SC1090 disable=SC1091
 [[ -f "${HOME}/.profile" ]] && . "${HOME}/.profile"
@@ -87,24 +81,25 @@ else
 	PS1+='\[\e[1;92m\]$\[\e[m\] '
 fi
 
-if [[ -f /usr/lib/bash-git-prompt/gitprompt.sh ]]; then
-# To only show the git prompt in or under a repository directory
-	export GIT_PROMPT_ONLY_IN_REPO=1
+if [[ -f "$HOME/.bash_git_prompt" ]]; then
+	# To only show the git prompt in or under a repository directory
+	export GIT_PROMPT_ONLY_IN_REPO=0
 	# To use upstream's default theme, modified by arch maintainer
 	export GIT_PROMPT_THEME=Default_Arch
 	# shellcheck disable=SC1090 disable=SC1091
-	. /usr/lib/bash-git-prompt/gitprompt.sh
+	. "$HOME/.bash_git_prompt"
 	# shellcheck disable=SC1090 disable=SC1091
-	. /usr/lib/bash-git-prompt/git-prompt-help.sh
+	. "$HOME/git-prompt-help.sh"
 fi
 
-## Custom which/fh for bash
+type pandoc &>/dev/null && eval "$(pandoc --bash-completion)"
 type fasd >/dev/null 2>&1 && eval "$(fasd --init auto)"
 unset -f d fh 2>/dev/null
 
 # shellcheck disable=SC1090 disable=SC1091
 [[ -f "${HOME}/.aliases" ]] && . "${HOME}/.aliases"
 
+# Custom which/fh for bash
 function fh () {
 	history | \
 		fzf +s --tac | \
