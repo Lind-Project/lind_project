@@ -252,12 +252,19 @@ SURF_USERAGENT="$SURF_USERAGENT Chrome/49.0.2623.105 Mobile Safari/537.36"
 export SURF_USERAGENT
 export SYSTEMD_LESS="FKMRins" journalctl
 export TERMINAL=st
+TIME='%J
+[system: %S] [elapsed: %E] [CPU: %P]
+[swaps: %W] ([major: %F]+[minor: %R] pagefaults)
+[input: %I]+[output: %O] ([text: %Xk]+[data: %Dk] [max: %Mk] memory)
+[exit: %W] ([voluntary: %w]+[involuntary: %c] context-switches)'
+TIMEFMT="$TIME"
+export TiME TIMEFMT
 export TZ=/usr/share/zoneinfo/posix/Pacific/Honolulu
 export VST_PATH="$HOME/vst:/store/audio/vst:/usr/lib/vst:/usr/local/lib/vst"
 export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2
 # export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
-export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2
-# export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv
+export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv
+# export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2
 # define word separators (for stuff like backward-word, forward-word, backward-kill-word,..)
 export WORDCHARS=
 # export WORDCHARS='_-*~'
