@@ -6,7 +6,19 @@ unalias {1..9} c d es f gbr gco gcs gg gm h history java 2>/dev/null
 unalias md meminfo node o rd ru s sd sf si u v which-command xi xo z zz 2>/dev/null
 
 # Custom aliases
-alias ngcc="gcc -v -E -x c -march=native - < /dev/null 2>&1 | grep cc1 | perl -pe 's/ -mno-\S+//g; s/^.* - //g;'"
+alias lfd='ls -lAhqiQFs1 --color=auto /proc/$$/fd'
+alias show-sgcc='gcc -c -g -Wa,-a,-ad'
+alias nostdgcc='gcc -m32 -nostdlib -Wl,-melf_x86_64 -o'
+alias asgcc='gcc -m32 -nostdlib -o helloworld helloworld.o -Wl,-melf_x86_64'
+alias na='nasm -f elf64'
+alias na32='nasm -f elf'
+alias nld='ld -m elf_x86_64'
+alias nld32='ld -m elf_i386'
+alias elfld='ld -s -I/lib64/ld-linux-x86-64.so.2 /usr/lib/crt1.o /usr/lib/crti.o -lc /usr/lib/crtn.o'
+# alias ngcc="gcc -v -E -xc -march=native - </dev/null 2>&1 | perl -ne 's/\s-mno-\S+//g; s/^.*\s-s//g; print if /cc1/'"
+alias ngcc="gcc -v -E -xc -march=native - </dev/null 2>&1 | grep -F 'cc1'"
+
+alias pkgsize='expac "%m %n" | numfmt --to=iec | sort -hr | head -n30'
 alias fzag='ag --nobreak --nonumbers --noheading . | fzf'
 alias fzgr='grep --line-buffered --color=never -r "" * | fzf'
 alias de='declare'
@@ -209,7 +221,7 @@ alias trc='vim "$HOME/.tmux.conf"'
 
 alias zrc='vim "$ZDOTDIR/.zshrc"'
 alias erc='vim "$ZDOTDIR/.zshenv"'
-alias frc='vim ""$ZDOTDIR/.zwidgets"'
+alias frc='vim "$ZDOTDIR/.zwidgets"'
 
 alias us='systemctl --user'
 alias uscdr='systemctl --user daemon-reload'
@@ -353,7 +365,6 @@ alias pix="curl --progress-bar -n -F'f:1=<-' ix.io"
 alias tbin='nc termbin.com 9999'
 
 alias p-scan='nmap -sV -A'
-alias pkgsize='expac -s "%-30n %m" | sort -hk 2 | awk '\''{printf "%s %.0f MiB\n", $1, $2/1024/1024}'\'' | column -t'
 alias fdf='echo && free -lth && echo && df -Th'
 alias sdwim='antigen-bundle oknowton/zsh-dwim'
 alias ptpb='curl --progress-bar -F"c=@-" https://ptpb.pw/?u=1'
@@ -420,14 +431,3 @@ alias sn-btrfs='sudo btrfs subvolume snapshot'
 alias ls-btrfs='sudo btrfs subvolume list .'
 alias ds-btrfs='sudo btrfs subvolume delete /btrfs/__snapshot/*'
 alias dg-btrfs='sudo btrfs filesystem defragment -v -r -clzo /'
-
-alias lfd='ls -lAhqiQFs1 --color=auto /proc/$$/fd'
-alias sgcc='gcc -O2 -S -c'
-alias show-sgcc='gcc -c -g -Wa,-a,-ad'
-alias nostdgcc='gcc -m32 -nostdlib -Wl,-melf_x86_64 -o'
-alias asgcc='gcc -m32 -nostdlib -o helloworld helloworld.o -Wl,-melf_x86_64'
-alias na='nasm -f elf64'
-alias na32='nasm -f elf'
-alias nld='ld -m elf_x86_64'
-alias nld32='ld -m elf_i386'
-alias elfld='ld -s -I/lib64/ld-linux-x86-64.so.2 /usr/lib/crt1.o /usr/lib/crti.o -lc /usr/lib/crtn.o'

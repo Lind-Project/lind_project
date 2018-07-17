@@ -28,7 +28,7 @@ set print array-indexes on
 set print frame-arguments all
 set print entry-values if-needed
 set print object on
-set case-sensitive off
+set case-sensitive on
 
 # out paging and thread control
 set pagination off
