@@ -18,7 +18,6 @@ build/
 testing/
 breakpad/
 naclports/
-lind_glibc/
 buildtools/
 build_overrides/
 validator_snapshots/
