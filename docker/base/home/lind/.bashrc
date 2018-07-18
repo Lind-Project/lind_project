@@ -5,10 +5,6 @@
 # Append new history items to .bash_history
 shopt -s expand_aliases autocd hostcomplete histappend
 
-## Menu completion
-[[ "$-" == *i* ]] && bind 'set menu-complete-display-prefix on'
-[[ "$-" == *i* ]] && bind 'TAB:menu-complete'; [[ "$-" == *i* ]] && bind 'set show-all-if-ambiguous on'
-
 # shellcheck disable=SC1090 disable=SC1091
 [[ -f /usr/share/doc/find-the-command/ftc.bash ]] \
 	&& . /usr/share/doc/find-the-command/ftc.bash
@@ -29,24 +25,24 @@ shopt -s expand_aliases autocd hostcomplete histappend
 	&& . /usr/bin/virtualenvwrapper_lazy.sh
 
 # shellcheck disable=SC1090 disable=SC1091
-[[ -f "${HOME}/.profile" ]] && . "${HOME}/.profile"
+[[ -f "$HOME/.profile" ]] && . "$HOME/.profile"
 
 # shellcheck disable=SC1090 disable=SC1091
-[[ -f "${ZDOTDIR:-${HOME}/zsh.d}/plugins/z.sh" ]] && . "${ZDOTDIR:-${HOME}/zsh.d}/plugins/z.sh"
+[[ -f "${ZDOTDIR:-$HOME/zsh.d}/plugins/z.sh" ]] && . "${ZDOTDIR:-$HOME/zsh.d}/plugins/z.sh"
 # shellcheck disable=SC1090 disable=SC1091
 
-[[ -f "${ZDOTDIR:-${HOME}/zsh.d}/plugins/fz.bash" ]] && . "${ZDOTDIR:-${HOME}/zsh.d}/plugins/fz.bash"
+[[ -f "${ZDOTDIR:-$HOME/zsh.d}/plugins/fz.bash" ]] && . "${ZDOTDIR:-$HOME/zsh.d}/plugins/fz.bash"
 # shellcheck disable=SC1090 disable=SC1091
-[[ -f "${ZDOTDIR:-${HOME}/zsh.d}/plugins/ftc.bash" ]] && . "${ZDOTDIR:-${HOME}/zsh.d}/plugins/ftc.bash"
+[[ -f "${ZDOTDIR:-$HOME/zsh.d}/plugins/ftc.bash" ]] && . "${ZDOTDIR:-$HOME/zsh.d}/plugins/ftc.bash"
 
 # shellcheck disable=SC1090 disable=SC1091
-[[ -f "${HOME}/.fzf.bash" ]] && . "${HOME}/.fzf.bash"
+[[ -f "$HOME/.fzf.bash" ]] && . "$HOME/.fzf.bash"
 # shellcheck disable=SC1090 disable=SC1091
-[[ -f "${HOME}/.bash_funcs" ]] && . "${HOME}/.bash_funcs"
+[[ -f "$HOME/.bash_funcs" ]] && . "$HOME/.bash_funcs"
 
 HISTIGNORE='history*'
 HISTCONTROL='ignoreboth:erasedups'
-HISTFILE="${HOME}/.bash_history"
+HISTFILE="$HOME/.bash_history"
 
 declare -a tmp
 declare __statstr
@@ -97,7 +93,7 @@ type fasd >/dev/null 2>&1 && eval "$(fasd --init auto)"
 unset -f d fh 2>/dev/null
 
 # shellcheck disable=SC1090 disable=SC1091
-[[ -f "${HOME}/.aliases" ]] && . "${HOME}/.aliases"
+[[ -f "$HOME/.aliases" ]] && . "$HOME/.aliases"
 
 # Custom which/fh for bash
 function fh () {
@@ -111,20 +107,21 @@ function which() {
 		command which --tty-only --read-alias --read-functions --show-tilde --show-dot "$@"
 }
 export -f which fh
-# CTRL-X-1 - Invoke Readline functions by name
-[[ "$-" == *i* ]] && bind -x '"\C-x2": __fzf_readline'
-[[ "$-" == *i* ]] && bind '"\C-x1": "\C-x2\C-x3"'
-#[[ "$-" == *i* ]] && bind '"\C-r": "\C-a hh \C-j"'
-[[ "$-" == *i* ]] && bind -x '"\C-x1": __fzf_history'
-[[ "$-" == *i* ]] && bind '"\C-r": "\C-x1\e^\er"'
-## History completion bound to arrow keys
-[[ "$-" == *i* ]] && bind '"\e[A": history-search-backward'
-[[ "$-" == *i* ]] && bind '"\eOA": history-search-backward'
-[[ "$-" == *i* ]] && bind '"\e[B": history-search-forward'
-[[ "$-" == *i* ]] && bind '"\eOB": history-search-forward'
-
-## The following line may also be placed in bashrc to set the mode string
-#[[ "$-" == *i* ]] && bind "set vi-mode-str2 $(printf '1\033[37m\002+\001\033[0m\002')"
-#[[ "$-" == *i* ]] && bind "set vi-mode-str1 $(printf '\033[37m+\033[0m')"
+if [[ "$-" == *i* && -t 0 ]]; then
+	# CTRL-X-1 - Invoke Readline functions by name
+	bind -x '"\C-x2": __fzf_readline'
+	bind '"\C-x1": "\C-x2\C-x3"'
+	bind -x '"\C-x1": __fzf_history'
+	bind '"\C-r": "\C-x1\e^\er"'
+	# History completion bound to arrow keys
+	bind '"\e[A": history-search-backward'
+	bind '"\eOA": history-search-backward'
+	bind '"\e[B": history-search-forward'
+	bind '"\eOB": history-search-forward'
+	# Menu completion
+	bind 'set menu-complete-display-prefix on'
+	bind 'TAB:menu-complete'
+	bind 'set show-all-if-ambiguous on'
+fi
 
 # vi:ft=sh:

@@ -58,8 +58,8 @@ GCC_COLORS="type-diff=01;32:$GCC_COLORS"
 export GCC_COLORS
 # compiler flags
 CFLAGS="-Wno-error -Wno-implicit-fallthrough"
-# CFLAGS="-fdiagnostics-color=always $CFLAGS"
-# CFLAGS="-fdiagnostics-generate-patch $CFLAGS"
+CFLAGS="-fdiagnostics-color=always $CFLAGS"
+CFLAGS="-fdiagnostics-generate-patch $CFLAGS"
 # CFLAGS="-flto $CFLAGS"
 # CFLAGS="-fno-common $CFLAGS"
 # CFLAGS="-fvar-tracking -fvar-tracking-assignments $CFLAGS"
@@ -68,7 +68,7 @@ CFLAGS="-fuse-ld=gold -fuse-linker-plugin $CFLAGS"
 # CFLAGS="-pipe $CFLAGS"
 # CFLAGS="-march=native -gdwarf-4 -g3 -O3 $CFLAGS"
 # CFLAGS="-march=x86-64 -mtune=intel -g3 -O3 $CFLAGS"
-CFLAGS="-march=native -g3 -O3 $CFLAGS"
+CFLAGS="-pipe -march=native -g3 -O3 $CFLAGS"
 export CFLAGS
 # export CHOST="x86_64-unknown-linux-gnu"
 # export CPATH=":$HOME/.local/include"
@@ -92,6 +92,7 @@ export MAKEFLAGS="-j$NPROC"
 # export BROWSER=chromium
 # export BROWSER=w3m
 # export BROWSER=lynx
+export CLICOLOR=1
 export CORRECT_IGNORE="_?*"
 # Audio plugins
 DSSI_PATH="/usr/local/lib/dssi:/usr/lib/dssi"
@@ -101,23 +102,32 @@ export DSSI_PATH
 export EDITOR=vim
 export FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" VISUAL="$EDITOR"
 export FREETYPE_PROPERTIES="truetype:interpreter-version=35"
-export FZF_DEFAULT_COMMAND="
-	(git ls-tree -r --name-only HEAD ||
-	find . -path '*/\\.*' -prune -o \\( -type f -o -type l \\) -print |
-	sed s/^..//) 2>/dev/null
-"
-# export FZF_DEFAULT_COMMAND='ag -g ""'
+# export FZF_DEFAULT_COMMAND="
+#         (git ls-tree -r --name-only HEAD ||
+#         find . -path '*/\\.*' -prune -o \\( -type f -o -type l \\) -print |
+#         sed s/^..//) 2>/dev/null
+#         "
+export FZF_DEFAULT_COMMAND='ag -g ""'
 export FZF_DEFAULT_OPTS="
 	--color fg:-1,bg:-1,hl:230,fg+:3,bg+:233,hl+:229
 	--color info:150,prompt:110,spinner:150,pointer:167,marker:174
 	--height 40%
-"
-export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
-export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window down:3:hidden --bind '?:toggle-preview'"
+	--reverse
+	"
+export FZF_ALT_C_OPTS="$FZF_DEFAULT_OPTS --preview 'tree -C {} | head -200'"
+export FZF_CTRL_R_OPTS="
+	$FZF_DEFAULT_OPTS
+	--preview 'echo {}'
+	--preview-window down:3:hidden
+	--bind '?:toggle-preview'
+	"
 # To apply the command to CTRL-T as well
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 # Using highlight (http://www.andre-simon.de/doku/highlight/en/highlight.html)
-export FZF_CTRL_T_OPTS="--preview '(highlight -O ansi -l {} || cat {} || tree -C {}) 2>/dev/null | head -200'"
+export FZF_CTRL_T_OPTS="
+	$FZF_DEFAULT_OPTS
+	--preview '(highlight -O ansi -l {} || cat {} || tree -C {}) 2>/dev/null | head -200'
+	"
 # export GDK_DPI_SCALE=0.4
 # export GDK_SCALE=2.25
 export GIT_PAGER="less -MRins"
@@ -235,6 +245,7 @@ export PS_FORMAT="flags,uid,pid,ppid,tpgid,pgrp,session,pri,ni,pcpu,sz,wchan,sta
 # export PYTHON="/usr/bin/python2"
 export PYTHONSTARTUP="$HOME/.pythonrc"
 export READNULLCMD=less
+export REPORTTIME=5
 export RLWRAP_EDITOR="vim '+call cursor(%L,%C)'"
 export QEMU_AUDIO_DRV=pa
 export QEMU_PA_SERVER=localhost
