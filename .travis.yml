@@ -100,45 +100,18 @@ matrix:
 
 before_install:
     - eval "$MATRIX_EVAL"
-    - sudo apt-get install -qq --allow-unauthenticated --fix-missing gettext gperf texinfo
+    - sudo apt-get install -qq --allow-unauthenticated --fix-missing gettext gperf texinfo coreutils
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing linux-headers-generic linux-libc-dev
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing virtualenvwrapper help2man
     # - sudo apt-get install -qq --fix-missing
-    - mkdir -pv "$HOME/bin/"
-    - printf "%s\n" \
-             "#!/bin/sh" \
-             "" \
-             "exec /usr/bin/help2man --no-discard-stderr \"$@\"" \
-             | tee "$HOME/bin/help2man"
-    - chmod +x "$HOME/bin/help2man"
-    # generate the <linux/memfd.h> header since one is missing on the Travis instance
-    - sudo mkdir -p /usr/include/linux
-    - printf "%s\n" \
-                "#ifndef _LINUX_MEMFD_H" \
-                "#define _LINUX_MEMFD_H" \
-                "" \
-                "#define __NR_memfd_create 319" \
-                "#define SYS_memfd_create __NR_memfd_create" \
-                "" \
-                "/* flags for memfd_create(2) (unsigned int) */" \
-                "#define MFD_CLOEXEC 0x0001U" \
-                "#define MFD_ALLOW_SEALING 0x0002U" \
-                "" \
-                "#endif /* _LINUX_MEMFD_H */" \
-                | sudo tee /usr/include/linux/memfd.h
 
 script:
     - ln -Tsfv "$PWD" "$LIND_BASE"
-    - git clone "git://git.savannah.gnu.org/coreutils.git"
-    - cd "coreutils"
-    - ./bootstrap
-    - ./configure --prefix="$HOME/.local"
-    - make install
     - cd "$LIND_BASE/docker/base/home/lind/build/make-3.82/src/make-3.82/"
     - ./configure --prefix="$HOME/.local"
-    - make install
+    - make -k -i install
     - cd "$LIND_BASE/docker/base/home/lind/build/texinfo-4.13/"
-    - make install
+    - make -k -i install
     - cd "$LIND_BASE"
     - ./mklind download
     - ./mklind nacl
