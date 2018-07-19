@@ -58,8 +58,8 @@ GCC_COLORS="type-diff=01;32:$GCC_COLORS"
 export GCC_COLORS
 # compiler flags
 CFLAGS="-Wno-error -Wno-implicit-fallthrough"
-CFLAGS="-fdiagnostics-color=always $CFLAGS"
-CFLAGS="-fdiagnostics-generate-patch $CFLAGS"
+# CFLAGS="-fdiagnostics-color=always $CFLAGS"
+# CFLAGS="-fdiagnostics-generate-patch $CFLAGS"
 # CFLAGS="-flto $CFLAGS"
 # CFLAGS="-fno-common $CFLAGS"
 # CFLAGS="-fvar-tracking -fvar-tracking-assignments $CFLAGS"
