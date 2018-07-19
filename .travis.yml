@@ -1,6 +1,16 @@
+dist: trusty
+before_install: ci/install-dependencies.sh
+script: ci/run-build-and-tests.sh
+sudo: required
 language: c
 cache: ccache
 group: deprecated-2017Q4
+git:
+    depth: 2147483647
+env:
+    global:
+      - SLEEP_A_BIT="sleep 0.2"
+      - VERBOSE="1"
 
 matrix:
   include:
