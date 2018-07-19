@@ -59,31 +59,31 @@ matrix:
         - PATH="$HOME/.local/bin:$PATH"
 
     # works on Trusty
-    # - os: linux
-    #   addons:
-    #     apt:
-    #       sources:
-    #         - ubuntu-toolchain-r-test
-    #         - sourceline: "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-5.0 main"
-    #       packages:
-    #         - clang-5.0 lldb-5.0 lld-5.0
-    #   env:
-    #     - MATRIX_EVAL="export PREFIX=~/.local CC=clang-5.0 CXX=clang++-5.0"
-    #     - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
-    #     - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
-    #     - LIND_PREFIX="$HOME"
-    #     - LIND_BASE="$LIND_PREFIX/lind_project"
-    #     - LIND_SRC="$LIND_BASE/lind"
-    #     - LIND_MONITOR="$LIND_BASE/reference_monitor"
-    #     - REPY_PATH="$LIND_SRC/repy"
-    #     - NACL_SDK_ROOT="$REPY_PATH/sdk"
-    #     - PYTHON="python2"
-    #     - PNACLPYTHON="python2"
-    #     - LD_LIBRARY_PATH="/lib/glibc"
-    #     - PATH="$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:$PATH"
-    #     - PATH="$REPY_PATH/bin:$PATH"
-    #     - PATH="$LIND_BASE:$PATH"
-    #     - PATH="$HOME/.local/bin:$PATH"
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main"
+          packages:
+            - clang-6.0 lldb-6.0 lld-6.0
+      env:
+        - MATRIX_EVAL="export PREFIX=~/.local CC=clang-6.0 CXX=clang++-6.0"
+        - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
+        - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
+        - LIND_PREFIX="$HOME"
+        - LIND_BASE="$LIND_PREFIX/lind_project"
+        - LIND_SRC="$LIND_BASE/lind"
+        - LIND_MONITOR="$LIND_BASE/reference_monitor"
+        - REPY_PATH="$LIND_SRC/repy"
+        - NACL_SDK_ROOT="$REPY_PATH/sdk"
+        - PYTHON="python2"
+        - PNACLPYTHON="python2"
+        - LD_LIBRARY_PATH="/lib/glibc"
+        - PATH="$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:$PATH"
+        - PATH="$REPY_PATH/bin:$PATH"
+        - PATH="$LIND_BASE:$PATH"
+        - PATH="$HOME/.local/bin:$PATH"
 
 before_install:
     - eval "$MATRIX_EVAL"
@@ -118,6 +118,11 @@ before_install:
 
 script:
     - ln -Tsfv "$PWD" "$LIND_BASE"
+    - git clone "git://git.savannah.gnu.org/coreutils.git"
+    - cd "coreutils"
+    - ./bootstrap
+    - ./configure --prefix="$HOME/.local"
+    - make install
     - cd "$LIND_BASE/docker/base/home/lind/build/make-3.82/src/make-3.82/"
     - ./configure --prefix="$HOME/.local"
     - make install
