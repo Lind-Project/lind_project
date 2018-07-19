@@ -97,19 +97,13 @@ matrix:
 
 before_install:
     - eval "$MATRIX_EVAL"
+    - sudo apt-get install -qq --allow-unauthenticated --fix-missing gettext gperf texinfo
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing elfutils libelf-dev libreadline-dev
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing linux-headers-generic linux-libc-dev
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing docker virtualenvwrapper npm help2man
     # - sudo apt-get install -qq --fix-missing
     - printf "%s\n" 'prefix=${HOME}/.node_modules' | tee -a "$HOME/.npmrc"
     - npm install -g yarn
-    - mkdir -pv "$HOME/bin/"
-    - printf "%s\n" \
-             "#!/bin/sh" \
-             "" \
-             "exec /usr/bin/help2man --no-discard-stderr \"$@\"" \
-             | tee "$HOME/bin/help2man"
-    - chmod +x "$HOME/bin/help2man"
     # generate the <linux/memfd.h> header since one is missing on the Travis instance
     - sudo mkdir -p /usr/include/linux
     - printf "%s\n" \
