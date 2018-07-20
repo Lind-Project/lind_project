@@ -909,7 +909,6 @@ let g:ale_c_clangtidy_checks=[
 	\ 'bugprone-suspicious-memset-usage',
 	\ 'bugprone-undefined-memory-manipulation',
 	\ 'cert-dcl03-c',
-	\ 'cert-env33-c',
 	\ 'cert-err34-c',
 	\ 'cert-fio38-c',
 	\ 'cert-flp30-c',
@@ -1585,13 +1584,14 @@ let g:session_persist_globals = ['&makeprg', '&makeef', '&expandtab']
 
 augroup sessionLoad
 	au!
-	func! InSession()
-		let l:autosave='no'
-		if !empty(xolox#session#find_current_session())
-			l:autosave='prompt'
+	fu! InSession()
+		if empty(xolox#session#find_current_session())
+			let l:autosave='no'
+		else
+			let l:autosave='prompt'
 		endif
 		return l:autosave
-	endfunc
+	endfu
 	au SessionLoadPost * let g:session_autosave=InSession()
 augroup END
 
