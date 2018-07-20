@@ -116,4 +116,8 @@ script:
     - ./configure --prefix="$HOME/.local"
     - make -k -i install
     - cd "$LIND_BASE"
-    - ./mklind -e all
+    - ./mklind -e download
+    - ./mklind -e glibc
+    - ./mklind -e nacl
+    - ./mklind -e repy
+    - ./mklind -e install
