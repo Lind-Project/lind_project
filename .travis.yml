@@ -25,7 +25,7 @@ matrix:
             - g++-7
             - build-essential
       env:
-        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7"
+        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7 CC_FOR_BUILD=gcc-7 CXX_FOR_BUILD=g++-7"
         - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
         - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
         - LIND_PREFIX="$HOME"
@@ -53,7 +53,7 @@ matrix:
             - g++-6
             - build-essential
       env:
-        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6"
+        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6 CC_FOR_BUILD=gcc-6 CXX_FOR_BUILD=g++-6"
         - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
         - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
         - LIND_PREFIX="$HOME"
@@ -78,10 +78,12 @@ matrix:
             - ubuntu-toolchain-r-test
             - sourceline: "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main"
           packages:
-            - clang-6.0 lldb-6.0 lld-6.0
+            - clang-6.0
+            - lldb-6.0
+            - lld-6.0
             - build-essential
       env:
-        - MATRIX_EVAL="export PREFIX=~/.local CC=clang-6.0 CXX=clang++-6.0"
+        - MATRIX_EVAL="export PREFIX=~/.local CC=clang-6.0 CXX=clang++-6.0 CC_FOR_BUILD=clang-6.0 CXX_FOR_BUILD=clang++-6.0"
         - VIRTUALENVWRAPPER_PYTHON="/usr/bin/python2"
         - VIRTUALENVWRAPPER_VIRTUALENV="/usr/bin/virtualenv2"
         - LIND_PREFIX="$HOME"
@@ -100,21 +102,18 @@ matrix:
 
 before_install:
     - eval "$MATRIX_EVAL"
-    - sudo apt-get install -qq --allow-unauthenticated --fix-missing gettext gperf texinfo coreutils
+    - sudo apt-get install -qq --allow-unauthenticated --fix-missing gettext gperf texinfo coreutils help2man
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing linux-headers-generic linux-libc-dev
-    - sudo apt-get install -qq --allow-unauthenticated --fix-missing virtualenvwrapper help2man
+    - sudo apt-get install -qq --allow-unauthenticated --fix-missing virtualenvwrapper elfutils libelf-dev
     # - sudo apt-get install -qq --fix-missing
 
 script:
-    - ln -Tsfv "$PWD" "$LIND_BASE"
+    - ln -Trsfv "$PWD" "$LIND_BASE"
     - cd "$LIND_BASE/docker/base/home/lind/build/make-3.82/src/make-3.82/"
     - ./configure --prefix="$HOME/.local"
     - make -k -i install
     - cd "$LIND_BASE/docker/base/home/lind/build/texinfo-4.13/"
+    - ./configure --prefix="$HOME/.local"
     - make -k -i install
     - cd "$LIND_BASE"
-    - ./mklind -e download
-    - ./mklind -e nacl
-    - ./mklind -e repy
-    - ./mklind -e glibc
-    - ./mklind -e install
+    - ./mklind -e all
