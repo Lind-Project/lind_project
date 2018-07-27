@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [[ "$*" =~ \b(-h|--help)\b ]]; then
+	./configure --help
+	exit 1
+fi
+
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS=-fno-pie CXXFLAGS=-fno-pie LDFLAGS=-fno-pie
+export LDLIBS="${LDLIBS:--L../build/ncurses/lib -l:libncurses.a}"
+
+if [[ ! -e ./configure ]]; then
+	./autogen.sh
+fi
+
+./configure --enable-static-link --enable-cond-command --enable-cond-regexp --enable-debugger --enable-dparen-arithmetic --enable-job-control --enable-process-substitution --host=x86_64 --target=x86_64-nacl "$@"
+sed -i '/extern int gethostname/ s!int))!size_t))!' ./externs.h
