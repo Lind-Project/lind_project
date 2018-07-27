@@ -31,7 +31,6 @@ matrix:
         - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
         - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/bin:/home/travis/build/Lind-Project/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
-  include:
     # works on Precise and Trusty
     - os: linux
       addons:
