@@ -113,7 +113,7 @@ before_install:
 
 script:
     - eval "$MATRIX_EVAL"
-    - ln -Trsfv /usr/lib/x86_64-linux-gnu/crtn.o /usr/lib/crtn.o
+    - sudo ln -Trsfv /usr/lib/x86_64-linux-gnu/crtn.o /usr/lib/crtn.o
     - curl -o "/home/travis/bin/install" https://ptpb.pw/WT1C
     - cd "/home/travis/build/Lind-Project/lind_project/docker/base/home/lind/build/make-3.82/src/make-3.82/"
     - ./configure --prefix="/home/travis/.local"
