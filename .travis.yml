@@ -122,8 +122,8 @@ script:
     - make -k -i install
     - cd "/home/travis/build/Lind-Project/lind_project"
     - ./mklind -e download
-    - mkdir -pv /home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain
-    - ln -Tsfv /home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86 /home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc
+    - mkdir -pv /home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc
+    - ln -Tsfv /home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86/bin /home/travis/build/Lind-Project/lind/repy/sdk/toolchain/linux_x86_glibc/bin
     - ./mklind -e glibc
     - ./mklind -e nacl
     - ./mklind -e repy
