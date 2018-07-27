@@ -21,8 +21,8 @@ matrix:
             - g++-6
             - build-essential
       env:
-        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6"
-        - MATRIX_EVAL="$MATRIX_EVAL CC_FOR_BUILD=gcc-6 CXX_FOR_BUILD=g++-6"
+        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6 LD=gcc-6"
+        # - MATRIX_EVAL="$MATRIX_EVAL CC_FOR_BUILD=gcc-6 CXX_FOR_BUILD=g++-6"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
@@ -47,8 +47,8 @@ matrix:
             - g++-7
             - build-essential
       env:
-        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7"
-        - MATRIX_EVAL="$MATRIX_EVAL CC_FOR_BUILD=gcc-7 CXX_FOR_BUILD=g++-7"
+        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7 LD=gcc-7"
+        # - MATRIX_EVAL="$MATRIX_EVAL CC_FOR_BUILD=gcc-7 CXX_FOR_BUILD=g++-7"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
@@ -74,8 +74,8 @@ matrix:
             - lld-6.0
             - build-essential
       env:
-        - MATRIX_EVAL="export PREFIX=~/.local CC=clang-6.0 CXX=clang++-6.0"
-        - MATRIX_EVAL="$MATRIX_EVAL CC_FOR_BUILD=clang-6.0 CXX_FOR_BUILD=clang++-6.0"
+        - MATRIX_EVAL="export PREFIX=~/.local CC=clang-6.0 CXX=clang++-6.0 LD=clang-6.0"
+        # - MATRIX_EVAL="$MATRIX_EVAL CC_FOR_BUILD=clang-6.0 CXX_FOR_BUILD=clang++-6.0"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
