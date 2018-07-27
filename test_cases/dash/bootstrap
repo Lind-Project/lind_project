@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [[ "$*" =~ \b(-h|--help)\b ]]; then
+	./configure --help
+	exit 1
+fi
+
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS=-fno-pie CXXFLAGS=-fno-pie LDFLAGS=-fno-pie
+export LDLIBS="${LDLIBS:--L../build/ncurses/lib -l:libncurses.a}"
+
+if [[ ! -e ./configure ]]; then
+	./autogen.sh
+fi
+
+./configure --enable-static --enable-fnmatch --enable-glob --host=x86_64 --target=x86_64-nacl "$@"
+sed -i '$ s!.*!/* & */!' ./config.h
+for i in ./src/{expand,exec,mail,redir,bltin/test}.c; do
+	sed -i 's!stat64!stat!g' "$i"
+done

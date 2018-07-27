@@ -33,7 +33,7 @@ fi
 AC_ARG_ENABLE(static, AS_HELP_STRING(--enable-static, \
 				     [Build statical linked program]))
 if test "$enable_static" = "yes"; then
-	export LDFLAGS="-static -Wl,--fatal-warnings"
+	export LDFLAGS="-static"
 fi
 
 AC_ARG_ENABLE(fnmatch, AS_HELP_STRING(--enable-fnmatch, \
