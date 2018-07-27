@@ -6,6 +6,7 @@ unalias {1..9} c d es f gbr gco gcs gg gm h history java 2>/dev/null
 unalias md meminfo node o rd ru s sd sf si u v which-command xi xo z zz 2>/dev/null
 
 # Custom aliases
+alias rstview='restview'
 alias lfd='ls -lAhqiQFs1 --color=auto /proc/$$/fd'
 alias show-sgcc='gcc -c -g -Wa,-a,-ad'
 alias nostdgcc='gcc -m32 -nostdlib -Wl,-melf_x86_64 -o'
