@@ -19,7 +19,7 @@ matrix:
           packages:
             - build-essential
       env:
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
+        - MATRIX_EVAL="export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_BASE=/home/travis/build/Lind-Project/lind_project"
