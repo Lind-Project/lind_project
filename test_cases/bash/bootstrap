@@ -18,3 +18,4 @@ fi
 
 ./configure --enable-static-link --enable-cond-command --enable-cond-regexp --enable-debugger --enable-dparen-arithmetic --enable-job-control --enable-process-substitution --host=x86_64 --target=x86_64-nacl "$@"
 sed -i '/extern int gethostname/ s!int))!size_t))!' ./externs.h
+sed -i '/gethostname (name, namelen)/,+2 s!int namelen!size_t namelen!' lib/sh/oslib.c

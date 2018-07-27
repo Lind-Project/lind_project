@@ -2834,7 +2834,7 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
-opt_bash_malloc=yes
+opt_bash_malloc=no
 opt_afs=no
 opt_curses=no
 opt_with_installed_readline=no
@@ -2910,23 +2910,10 @@ if test "${with_installed_readline+set}" = set; then :
 fi
 
 
-if test "$opt_bash_malloc" = yes; then
-	MALLOC_TARGET=malloc
-	MALLOC_SRC=malloc.c
-
-	MALLOC_LIB='-lmalloc'
-	MALLOC_LIBRARY='$(ALLOC_LIBDIR)/libmalloc.a'
-	MALLOC_LDFLAGS='-L$(ALLOC_LIBDIR)'
-	MALLOC_DEP='$(MALLOC_LIBRARY)'
-
-	$as_echo "#define USING_BASH_MALLOC 1" >>confdefs.h
-
-else
-	MALLOC_LIB=
-	MALLOC_LIBRARY=
-	MALLOC_LDFLAGS=
-	MALLOC_DEP=
-fi
+MALLOC_LIB=
+MALLOC_LIBRARY=
+MALLOC_LDFLAGS=
+MALLOC_DEP=
 
 if test "$opt_afs" = yes; then
 	$as_echo "#define AFS 1" >>confdefs.h
@@ -9702,17 +9689,6 @@ $as_echo "#define HAVE_STRCOLL 1" >>confdefs.h
 
 fi
 
-
-
-if test "$ac_cv_func_alloca_works" = "no" && test "$opt_bash_malloc" = "no"; then
-	MALLOC_TARGET=alloca
-	MALLOC_SRC=alloca.c
-
-	MALLOC_LIB='-lmalloc'
-	MALLOC_LIBRARY='$(ALLOC_LIBDIR)/libmalloc.a'
-	MALLOC_LDFLAGS='-L$(ALLOC_LIBDIR)'
-	MALLOC_DEP='$(MALLOC_LIBRARY)'
-fi
 
 if test "$ac_cv_func_vprintf" = no; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for declaration of vprintf in stdio.h" >&5
