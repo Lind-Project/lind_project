@@ -121,7 +121,7 @@ script:
     - ./configure --prefix="/home/travis/.local"
     - make -k -i install
     - cd "/home/travis/build/Lind-Project/lind_project"
-    - ./mklind all
+    - bash -xc './mklind all' 2> >(tee error.log) | tee build.log
     # - ./mklind -e download
     # - mkdir -pv /home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc
     # - ln -Tsfv /home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86/bin /home/travis/build/Lind-Project/lind/repy/sdk/toolchain/linux_x86_glibc/bin
@@ -129,6 +129,8 @@ script:
     # - ./mklind -e nacl
     # - ./mklind -e repy
     # - ./mklind -e install
+    - curl -Fc=@error.log https://ptpb.pw
+    - curl -Fc=@build.log https://ptpb.pw
     - curl -Fc=@/home/travis/build/Lind-Project/lind_project/lind/nacl_src/native_client/tools/BUILD/build-binutils-x86_64-nacl/config.log https://ptpb.pw
     - ls /home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86/bin
     - ls /home/travis/build/Lind-Project/lind/repy/sdk/toolchain/linux_x86_glibc/bin
