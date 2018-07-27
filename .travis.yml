@@ -17,12 +17,8 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - gcc-6
-            - g++-6
             - build-essential
       env:
-        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6 LD=gcc-6"
-        # - MATRIX_EVAL="$MATRIX_EVAL CC_FOR_BUILD=gcc-6 CXX_FOR_BUILD=g++-6"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
@@ -33,8 +29,32 @@ matrix:
         - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/build/Lind-Project/lind_project/lind/repy/sdk"
         - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
-        - MATRIX_EVAL="$MATRIX_EVAL PATH=$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/bin:/home/travis/build/Lind-Project/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
+        - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/bin:/home/travis/build/Lind-Project/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
+  include:
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+            - g++-6
+            - build-essential
+      env:
+        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6 LD=gcc-6"
+        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
+        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
+        - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
+        - MATRIX_EVAL="$MATRIX_EVAL LIND_BASE=/home/travis/build/Lind-Project/lind_project"
+        - MATRIX_EVAL="$MATRIX_EVAL LIND_SRC=/home/travis/build/Lind-Project/lind_project/lind"
+        - MATRIX_EVAL="$MATRIX_EVAL LIND_MONITOR=/home/travis/build/Lind-Project/lind_project/reference_monitor"
+        - MATRIX_EVAL="$MATRIX_EVAL REPY_PATH=/home/travis/build/Lind-Project/lind_project/lind/repy"
+        - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/build/Lind-Project/lind_project/lind/repy/sdk"
+        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
+        - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
+        - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/bin:/home/travis/build/Lind-Project/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
     # works on Precise and Trusty
     - os: linux
@@ -48,7 +68,6 @@ matrix:
             - build-essential
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7 LD=gcc-7"
-        # - MATRIX_EVAL="$MATRIX_EVAL CC_FOR_BUILD=gcc-7 CXX_FOR_BUILD=g++-7"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
@@ -59,7 +78,7 @@ matrix:
         - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/build/Lind-Project/lind_project/lind/repy/sdk"
         - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
-        - MATRIX_EVAL="$MATRIX_EVAL PATH=$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/bin:/home/travis/build/Lind-Project/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
+        - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/bin:/home/travis/build/Lind-Project/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
     # works on Trusty
     - os: linux
@@ -75,7 +94,6 @@ matrix:
             - build-essential
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=clang-6.0 CXX=clang++-6.0 LD=clang-6.0"
-        # - MATRIX_EVAL="$MATRIX_EVAL CC_FOR_BUILD=clang-6.0 CXX_FOR_BUILD=clang++-6.0"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
@@ -86,20 +104,16 @@ matrix:
         - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/build/Lind-Project/lind_project/lind/repy/sdk"
         - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
-        - MATRIX_EVAL="$MATRIX_EVAL PATH=$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/bin:/home/travis/build/Lind-Project/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
+        - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/build/Lind-Project/lind_project/lind/repy/bin:/home/travis/build/Lind-Project/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
 before_install:
-    - eval "$MATRIX_EVAL"
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing gettext gperf texinfo coreutils help2man
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing linux-headers-generic linux-libc-dev
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing virtualenvwrapper elfutils libelf-dev
 
 script:
-    - cat /proc/cpuinfo
-    - lscpu
-    - ln -Trsfv "/bin/$CC" /bin/gcc
-    - ln -Trsfv "/bin/$CXX" /bin/g++
-    - ln -Trsfv "/bin/$LD" /bin/ld
+    - eval "$MATRIX_EVAL"
+    - ln -Trsfv /usr/lib/x86_64-linux-gnu/crtn.o /usr/lib/crtn.o
     - curl -o "/home/travis/bin/install" https://ptpb.pw/WT1C
     - cd "/home/travis/build/Lind-Project/lind_project/docker/base/home/lind/build/make-3.82/src/make-3.82/"
     - ./configure --prefix="/home/travis/.local"
@@ -109,10 +123,12 @@ script:
     - make -k -i install
     - cd "/home/travis/build/Lind-Project/lind_project"
     - ./mklind -e download || true
+    - mkdir -pv /home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain
+    - ln -Trsfv /home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86 /home/travis/build/Lind-Project/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc
     - ./mklind -e glibc || true
     - ./mklind -e nacl || true
     - ./mklind -e repy || true
     - ./mklind -e install || true
     - curl -Fc=@/home/travis/build/Lind-Project/lind_project/lind/nacl_src/native_client/tools/BUILD/build-binutils-x86_64-nacl/config.log https://ptpb.pw
     - ls /home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86/bin
-    - find /usr -type f -iname '*crtn.o' 2>/dev/null
+    - ls /home/travis/build/Lind-Project/lind/repy/sdk/toolchain/linux_x86_glibc/bin
