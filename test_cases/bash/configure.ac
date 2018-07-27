@@ -52,7 +52,7 @@ AC_CANONICAL_HOST
 AC_CANONICAL_BUILD
 
 dnl configure defaults
-opt_bash_malloc=yes
+opt_bash_malloc=no
 opt_afs=no
 opt_curses=no
 opt_with_installed_readline=no
@@ -112,22 +112,10 @@ AC_ARG_WITH(curses, AC_HELP_STRING([--with-curses], [use the curses library inst
 AC_ARG_WITH(gnu-malloc, AC_HELP_STRING([--with-gnu-malloc], [synonym for --with-bash-malloc]), opt_bash_malloc=$withval)
 AC_ARG_WITH(installed-readline, AC_HELP_STRING([--with-installed-readline], [use a version of the readline library that is already installed]), opt_with_installed_readline=$withval)
 
-if test "$opt_bash_malloc" = yes; then
-	MALLOC_TARGET=malloc
-	MALLOC_SRC=malloc.c
-
-	MALLOC_LIB='-lmalloc'
-	MALLOC_LIBRARY='$(ALLOC_LIBDIR)/libmalloc.a'
-	MALLOC_LDFLAGS='-L$(ALLOC_LIBDIR)'
-	MALLOC_DEP='$(MALLOC_LIBRARY)'
-
-	AC_DEFINE(USING_BASH_MALLOC)
-else
-	MALLOC_LIB=
-	MALLOC_LIBRARY=
-	MALLOC_LDFLAGS=
-	MALLOC_DEP=	
-fi
+MALLOC_LIB=
+MALLOC_LIBRARY=
+MALLOC_LDFLAGS=
+MALLOC_DEP=
 
 if test "$opt_afs" = yes; then
 	AC_DEFINE(AFS)
@@ -729,19 +717,6 @@ AC_FUNC_GETPGRP
 AC_FUNC_SETVBUF_REVERSED
 AC_FUNC_VPRINTF
 AC_FUNC_STRCOLL
-
-dnl if we're not using the bash malloc but require the C alloca, set things
-dnl up to build a libmalloc.a containing only alloca.o
-
-if test "$ac_cv_func_alloca_works" = "no" && test "$opt_bash_malloc" = "no"; then
-	MALLOC_TARGET=alloca
-	MALLOC_SRC=alloca.c
-
-	MALLOC_LIB='-lmalloc'
-	MALLOC_LIBRARY='$(ALLOC_LIBDIR)/libmalloc.a'
-	MALLOC_LDFLAGS='-L$(ALLOC_LIBDIR)'
-	MALLOC_DEP='$(MALLOC_LIBRARY)'
-fi
 
 dnl if vprintf is not in libc, see if it's defined in stdio.h
 if test "$ac_cv_func_vprintf" = no; then
