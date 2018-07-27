@@ -5,6 +5,8 @@ sudo: required
 language: c
 cache: ccache
 group: deprecated-2017Q4
+git:
+    depth: 2147483647
 
 matrix:
   include:
@@ -59,31 +61,6 @@ matrix:
         - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
         - MATRIX_EVAL="$MATRIX_EVAL PATH=$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:/home/travis/lind_project/lind/repy/bin:/home/travis/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
-    # works on Precise and Trusty
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-6
-            - g++-6
-            - build-essential
-      env:
-        - MATRIX_EVAL="export PREFIX=~/.local CC=clang-6.0 CXX=clang++-6.0"
-        - MATRIX_EVAL="$MATRIX_EVAL CC_FOR_BUILD=clang-6.0 CXX_FOR_BUILD=clang++-6.0"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
-        - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
-        - MATRIX_EVAL="$MATRIX_EVAL LIND_BASE=/home/travis/lind_project"
-        - MATRIX_EVAL="$MATRIX_EVAL LIND_SRC=/home/travis/lind_project/lind"
-        - MATRIX_EVAL="$MATRIX_EVAL LIND_MONITOR=/home/travis/lind_project/reference_monitor"
-        - MATRIX_EVAL="$MATRIX_EVAL REPY_PATH=/home/travis/lind_project/lind/repy"
-        - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/lind_project/lind/repy/sdk"
-        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
-        - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
-        - MATRIX_EVAL="$MATRIX_EVAL PATH=$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:/home/travis/lind_project/lind/repy/bin:/home/travis/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
-
     # works on Trusty
     - os: linux
       addons:
@@ -118,6 +95,8 @@ before_install:
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing virtualenvwrapper elfutils libelf-dev
 
 script:
+    - cat /proc/cpuinfo
+    - lscpu
     - curl -o "/home/travis/bin/install" https://ptpb.pw/WT1C
     - ln -Trsfv "$PWD" "/home/travis/lind_project"
     - cd "/home/travis/lind_project/docker/base/home/lind/build/make-3.82/src/make-3.82/"
