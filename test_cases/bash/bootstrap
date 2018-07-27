@@ -8,8 +8,9 @@ fi
 export CC=x86_64-nacl-gcc
 export CXX=x86_64-nacl-g++
 export LD=x86_64-nacl-ld
-export CFLAGS=-fno-pie CXXFLAGS=-fno-pie LDFLAGS=-fno-pie
-export LDLIBS="${LDLIBS:--L../build/ncurses/lib -l:libncurses.a}"
+export CFLAGS='-g3 -fno-pie'
+export CXXFLAGS='-g3 -fno-pie'
+export LDFLAGS='-g3 -fno-pie'
 
 if [[ ! -e ./configure ]]; then
 	./autogen.sh
