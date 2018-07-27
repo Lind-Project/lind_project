@@ -27,6 +27,9 @@ nacl/
 /virtualenvs/*/
 !/virtualenvs/
 /test_cases/*
+!/test_cases/bash
+!/test_cases/dash
+!/test_cases/mksh
 !/test_cases/*.c
 !/test_cases/*.s
 
