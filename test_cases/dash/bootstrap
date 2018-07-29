@@ -16,7 +16,9 @@ if [[ ! -e ./configure ]]; then
 	./autogen.sh
 fi
 
-./configure --enable-static --enable-fnmatch --enable-glob --host=x86_64 --target=x86_64-nacl "$@"
+# ./configure --enable-static --enable-fnmatch --enable-glob --host=x86_64-nacl "$@"
+./configure --enable-fnmatch --enable-glob --host=x86_64-nacl "$@"
+
 sed -i '$ s!.*!/* & */!' ./config.h
 for i in ./src/{expand,exec,mail,redir,bltin/test}.c; do
 	sed -i 's!stat64!stat!g' "$i"

@@ -151,7 +151,7 @@ static int equalf(const char *, const char *);
 #ifdef HAVE_FACCESSAT
 static int test_file_access(const char *, int);
 #else
-static int test_access(const struct stat64 *, int);
+static int test_access(const struct stat *, int);
 #endif
 
 #ifdef HAVE_FACCESSAT
@@ -388,9 +388,9 @@ binop(void)
 static int
 filstat(char *nm, enum token mode)
 {
-	struct stat64 s;
+	struct stat s;
 
-	if (mode == FILSYM ? lstat64(nm, &s) : stat64(nm, &s))
+	if (mode == FILSYM ? lstat(nm, &s) : stat(nm, &s))
 		return 0;
 
 	switch (mode) {
@@ -520,9 +520,9 @@ equalf (const char *f1, const char *f2)
 #ifdef HAVE_FACCESSAT
 static int has_exec_bit_set(const char *path)
 {
-	struct stat64 st;
+	struct stat st;
 
-	if (stat64(path, &st))
+	if (stat(path, &st))
 		return 0;
 	return st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH);
 }
@@ -657,7 +657,7 @@ static int test_file_access(const char *path, int mode)
  * (euid==uid&&egid==gid), but uses st_mode for '-x' iff running as root.
  * i.e. it does strictly conform to 1003.1-2001 (and presumably 1003.2b).
  */
-static int test_access(const struct stat64 *sp, int stmode)
+static int test_access(const struct stat *sp, int stmode)
 {
 	gid_t *groups;
 	register int n;

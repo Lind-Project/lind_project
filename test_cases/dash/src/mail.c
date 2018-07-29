@@ -72,7 +72,7 @@ chkmail(void)
 	char *q;
 	time_t *mtp;
 	struct stackmark smark;
-	struct stat64 statb;
+	struct stat statb;
 
 	setstackmark(&smark);
 	mpath = mpathset() ? mpathval() : mailval();
@@ -91,7 +91,7 @@ chkmail(void)
 			abort();
 #endif
 		q[-1] = '\0';			/* delete trailing '/' */
-		if (stat64(p, &statb) < 0) {
+		if (stat(p, &statb) < 0) {
 			*mtp = 0;
 			continue;
 		}

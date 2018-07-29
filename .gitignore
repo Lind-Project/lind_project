@@ -28,7 +28,11 @@ nacl/
 !/virtualenvs/
 /test_cases/*
 !/test_cases/bash
+/test_cases/bash/examples/
+/test_cases/bash/po/stamp-po
 !/test_cases/dash
+/test_cases/dash/src/bltin/.deps/
+/test_cases/dash/src/bltin/.dirstamp
 !/test_cases/*.c
 !/test_cases/*.s
 

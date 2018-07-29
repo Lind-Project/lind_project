@@ -197,7 +197,7 @@ bzero (s, n)
 int
 gethostname (name, namelen)
      char *name;
-     int namelen;
+     size_t namelen;
 {
   int i;
   struct utsname ut;
@@ -214,7 +214,7 @@ gethostname (name, namelen)
 int
 gethostname (name, namelen)
      char *name;
-     int namelen;
+     size_t namelen;
 {
   strncpy (name, "unknown", namelen);
   name[namelen] = '\0';

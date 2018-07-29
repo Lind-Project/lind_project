@@ -167,7 +167,7 @@ redirect(union node *redir, int flags)
 STATIC int
 openredirect(union node *redir)
 {
-	struct stat64 sb;
+	struct stat sb;
 	char *fname;
 	int f;
 
@@ -186,13 +186,13 @@ openredirect(union node *redir)
 		/* Take care of noclobber mode. */
 		if (Cflag) {
 			fname = redir->nfile.expfname;
-			if (stat64(fname, &sb) < 0) {
+			if (stat(fname, &sb) < 0) {
 				if ((f = open64(fname, O_WRONLY|O_CREAT|O_EXCL, 0666)) < 0)
 					goto ecreate;
 			} else if (!S_ISREG(sb.st_mode)) {
 				if ((f = open64(fname, O_WRONLY, 0666)) < 0)
 					goto ecreate;
-				if (!fstat64(f, &sb) && S_ISREG(sb.st_mode)) {
+				if (!fstat(f, &sb) && S_ISREG(sb.st_mode)) {
 					close(f);
 					errno = EEXIST;
 					goto ecreate;

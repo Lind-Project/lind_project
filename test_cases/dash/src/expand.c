@@ -1313,7 +1313,7 @@ expmeta(char *name, unsigned name_len, unsigned expdir_len)
 	char *start;
 	char *endname;
 	int metaflag;
-	struct stat64 statb;
+	struct stat statb;
 	DIR *dirp;
 	struct dirent *dp;
 	int atend;
@@ -1358,7 +1358,7 @@ expmeta(char *name, unsigned name_len, unsigned expdir_len)
 				p++;
 			*enddir++ = *p;
 		} while (*p++);
-		if (lstat64(expdir, &statb) >= 0)
+		if (lstat(expdir, &statb) >= 0)
 			addfname(expdir);
 		return;
 	}

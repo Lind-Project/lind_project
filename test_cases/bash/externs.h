@@ -281,7 +281,7 @@ extern int getdtablesize __P((void));
 #endif /* !HAVE_GETDTABLESIZE */
 
 #if !defined (HAVE_GETHOSTNAME)
-extern int gethostname __P((char *, int));
+extern int gethostname __P((char *, size_t));
 #endif /* !HAVE_GETHOSTNAME */
 
 extern int getmaxgroups __P((void));
