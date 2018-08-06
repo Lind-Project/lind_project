@@ -3,20 +3,20 @@
 # .profile - environment configuration
 
 # conditionals
-if commmand -v ruby >/dev/null 2>&1; then
+if command -v ruby >/dev/null 2>&1; then
 	rubies="$(ruby -rrubygems -e "puts Gem.user_dir")/bin"
 else
 	rubies=""
 fi
 if test "$(hostname)" = fedora -o "$(hostname)" = fedoravm -o "$(whoami)" = jp; then
-	TERM="screen"
+	TERM="screen-256color"
 else
 	locale="en_US.UTF-8"
 fi
 if command -v nproc >/dev/null 2>&1; then
-	NPROC="$(nproc)"
+	NPROC="$(($(nproc) + 2))"
 else
-	NPROC=4
+	NPROC=6
 fi
 if test -t 0; then
 	stty -ixon
@@ -68,7 +68,7 @@ CFLAGS="-fuse-ld=gold -fuse-linker-plugin $CFLAGS"
 # CFLAGS="-pipe $CFLAGS"
 # CFLAGS="-march=native -gdwarf-4 -g3 -O3 $CFLAGS"
 # CFLAGS="-march=x86-64 -mtune=intel -g3 -O3 $CFLAGS"
-CFLAGS="-pipe -march=native -g3 -O3 $CFLAGS"
+CFLAGS="-pipe -march=native -g -O3 $CFLAGS"
 export CFLAGS
 # export CHOST="x86_64-unknown-linux-gnu"
 # export CPATH=":$HOME/.local/include"
@@ -80,8 +80,10 @@ LDFLAGS="$CFLAGS"
 # LDFLAGS="-Wl,--as-needed $LDFLAGS"
 # LDFLAGS="-Wl,--as-needed,--sort-common $LDFLAGS"
 # LDFLAGS="-Wl,--warn-unresolved-symbols $LDFLAGS"
-LDFLAGS="-Wl,-O3,-z,relro,-z,now,-z,noexecstack $LDFLAGS"
-LDFLAGS="-Wl,--as-needed,--sort-common,--warn-common $LDFLAGS"
+# LDFLAGS="-Wl,-O3,-z,relro,-z,now,-z,noexecstack $LDFLAGS"
+# LDFLAGS="-Wl,--as-needed,--sort-common,--warn-common $LDFLAGS"
+LDFLAGS="-Wl,-O3,-z,relro,-z,now $LDFLAGS"
+LDFLAGS="-Wl,--sort-common,--warn-common $LDFLAGS"
 export LDFLAGS
 # export LIBRARY_PATH="$HOME/.local/lib"
 # export MAKEFLAGS="-j -l$NPROC"
