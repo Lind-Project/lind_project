@@ -323,6 +323,7 @@ unset _Z_OWNER
 export _Z_NO_RESOLVE_SYMLINKS=true
 # export _Z_NO_PROMPT_COMMAND=true
 # export _Z_OWNER=alyptik
+export _FASD_SINK="/store/.fasd.log"
 # used to track arguments of last `z` command
 export _last_z_args
 
