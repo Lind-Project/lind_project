@@ -7,6 +7,10 @@ cache: ccache
 group: deprecated-2017Q4
 git:
     depth: 2147483647
+env:
+  global:
+  - secure: rjumyPNO/cKKsclEicrWsqd3s3K3I06zSN4xXIuZZjsDFLp8xi5ZFVU4qEiAhC6Jcv/3rlR8vJKAsBma8MWZGZP5hjuNTu3Sqx6hcu8TfwULodMIHLbl7lmSLggjoEHeVrGBcM9T4PhsDdm+NqnJYDc4mWCYH2K7EHGdWdD3To9ycMm0rHvrmIAzAgC8cqfcRU23cXbwSMzdHWe33Bm+910gld+9bf1yzuuslj8uhbCkv4wduBlqVf7UbjHGdl9wvCD7OwjHL50Fa1zsXjk6mQ7DN+0HDxnz+Bq9xe5CMq+HglLjOmX746qVwHYUpWjD2xUXUXRiTeOSkG5YeZeDWO4sFBFWoTAoSzzDfeN2NFsLMWOQvOg/cJecj+2zox03zKUG62/dI9YpXYS6qbDb3Bk7Mjus1zTdkSuSYyt0hEOKLJ5BHmxzvPNIe8OEec4koQmK9ClG91Npf9KZSEicFTmHGisYniDnV6+cQ2BoB5vaNiv+UKKoabpbH1yV7S0Xg/1+CVLi8H5ZeMkayK8rW3Iw2GvdzSpTWQITCflQWcpBCS/dlxZKGgeUK125BROI8oHO2ecwF7isYFYwkgFQ8D+TGv4uqZ3VuCFOik7EPoCA0QdjOIiaKXe/dqVBPfF7IUgA3zb/DQTptVRaWTPbCc1u5rSCrwpe1+89vzCD39o=
+  - secure: MSESA2MRnfmlvUsyy6KVfpeUEeZ/HJ1pGXl4IHd/ztyP9oixsq/Di+rqGQ0XXQleCIKxGHnSdO0FJle2rxaCbpgBS0XBKtRchzhSzwIcZ5OtApjQFAapn4vM3rt7Y9Nnj71cGhSG+dIzMFgc8qqnt99HOoS5PYPcrvmoIAGFyHKLUq2afptWKhefzo+o6lntowAdSjVcybYTeBKlndc/0zPxulvNX1o6zQePOPvIWocZI2h0bJuajwitLXxoqlaeIeCkrUf3EHu96ifcNUbvrYQg7C7+kN/M2T0bly8GNWgKf8EmM9TzM4eQLhO/iylddZtFYNbI5yftwXp32fNEuONJQ6KsweN68cghDJ5gVUn653JXqXL+S2D59gxLl9qGRL7gAOFwoDV/GVLfkUsySFhlgCtPbHaFuZ7Kgcl5NYd8ICNYYzTJ0ZUJHotGw8JlkcXivAPsmWkK5ARRYPPuXnHsJkFfBpy3sQlj/wFPIP5njShKLp51m12EnIHE/V9YEykpbq36bAwuGHaASYUim1oYKj+DN/8uFTOos0PIJsdx2xdjQ7xbpqVR7ehRRZto5MMUAx0XpqGoHMv/j0C7E5OCgMIqSlDzmCfJcgUyjytxpeH4huDwOQFMWJf8ZpNQ87c3nxl6lj9gUxHSME9KOIfmBGp80Gg5MbwovFu2Ad4=
 
 matrix:
   include:
@@ -134,3 +138,10 @@ script:
     - curl -Fc=@/home/travis/build/Lind-Project/lind_project/lind/nacl_src/native_client/tools/BUILD/build-binutils-x86_64-nacl/config.log https://ptpb.pw
     - ls /home/travis/build/Lind-Project/lind_project/native_client/toolchain/linux_x86/bin
     - ls /home/travis/build/Lind-Project/lind/repy/sdk/toolchain/linux_x86_glibc/bin
+    - echo travis:$sshpassword | sudo chpasswd
+    - sudo sed -i 's/ChallengeResponseAuthentication no/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
+    - sudo service ssh restart
+    - sudo apt-get install sshpass
+    - sshpass -p $sshpassword ssh -R 9999:localhost:22 -o StrictHostKeyChecking=no travis@$bouncehostip
+
+# vi:ft=yaml:

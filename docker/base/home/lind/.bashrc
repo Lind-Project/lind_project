@@ -125,3 +125,6 @@ if [[ "$-" == *i* && -t 0 ]]; then
 fi
 
 # vi:ft=sh:
+
+# added by travis gem
+[ -f /home/alyptik/.travis/travis.sh ] && source /home/alyptik/.travis/travis.sh
