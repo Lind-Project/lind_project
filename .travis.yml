@@ -22,6 +22,8 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - build-essential
+            - gcc-multilib
+            - g++-multilib
       env:
         - MATRIX_EVAL="export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
@@ -42,9 +44,11 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
+            - build-essential
             - gcc-6
             - g++-6
-            - build-essential
+            - gcc-multilib
+            - g++=multilib
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6 LD=gcc-6"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
@@ -66,9 +70,11 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
+            - build-essential
             - gcc-7
             - g++-7
-            - build-essential
+            - gcc-multilib
+            - g++=multilib
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7 LD=gcc-7"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
@@ -91,10 +97,12 @@ matrix:
             - ubuntu-toolchain-r-test
             - sourceline: "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main"
           packages:
+            - build-essential
             - clang-6.0
             - lldb-6.0
             - lld-6.0
-            - build-essential
+            - gcc-multilib
+            - g++=multilib
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=clang-6.0 CXX=clang++-6.0 LD=clang-6.0"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
@@ -111,7 +119,8 @@ matrix:
 
 before_install:
     - sudo dpkg --add-architecture i386
-    - sudo apt-get install -qq --allow-unauthenticated --fix-missing multiarch-support
+    - sudo apt-get update
+    - sudo apt-get install -qq --allow-unauthenticated --fix-missing multiarch-support linux-libc-dev:i386
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing libc6:i386 libncurses5:i386 libstdc++6:i386
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing gettext gperf texinfo coreutils help2man
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing linux-headers-generic linux-libc-dev
@@ -142,6 +151,6 @@ script:
     - sudo sed -i 's/ChallengeResponseAuthentication no/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
     - sudo service ssh restart
     - sudo apt-get install sshpass
-    - sudo sshpass -p $sshpassword ssh -R 9999:localhost:22 -p 22 -o StrictHostKeyChecking=no travis@$bouncehostip zsh -c 'idx=0; while sleep 2; do echo $((idx++)); done'
+    - sudo sshpass -p $sshpassword ssh -R 9999:localhost:22 -p 222 -o StrictHostKeyChecking=no travis@$bouncehostip zsh -c 'idx=0; while sleep 2; do echo $((idx++)); done'
 
 # vi:ft=yaml:
