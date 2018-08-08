@@ -110,6 +110,9 @@ matrix:
         - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/lind_project/lind/repy/bin:/home/travis/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
 before_install:
+    - sudo dpkg --add-architecture i386
+    - sudo apt-get install -qq --allow-unauthenticated --fix-missing multiarch-support
+    - sudo apt-get install -qq --allow-unauthenticated --fix-missing libc6:i386 libncurses5:i386 libstdc++6:i386
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing gettext gperf texinfo coreutils help2man
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing linux-headers-generic linux-libc-dev
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing virtualenvwrapper elfutils libelf-dev
