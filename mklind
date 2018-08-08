@@ -150,6 +150,12 @@ if [[ -z "$LIND_SRC" ]]; then
 	false
 fi
 
+if command -v nproc >/dev/null 2>&1; then
+	NPROC="$(($(nproc) + 2))"
+else
+	NPROC=6
+fi
+readonly JOBS="${JOBS:-$NPROC}"
 readonly OS_NAME="$(uname -s)"
 if [[ "$OS_NAME" == Darwin ]]; then
 	readonly OS_SUBDIR="mac"
@@ -560,7 +566,7 @@ function build_nacl() {
 	PATH="$LIND_BASE:$PATH" \
 		python2 ./scons.py \
 		--verbose --mode="$MODE,nacl" \
-		--nacl_glibc -j4 \
+		--nacl_glibc -j"$JOBS" \
 		nacl_pic=1 werror=0 \
 		skip_trusted_tests=1 disable_flaky_tests=1 \
 		platform=x86-64
@@ -579,7 +585,7 @@ function clean_nacl() {
 	PATH="$LIND_BASE:$PATH" \
 		python2 ./scons.py --verbose --mode="$MODE,nacl" \
 		nacl_pic=1 werror=0 \
-		platform=x86-64 --nacl_glibc -j4 -c
+		platform=x86-64 --nacl_glibc -j"$JOBS" -c
 	print "Done Cleaning NaCl"
 
 	cur_func="${FUNCNAME[1]}"
@@ -606,7 +612,7 @@ function build_glibc() {
 	rm -fr BUILD out
 	make clean
 
-	PATH="$LIND_BASE:$PATH" make -j4 build-with-glibc
+	PATH="$LIND_BASE:$PATH" make -j"$JOBS" build-with-glibc
 
 	print "Done building toolchain"
 
@@ -620,7 +626,7 @@ function update_glibc() {
 	cur_func="${FUNCNAME[0]}"
 
 	cd "$NACL_TOOLCHAIN_BASE"
-	PATH="$LIND_BASE:$PATH" make -j4 updateglibc
+	PATH="$LIND_BASE:$PATH" make -j"$JOBS" updateglibc
 
 	cur_func="${FUNCNAME[1]}"
 }
@@ -633,7 +639,7 @@ function update_glibc2() {
 
 	cd "$NACL_TOOLCHAIN_BASE"
 	rm -rf BUILD/stamp-glibc64
-	PATH="$LIND_BASE:$PATH" make -j4 BUILD/stamp-glibc64
+	PATH="$LIND_BASE:$PATH" make -j"$JOBS" BUILD/stamp-glibc64
 
 	cur_func="${FUNCNAME[1]}"
 }

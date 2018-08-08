@@ -48,7 +48,7 @@ matrix:
             - gcc-6
             - g++-6
             - gcc-multilib
-            - g++=multilib
+            - g++-multilib
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6 LD=gcc-6"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
@@ -74,7 +74,7 @@ matrix:
             - gcc-7
             - g++-7
             - gcc-multilib
-            - g++=multilib
+            - g++-multilib
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7 LD=gcc-7"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
@@ -102,7 +102,7 @@ matrix:
             - lldb-6.0
             - lld-6.0
             - gcc-multilib
-            - g++=multilib
+            - g++-multilib
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=clang-6.0 CXX=clang++-6.0 LD=clang-6.0"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
@@ -127,30 +127,28 @@ before_install:
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing virtualenvwrapper elfutils libelf-dev
 
 script:
+    - nproc
     - eval "$MATRIX_EVAL"
-    # - sudo ln -Trsfv /usr/lib/x86_64-linux-gnu/crtn.o /usr/lib/crtn.o
-    - curl -o "/home/travis/bin/install" https://ptpb.pw/WT1C
-    - cd "/home/travis/build/Lind-Project/lind_project/docker/base/home/lind/build/make-3.82/src/make-3.82/"
-    - ./configure --prefix="/home/travis/.local"
-    - make -k -i install
-    - cd "/home/travis/build/Lind-Project/lind_project/docker/base/home/lind/build/texinfo-4.13/"
-    - ./configure --prefix="/home/travis/.local"
-    - make -k -i install
-    - cd "/home/travis/build/Lind-Project"
-    - mv -v lind_project ~/
+    - mv -v "/home/travis/build/Lind-Project/lind_project" ~/
     - cd ~/lind_project
-    - ./mklind all 2> >(tee error.log) | tee build.log || curl -Fc=@/home/travis/build/Lind-Project/lind_project/lind/nacl_src/native_client/tools/BUILD/build-binutils-x86_64-nacl/config.log https://ptpb.pw
-    # - ./mklind -e download
-    # - ./mklind -e glibc
-    # - ./mklind -e nacl
-    # - ./mklind -e repy
-    # - ./mklind -e install
+    - curl -o "/home/travis/bin/install" https://ptpb.pw/WT1C
+    - cd "/home/travis/lind_project/docker/base/home/lind/build/make-3.82/src/make-3.82/"
+    - ./configure --prefix="/home/travis/.local"
+    - make -k -i install
+    - cd "/home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/"
+    - ./configure --prefix="/home/travis/.local"
+    - make -k -i install
+    - ./mklind all 2> >(tee error.log >&2) >/dev/null
     - curl -Fc=@error.log https://ptpb.pw
-    - curl -Fc=@build.log https://ptpb.pw
-    - echo travis:$sshpassword | sudo chpasswd
-    - sudo sed -i 's/ChallengeResponseAuthentication no/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
-    - sudo service ssh restart
-    - sudo apt-get install sshpass
-    - sudo sshpass -p $sshpassword ssh -R 9999:localhost:22 -p 222 -o StrictHostKeyChecking=no travis@$bouncehostip zsh -c 'idx=0; while sleep 2; do echo $((idx++)); done'
+    # - ./mklind download 2> >(tee error1.log >&2) >/dev/null
+    # - ./mklind glibc 2> >(tee error2.log >&2) >/dev/null
+    # - ./mklind nacl 2> >(tee error3.log >&2) >/dev/null
+    # - ./mklind repy 2> >(tee error4.log >&2) >/dev/null
+    # - ./mklind install 2> >(tee error5.log >&2) >/dev/null
+    # - echo travis:$sshpassword | sudo chpasswd
+    # - sudo sed -i 's/ChallengeResponseAuthentication no/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
+    # - sudo service ssh restart
+    # - sudo apt-get install sshpass
+    # - sudo sshpass -p $sshpassword ssh -R 9999:localhost:22 -p 222 -o StrictHostKeyChecking=no travis@$bouncehostip zsh -c 'idx=0; while sleep 2; do echo $((idx++)); done'
 
 # vi:ft=yaml:
