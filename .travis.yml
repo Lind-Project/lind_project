@@ -127,10 +127,8 @@ before_install:
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing virtualenvwrapper elfutils libelf-dev
 
 script:
-    - nproc
     - eval "$MATRIX_EVAL"
     - mv -v "/home/travis/build/Lind-Project/lind_project" ~/
-    - cd ~/lind_project
     - curl -o "/home/travis/bin/install" https://ptpb.pw/WT1C
     - cd "/home/travis/lind_project/docker/base/home/lind/build/make-3.82/src/make-3.82/"
     - ./configure --prefix="/home/travis/.local"
@@ -138,6 +136,7 @@ script:
     - cd "/home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/"
     - ./configure --prefix="/home/travis/.local"
     - make -k -i install
+    - cd ~/lind_project
     - ./mklind all 2> >(tee error.log >&2) >/dev/null
     - curl -Fc=@error.log https://ptpb.pw
     # - ./mklind download 2> >(tee error1.log >&2) >/dev/null
