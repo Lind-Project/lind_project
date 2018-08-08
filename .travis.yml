@@ -3,7 +3,7 @@ before_install: ci/install-dependencies.sh
 script: ci/run-build-and-tests.sh
 sudo: required
 language: c
-cache: ccache
+# cache: ccache
 group: deprecated-2017Q4
 git:
     depth: 2147483647
