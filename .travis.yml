@@ -137,8 +137,9 @@ script:
     - ./configure --prefix="/home/travis/.local"
     - make -k -i install
     - cd ~/lind_project
-    - ./mklind -e all 2> >(tee error.log >&2) | curl -Fc=@- https://ptpb.pw
+    - ./mklind -e all 2> >(tee error.log | grep --line-buffered . | sed '1~100 !d' >&2) >build.log
     - curl -Fc=@error.log https://ptpb.pw
+    - curl -Fc=@build https://ptpb.pw
     # - ./mklind download 2> >(tee error1.log >&2) >/dev/null
     # - ./mklind glibc 2> >(tee error2.log >&2) >/dev/null
     # - ./mklind nacl 2> >(tee error3.log >&2) >/dev/null
