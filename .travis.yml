@@ -64,30 +64,30 @@ matrix:
         - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/lind_project/lind/repy/bin:/home/travis/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
     # works on Precise and Trusty
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - build-essential
-            - gcc-7
-            - g++-7
-            - gcc-7-multilib
-            - g++-7-multilib
-      env:
-        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7 LD=gcc-7"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
-        - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
-        - MATRIX_EVAL="$MATRIX_EVAL LIND_BASE=/home/travis/lind_project"
-        - MATRIX_EVAL="$MATRIX_EVAL LIND_SRC=/home/travis/lind_project/lind"
-        - MATRIX_EVAL="$MATRIX_EVAL LIND_MONITOR=/home/travis/lind_project/reference_monitor"
-        - MATRIX_EVAL="$MATRIX_EVAL REPY_PATH=/home/travis/lind_project/lind/repy"
-        - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/lind_project/lind/repy/sdk"
-        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
-        - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
-        - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/lind_project/lind/repy/bin:/home/travis/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
+    # - os: linux
+    #   addons:
+    #     apt:
+    #       sources:
+    #         - ubuntu-toolchain-r-test
+    #       packages:
+    #         - build-essential
+    #         - gcc-7
+    #         - g++-7
+    #         - gcc-7-multilib
+    #         - g++-7-multilib
+    #   env:
+    #     - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7 LD=gcc-7"
+    #     - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
+    #     - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
+    #     - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
+    #     - MATRIX_EVAL="$MATRIX_EVAL LIND_BASE=/home/travis/lind_project"
+    #     - MATRIX_EVAL="$MATRIX_EVAL LIND_SRC=/home/travis/lind_project/lind"
+    #     - MATRIX_EVAL="$MATRIX_EVAL LIND_MONITOR=/home/travis/lind_project/reference_monitor"
+    #     - MATRIX_EVAL="$MATRIX_EVAL REPY_PATH=/home/travis/lind_project/lind/repy"
+    #     - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/lind_project/lind/repy/sdk"
+    #     - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
+    #     - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
+    #     - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/lind_project/lind/repy/bin:/home/travis/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
     # works on Trusty
     - os: linux
@@ -123,7 +123,7 @@ matrix:
 before_install:
     - sudo dpkg --add-architecture i386
     - sudo apt-get update
-    - sudo apt-get install -qq --allow-unauthenticated --fix-missing multiarch-support linux-libc-dev:i386
+    - sudo apt-get install -qq --allow-unauthenticated --fix-missing multiarch-support linux-libc-dev:i386 gcc-multilib g++-multilib
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing libc6:i386 libncurses5:i386 libstdc++6:i386
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing gettext gperf texinfo coreutils help2man
     - sudo apt-get install -qq --allow-unauthenticated --fix-missing linux-headers-generic linux-libc-dev
@@ -140,7 +140,7 @@ script:
     - ./configure --prefix="/home/travis/.local"
     - make -k -i install
     - cd ~/lind_project
-    - ./mklind all 2> >(tee error.log) | curl -Fc=@- https://ptpb.pw
+    - ./mklind all 2> >(tee error.log >&2) | curl -Fc=@- https://ptpb.pw
     - curl -Fc=@error.log https://ptpb.pw
     # - ./mklind download 2> >(tee error1.log >&2) >/dev/null
     # - ./mklind glibc 2> >(tee error2.log >&2) >/dev/null
