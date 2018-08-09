@@ -47,8 +47,8 @@ matrix:
             - build-essential
             - gcc-6
             - g++-6
-            - gcc-6-multilib
-            - g++-6-multilib
+            - gcc-multilib
+            - g++-multilib
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6 LD=gcc-6"
         - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
@@ -101,9 +101,6 @@ matrix:
             - clang-6.0
             - lldb-6.0
             - lld-6.0
-            - clang-6.0-multilib
-            - lldb-6.0-multilib
-            - lld-6.0-multilib
             - gcc-multilib
             - g++-multilib
       env:
@@ -140,7 +137,7 @@ script:
     - ./configure --prefix="/home/travis/.local"
     - make -k -i install
     - cd ~/lind_project
-    - ./mklind all 2> >(tee error.log >&2) | curl -Fc=@- https://ptpb.pw
+    - ./mklind -e all 2> >(tee error.log >&2) | curl -Fc=@- https://ptpb.pw
     - curl -Fc=@error.log https://ptpb.pw
     # - ./mklind download 2> >(tee error1.log >&2) >/dev/null
     # - ./mklind glibc 2> >(tee error2.log >&2) >/dev/null
