@@ -259,9 +259,10 @@ function download_src() {
 	git_deps[lind_glibc]="$LIND_GLIBC_URL"
 	# fallback
 	for dir in "${!git_deps[@]}"; do
-		[[ ! -e "$dir" ]] && git clone -b lind_fork "${git_deps[$dir]}" "$dir"
+		[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
 		rm -rf "${LIND_SRC:?}/$dir"
-		ln -Tsfv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
+		ln -Trsv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
+		(cd "$LIND_SRC/$dir" && git checkout lind_fork)
 	done
 
 	# install gclient
@@ -319,7 +320,7 @@ function download_src() {
 		cd "$LIND_BASE"
 		gclient config --name=native_client "$NACL_GCLIENT_URL" --git-deps
 		gclient sync
-		ln -Tsfv "$LIND_BASE/native_client" "$NACL_BASE"
+		ln -Trsv "$LIND_BASE/native_client" "$NACL_BASE"
 		cd "$NACL_TOOLCHAIN_BASE"
 		rm -rf SRC
 		make sync-pinned
@@ -328,6 +329,9 @@ function download_src() {
 		ln -Tsfv "$LIND_GLIBC_SRC" glibc
 		ln -Tsfv "$NACL_GCC_SRC" gcc
 		ln -Tsfv "$NACL_BINUTILS_SRC" binutils
+		for dir in glibc gcc binutils; do
+			(cd "$dir" && git checkout lind_fork)
+		done
 	fi
 
 	# clone nacl external ports
@@ -418,7 +422,8 @@ function build_repy() {
 	mkdir -p "$REPY_PATH_REPY"
 	print "Building Repy in $REPY_SRC to $REPY_PATH"
 	cd "$NACL_REPY"
-	cp -v seattlelib/xmlrpc* "$REPY_PATH_REPY/"
+	git checkout lind_fork
+	cp -v ./seattlelib/xmlrpc* "$REPY_PATH_REPY/"
 	python2 preparetest.py -t -f "$REPY_PATH_REPY"
 	print "Done building Repy in \"$REPY_PATH_REPY\""
 	cd seattlelib
