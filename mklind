@@ -326,9 +326,9 @@ function download_src() {
 		make sync-pinned
 		cd SRC
 		rm -rf glibc gcc binutils
-		ln -Tsfv "$LIND_GLIBC_SRC" glibc
-		ln -Tsfv "$NACL_GCC_SRC" gcc
-		ln -Tsfv "$NACL_BINUTILS_SRC" binutils
+		"${RSYNC[@]}" "$LIND_GLIBC_SRC" ./
+		"${RSYNC[@]}" "$NACL_GCC_SRC" ./
+		"${RSYNC[@]}" "$NACL_BINUTILS_SRC" ./
 		for dir in glibc gcc binutils; do
 			(cd "$dir" && git checkout lind_fork)
 		done
