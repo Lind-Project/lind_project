@@ -303,7 +303,7 @@ function download_src() {
 		mkdir -pv "$WORKON_HOME"
 		rm -rf "${WORKON_HOME:?}/lind"
 		deactivate >/dev/null 2>&1 || true
-		.  "$LIND_BASE/virtualenvwrapper.sh"
+		. "$LIND_BASE/virtualenvwrapper.sh"
 		mkvirtualenv lind
 		workon lind
 
