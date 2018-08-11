@@ -56,3 +56,5 @@ prune:
 	docker stack rm lindstack
 	docker container prune
 	docker image prune
+
+# vi:ft=make
