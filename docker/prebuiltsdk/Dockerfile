@@ -17,7 +17,8 @@ ENV LD_LIBRARY_PATH "/lib/glibc"
 ENV PATH "$NACL_SDK_ROOT/toolchain/linux_x86_glibc/bin:$PATH"
 ENV PATH "$REPY_PATH/bin:$PATH"
 ENV PATH "$LIND_BASE:$PATH"
-ENV PATH "/home/lind/.local/bin:$PATH"
+ENV PATH "/root/bin:/home/lind/bin:$PATH"
+ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 
 USER lind
 
