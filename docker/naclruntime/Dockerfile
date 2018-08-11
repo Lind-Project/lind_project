@@ -1,4 +1,4 @@
-FROM alyptik/lind:prebuiltsdk
+FROM alyptik/lind:base
 LABEL lind "v0.10-beta"
 LABEL description "Lind NaCl Runtime (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
@@ -23,6 +23,11 @@ ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 USER lind
 
 WORKDIR /home/lind/lind_project/
+RUN ["./mklind", "download"]
+RUN ["./mklind", "nacl"]
+RUN ["./mklind", "repy"]
+RUN ["./mklind", "glibc"]
+RUN ["./mklind", "install"]
 RUN ["./mklind", "cleanall"]
 WORKDIR /home/lind/lind_project/native_client/tools
 RUN ["/usr/bin/rm", "-rfv", "BUILD/", "SRC/", "out/"]
