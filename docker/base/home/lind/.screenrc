@@ -1,5 +1,5 @@
-
 ## Here comes the pain...
+
 escape ^A^A
 bind a other
 bind A other
@@ -31,6 +31,7 @@ bind N bumpright
 bind P bumpleft
 bind ^D bindkey -d
 bind ^M bindkey -m
+bind \\ quit
 
 bind ! number 1
 bind @ number 2
@@ -111,6 +112,7 @@ layout autosave on
 nethack on
 autodetach on
 # altscreen off
+ignorecase on
 altscreen on
 cjkwidth off
 log off
@@ -125,9 +127,9 @@ deflog off
 deflogin on
 defmousetrack off
 defnonblock on
-defobuflimit 256
-defscrollback 5000
-# password none
+defobuflimit 1024
+defscrollback 10000
+# password none'
 bell on
 vbell on
 msgminwait 1
@@ -135,9 +137,7 @@ vbellwait 2
 msgwait 3
 activity "Wuff!!"
 vbell_msg "Wuff!!  ----  Wuff!!"
-bell_msg "Wuff Wuff!! --- Wuff Wuff!! --- Wuff Wuff!! --- Wuff Wuff!!"
-# bell_msg ""
-# bell_msg "🐶 WOOF!!! ——— WOOF!!! 🐶 "
+bell_msg "🐶 WOOF!!! ——— WOOF!!! 🐶 "
 # bell_msg "!!! WOOF WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOF WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOF WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOF WOOF !!!"
 # bell_msg "WOOOF WOOF WOOF WOOF WOOOOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOOOOOOOF WOOF WOOOOOOF"
 
@@ -161,7 +161,7 @@ termcapinfo vt100  ""  "l0=PF1:l1=PF2:l2=PF3:l3=PF4"
 ## capability in each window's termcap. Each window will also get the delete-character capability (dc) added to
 ## its termcap, which screen will translate into a line-update for the terminal (we"re pretending it doesn"t support character deletion).
 termcapinfo h19|z19  "am@:im=\E@:ei=\EO" "dc=\E[P"
-termcapinfo st* "ti@:te@:hs@"
+termcapinfo st* "ti@:te@:hs"
 # termcapinfo st* "ti@:te@:LP:xn:am:bce:hs@:mir:msgr:npc:xenl:oc@:initc@:smcup=\E[?1049h:rmcup=\E[?1049l"
 termcapinfo h19|z19  "am@:im=\E@:ei=\EO" "dc=\E[P"
 termcapinfo rxvt* "Co#256:AB=\E[48;5;%dm:AF=\E[38;5;%dm:ti@:te@:hs@:ts=\E]2;:fs=07:ds=\E]2;screen07"
@@ -193,7 +193,7 @@ hardstatus on
 caption always
 hardstatus alwayslastline
 windowlist string "%4n %h%=%f"
-caption string "%{+b 008;000}%?%E%{+r 008;000}%?%?%P%{+u 008;000}%?:%{= 008;000}%?%E%{+r 008;000}%?%?%P%{+u 008;000}%?:%{+b 008;000}%?%E%{+r 008;000}%?%?%P%{+u 008;000}%?[%{= 002;000}%?%E%{+r 002;000}%?%?%P%{+u 002;000}%? %S %{+b 008;000}%?%E%{+r 008;000}%?%?%P%{+u 008;000}%?]%{= 007;000}%?%E%{+r 007;000}%?%?%P%{+u 007;000}%?%= %?%-Lw%?%{= 009;000}%?%E%{+r 009;000}%?%?%P%{+u 009;000}%?%n*%f %t%?%{= 009;000}%?%E%{+r 009;000}%?%?%P%{+u 009;000}%?(%u)%?%{= 007;000}%?%E%{+r 007;000}%?%?%P%{+u 007;000}%?%?%+Lw%? %=%{+b 008;000}%?%E%{+r 008;000}%?%?%P%{+u 008;000}%?[%{= 002;000}%?%E%{+r 002;000}%?%?%P%{+u 002;000}%? %h %{+b 008;000}%?%E%{+r 008;000}%?%?%P%{+u 008;000}%?]%{-b 008;000}%?%E%{+r 008;000}%?%?%P%{+u 008;000}%?:%{= 008;000}%?%E%{+r 008;000}%?%?%P%{+u 008;000}%?:%5`"
-hardstatus string "%{= 100;000}%?%E%{+r 100;000}%?%?%P%{+u 100;000}%?[ %{= 007;000}%?%E%{+r 007;000}%?%?%P%{+u 007;000}%?%3`%{= 009;000}%?%E%{+r 009;000}%?%?%P%{+u 009;000}%?@%{= 007;000}%?%E%{+r 007;000}%?%?%P%{+u 007;000}%?%H%{= 100;000}%?%E%{+r 100;000}%?%?%P%{+u 100;000}%? ][ %{= 003;000}%?%E%{+r 003;000}%?%?%P%{+u 003;000}%?Load%{= 007;000}%?%E%{+r 007;000}%?%?%P%{+u 007;000}%?: %{= 003;000}%?%E%{+r 003;000}%?%?%P%{+u 003;000}%?%2` %{= 100;000}%?%E%{+r 100;000}%?%?%P%{+u 100;000}%?]%=[ %{013;000}%?%E%{+r 013;000}%?%?%P%{+u 013;000}%?%1`%{= 100;000}%?%E%{+r 100;000}%?%?%P%{+u 100;000}%? ][ %{012;000}%?%E%{+r 012;000}%?%?%P%{+u 012;000}%?%4` %{= 100;000}%?%E%{+r 100;000}%?%?%P%{+u 100;000}%?]%5`"
-# caption string "%?%E%{=s}%?%{=b kw}%?%E%{+s}%?:%{-b kw}:%{+b kk}[%{-b kg} screen.%S %{+b kk}]%{= kw}%=%?%-Lw%?%{= kR}%n*%f %t%?%{= kR}(%u)%?%{= kw}%?%+Lw%?%= %?%E%{=s}%?%{+b kk}[%{-b kg} %h %{+b kk}]%{-b kw}:%{+b kw}:"
-# hardstatus string "%{= kG}[%{-b kg} %{R}%2`%{+b kk}@%{-b kc}%H%{-b kg} ][ %{-b ky}Load%{+b kk}: %{-b ky}%l %{g}]%=[ %{-b kM}%1` %{g}][%{B} %Y-%m-%d %{R}%D %{W}%0C:%s%a %{g}]"
+caption string "%{= kK}%{+b ..}%?%E%{+r ..}%?%?%P%{+u ..}%?:%{+b ..}%?%E%{+r kK}%?%?%P%{+u kK}%?:%{+b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?[%{+b kG}%?%E%{+r kG}%?%?%P%{+u kG}%? %S %{+b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?]%{+b kW}%?%E%{+r kW}%?%?%P%{+u kW}%?%= %?%-Lw%?%{+b kR}%?%E%{+r kR}%?%?%P%{+u kR}%?%n*%f %t%?%{+b kR}%?%E%{+r kR}%?%?%P%{+u kR}%?(%u)%?%{=b kW}%?%E%{+r kW}%?%?%P%{+u kW}%?%?%+Lw%? %=%{+b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?[%{+b kG}%?%E%{+r kG}%?%?%P%{+u kG}%? %h %{+b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?]%{-b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?:%{+b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?:%5`"
+hardstatus string "%{= kK}%{= kG}%?%E%{+r kG}%?%?%P%{+u kG}%?[ %{= kW}%?%E%{+r kW}%?%?%P%{+u kW}%?%3`%{= kR}%?%E%{+r kR}%?%?%P%{+u kR}%?@%{= kW}%?%E%{+r kW}%?%?%P%{+u kW}%?%H%{= kG}%?%E%{+r kG}%?%?%P%{+u kG}%? ][ %{= kY}%?%E%{+r kY}%?%?%P%{+u kY}%?Load%{= kW}%?%E%{+r kW}%?%?%P%{+u kW}%?: %{= kY}%?%E%{+r kY}%?%?%P%{+u kY}%?%2` %{= kG}%?%E%{+r kG}%?%?%P%{+u kG}%?]%=[ %{kM}%?%E%{+r kM}%?%?%P%{+u kM}%?%1`%{= kG}%?%E%{+r kG}%?%?%P%{+u kG}%? ][ %{kB}%?%E%{+r kB}%?%?%P%{+u kB}%?%4` %{= kG}%?%E%{+r kG}%?%?%P%{+u kG}%?]%5`"
+
+# vi:ft=screen:

@@ -2,8 +2,9 @@
 
 # Unset previous function/alias instances
 unset -f define defrag fc java l sudo wd which 2>/dev/null
-unalias {1..9} c d es f gbr gco gcs gg gm h history java 2>/dev/null
-unalias md meminfo node o rd ru s sd sf si u v which-command xi xo z zz 2>/dev/null
+unalias {1..9} b2p c d es f gbr gco gcs gg gm h history java 2>/dev/null
+unalias md meminfo node o p2b rd ru s sd sf si u v which-command 2>/dev/null
+unalias xi xo xpi xpo z zz 2>/dev/null
 
 # Custom aliases
 alias rstview='restview'
@@ -114,8 +115,6 @@ alias vd='vimdiff'
 alias hilites='tail -Fs 10 --pid="$(pidof weechat)" "${HOME}/.weechat/pipe" | dzen2 -sa c -w 2175 -dock -fn "xft:FuraCode Nerd Font-Light:pixelsize=20"'
 alias bkey='bindkey | highlight --out-format="truecolor" --syntax="conf" --style=anotherdark | env LESS= less -JRMXs'
 alias bool='printf "%b\n" "\n$(tput setaf 10)¬ / ~ / !\t$(tput setaf 11)|$(tput setaf 9)\t\tNOT$(tput sgr0)" "$(tput setaf 10)∧\t\t$(tput setaf 11)|$(tput setaf 9)\t\tAND$(tput sgr0)" "$(tput setaf 10)∨\t\t$(tput setaf 11)|$(tput setaf 9)\t\tOR$(tput sgr0)" "$(tput setaf 10)⊕\t\t$(tput setaf 11)|$(tput setaf 9)\t\tXOR$(tput sgr0)" "$(tput setaf 10)∈\t\t$(tput setaf 11)|$(tput setaf 9)\t\tIN$(tput sgr0)" "$(tput setaf 10)→ / ⇒ / ⊃\t$(tput setaf 11)|$(tput setaf 9)\t\tIF$(tput sgr0)" "$(tput setaf 10)↔ / ⇔ / ≡\t$(tput setaf 11)|$(tput setaf 9)\t\tIF AND ONLY IF$(tput sgr0)" "$(tput setaf 10)∃\t\t$(tput setaf 11)|$(tput setaf 9)\t\tAT LEAST ONE$(tput sgr0)" "$(tput setaf 10)∃!\t\t$(tput setaf 11)|$(tput setaf 9)\t\tEXACTLY ONE$(tput sgr0)" "$(tput setaf 10)∀\t\t$(tput setaf 11)|$(tput setaf 9)\t\tFOR ALL$(tput sgr0)" "$(tput setaf 10)≔ / ≡\t\t$(tput setaf 11)|$(tput setaf 9)\t\tDEFINED AS$(tput sgr0)" "$(tput setaf 10)⊤\t\t$(tput setaf 11)|$(tput setaf 9)\t\tTAUTAULOGY$(tput sgr0)" "$(tput setaf 10)⊥\t\t$(tput setaf 11)|$(tput setaf 9)\t\tCONTRADICTION$(tput sgr0)" "$(tput setaf 10)⊢\t\t$(tput setaf 11)|$(tput setaf 9)\t\tPROVABLE FROM$(tput sgr0)" "$(tput setaf 10)⊨\t\t$(tput setaf 11)|$(tput setaf 9)\t\tENTAILS$(tput sgr0)" "$(tput setaf 10):⇔\t\t$(tput setaf 11)|$(tput setaf 9)\t\tLOGICALLY EQUVALENT EVERYWHERE$(tput sgr0)" && echo && printf "%s" "¬ / ~ / ! | ∧ | ∨ | ⊕ | ∈ | → / ⇒ / ⊃ | ↔ / ⇔ | ∃ | ∃ | ∀ | ≔ / ≡ | ⊤ | ⊥ | ⊢ | ⊨ | :⇔ " | tee >(xsel -ib) && echo'
-alias xsi='xsel -ip'
-alias xso='xclip -o'
 alias jp='jump'
 alias bm='bookmark'
 alias sm='showmarks'
@@ -188,7 +187,6 @@ alias slow='pv -qL 10'
 alias zspace='printf "\uFEFF" | xsel -ib'
 alias zspace2='printf "\u200B" | xsel-ib'
 alias lptpb='curl -s https://ptpb.pw/l | env LESS= less -CMNRis'
-alias xi="perl -pe 'chomp if eof' | tee >(xsel -ib)"
 alias xn="paste -sd' ' | perl -pe 's/[[:space:]]*$//; s/[[:space:]]+/ /g; chomp' | tee >(xsel -ib)"
 alias tptpb="curl --progress-bar -F'c=@-' https://ptpb.pw/\?u=1 | sed 's:$:/text:'"
 alias apb="sed 's:ptpb\.pw/:alyp.tk/pb/:g'"

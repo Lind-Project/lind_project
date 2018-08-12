@@ -45,7 +45,8 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
     "openssh", "subversion", "pacman-contrib", "arch-wiki-docs", "tree", \
     "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", "inetutils", \
     "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate", \
-    "shadow", "grml-zsh-config", "ncdu", "bind-tools", "cowsay"]
+    "shadow", "grml-zsh-config", "ncdu", "bind-tools", "cowsay", "filesystem", \
+    "linux-headers", "linux-docs", "man-pages", "man-db"]
 RUN ["/usr/bin/pkgfile", "--update"]
 
 USER lind

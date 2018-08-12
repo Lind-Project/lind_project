@@ -8,17 +8,24 @@ if command -v ruby >/dev/null 2>&1; then
 else
 	rubies=""
 fi
-if test "$(hostname)" = fedora -o "$(hostname)" = fedoravm -o "$(whoami)" = jp; then
-	TERM="screen-256color"
-else
+if [ "$TERM" != linux ] && [ "$TERM" != xterm ]; then
+	italic=screen-256color-italic
+	if [[ -d "$HOME/.terminfo" ]]; then
+		TERM="$italic"
+	else
+		TERM="screen"
+	fi
+	unset italic
+fi
+if [ "$(hostname)" != localhost ] && [ "$(hostname)" != fedora ] && [ "$(hostname)" != fedoravm ]; then
 	locale="en_US.UTF-8"
 fi
 if command -v nproc >/dev/null 2>&1; then
-	NPROC="$(($(nproc) + 2))"
+	NPROC="$(nproc)"
 else
-	NPROC=6
+	NPROC=4
 fi
-if test -t 0; then
+if [ -t 0 ]; then
 	stty -ixon
 fi
 export NPROC
@@ -68,7 +75,8 @@ CFLAGS="-fuse-ld=gold -fuse-linker-plugin $CFLAGS"
 # CFLAGS="-pipe $CFLAGS"
 # CFLAGS="-march=native -gdwarf-4 -g3 -O3 $CFLAGS"
 # CFLAGS="-march=x86-64 -mtune=intel -g3 -O3 $CFLAGS"
-CFLAGS="-pipe -march=native -g -O3 $CFLAGS"
+# CFLAGS="-pipe -march=native -g -O3 $CFLAGS"
+CFLAGS="-pipe -march=x86_64 -mtune=generic -g -O3 $CFLAGS"
 export CFLAGS
 # export CHOST="x86_64-unknown-linux-gnu"
 # export CPATH=":$HOME/.local/include"
@@ -87,7 +95,7 @@ LDFLAGS="-Wl,--sort-common,--warn-common $LDFLAGS"
 export LDFLAGS
 # export LIBRARY_PATH="$HOME/.local/lib"
 # export MAKEFLAGS="-j -l$NPROC"
-export MAKEFLAGS="-j$NPROC"
+export MAKEFLAGS="-j$((NPROC + 2))"
 
 # Environment variables
 # export BROWSER=firefox
@@ -319,11 +327,11 @@ export ZDOTDIR="$HOME/.zsh.d"
 #     * z -c foo  # restrict matches to subdirs of $PWD
 unset _Z_CMD _Z_DATA _Z_NO_RESOLVE_SYMLINKS
 unset _Z_NO_PROMPT_COMMAND _Z_EXCLUDE_DIRS
-unset _Z_OWNER
+unset _Z_OWNER _FASD_SINK _last_z_args
 export _Z_NO_RESOLVE_SYMLINKS=true
 # export _Z_NO_PROMPT_COMMAND=true
 # export _Z_OWNER=alyptik
-export _FASD_SINK="/store/.fasd.log"
+# export _FASD_SINK="/store/.fasd.log"
 # used to track arguments of last `z` command
 export _last_z_args
 

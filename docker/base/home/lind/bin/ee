@@ -5,4 +5,4 @@ if ((!$#)); then
 fi
 session="$1"
 shift
-exec vim -c "OpenTabSession $session" "$@"
+exec vim -c "OpenSession $session" "$@"
