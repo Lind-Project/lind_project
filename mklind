@@ -379,7 +379,7 @@ function install_to_path() {
 
 	#install scripts
 	cp -pfv "$MISC_DIR/lind" "$REPY_PATH_BIN/lind"
-	cp -pfv "$LIND_BASE/lindfs" "$REPY_PATH_BIN/lindfs"
+	cp -pfv "$MISC_DIR/lindfs" "$REPY_PATH_BIN/lindfs"
 	chmod +x "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
 
 	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"  "$REPY_PATH_LIB/glibc"

@@ -40,11 +40,18 @@ if test "$1" = cp || test "$1" = update; then
 fi
 
 printf 'running: [%s%s%s]\n' "$reset$purple" "python2 lind_fs_utils.py $*" "$reset"
-python2 lind_fs_utils.py "$@"
-ret=$?
-if test "$ret" -ne 0 && test "$1" = cp; then
-	shift
-	python2 lind_fs_utils.py update "$@"
+
+# if command is "cp" retry using "update" on failure
+if test "$1" = cp; then
+	python2 lind_fs_utils.py "$@" 2>/dev/null
+	ret=$?
+	if test "$ret" -ne 0; then
+		shift
+		python2 lind_fs_utils.py update "$@"
+		ret=$?
+	fi
+else
+	python2 lind_fs_utils.py "$@"
 	ret=$?
 fi
 
