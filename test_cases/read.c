@@ -10,55 +10,27 @@
 #include <unistd.h>
 #include <wait.h>
 
+#define COUNT 8
+
 int main(void)
 {
-	int ret, fd;
-	char *tmp_file = "./.lind_read";
-	size_t total = 0;
-	char str[] = "wark\n", buf[4096] = {0};
+	int fd;
+	ssize_t ret;
+	char buf[4096] = {0};
 
-	if ((fd = open(tmp_file, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU|S_IRWXG|S_IRWXO) < 0)) {
+	if ((fd = open("/dev/urandom", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO)) < 0) {
 		perror("open()");
 		exit(EXIT_FAILURE);
 	}
-	for (;;) {
-		ssize_t pos;
-		if ((pos = write(fd, str + total, sizeof str - total - 1)) < 0) {
-			if (errno != EINTR && errno != EAGAIN)
-				continue;
-			perror("read()");
-			exit(EXIT_FAILURE);
-		}
-		if (!pos)
-			break;
-		total += pos;
-	}
-	fsync(fd);
-	close(fd);
 
-	total = 0;
-	wait(&ret);
-	if ((fd = open(tmp_file, O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO) < 0)) {
-		perror("open()");
+	if ((ret = read(fd, buf, COUNT)) < 0) {
+		perror("read()");
 		exit(EXIT_FAILURE);
 	}
-	for (;;) {
-		ssize_t pos;
-		if ((pos = read(fd, buf + total, sizeof str - total - 1)) < 0) {
-			if (errno != EINTR && errno != EAGAIN)
-				continue;
-			perror("read()");
-			exit(EXIT_FAILURE);
-		}
-		if (!pos || pos + total >= sizeof buf)
-			break;
-		total += pos;
-	}
 
-	fsync(fd);
-	puts(buf);
+	printf("read() ret: [%zd], expected: [%d]\n", ret, COUNT);
+	write(STDOUT_FILENO, buf, COUNT);
 	close(fd);
-	unlink(tmp_file);
 
 	return 0;
 }
