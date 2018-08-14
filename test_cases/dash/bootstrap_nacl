@@ -8,18 +8,19 @@ fi
 export CC=x86_64-nacl-gcc
 export CXX=x86_64-nacl-g++
 export LD=x86_64-nacl-ld
-export CFLAGS='-g3 -fno-pie'
-export CXXFLAGS='-g3 -fno-pie'
-export LDFLAGS='-g3 -fno-pie'
+export CFLAGS='-g -fno-pie'
+export CXXFLAGS='-g -fno-pie'
+export LDFLAGS='-g -fno-pie'
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 
 if [[ ! -e ./configure ]]; then
 	./autogen.sh
 fi
 
-# ./configure --enable-static --enable-fnmatch --enable-glob --host=x86_64-nacl "$@"
 ./configure --enable-fnmatch --enable-glob --host=x86_64-nacl "$@"
-
 sed -i '$ s!.*!/* & */!' ./config.h
 for i in ./src/{expand,exec,mail,redir,bltin/test}.c; do
 	sed -i 's!stat64!stat!g' "$i"
 done
+
+make

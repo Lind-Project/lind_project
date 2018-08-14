@@ -10,6 +10,7 @@ defines="$defines -D__kernel_long_t=int64_t"
 defines="$defines -D__kernel_ulong_t=uint64_t"
 prefix="${PREFIX:-$HOME/lind_project/lind/repy/repy}"
 
+export CROSS_COMPILE=x86_64-nacl-
 export CC=x86_64-nacl-gcc
 export CXX=x86_64-nacl-g++
 export LD=x86_64-nacl-ld
@@ -17,9 +18,9 @@ export CFLAGS="-g3 -fno-pie $defines"
 export CXXFLAGS="-g3 -fno-pie $defines"
 export LDFLAGS="-g3 -fno-pie $defines"
 export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
-export CROSS_COMPILE=x86_64-nacl-
 
 mkdir -pv "$prefix"
-sed -e "s/.*CONFIG_PREFIX.*/CONFIG_PREFIX=$prefix/" -i .config
 cp -v ./busybox.config ./.config
+sed -i .config "s/.*CONFIG_PREFIX.*/CONFIG_PREFIX=$prefix/"
+
 make menuconfig && make && make install
