@@ -119,126 +119,126 @@ for char in {a,i}${(s..)^:-\'\"\`\|,./:;-=+@}; do
 done
 
 for mode in $kbd_modes; do
-	bindkey -M "$1" -s "\ea" " | awk "
+	bindkey -M "$mode" -s "\ea" " | awk "
 	# alias gr='grep --color=auto'
-	bindkey -M "$1" -s "\eg" " | gr "
+	bindkey -M "$mode" -s "\eg" " | gr "
 	# alias l='env LESS= less -CMNRis'
-	bindkey -M "$1" -s "\el" " | l "
-	bindkey -M "$1" -s "\es" " | sed "
-	bindkey -M "$1" "\e[1~" beginning-of-line
-	bindkey -M "$1" "\e[4~" end-of-line
-	bindkey -M "$1" "\ec" yank-x-selection
-	bindkey -M "$1" "\ev" insert-x-selection
-	bindkey -M "$1" "\eC" yank-clip-selection
-	bindkey -M "$1" "\eV" insert-clip-selection
-	bindkey -M "$1" "\e[17~" yank-x-selection
-	bindkey -M "$1" "\e[18~" insert-x-selection
-	bindkey -M "$1" "\e[" yank-x-selection
-	bindkey -M "$1" "\e]" insert-x-selection
-	bindkey -M "$1" "\e{" yank-clip-selection
-	bindkey -M "$1" "\e}" insert-clip-selection
-	bindkey -M "$1" "\ef" zle-fh
-	bindkey -M "$1" "\C-w" backward-kill-word
-	bindkey -M "$1" "\e\C-m" self-insert-unmeta
-	bindkey -M "$1" "\eh" zle-run-help
-	bindkey -M "$1" "\eu" undo
-	bindkey -M "$1" "\ey" yank-pop
-	bindkey -M "$1" "\C-y" yank
-	bindkey -M "$1" "\C-q" push-line
-	bindkey -M "$1" "\C-k" kill-whole-line
-	bindkey -M "$1" "\ed" kill-word
-	bindkey -M "$1" "\e[3~" delete-char
-	bindkey -M "$1" "\C-h" backward-delete-char
-	bindkey -M "$1" "\C-?" backward-delete-char
-	bindkey -M "$1" "\e\C-?" backward-kill-word
-	bindkey -M "$1" "\C-o" accept-line-and-down-history
-	bindkey -M "$1" "\e[23~" zle-list-binds
-	bindkey -M "$1" "\C-z" fancy-ctrl-z
-	bindkey -M "$1" "\ep" expand-absolute-path
-	bindkey -M "$1" "\eo" zle-less
+	bindkey -M "$mode" -s "\el" " | l "
+	bindkey -M "$mode" -s "\es" " | sed "
+	bindkey -M "$mode" "\e[1~" beginning-of-line
+	bindkey -M "$mode" "\e[4~" end-of-line
+	bindkey -M "$mode" "\ec" yank-x-selection
+	bindkey -M "$mode" "\ev" insert-x-selection
+	bindkey -M "$mode" "\eC" yank-clip-selection
+	bindkey -M "$mode" "\eV" insert-clip-selection
+	bindkey -M "$mode" "\e[17~" yank-x-selection
+	bindkey -M "$mode" "\e[18~" insert-x-selection
+	bindkey -M "$mode" "\e[" yank-x-selection
+	bindkey -M "$mode" "\e]" insert-x-selection
+	bindkey -M "$mode" "\e{" yank-clip-selection
+	bindkey -M "$mode" "\e}" insert-clip-selection
+	bindkey -M "$mode" "\ef" zle-fh
+	bindkey -M "$mode" "\C-w" backward-kill-word
+	bindkey -M "$mode" "\e\C-m" self-insert-unmeta
+	bindkey -M "$mode" "\eh" zle-run-help
+	bindkey -M "$mode" "\eu" undo
+	bindkey -M "$mode" "\ey" yank-pop
+	bindkey -M "$mode" "\C-y" yank
+	bindkey -M "$mode" "\C-q" push-line
+	bindkey -M "$mode" "\C-k" kill-whole-line
+	bindkey -M "$mode" "\ed" kill-word
+	bindkey -M "$mode" "\e[3~" delete-char
+	bindkey -M "$mode" "\C-h" backward-delete-char
+	bindkey -M "$mode" "\C-?" backward-delete-char
+	bindkey -M "$mode" "\e\C-?" backward-kill-word
+	bindkey -M "$mode" "\C-o" accept-line-and-down-history
+	bindkey -M "$mode" "\e[23~" zle-list-binds
+	bindkey -M "$mode" "\C-z" fancy-ctrl-z
+	bindkey -M "$mode" "\ep" expand-absolute-path
+	bindkey -M "$mode" "\eo" zle-less
 	# insert the last word from the previous
 	# history event at the cursor position
-	bindkey -M "$1" "\e\\" insert-last-word
-	bindkey -M "$1" "\e[2~" insert-last-word
-	bindkey -M "$1" "\eE" tetris
-	bindkey -M "$1" "\e\er" znt-history-widget
-	bindkey -M "$1" "\e\et" znt-cd-widget
-	bindkey -M "$1" "\e\ek" znt-kill-widget
+	bindkey -M "$mode" "\e\\" insert-last-word
+	bindkey -M "$mode" "\e[2~" insert-last-word
+	bindkey -M "$mode" "\eE" tetris
+	bindkey -M "$mode" "\e\er" znt-history-widget
+	bindkey -M "$mode" "\e\et" znt-cd-widget
+	bindkey -M "$mode" "\e\ek" znt-kill-widget
 	# Ctrl+x h will show the completion context
-	bindkey -M "$1" "\C-x\C-h" _complete_help
-	bindkey -M "$1" "\C-xh" _complete_help
-	bindkey -M "$1" "\C-x\C-x" execute-named-command
-	bindkey -M "$1" "\C-xx" execute-named-command
-	bindkey -M "$1" "\C-b" emacs-backward-word
-	bindkey -M "$1" "\C-f" emacs-forward-word
-	bindkey -M "$1" "\eOA" up-line-or-beginning-search
-	bindkey -M "$1" "\e[A" up-line-or-beginning-search
-	bindkey -M "$1" "\eOB" down-line-or-beginning-search
-	bindkey -M "$1" "\e[B" down-line-or-beginning-search
-	bindkey -M "$1" "\e\e[D" emacs-backward-word
-	bindkey -M "$1" "\e[1;5D" emacs-backward-word
-	bindkey -M "$1" "\e[1;3D" emacs-backward-word
-	bindkey -M "$1" "\e[1;2D" emacs-backward-word
-	bindkey -M "$1" "\e\e[C" emacs-forward-word
-	bindkey -M "$1" "\e[1;5C" emacs-forward-word
-	bindkey -M "$1" "\e[1;3C" emacs-forward-word
-	bindkey -M "$1" "\e[1;2C" emacs-forward-word
-	bindkey -M "$1" "\e[7~" beginning-of-line
-	bindkey -M "$1" "\e[1;5B" beginning-of-line
-	bindkey -M "$1" "\e[1;3B" beginning-of-line
-	bindkey -M "$1" "\e[1;2B" beginning-of-line
-	bindkey -M "$1" "\C-a" beginning-of-line
-	bindkey -M "$1" "\e[8~" end-of-line
-	bindkey -M "$1" "\e[1;5A" end-of-line
-	bindkey -M "$1" "\e[1;3A" end-of-line
-	bindkey -M "$1" "\e[1;2A" end-of-line
-	bindkey -M "$1" "\C-e" end-of-line
-	bindkey -M "$1" "$terminfo[kcud1]" emacs-backward-word
-	bindkey -M "$1" "$terminfo[kcuu1]" emacs-forward-word
-	bindkey -M "$1" "\e[6~" emacs-backward-word
-	bindkey -M "$1" "\e[5~" emacs-forward-word
-	bindkey -M "$1" "\e-" emacs-backward-word
-	bindkey -M "$1" "\e=" emacs-forward-word
-	bindkey -M "$1" "$(echotc kl)" backward-char
-	bindkey -M "$1" "$(echotc kr)" forward-char
-	bindkey -M "$1" "$(echotc ku)" up-line-or-beginning-search
-	bindkey -M "$1" "$(echotc kd)" down-line-or-beginning-search
-	bindkey -M "$1" "\e[3~" delete-char
-	bindkey -M "$1" "\ek" describe-key-briefly
-	bindkey -M "$1" "\C-xe" edit-command-line
-	bindkey -M "$1" "\C-x\C-e" edit-command-line
-	bindkey -M "$1" "\e\ey" zle-youtube-helper
-	bindkey -M "$1" "\eU" up-case-word
-	bindkey -M "$1" "\e\e\e" _history-complete-newer
-	bindkey -M "$1" "\e," spell-word
-	bindkey -M "$1" "\e<" zle-zaw-help
-	bindkey -M "$1" "\ew" which-command
-	bindkey -M "$1" "\ee" delete-to-char
-	bindkey -M "$1" "\eOP" zle-less
-	bindkey -M "$1" "\eOQ" zle-vim
-	bindkey -M "$1" "\eOR" insert-unicode-char
-	bindkey -M "$1" "\eOS" zle-compdef
-	bindkey -M "$1" "\e[P" delete-char
-	bindkey -M "$1" "\C-r" redo
+	bindkey -M "$mode" "\C-x\C-h" _complete_help
+	bindkey -M "$mode" "\C-xh" _complete_help
+	bindkey -M "$mode" "\C-x\C-x" execute-named-command
+	bindkey -M "$mode" "\C-xx" execute-named-command
+	bindkey -M "$mode" "\C-b" emacs-backward-word
+	bindkey -M "$mode" "\C-f" emacs-forward-word
+	bindkey -M "$mode" "\eOA" up-line-or-beginning-search
+	bindkey -M "$mode" "\e[A" up-line-or-beginning-search
+	bindkey -M "$mode" "\eOB" down-line-or-beginning-search
+	bindkey -M "$mode" "\e[B" down-line-or-beginning-search
+	bindkey -M "$mode" "\e\e[D" emacs-backward-word
+	bindkey -M "$mode" "\e[1;5D" emacs-backward-word
+	bindkey -M "$mode" "\e[1;3D" emacs-backward-word
+	bindkey -M "$mode" "\e[1;2D" emacs-backward-word
+	bindkey -M "$mode" "\e\e[C" emacs-forward-word
+	bindkey -M "$mode" "\e[1;5C" emacs-forward-word
+	bindkey -M "$mode" "\e[1;3C" emacs-forward-word
+	bindkey -M "$mode" "\e[1;2C" emacs-forward-word
+	bindkey -M "$mode" "\e[7~" beginning-of-line
+	bindkey -M "$mode" "\e[1;5B" beginning-of-line
+	bindkey -M "$mode" "\e[1;3B" beginning-of-line
+	bindkey -M "$mode" "\e[1;2B" beginning-of-line
+	bindkey -M "$mode" "\C-a" beginning-of-line
+	bindkey -M "$mode" "\e[8~" end-of-line
+	bindkey -M "$mode" "\e[1;5A" end-of-line
+	bindkey -M "$mode" "\e[1;3A" end-of-line
+	bindkey -M "$mode" "\e[1;2A" end-of-line
+	bindkey -M "$mode" "\C-e" end-of-line
+	bindkey -M "$mode" "$terminfo[kcud1]" emacs-backward-word
+	bindkey -M "$mode" "$terminfo[kcuu1]" emacs-forward-word
+	bindkey -M "$mode" "\e[6~" emacs-backward-word
+	bindkey -M "$mode" "\e[5~" emacs-forward-word
+	bindkey -M "$mode" "\e-" emacs-backward-word
+	bindkey -M "$mode" "\e=" emacs-forward-word
+	bindkey -M "$mode" "$(echotc kl)" backward-char
+	bindkey -M "$mode" "$(echotc kr)" forward-char
+	bindkey -M "$mode" "$(echotc ku)" up-line-or-beginning-search
+	bindkey -M "$mode" "$(echotc kd)" down-line-or-beginning-search
+	bindkey -M "$mode" "\e[3~" delete-char
+	bindkey -M "$mode" "\ek" describe-key-briefly
+	bindkey -M "$mode" "\C-xe" edit-command-line
+	bindkey -M "$mode" "\C-x\C-e" edit-command-line
+	bindkey -M "$mode" "\e\ey" zle-youtube-helper
+	bindkey -M "$mode" "\eU" up-case-word
+	bindkey -M "$mode" "\e\e\e" _history-complete-newer
+	bindkey -M "$mode" "\e," spell-word
+	bindkey -M "$mode" "\e<" zle-zaw-help
+	bindkey -M "$mode" "\ew" which-command
+	bindkey -M "$mode" "\ee" delete-to-char
+	bindkey -M "$mode" "\eOP" zle-less
+	bindkey -M "$mode" "\eOQ" zle-vim
+	bindkey -M "$mode" "\eOR" insert-unicode-char
+	bindkey -M "$mode" "\eOS" zle-compdef
+	bindkey -M "$mode" "\e[P" delete-char
+	bindkey -M "$mode" "\C-r" redo
 	# call fman() on current cmdline after word-splitting
-	bindkey -M "$1" "\e/" zle-fman
-	bindkey -M "$1" "\e?" where-is
-	bindkey -M "$1" "^Xi" insert-unicode-char
-	bindkey -M "$1" "\C-x\C-i" insert-unicode-char
-	bindkey -M "$1" "\e>" autosuggest-clear
+	bindkey -M "$mode" "\e/" zle-fman
+	bindkey -M "$mode" "\e?" where-is
+	bindkey -M "$mode" "^Xi" insert-unicode-char
+	bindkey -M "$mode" "\C-x\C-i" insert-unicode-char
+	bindkey -M "$mode" "\e>" autosuggest-clear
 	# f5: toggle keymap
-	bindkey -M "$1" "\e[15~" zle-toggle-keymap
+	bindkey -M "$mode" "\e[15~" zle-toggle-keymap
 	# f9: insert composed character
 	# bindkey -M emacs "\e[19~" insert-composed-char
-	bindkey -M "$1" "\e;" fzf-completion
-	bindkey -M "$1" "\e\C-i" fasd-complete
-	bindkey -M "$1" "\e[Z" reverse-menu-complete
-	bindkey -M "$1" "\C-i" "$fzf_default_completion"
-	bindkey -M "$1" "\ei" zle-locate-widget
-	bindkey -M "$1" "\er" fzf-history-widget
-	bindkey -M "$1" "\C-t" transpose-words
-	bindkey -M "$1" "\et" fzf-file-widget
-	bindkey -M "$1" "\eC" fzf-cd-widget
+	bindkey -M "$mode" "\e;" fzf-completion
+	bindkey -M "$mode" "\e\C-i" fasd-complete
+	bindkey -M "$mode" "\e[Z" reverse-menu-complete
+	bindkey -M "$mode" "\C-i" "$fzf_default_completion"
+	bindkey -M "$mode" "\ei" zle-locate-widget
+	bindkey -M "$mode" "\er" fzf-history-widget
+	bindkey -M "$mode" "\C-t" transpose-words
+	bindkey -M "$mode" "\et" fzf-file-widget
+	bindkey -M "$mode" "\eC" fzf-cd-widget
 done
 
 compdef _cpuled cpuled
@@ -263,68 +263,34 @@ compdef _au au
 compdef _au wa
 compdef _pwns pwns
 compdef azle=autoload
-compdef cg=cgasm
 compdef e=vim
 compdef g=git
 compdef gnpm=npm
-compdef oomox=oomox-cli
 compdef p=perl
 compdef pkgconf=pkg-config
 compdef run=gcc
 compdef xs=xsel
 compdef _=sudo
-compdef meminfo=free
 
 # named directories
-hash -d a="${HOME}/code/aur"
-hash -d audio="/sdxc/audio"
-hash -d b="${HOME}/bin/"
 hash -d c="$CONFIG"
-hash -d calibre="/sdxc/calibre"
-hash -d code="$PROJECTS/school"
-hash -d crash="$PROJECTS/secure-systems-lab/CrashSimulator"
-hash -d d="$PROJECTS/linux/Documentation"
-hash -d djzomg="/sdxc/Music/djzomg"
-hash -d efi="/boot/efi/EFI"
-hash -d euler="${HOME}/code/euler"
 hash -d g="$HOME/lind_project/lind/lind_glibc"
-hash -d git="${HOME}/git"
-hash -d hdd="/run/media/alyptik/toshiba1TB"
+hash -d git="$HOME/git"
 hash -d inc="/usr/include"
 hash -d initcpio="/usr/lib/initcpio/install"
 hash -d k="$PROJECTS/kernel"
 hash -d l="$HOME/lind_project"
-hash -d linux="$PROJECTS/linux"
-hash -d magnets="$CONFIG/magnets"
 hash -d man="$CONFIG/man"
-hash -d music="/store/music"
 hash -d n="$HOME/lind_project/native_client"
-hash -d nginx="/etc/nginx"
 hash -d omz="/usr/share/oh-my-zsh"
-hash -d p="$PROJECTS"
 hash -d plugins="/usr/share/oh-my-zsh/plugins"
-hash -d prose="/store/writing"
-hash -d r="$PROJECTS/secure-systems-lab/rrapper"
-hash -d rr="$PROJECTS/secure-systems-lab/rr"
 hash -d repos="/store/repos"
 hash -d rfc="/usr/share/doc/rfc"
-hash -d s="$PROJECTS/secure-systems-lab"
-hash -d sdxc="/sdxc"
-hash -d surfraw="/usr/lib/surfraw"
-hash -d stuff="/hdd"
 hash -d systemd="/etc/systemd/system"
-hash -d t="/store/torrents"
-hash -d tt="/hdd/torrents"
-hash -d tuf="$PROJECTS/secure-systems-lab/tuf"
-hash -d vim="${HOME}/.vim"
-hash -d vm="/run/media/alyptik/vm"
-hash -d wanderlust="/hdd/wanderlust"
-hash -d words="$CONFIG/unixstories"
-hash -d www="/srv/http"
+hash -d vim="$HOME/.vim"
 hash -d z="$ZDOTDIR"
 hash -d zc="$ZDOTDIR/completions"
 hash -d zf="$ZDOTDIR/zfunctions"
-hash -d znc="/var/lib/znc/.znc/moddata/log/alyptik/freenode/"
 hash -d zp="$ZDOTDIR/plugins"
 hash -d zsh="$ZSH"
 
