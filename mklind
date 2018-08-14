@@ -211,16 +211,11 @@ function clean_src() {
 	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
 	cur_func="${FUNCNAME[0]}"
 
-	print "Cleaning $LIND_BASE"
+	print "Cleaning Lind..."
 	cd "$LIND_BASE"
+	rm -rf "$NACL_PORTS_DIR"
 	rm -rf lind_experiments lind-misc third_party lss
 	rm -rf nacl_repy nacl-gcc nacl-binutils lind_glibc
-	print "Cleaning $NACL_SRC"
-	cd "$NACL_SRC"
-	rm -rf native_client
-	print "Cleaning $NACL_PORTS_DIR"
-	cd "$NACL_PORTS_DIR"
-	rm -rfv src
 
 	cur_func="${FUNCNAME[1]}"
 }
