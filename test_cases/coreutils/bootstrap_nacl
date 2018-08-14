@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [[ "$*" =~ \b(-h|--help)\b ]]; then
+        ./configure --help
+        exit 1
+fi
+
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS='-g3 -fno-pie'
+export CXXFLAGS='-g3 -fno-pie'
+export LDFLAGS='-g3 -fno-pie'
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+
+./bootstrap
+./configure --host=x86_64-nacl "$@"
+sed -i '/local => sub/ s!0!1!' ./src/extract-magic
+make 2>/dev/null || true
+patch -Np1 <./signal.patch || true
+make

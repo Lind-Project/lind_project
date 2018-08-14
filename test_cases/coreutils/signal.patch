@@ -1,0 +1,75 @@
+diff --git a/lib/signal.h b/lib/signal.h
+index 90e74dcacc3f1ca752..0e9b0828dfa871dcf1 100644
+--- a/lib/signal.h
++++ b/lib/signal.h
+@@ -856,11 +856,11 @@ typedef struct siginfo_t siginfo_t;
+ /* We assume that platforms which lack the sigaction() function also lack
+    the 'struct sigaction' type, and vice versa.  */
+ 
+ #  if !GNULIB_defined_struct_sigaction
+ 
+-struct sigaction
++struct __sigaction
+ {
+   union
+   {
+     void (*_sa_handler) (int);
+     /* Present to allow compilation, but unsupported by gnulib.  POSIX
+@@ -871,16 +871,17 @@ struct sigaction
+   } _sa_func;
+   sigset_t sa_mask;
+   /* Not all POSIX flags are supported.  */
+   int sa_flags;
+ };
+-#   define sa_handler _sa_func._sa_handler
+-#   define sa_sigaction _sa_func._sa_sigaction
++
++#   define __sa_handler _sa_func._sa_handler
++#   define __sa_sigaction _sa_func._sa_sigaction
+ /* Unsupported flags are not present.  */
+-#   define SA_RESETHAND 1
+-#   define SA_NODEFER 2
+-#   define SA_RESTART 4
++#   define __SA_RESETHAND 1
++#   define __SA_NODEFER 2
++#   define __SA_RESTART 4
+ 
+ #   define GNULIB_defined_struct_sigaction 1
+ #  endif
+ 
+ _GL_FUNCDECL_SYS (sigaction, int, (int, const struct sigaction *restrict,
+diff --git a/gnulib/lib/sigaction.c b/gnulib/lib/sigaction.c
+index 7e4af5fe55d80f2279..9e597528e4b83813fd 100644
+--- a/gnulib/lib/sigaction.c
++++ b/gnulib/lib/sigaction.c
+@@ -48,15 +48,10 @@
+    POSIX states that an application should not mix signal() and
+    sigaction().  We support the use of signal() within the gnulib
+    sigprocmask() substitute, but all other application code linked
+    with this module should stick with only sigaction().  */
+ 
+-/* Check some of our assumptions.  */
+-#if defined SIGCHLD || defined HAVE_SIGALTSTACK || defined HAVE_SIGINTERRUPT
+-# error "Revisit the assumptions made in the sigaction module"
+-#endif
+-
+ /* Out-of-range substitutes make a good fallback for uncatchable
+    signals.  */
+ #ifndef SIGKILL
+ # define SIGKILL (-1)
+ #endif
+@@ -126,12 +121,12 @@ sigaction_handler (int sig)
+ /* Change and/or query the action that will be taken on delivery of
+    signal SIG.  If not NULL, ACT describes the new behavior.  If not
+    NULL, OACT is set to the prior behavior.  Return 0 on success, or
+    set errno and return -1 on failure.  */
+ int
+-sigaction (int sig, const struct sigaction *restrict act,
+-           struct sigaction *restrict oact)
++sigaction (int sig, __const struct sigaction *__restrict act,
++           struct sigaction *__restrict oact)
+ {
+   sigset_t mask;
+   sigset_t oldmask;
+   int saved_errno;
+ 
