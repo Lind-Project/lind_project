@@ -32,21 +32,21 @@ RUN ["/usr/bin/mkdir", "-pv", "/root/.local/etc/", "/home/lind/.local/etc/"]
 RUN ["/usr/bin/chown", "-LR","lind:lind", "/home/lind/"]
 RUN ["/usr/bin/chown", "-LR","root:root", "/etc/", "/root/"]
 RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
-    "git", "mercurial", "rsync", "make", "perl", "clang", "lynx", "ltrace", \
-    "w3m", "gawk", "procps-ng", "ruby", "strace", "gdb", "reptyr", "ed", \
-    "compiler-rt", "lib32-clang", "lib32-llvm", "lib32-llvm-libs", "vim", \
-    "llvm", "llvm-libs", "openmp", "elfutils", "libelf", "gdb", "less", \
-    "gnu-netcat", "zsh", "zsh-completions", "htop", "bc", "ctags", "sudo", \
-    "ncurses", "gcc-libs", "lib32-gcc-libs", "gperf", "diffutils", "fzf", \
-    "gperftools", "texinfo", "fortune-mod", "gnupg", "highlight", "fasd", \
-    "python2", "python2-pip", "python2-setuptools", "p7zip", "fuse3", "ack", \
-    "python2-virtualenv", "python-virtualenvwrapper", "pkgfile", "dhcpcd", \
-    "iputils","python", "iproute2", "net-tools", "openresolv", "ranger", \
-    "openssh", "subversion", "pacman-contrib", "arch-wiki-docs", "tree", \
-    "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", "inetutils", \
-    "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate", \
-    "shadow", "grml-zsh-config", "ncdu", "bind-tools", "cowsay", "filesystem", \
-    "linux-headers", "linux-docs", "man-pages", "man-db"]
+     "git", "mercurial", "rsync", "make", "perl", "clang", "lynx", "ltrace", \
+     "w3m", "gawk", "procps-ng", "ruby", "strace", "gdb", "reptyr", "ed", \
+     "compiler-rt", "lib32-clang", "lib32-llvm", "lib32-llvm-libs", "vim", \
+     "llvm", "llvm-libs", "openmp", "elfutils", "libelf", "gdb", "less", \
+     "gnu-netcat", "zsh", "zsh-completions", "htop", "bc", "ctags", "sudo", \
+     "ncurses", "gcc-libs", "lib32-gcc-libs", "gperf", "diffutils", "fzf", \
+     "gperftools", "texinfo", "fortune-mod", "gnupg", "highlight", "fasd", \
+     "python2", "python2-pip", "python2-setuptools", "p7zip", "fuse3", "ack", \
+     "python2-virtualenv", "python-virtualenvwrapper", "pkgfile", "dhcpcd", \
+     "iputils","python", "iproute2", "net-tools", "openresolv", "ranger", \
+     "openssh", "subversion", "pacman-contrib", "arch-wiki-docs", "tree", \
+     "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", "inetutils", \
+     "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate", \
+     "shadow", "grml-zsh-config", "ncdu", "bind-tools", "cowsay", "filesystem", \
+     "linux-headers", "linux-docs", "man-pages", "man-db"]
 RUN ["/usr/bin/pkgfile", "--update"]
 
 USER lind
@@ -98,4 +98,3 @@ RUN ["/usr/bin/chown", "-Rc", "lind:lind", "/home/lind/"]
 USER lind
 
 ENTRYPOINT ["/usr/bin/zsh"]
-CMD ["-c", "print -r '[lind /fork]'; lind /fork; print -r - '[lind /hello]'; lind /hello; exec zsh"]

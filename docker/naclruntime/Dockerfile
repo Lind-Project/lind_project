@@ -32,12 +32,22 @@ RUN ["./mklind", "cleanall"]
 WORKDIR /home/lind/lind_project/
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello"]
+WORKDIR /home/lind/lind_project/test_cases/bash/
+RUN ["./bootstrap_nacl", "--prefix=lind/repy/repy"]
+RUN ["/usr/bin/make", "install"]
 
 WORKDIR /home/lind/lind_project/lind/repy/repy/
+RUN ["[usr/bin/env", "lindfs", "cp", "./bin/"]
+RUN ["/usr/bin/env", "lindfs", "cp", "./lib/"]
+RUN ["/usr/bin/env", "lindfs", "cp", "./share/"]
 RUN ["/usr/bin/env", "lindfs", "cp", "./fork"]
 RUN ["/usr/bin/env", "lindfs", "cp", "./hello"]
+RUN ["/usr/bin/env", "lindfs", "cp", "./.bashrc"]
+RUN ["/usr/bin/env", "lindfs", "cp", "./.bash_logout"]
+RUN ["/usr/bin/env", "lindfs", "cp", "./.bash_profile"]
 RUN ["/usr/bin/env", "script", "-qfc", "lind /fork", "/dev/null"]
 RUN ["/usr/bin/env", "script", "-qfc", "lind /hello", "/dev/null"]
+RUN ["/usr/bin/env", "script", "-qfc", "lind /bin/bash -c 'echo hello from \$0!'", "/dev/null"]
 
 ENTRYPOINT ["/usr/bin/zsh"]
-CMD ["-c", "print -r '[lind /fork]'; lind /fork; print -r - '[lind /hello]'; lind /hello; exec zsh"]
+CMD ["-c", "lind /fork; lind /hello; lind /bin/bash -c 'echo hello from \$0!'; exec zsh"]
