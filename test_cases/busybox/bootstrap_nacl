@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ "$*" =~ \b(-h|--help)\b ]]; then
+if [[ "$*" =~ (^|[[:blank:]])(-h|--help)([[:blank:]]|$) ]]; then
 	make help
 	exit 1
 fi
