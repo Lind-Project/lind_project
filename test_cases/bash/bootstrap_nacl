@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ "$*" =~ \b(-h|--help)\b ]]; then
+if [[ "$*" =~ (^|[[:blank:]])(-h|--help)([[:blank:]]|$) ]]; then
 	./configure --help
 	exit 1
 fi

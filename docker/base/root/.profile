@@ -8,14 +8,8 @@ if command -v ruby >/dev/null 2>&1; then
 else
 	rubies=""
 fi
-if [ "$TERM" != linux ] && [ "$TERM" != xterm ]; then
-	italic=screen-256color-italic
-	if [[ -d "$HOME/.terminfo" ]]; then
-		TERM="$italic"
-	else
-		TERM="screen"
-	fi
-	unset italic
+if [ "$TERM" != linux ] && [ "$TERM" != xterm ] && [ -d "$HOME/.terminfo" ]; then
+	TERM=screen-256color-italic
 fi
 if [ "$(hostname)" != localhost ] && [ "$(hostname)" != fedora ] && [ "$(hostname)" != fedoravm ]; then
 	locale="en_US.UTF-8"
@@ -151,8 +145,6 @@ export GTK_IM_MODULE="xim" QT_IM_MODULE="xim" XMODIFIERS="@im=none"
 export GTK2_RC_FILES="$HOME/.gtkrc-2.0"
 # get more colors
 export HH_CONFIG=hicolor
-# increase history size (default is 500)
-export HISTSIZE=20000000 HISTFILESIZE="$HISTSIZE"
 INFOPATH="/usr/local/texlive/2016/texmf-dist/doc/info:/usr/share/info"
 INFOPATH="$HOME/GNUstep/Library/Documentation/info:$INFOPATH"
 INFOPATH="$HOME/.linuxbrew/share/info:$INFOPATH"
@@ -263,7 +255,8 @@ export QT_AUTO_SCREEN_SCALE_FACTOR=1
 export QT_PLUGIN_PATH="$HOME/.kde4/lib/kde4/plugins:/usr/lib/kde4/plugins"
 export QT_QPA_PLATFORMTHEME=qt5ct
 # export QT_SCALE_FACTOR=2.25
-export SAVEHIST="$HISTSIZE"
+# increase history size (default is 500)
+export HISTSIZE=1000000 HISTFILESIZE="$((HISTSIZE / 2))" SAVEHIST="$HISTSFILEIZE"
 # export QT_SCREEN_SCALE_FACTORS=2.25
 export SDL_AUDIODRIVER=alsa
 export SSH_KEY_PATH="$HOME/.ssh/id_gpg"
