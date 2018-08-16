@@ -21,6 +21,6 @@ export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 
 mkdir -pv "$prefix"
 cp -v ./busybox.config ./.config
-sed -i .config "s/.*CONFIG_PREFIX.*/CONFIG_PREFIX=$prefix/"
+sed -i .config "s!.*CONFIG_PREFIX.*!CONFIG_PREFIX=$prefix!"
 
 make menuconfig && make && make install
