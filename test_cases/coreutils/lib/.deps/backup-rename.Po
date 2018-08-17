@@ -1,0 +1,11 @@
+lib/backup-rename.o: lib/backup-rename.c lib/config.h \
+ lib/backup-internal.h lib/backupfile.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/include/stdbool.h
+
+lib/config.h:
+
+lib/backup-internal.h:
+
+lib/backupfile.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/include/stdbool.h:

@@ -1,0 +1,14 @@
+lib/asnprintf.o: lib/asnprintf.c lib/config.h lib/vasnprintf.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/include/stdarg.h \
+ lib/stddef.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/include/stddef.h
+
+lib/config.h:
+
+lib/vasnprintf.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/include/stdarg.h:
+
+lib/stddef.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/include/stddef.h:
