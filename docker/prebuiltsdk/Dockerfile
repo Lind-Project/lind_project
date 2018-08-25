@@ -31,7 +31,7 @@ RUN ["./mklind", "install"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello"]
 WORKDIR /home/lind/lind_project/test_cases/bash/
-RUN ["./bootstrap_nacl", "--prefix=$HOME/lind_project/lind/repy/repy"]
+RUN ["./bootstrap_nacl", "--prefix=/home/lind/lind_project/lind/repy/repy"]
 RUN ["/usr/bin/make", "install"]
 
 WORKDIR /home/lind/lind_project/lind/repy/repy/
