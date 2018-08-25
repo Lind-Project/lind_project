@@ -256,7 +256,7 @@ export QT_PLUGIN_PATH="$HOME/.kde4/lib/kde4/plugins:/usr/lib/kde4/plugins"
 export QT_QPA_PLATFORMTHEME=qt5ct
 # export QT_SCALE_FACTOR=2.25
 # increase history size (default is 500)
-export HISTSIZE=1000000 HISTFILESIZE="$((HISTSIZE / 2))" SAVEHIST="$HISTFILESIZE"
+export HISTSIZE=1000000 HISTFILESIZE="$HISTSIZE" SAVEHIST="$HISTSIZE"
 # export QT_SCREEN_SCALE_FACTORS=2.25
 export SDL_AUDIODRIVER=alsa
 export SSH_KEY_PATH="$HOME/.ssh/id_gpg"
