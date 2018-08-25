@@ -46,7 +46,7 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
      "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", "inetutils", \
      "tmux", "screen", "bash-completion", "the_silver_searcher", "mlocate", \
      "shadow", "grml-zsh-config", "ncdu", "bind-tools", "cowsay", "filesystem", \
-     "linux-headers", "linux-docs", "man-pages", "man-db"]
+     "linux-headers", "linux-docs", "man-pages", "man-db", "util-linux"]
 RUN ["/usr/bin/pkgfile", "--update"]
 
 USER lind
@@ -93,7 +93,7 @@ USER root
 
 WORKDIR /home/lind/lind_project/
 RUN ["/usr/bin/rm", "-rf", "/home/lind/build/", "/root/build/", "/var/cache/pacman/pkg/"]
-RUN ["/usr/bin/chown", "-Rc", "lind:lind", "/home/lind/"]
+RUN ["/usr/bin/chown", "-R", "lind:lind", "/home/lind/"]
 
 USER lind
 
