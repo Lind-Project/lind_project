@@ -1782,8 +1782,8 @@ function! SaveWork()
 	w
 	SaveSession
 endfunc
-" noremap <Leader>] :call SaveWork()<CR>
-noremap <Leader>] <Esc>:wall<CR>
+noremap <Leader>] <Esc>:call Reset()<CR>
+" noremap <Leader>] <Esc>:wall<CR>
 " Avoid E173
 noremap <Leader>[ :qall<CR>
 
@@ -1837,6 +1837,13 @@ command! PC PlugClean
 cabbrev p PlugUpdate
 cabbrev pu PlugUpgrade
 cabbrev pc PlugClean
+
+" reset linter
+func! Reset()
+	:ALEReset
+	:wall
+endfunc
+command! R :call Reset()
 
 command! SudoWrite silent! w !sudo sponge %
 cabbrev w!! <C-r>=(getcmdtype()==':' && getcmdpos()==1 ? 'SudoWrite' : 'w!!')<CR>

@@ -15,24 +15,33 @@ int main(void)
 	char str[4096] = {0};
 	int ret, fd[2];
 
-	perror("pipe()");
 	pipe(fd);
 	printf("pipe() ret: [%d, %d]\n", fd[0], fd[1]);
 
-	if ((ret = write(fd[1], "hi\n", 3)) < 0) {
-		printf("write(): %s\n", strerror(errno));
-		exit(EXIT_FAILURE);
+	switch (fork()) {
+	case 0:
+		dup2(fd[1], 1);
+		/* close(fd[0]); */
+		if ((ret = write(1, "hi\n", 3)) < 0) {
+			fprintf(stderr, "write(): %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		fprintf(stderr, "write() ret: %d\n", ret);
+		/* close(fd[1]); */
+		exit(0);
 	}
-	printf("write() ret: %d\n", ret);
 
+	/*
+	 * wait(&ret);
+	 * close(fd[1]);
+	 */
 	if ((ret = read(fd[0], str, 3)) < 0) {
-		printf("read(): %s\n", strerror(errno));
+		fprintf(stderr, "read(): %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-	printf("read() ret: %d\n", ret);
+	fprintf(stderr, "read() ret: %d\n", ret);
 
 	/* close(fd[0]); */
-	/* close(fd[1]); */
 	puts(str);
 
 	return 0;
