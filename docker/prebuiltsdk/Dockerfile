@@ -35,7 +35,7 @@ RUN ["./bootstrap_nacl", "--prefix=$HOME/lind_project/lind/repy/repy"]
 RUN ["/usr/bin/make", "install"]
 
 WORKDIR /home/lind/lind_project/lind/repy/repy/
-RUN ["[usr/bin/env", "lindfs", "cp", "./bin/"]
+RUN ["/usr/bin/env", "lindfs", "cp", "./bin/"]
 RUN ["/usr/bin/env", "lindfs", "cp", "./lib/"]
 RUN ["/usr/bin/env", "lindfs", "cp", "./share/"]
 RUN ["/usr/bin/env", "lindfs", "cp", "./fork"]
