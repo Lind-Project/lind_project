@@ -1595,7 +1595,7 @@ augroup sessionLoad
 		endif
 		return l:autosave
 	endfu
-	au SessionLoadPost * let g:session_autosave=InSession()
+	" au SessionLoadPost * let g:session_autosave=InSession()
 augroup END
 
 " view options
