@@ -139,7 +139,7 @@ export GOPATH="$HOME/.go"
 export GROFF_NO_SGR=1
 # Gtk themes
 # export GTK_DEBUG=all
-export GTK_IM_MODULE="xim" QT_IM_MODULE="xim" XMODIFIERS="@im=none"
+# export GTK_IM_MODULE="xim" QT_IM_MODULE="xim" XMODIFIERS="@im=none"
 # export GTK_IM_MODULE="fcitx" QT_IM_MODULE="fcitx" XMODIFIERS="@im=fcitx"
 # export GTK_IM_MODULE="ibus" QT_IM_MODULE="ibus" XMODIFIERS="@im=ibus"
 export GTK2_RC_FILES="$HOME/.gtkrc-2.0"
@@ -256,7 +256,8 @@ export QT_PLUGIN_PATH="$HOME/.kde4/lib/kde4/plugins:/usr/lib/kde4/plugins"
 export QT_QPA_PLATFORMTHEME=qt5ct
 # export QT_SCALE_FACTOR=2.25
 # increase history size (default is 500)
-export HISTSIZE=1000000 HISTFILESIZE="$HISTSIZE" SAVEHIST="$HISTSIZE"
+export HISTSIZE=1000000
+export HISTFILESIZE="$HISTSIZE" SAVEHIST="$HISTSIZE"
 # export QT_SCREEN_SCALE_FACTORS=2.25
 export SDL_AUDIODRIVER=alsa
 export SSH_KEY_PATH="$HOME/.ssh/id_gpg"
@@ -264,7 +265,7 @@ SURF_USERAGENT="Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5 Build/MOB3OD)"
 SURF_USERAGENT="$SURF_USERAGENT AppleWebKit/537.36 (KHTML, like Gecko)"
 SURF_USERAGENT="$SURF_USERAGENT Chrome/49.0.2623.105 Mobile Safari/537.36"
 export SURF_USERAGENT
-export SYSTEMD_LESS="FKMRins" journalctl
+export SYSTEMD_LESS="FKMRins"
 export TERMINAL=st
 TIME='%J
 [system: %S] [elapsed: %E] [cpu: %P]
@@ -285,7 +286,8 @@ export WORDCHARS=
 # export WORDCHARS='*?_-.[]~=/&;!#$%^ (){}<>'
 export WORKON_HOME="$HOME/.virtualenvs"
 # Set X cursor theme
-export XCURSOR_THEME=ArchCursorTheme
+export XCURSOR_THEME=Oxygen_Blue
+# export XCURSOR_THEME=ArchCursorTheme
 export XDG_CACHE_HOME="$HOME/.cache"
 export XDG_CONFIG_DIRS="$HOME/.config:/etc/xdg"
 # export XDG_CONFIG_HOME="$HOME/.config"
