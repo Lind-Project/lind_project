@@ -11,28 +11,28 @@
 [submodule "nacl_repy"]
 	path = nacl_repy
 	url = https://github.com/Lind-Project/nacl_repy.git
-	branch = lind_fork
+	branch = develop
 [submodule "lind_experiments"]
 	path = lind_experiments
 	url = https://github.com/Lind-Project/lind_experiments.git
-	branch = lind_fork
+	branch = develop
 [submodule "third_party"]
 	path = third_party
 	url = https://github.com/Lind-Project/third_party.git
-	branch = lind_fork
+	branch = develop
 [submodule "nacl-gcc"]
 	path = nacl-gcc
 	url = https://github.com/Lind-Project/nacl-gcc.git
-	branch = lind_fork
+	branch = develop
 [submodule "nacl-binutils"]
 	path = nacl-binutils
 	url = https://github.com/Lind-Project/nacl-binutils.git
-	branch = lind_fork
+	branch = develop
 [submodule "lss"]
 	path = lss
 	url = https://github.com/Lind-Project/linux-syscall-support.git
-	branch = lind_fork
+	branch = develop
 [submodule "lind-misc"]
 	path = lind-misc
 	url = https://github.com/Lind-Project/Lind-misc.git
-	branch = lind_fork
+	branch = develop
