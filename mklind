@@ -6,7 +6,7 @@
 # Updated by Joey Pabalinas <joeypabalinas@gmail.com>
 
 # version and usage strings
-readonly version=0.10.0-beta
+readonly version=0.10.0-rc1
 usage+=$'\n'"Lind $version NaCl Toolchain Build Script"$'\n'
 usage+=$'\n'
 usage+=$'Usage:\n'
@@ -193,7 +193,7 @@ readonly LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_GCC_URL='https://github.com/Lind-Project/nacl-gcc.git'
 readonly NACL_BINUTILS_URL='https://github.com/Lind-Project/nacl-binutils.git'
-readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@lind_fork'
+readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@develop'
 readonly NACL_PORTS_URL='https://chromium.googlesource.com/external/naclports.git'
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 
@@ -257,7 +257,7 @@ function download_src() {
 		[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
 		rm -rf "${LIND_SRC:?}/$dir"
 		ln -Trsv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
-		(cd "$LIND_SRC/$dir" && git checkout lind_fork || git checkout develop)
+		(cd "$LIND_SRC/$dir" && git checkout develop)
 	done
 
 	# install gclient
@@ -325,7 +325,7 @@ function download_src() {
 		ln -Trsv "$NACL_GCC_SRC" ./gcc
 		ln -Trsv "$NACL_BINUTILS_SRC" ./binutils
 		for dir in glibc gcc binutils; do
-			(cd "$dir" && git checkout lind_fork)
+			(cd "$dir" && git checkout develop)
 		done
 	fi
 
@@ -414,20 +414,32 @@ function build_repy() {
 
 	set -o errexit
 
-	mkdir -p "$REPY_PATH_REPY"
+	local short_ver lind_serv
+
+	mkdir -pv "$REPY_PATH_REPY"
 	print "Building Repy in $REPY_SRC to $REPY_PATH"
 	cd "$NACL_REPY"
-	git checkout lind_fork
-	cp -v ./seattlelib/xmlrpc* "$REPY_PATH_REPY/"
-	python2 preparetest.py -t -f "$REPY_PATH_REPY"
+	git checkout develop
+	cp -fv ./seattlelib/xmlrpc* "$REPY_PATH_REPY/"
+	python2 ./preparetest.py -t -f "$REPY_PATH_REPY"
 	print "Done building Repy in \"$REPY_PATH_REPY\""
 	cd seattlelib
-	set -o errexit
+
+	# strip the patch version for repy
+	short_ver="${version%.*-*}${version/*-/-}"
+	lind_serv=lind_server.mix
+	sed '/VERSION/ s/\$[^\$]*\$/\$'"$short_ver"'\$/' \
+		<"./$lind_serv" \
+		>"./$lind_serv.new"
+	cat \
+		<"./$lind_serv.new" \
+		>"./$lind_serv"
+	rm -fv -- "./$lind_serv.new"
 	for file in *.mix; do
 		"$MISC_DIR/check_includes.sh" "$file"
 	done
+
 	set +o errexit
-	ctags --language-force=python ./*.mix ./*.repy 2>/dev/null || true
 
 	cur_func="${FUNCNAME[1]}"
 }
