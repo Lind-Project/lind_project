@@ -219,7 +219,7 @@ if has('gui_running')
 	let g:solarized_contrast='low'
 	let g:solarized_visibility='normal'
 	set lines=30 columns=75 linespace=0
-	set guifont=Fira\ Code\ Light\ 9
+	set guifont=Fira\ Code\ Light\ 12
 	" set guifont=Fira\ Code\ Retina\ 9
 	" set lines=40 columns=120 linespace=0
 	" set guifont=Inconsolata\ g\ Light\ 22
