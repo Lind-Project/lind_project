@@ -257,7 +257,7 @@ function download_src() {
 		[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
 		rm -rf "${LIND_SRC:?}/$dir"
 		ln -Trsv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
-		(cd "$LIND_SRC/$dir" && git checkout lind_fork)
+		(cd "$LIND_SRC/$dir" && git checkout lind_fork || git checkout develop)
 	done
 
 	# install gclient
