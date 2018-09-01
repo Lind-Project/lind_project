@@ -3,6 +3,17 @@
 # .profile - environment configuration
 
 # conditionals
+if command -v bat >/dev/null 2>&1; then
+	if command -v b >/dev/null 2>&1; then
+		dump_cmd="b"
+	else
+		dump_cmd="bat"
+	fi
+elif command -v less >/dev/null 2>&1; then
+	dump_cmd="less"
+else
+	dump_cmd="cat"
+fi
 if command -v ruby >/dev/null 2>&1; then
 	rubies="$(ruby -rrubygems -e "puts Gem.user_dir")/bin"
 else
@@ -17,7 +28,7 @@ fi
 if command -v nproc >/dev/null 2>&1; then
 	NPROC="$(nproc)"
 else
-	NPROC=4
+	NPROC=2
 fi
 if [ -t 0 ]; then
 	stty -ixon
@@ -34,7 +45,6 @@ export C="$CONFIG" H="$HOME" L="$LINUX" P="$PROJECTS"
 unset CARCH CCACHE_DISABLE CFLAGS CCFLAGS
 unset CHOST C_INCLUDE_PATH CPATH CPPFLAGS
 unset CXXFLAGS LDFLAGS LIBRARY_PATH
-export ARCHFLAGS="-arch x86_64"
 # export CARCH="x86_64"
 export CCACHE_DIR="$HOME/.ccache"
 export CCACHE_DISABLE=1
@@ -43,34 +53,35 @@ export CCACHE_DISABLE=1
 export CCACHE_TEMPDIR="$CCACHE_DIR/tmp"
 # sparse configuraiton
 CF="-DCONFIG_SPARSE_RCU_POINTER -D__CHECK_ENDIAN__"
-# CF="-fmax-warnings=unlimited $CF"
-CF="-Wptr-subtraction-blows -Wtypesign $CF"
-CF="-Wdefault-bitfield-sign -Wparen-string $CF"
-CF="-Wno-undef -Wno-unknown-attribute $CF"
-CF="-Wno-pointer-arith -Wno-shadow -Wno-sizeof-bool $CF"
-CF="-Wno-do-while -Wno-non-pointer-null $CF"
+# CF="$CF -fmax-warnings=unlimited"
+CF="$CF -Wptr-subtraction-blows -Wtypesign"
+CF="$CF -Wdefault-bitfield-sign -Wparen-string"
+CF="$CF -Wno-undef -Wno-unknown-attribute"
+CF="$CF -Wno-pointer-arith -Wno-shadow -Wno-sizeof-bool"
+CF="$CF -Wno-do-while -Wno-non-pointer-null"
 export CF
 export DISTCC_HOSTS="127.0.0.1,lzo,cpp 192.168.1.99,lzo,cpp"
-GCC_COLORS="error=01;31:warning=01;35:note=01;36:range1=32:range2=34:"
-GCC_COLORS="caret=01;32:locus=01:quote=01:fixit-insert=32:fixit-delete=31:$GCC_COLORS"
-GCC_COLORS="diff-filename=01:diff-hunk=32:diff-delete=31:diff-insert=32:$GCC_COLORS"
-GCC_COLORS="type-diff=01;32:$GCC_COLORS"
+GCC_COLORS="error=01;31:warning=01;35:note=01;36:range1=32:range2=34"
+GCC_COLORS="$GCC_COLORS:caret=01;32:locus=01:quote=01:fixit-insert=32:fixit-delete=31"
+GCC_COLORS="$GCC_COLORS:diff-filename=01:diff-hunk=32:diff-delete=31:diff-insert=32"
+GCC_COLORS="$GCC_COLORS:type-diff=01;32"
 # GCC_COLORS="error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01"
 export GCC_COLORS
 # compiler flags
 CFLAGS="-Wno-error -Wno-implicit-fallthrough"
-# CFLAGS="-fdiagnostics-color=always $CFLAGS"
-# CFLAGS="-fdiagnostics-generate-patch $CFLAGS"
-# CFLAGS="-flto $CFLAGS"
-# CFLAGS="-fno-common $CFLAGS"
-# CFLAGS="-fvar-tracking -fvar-tracking-assignments $CFLAGS"
-CFLAGS="-fno-strict-aliasing -fno-plt -fPIC $CFLAGS"
-CFLAGS="-fuse-ld=gold -fuse-linker-plugin $CFLAGS"
-# CFLAGS="-pipe $CFLAGS"
-# CFLAGS="-march=native -gdwarf-4 -g3 -O3 $CFLAGS"
-# CFLAGS="-march=x86-64 -mtune=intel -g3 -O3 $CFLAGS"
-# CFLAGS="-pipe -march=native -g -O3 $CFLAGS"
-CFLAGS="-pipe -march=x86_64 -mtune=generic -g -O3 $CFLAGS"
+# CFLAGS="$CFLAGS -fdiagnostics-color=always"
+# CFLAGS="$CFLAGS -fdiagnostics-generate-patch"
+# CFLAGS="$CFLAGS -flto"
+# CFLAGS="$CFLAGS -fno-common"
+# CFLAGS="$CFLAGS -fvar-tracking -fvar-tracking-assignments"
+CFLAGS="$CFLAGS -fno-strict-aliasing -fno-plt -fPIC"
+CFLAGS="$CFLAGS -fuse-ld=gold -fuse-linker-plugin"
+# CFLAGS="$CFLAGS -pipe"
+# CFLAGS="$CFLAGS -march=native -gdwarf-4 -g3 -O3"
+# CFLAGS="$CFLAGS -march=x86-64 -mtune=intel -g3 -O3"
+# CFLAGS="$CFLAGS -pipe -march=native -g -O3"
+# CFLAGS="$CFLAGS -pipe -march=x86-64 -mtune=generic -g -O3"
+CFLAGS="$CFLAGS -march=x86-64 -mtune=generic -O3"
 export CFLAGS
 # export CHOST="x86_64-unknown-linux-gnu"
 # export CPATH=":$HOME/.local/include"
@@ -78,26 +89,28 @@ export CFLAGS
 # export CPPFLAGS="-D_FORTIFY_SOURCE=2"
 export CXXFLAGS="$CFLAGS"
 LDFLAGS="$CFLAGS"
-# LDFLAGS="-Wl,-O2,-z,relro,-z,now $LDFLAGS"
-# LDFLAGS="-Wl,--as-needed $LDFLAGS"
-# LDFLAGS="-Wl,--as-needed,--sort-common $LDFLAGS"
-# LDFLAGS="-Wl,--warn-unresolved-symbols $LDFLAGS"
-# LDFLAGS="-Wl,-O3,-z,relro,-z,now,-z,noexecstack $LDFLAGS"
-# LDFLAGS="-Wl,--as-needed,--sort-common,--warn-common $LDFLAGS"
-LDFLAGS="-Wl,-O3,-z,relro,-z,now $LDFLAGS"
-LDFLAGS="-Wl,--sort-common,--warn-common $LDFLAGS"
+# LDFLAGS="$LDFLAGS -Wl,-O2,-z,relro,-z,now"
+# LDFLAGS="$LDFLAGS -Wl,--as-needed"
+# LDFLAGS="$LDFLAGS -Wl,--as-needed,--sort-common"
+# LDFLAGS="$LDFLAGS -Wl,--warn-unresolved-symbols"
+# LDFLAGS="$LDFLAGS -Wl,-O3,-z,relro,-z,now"
+# LDFLAGS="$LDFLAGS -Wl,--as-needed,--sort-common,--warn-common"
+LDFLAGS="$LDFLAGS -Wl,-O3,-z,relro,-z,now,-z,noexecstack"
+LDFLAGS="$LDFLAGS -Wl,--sort-common,--warn-common"
 export LDFLAGS
 # export LIBRARY_PATH="$HOME/.local/lib"
 # export MAKEFLAGS="-j -l$NPROC"
-export MAKEFLAGS="-j$((NPROC + 2))"
+export MAKEFLAGS="-j$((NPROC + 2)) -l$((NPROC + 2))"
 
 # Environment variables
+export ARCHFLAGS="-arch x86-64"
 # export BROWSER=firefox
 # export BROWSER=chromium
 # export BROWSER=w3m
 # export BROWSER=lynx
+# export BROWSER=netsurf
 export CLICOLOR=1
-export CORRECT_IGNORE="_?*"
+export CORRECT_IGNORE='_?*'
 # Audio plugins
 DSSI_PATH="/usr/local/lib/dssi:/usr/lib/dssi"
 DSSI_PATH="$HOME/dssi:/store/audio/dssi:$DSSI_PATH"
@@ -106,32 +119,30 @@ export DSSI_PATH
 export EDITOR=vim
 export FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" VISUAL="$EDITOR"
 export FREETYPE_PROPERTIES="truetype:interpreter-version=35"
-# export FZF_DEFAULT_COMMAND="
-#         (git ls-tree -r --name-only HEAD ||
-#         find . -path '*/\\.*' -prune -o \\( -type f -o -type l \\) -print |
-#         sed s/^..//) 2>/dev/null
-#         "
-export FZF_DEFAULT_COMMAND='ag -g ""'
-export FZF_DEFAULT_OPTS="
-	--color fg:-1,bg:-1,hl:230,fg+:3,bg+:233,hl+:229
-	--color info:150,prompt:110,spinner:150,pointer:167,marker:174
-	--height 40%
-	--reverse
-	"
-export FZF_ALT_C_OPTS="$FZF_DEFAULT_OPTS --preview 'tree -C {} | head -200'"
-export FZF_CTRL_R_OPTS="
-	$FZF_DEFAULT_OPTS
-	--preview 'echo {}'
-	--preview-window down:3:hidden
-	--bind '?:toggle-preview'
-	"
-# To apply the command to CTRL-T as well
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+# FZF_DEFAULT_COMMAND="(git ls-tree -r --name-only HEAD"
+# FZF_DEFAULT_COMMAND="$FZF_DEFAULT_COMMAND || find . -path '*/\\.*' -prune -o"
+# FZF_DEFAULT_COMMAND="$FZF_DEFAULT_COMMAND \\( -type f -o -type l \\) -print"
+# FZF_DEFAULT_COMMAND="$FZF_DEFAULT_COMMAND | sed s/^..//) 2>/dev/null"
+# shellcheck disable=SC2089
+FZF_DEFAULT_COMMAND="ag -g ''"
+FZF_DEFAULT_OPTS="--color fg:-1,bg:-1,hl:230,fg+:3,bg+:233,hl+:229"
+FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --color info:150,prompt:110,spinner:150,pointer:167,marker:174"
+FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --height 40%"
+FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --reverse"
+# shellcheck disable=SC2089
+FZF_ALT_C_OPTS="$FZF_DEFAULT_OPTS --preview 'tree -C {} | head -200'"
+FZF_CTRL_R_OPTS="$FZF_DEFAULT_OPTS --preview 'echo {}'"
+FZF_CTRL_R_OPTS="$FZF_CTRL_R_OPTS --preview-window down:3:hidden"
+FZF_CTRL_R_OPTS="$FZF_CTRL_R_OPTS --bind '?:toggle-preview'"
+FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 # Using highlight (http://www.andre-simon.de/doku/highlight/en/highlight.html)
-export FZF_CTRL_T_OPTS="
-	$FZF_DEFAULT_OPTS
-	--preview '(highlight -O ansi -l {} || cat {} || tree -C {}) 2>/dev/null | head -200'
-	"
+# shellcheck disable=SC2089
+FZF_CTRL_T_OPTS="$FZF_DEFAULT_OPTS --preview '(highlight -O ansi -l {}"
+FZF_CTRL_T_OPTS="$FZF_CTRL_T_OPTS || cat {} || tree -C {}) 2>/dev/null | head -200'"
+# shellcheck disable=SC2089
+export FZF_ALT_C_OPTS FZF_CTRL_R_OPTS FZF_CTRL_T_OPTS
+# shellcheck disable=SC2089
+export FZF_DEFAULT_OPTS FZF_CTRL_T_COMMAND FZF_DEFAULT_COMMAND
 # export GDK_DPI_SCALE=0.4
 # export GDK_SCALE=2.25
 export GIT_PAGER="less -MRins"
@@ -139,7 +150,7 @@ export GOPATH="$HOME/.go"
 export GROFF_NO_SGR=1
 # Gtk themes
 # export GTK_DEBUG=all
-# export GTK_IM_MODULE="xim" QT_IM_MODULE="xim" XMODIFIERS="@im=none"
+export GTK_IM_MODULE="xim" QT_IM_MODULE="xim" XMODIFIERS="@im=none"
 # export GTK_IM_MODULE="fcitx" QT_IM_MODULE="fcitx" XMODIFIERS="@im=fcitx"
 # export GTK_IM_MODULE="ibus" QT_IM_MODULE="ibus" XMODIFIERS="@im=ibus"
 export GTK2_RC_FILES="$HOME/.gtkrc-2.0"
@@ -178,13 +189,11 @@ export LOCALE="C"
 export LV2_PATH="/usr/lib/lv2:/usr/local/lib/lv2:$HOME/lv2:/store/audio/lv2"
 export LXVST_PATH="/usr/lib/lxvst:/usr/local/lib/lxvst:$HOME/lxvst:/store/audio/lxvst"
 # export LESS=MNRXis
-export LESS=FMRXins
+export LESS="FMRXins"
 # shellcheck disable=SC2039
 export LESS_TERMCAP_se=$'\E[0m' LESS_TERMCAP_me=$'\E[0m' LESS_TERMCAP_us=$'\E[4;32;4;132m'
 # shellcheck disable=SC2039
 export LESS_TERMCAP_ue=$'\E[0m' LESS_TERMCAP_so=$'\E[30;43m' LESS_TERMCAP_md=$'\E[1;31m'
-# Intel VA-API and VDPAU configuration
-# export LIBVA_DRIVER_NAME=i965 VDPAU_DRIVER=va_gl
 export MANPAGER="env -u LESS less -MRins"
 MANPATH="/usr/lib/plan9/man:/usr/local/texlive/2016/texmf-dist/doc/man"
 MANPATH="/opt/intel/man/common:/usr/local/man:/usr/share/man:$MANPATH"
@@ -234,7 +243,6 @@ export PERLDOC="-i -oman"
 export PERLDOC_PAGER="less -MRins"
 # export PLAN9=/usr/lib/plan9 PATH="$PATH:$PLAN9/bin"
 PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/lib/pkgconfig"
-PKG_CONFIG_PATH="$HOME/GNUstep/Library/Libraries/pkgconfig:$PKG_CONFIG_PATH"
 PKG_CONFIG_PATH="$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH"
 export PKG_CONFIG_PATH
 # export PLAN9=/usr/lib/plan9 PATH="${PATH//:\/usr\/lib\/plan9\/bin}:$PLAN9/bin"
@@ -246,7 +254,7 @@ export PS_FORMAT="flags,uid,pid,ppid,tpgid,pgrp,session,pri,ni,pcpu,sz,wchan,sta
 # Python2 compatibility
 # export PYTHON="/usr/bin/python2"
 export PYTHONSTARTUP="$HOME/.pythonrc"
-export READNULLCMD=less
+export READNULLCMD="$dump_cmd"
 export REPORTTIME=5
 export RLWRAP_EDITOR="vim '+call cursor(%L,%C)'"
 export QEMU_AUDIO_DRV=pa
@@ -267,11 +275,11 @@ SURF_USERAGENT="$SURF_USERAGENT Chrome/49.0.2623.105 Mobile Safari/537.36"
 export SURF_USERAGENT
 export SYSTEMD_LESS="FKMRins"
 export TERMINAL=st
-TIME='%J
+TIME="%J
 [system: %S] [elapsed: %E] [cpu: %P]
 [swaps: %W] ([major: %F]+[minor: %R] pagefaults)
 [input: %I]+[output: %O] ([text: %Xk]+[data: %Dk] [max: %Mk] memory)
-[exit: %W] ([voluntary: %w]+[involuntary: %c] context-switches)'
+[exit: %W] ([voluntary: %w]+[involuntary: %c] context-switches)"
 TIMEFMT="$TIME"
 export TiME TIMEFMT
 export TZ=/usr/share/zoneinfo/posix/Pacific/Honolulu
@@ -281,12 +289,12 @@ export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2
 export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv
 # export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2
 # define word separators (for stuff like backward-word, forward-word, backward-kill-word,..)
-export WORDCHARS=
+export WORDCHARS=""
 # export WORDCHARS='_-*~'
 # export WORDCHARS='*?_-.[]~=/&;!#$%^ (){}<>'
 export WORKON_HOME="$HOME/.virtualenvs"
 # Set X cursor theme
-export XCURSOR_THEME=Oxygen_Blue
+export XCURSOR_THEME="Oxygen_Blue"
 # export XCURSOR_THEME=ArchCursorTheme
 export XDG_CACHE_HOME="$HOME/.cache"
 export XDG_CONFIG_DIRS="$HOME/.config:/etc/xdg"
