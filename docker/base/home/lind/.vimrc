@@ -1175,7 +1175,8 @@ let g:gitgutter_max_signs=5000
 noremap <Leader>u :GitGutterLineHighlightsToggle<CR>
 let g:CoVim_default_name="covim"
 let g:CoVim_default_port="999"
-let g:instant_rst_browser="chromium"
+" let g:instant_rst_browser="chromium"
+let g:instant_rst_browser="netsurf"
 let g:multicursor_insert_maps={}
 let g:multicursor_normal_maps={
 	\ '!':1, '@':1, '=':1, 'q':1, 'r':1,
