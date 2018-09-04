@@ -65,23 +65,21 @@ GCC_COLORS="error=01;31:warning=01;35:note=01;36:range1=32:range2=34"
 GCC_COLORS="$GCC_COLORS:caret=01;32:locus=01:quote=01:fixit-insert=32:fixit-delete=31"
 GCC_COLORS="$GCC_COLORS:diff-filename=01:diff-hunk=32:diff-delete=31:diff-insert=32"
 GCC_COLORS="$GCC_COLORS:type-diff=01;32"
-# GCC_COLORS="error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01"
 export GCC_COLORS
 # compiler flags
 CFLAGS="-Wno-error -Wno-implicit-fallthrough"
-# CFLAGS="$CFLAGS -fdiagnostics-color=always"
-# CFLAGS="$CFLAGS -fdiagnostics-generate-patch"
 # CFLAGS="$CFLAGS -flto"
 # CFLAGS="$CFLAGS -fno-common"
 # CFLAGS="$CFLAGS -fvar-tracking -fvar-tracking-assignments"
+# CFLAGS="$CFLAGS -fdiagnostics-color=always"
+# CFLAGS="$CFLAGS -fdiagnostics-generate-patch"
 CFLAGS="$CFLAGS -fno-strict-aliasing -fno-plt -fPIC"
 CFLAGS="$CFLAGS -fuse-ld=gold -fuse-linker-plugin"
-# CFLAGS="$CFLAGS -pipe"
 # CFLAGS="$CFLAGS -march=native -gdwarf-4 -g3 -O3"
 # CFLAGS="$CFLAGS -march=x86-64 -mtune=intel -g3 -O3"
 # CFLAGS="$CFLAGS -pipe -march=native -g -O3"
 # CFLAGS="$CFLAGS -pipe -march=x86-64 -mtune=generic -g -O3"
-CFLAGS="$CFLAGS -march=x86-64 -mtune=generic -O3"
+CFLAGS="$CFLAGS -pipe -march=x86-64 -mtune=generic -O2"
 export CFLAGS
 # export CHOST="x86_64-unknown-linux-gnu"
 # export CPATH=":$HOME/.local/include"
@@ -89,18 +87,13 @@ export CFLAGS
 # export CPPFLAGS="-D_FORTIFY_SOURCE=2"
 export CXXFLAGS="$CFLAGS"
 LDFLAGS="$CFLAGS"
-# LDFLAGS="$LDFLAGS -Wl,-O2,-z,relro,-z,now"
-# LDFLAGS="$LDFLAGS -Wl,--as-needed"
-# LDFLAGS="$LDFLAGS -Wl,--as-needed,--sort-common"
 # LDFLAGS="$LDFLAGS -Wl,--warn-unresolved-symbols"
-# LDFLAGS="$LDFLAGS -Wl,-O3,-z,relro,-z,now"
-# LDFLAGS="$LDFLAGS -Wl,--as-needed,--sort-common,--warn-common"
-LDFLAGS="$LDFLAGS -Wl,-O3,-z,relro,-z,now,-z,noexecstack"
-LDFLAGS="$LDFLAGS -Wl,--sort-common,--warn-common"
+LDFLAGS="$LDFLAGS -Wl,-O2,-z,relro,-z,now,-z,noexecstack"
+LDFLAGS="$LDFLAGS -Wl,--as-needed,--sort-common,--warn-common"
 export LDFLAGS
 # export LIBRARY_PATH="$HOME/.local/lib"
 # export MAKEFLAGS="-j -l$NPROC"
-export MAKEFLAGS="-j$((NPROC + 2)) -l$((NPROC + 2))"
+export MAKEFLAGS="-j$((NPROC + 2)) -l$NPROC"
 
 # Environment variables
 export ARCHFLAGS="-arch x86-64"
@@ -131,6 +124,7 @@ FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --height 40%"
 FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --reverse"
 # shellcheck disable=SC2089
 FZF_ALT_C_OPTS="$FZF_DEFAULT_OPTS --preview 'tree -C {} | head -200'"
+# shellcheck disable=SC2089
 FZF_CTRL_R_OPTS="$FZF_DEFAULT_OPTS --preview 'echo {}'"
 FZF_CTRL_R_OPTS="$FZF_CTRL_R_OPTS --preview-window down:3:hidden"
 FZF_CTRL_R_OPTS="$FZF_CTRL_R_OPTS --bind '?:toggle-preview'"
@@ -139,9 +133,9 @@ FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 # shellcheck disable=SC2089
 FZF_CTRL_T_OPTS="$FZF_DEFAULT_OPTS --preview '(highlight -O ansi -l {}"
 FZF_CTRL_T_OPTS="$FZF_CTRL_T_OPTS || cat {} || tree -C {}) 2>/dev/null | head -200'"
-# shellcheck disable=SC2089
+# shellcheck disable=SC2090
 export FZF_ALT_C_OPTS FZF_CTRL_R_OPTS FZF_CTRL_T_OPTS
-# shellcheck disable=SC2089
+# shellcheck disable=SC2090
 export FZF_DEFAULT_OPTS FZF_CTRL_T_COMMAND FZF_DEFAULT_COMMAND
 # export GDK_DPI_SCALE=0.4
 # export GDK_SCALE=2.25
@@ -284,12 +278,12 @@ TIMEFMT="$TIME"
 export TiME TIMEFMT
 export TZ=/usr/share/zoneinfo/posix/Pacific/Honolulu
 export VST_PATH="$HOME/vst:/store/audio/vst:/usr/lib/vst:/usr/local/lib/vst"
-export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2
 # export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
-export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv
-# export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2
+export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2
+# export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv
+export VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2
 # define word separators (for stuff like backward-word, forward-word, backward-kill-word,..)
-export WORDCHARS=""
+export WORDCHARS=''
 # export WORDCHARS='_-*~'
 # export WORDCHARS='*?_-.[]~=/&;!#$%^ (){}<>'
 export WORKON_HOME="$HOME/.virtualenvs"

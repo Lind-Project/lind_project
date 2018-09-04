@@ -417,17 +417,13 @@ augroup fileTypes
 	au BufNewFile,BufReadPost *nanorc setf nanorc
 	au BufNewFile,BufReadPost *vimpagerrc setf vim
 	au BufNewFile,BufReadPost *.\(service\|socket\|target\|timer\)* set filetype=sysctl
-	"au BufNewFile,BufReadPost *\(nftables.conf\|.nft\)* setf nftables
 	au BufNewFile,BufReadPost *\(nftables.conf\|.nft\)* set filetype=nftables
 	au BufNewFile,BufReadPost *toxic.conf* set filetype=cfg
-	"au BufNewFile,BufReadPost *conf setf config
-	"au BufNewFile,BufReadPost *conf setf conf
 	au BufNewFile,BufReadPost db.* set filetype=bindzone
 	au BufNewFile,BufReadPost *grub* set filetype=grub
 	au BufNewFile,BufReadPost *.\(cc\|cpp\) set filetype=cpp
 	au BufNewFile,BufReadPost proftpd.\(con\|conf\) set filetype=cterm
 	au BufNewFile,BufReadPost i3.conf set filetype=i3
-	"au BufNewFile,BufReadPost {/etc/udev/rules.d/,/store/config/}*.rules set filetype=udevrules
 	au BufNewFile,BufReadPost *.txt setf erlang
 	au BufNewFile,BufReadPost *.log setf irc
 	au BufNewFile,BufReadPost /etc/X11/xorg.conf.d/* setf xf86conf
@@ -449,9 +445,10 @@ augroup fileTypes
 	au BufNewFile,BufReadPost *.gtkon setf cs
 	au BufNewFile,BufReadPost *.md set filetype=markdown
 	au BufNewFile,BufReadPost PKGBUILD set filetype=sh
+	au BufNewFile,BufReadPost fcr-* set filetype=crontab
 
 	" fallback
-	au BufNewFile,BufReadPost * setf erlang
+	au BufNewFile,BufReadPost * setf cfg
 
 	au FileType cpp set keywordprg=cppman
 	au FileType c set keywordprg=man\ -s
@@ -1083,7 +1080,6 @@ let g:ale_c_clangtidy_checks=[
 	\ 'readability-misleading-indentation',
 	\ 'readability-misplaced-array-index',
 	\ 'readability-named-parameter',
-	\ 'readability-non-const-parameter',
 	\ 'readability-redundant-control-flow',
 	\ 'readability-redundant-function-ptr-dereference',
 	\ 'readability-redundant-member-init',
