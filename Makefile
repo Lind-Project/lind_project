@@ -7,7 +7,9 @@
 all lind:
 	@./mklind -e
 
-.PHONY: Makefile all lind run shell list show latest naclruntime prebuiltsdk base stack deploy pull clean prune
+.PHONY: Makefile all lind run shell list show
+.PHONY: latest naclruntime prebuiltsdk base
+.PHONY: stack deploy pull clean prune
 
 # targets like `make nacl` and `make lind/nacl` run their respective `./mklind -e nacl` command
 %:

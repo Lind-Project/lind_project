@@ -338,10 +338,10 @@ alias 6nroutes='route -A inet6 -e'
 alias 6iproutes='ip -6 route show'
 
 # get top process eating memory
-alias psmem='ps auxf | sort -nrk 4'
+alias psmem='ps auxf | sort -nrk 4 | bat -l sh  --theme=1337'
 alias psmem10='ps auxf | sort -nrk 4 | head -10'
 # get top process eating cpu
-alias pscpu='ps auxf | sort -nrk 3'
+alias pscpu='ps auxf | sort -nrk 3 | bat -l sh  --theme=1337'
 alias pscpu10='ps auxf | sort -nrk 3 | head -10'
 # older systems use /proc/cpuinfo
 alias cpuinfo='less /proc/cpuinfo'

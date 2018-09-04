@@ -1,5 +1,5 @@
 FROM alyptik/lind:base
-LABEL lind "v0.10-beta"
+LABEL lind "v1.0-rc2"
 LABEL description "Lind NaCl Runtime (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 

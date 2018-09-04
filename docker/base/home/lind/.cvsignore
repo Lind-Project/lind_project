@@ -1,5 +1,6 @@
 build/
 venv/
+obj/
 core\.*
 *.rej
 *.old

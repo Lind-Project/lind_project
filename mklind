@@ -6,7 +6,7 @@
 # Updated by Joey Pabalinas <joeypabalinas@gmail.com>
 
 # version and usage strings
-readonly version=0.10.0-rc1
+readonly version=1.0.0-rc2
 usage+=$'\n'"Lind $version NaCl Toolchain Build Script"$'\n'
 usage+=$'\n'
 usage+=$'Usage:\n'
@@ -17,32 +17,18 @@ usage+=$'\t-e\tUse default environment.\n'
 usage+=$'\t-h\tDisplay this help.\n'
 usage+=$'\t-v\tDisplay script version.\n'
 
-# uncomment this to print each command as they are executed
-# ≈set -o xtrace
-
-# uncomment this for debugging. will stop on any failed commands
-# set -o errexit
-
-# uncomment this to dump time profiling information out to a file to see where the script is slow
-# ps4='+ $(date "+%s.%n")\011 '
-# exec 3>&2 2> bashstart.$$.log
-# set -x
-
-# track currently executing function
-cur_func="${FUNCNAME[0]}"
-cur_line="$LINENO"
+# track line number and arguments of current function
 args="$*"
-
+line="$LINENO"
 # set to zero until we actually start building
 start_time=0
+# signals which trigger abort() function
+err_signals=(ERR INT)
 
 # wrapper for desired logging command
 #
 function print() {
 	printf '%s\n' "$@"
-	# notify-send \
-	#   --icon=/usr/share/icons/gnome/256x256/apps/utilities-terminal.png \
-	#   "build script" "$*" >/dev/null 2>&1
 }
 
 # calculate total build time
@@ -59,13 +45,15 @@ function get_build_time() {
 # print out error information and abort
 #
 function abort() {
-	print "" "[$0:$cur_line] Error: [function: $cur_func()] [arguments: $args]." >&2
+	local func
+	func="${FUNCNAME[1]}"
+	print "" "[$0:$line] Error: [function: $func()] [arguments: ${args:-(nil)}]." "" >&2
 	exit 1
 }
 
 # cleanup traps
 trap -- 'get_build_time' EXIT
-trap -- 'cur_line="$LINENO" args="$*" abort' ERR
+trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 # guard against incompatible compiler flags
 unset CFLAGS CPATH CPPFLAGS CXXFLAGS LDFLAGS
@@ -208,23 +196,19 @@ readonly -a RSYNC=(rsync '--progress=status2,stats2' '-ahhkpvA')
 # clean downloaded sources
 #
 function clean_src() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	print "Cleaning Lind..."
 	cd "$LIND_BASE"
 	rm -rf "$NACL_PORTS_DIR"
 	rm -rf lind_experiments lind-misc third_party lss
 	rm -rf nacl_repy nacl-gcc nacl-binutils lind_glibc
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # download sources
 #
 function download_src() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	local pip_bin pip_ver
 	local -A git_deps
@@ -339,27 +323,21 @@ function download_src() {
 
 	cd "$LIND_BASE"
 	rm -rfv _gclient_*
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # wipe the entire modular build toolchain build tree, then rebuild it
 # warning: this can take a while!
 #
 function clean_toolchain() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	cd "$NACL_TOOLCHAIN_BASE" && rm -rf out BUILD
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # copy the toolchain and liblind into the repy subdir
 #
 function install_to_path() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	print "** Sending NaCl files to $REPY_PATH **"
 
@@ -389,28 +367,22 @@ function install_to_path() {
 	"$REPY_PATH_BIN/lindfs" cp "$REPY_PATH_LIB/"
 
 	print "Done."
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # check the $REPY_PATH location to make sure it is safe to be installing stuff there.
 #
 function check_install_dir() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	[[ ! -d "$REPY_PATH" && -e "$REPY_PATH" ]] && false
 	# and if it does not exist, make it.
 	mkdir -p "$REPY_PATH"
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # install repy into $REPY_PATH with the prepare_tests script.
 #
 function build_repy() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	set -o errexit
 
@@ -440,28 +412,22 @@ function build_repy() {
 	done
 
 	set +o errexit
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # run applications test suites.
 #
 function test_apps() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	set +o errexit
 
 	cd "$MISC_DIR/tests" && ./test.sh
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # run glibc test suites.
 #
 function test_glibc() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	set -o errexit
 
@@ -471,15 +437,12 @@ function test_glibc() {
 	cd ..
 	rm -rfv lind.metadata linddata.*
 	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # run repy test suites.
 #
 function test_repy() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	# some of our unit tests fail
 	set +o errexit
@@ -498,15 +461,12 @@ function test_repy() {
 	file="ut_seattlelibtests_teststruct.py"
 	print "$file"
 	python2 "$file"
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # run system call test suites.
 #
 function test_syscalls() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	local cc_cmd
 
@@ -524,15 +484,12 @@ function test_syscalls() {
 	print ""
 	# reset signal dispositions
 	trap - ERR INT TERM
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # update, build and test everything. if there is a problem, freak out.
 #
 function nightly_build() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	clean_nacl
 	clean_src
@@ -550,15 +507,12 @@ function nightly_build() {
 	# test_glibc
 	# test_repy
 	test_syscalls
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # run the nacl build.
 #
 function build_nacl() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	print "Building NaCl"
 
@@ -583,15 +537,12 @@ function build_nacl() {
 		skip_trusted_tests=1 disable_flaky_tests=1 \
 		platform=x86-64
 	print "Done building NaCl"
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # run clean on nacl build.
 #
 function clean_nacl() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	cd "$NACL_BASE"
 	PATH="$LIND_BASE:$PATH" \
@@ -599,15 +550,12 @@ function clean_nacl() {
 		nacl_pic=1 werror=0 \
 		platform=x86-64 --nacl_glibc -j"$JOBS" -c
 	print "Done Cleaning NaCl"
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # build glibc from source
 #
 function build_glibc() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	# the build is long and borning, so execute this first if it exists
 	print ""
@@ -627,48 +575,37 @@ function build_glibc() {
 	PATH="$LIND_BASE:$PATH" make -j"$JOBS" build-with-glibc
 
 	print "Done building toolchain"
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # perform an incremental glibc build
 #
 function update_glibc() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	cd "$NACL_TOOLCHAIN_BASE"
 	PATH="$LIND_BASE:$PATH" make -j"$JOBS" updateglibc
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # perform a clean glibc build
 #
 function update_glibc2() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	cd "$NACL_TOOLCHAIN_BASE"
 	rm -rf BUILD/stamp-glibc64
 	PATH="$LIND_BASE:$PATH" make -j"$JOBS" BUILD/stamp-glibc64
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # build docker images
 #
 function build_docker() {
-	trap -- 'cur_line="$LINENO" args="$*" abort' ERR
-	cur_func="${FUNCNAME[0]}"
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	cd "$LIND_BASE"
 	docker image rm -f alyptik/lind:base alyptik/lind:prebuiltsdk alyptik/lind:latest
 	docker build -t alyptik/lind:base ./docker/base
 	docker build -t alyptik/lind:prebuiltsdk ./docker/prebuiltsdk
 	docker build --cache-from=alyptik/lind:prebuiltsdk -t alyptik/lind:latest ./docker/prebuiltsdk
-
-	cur_func="${FUNCNAME[1]}"
 }
 
 # prompt for target if none given on command line
