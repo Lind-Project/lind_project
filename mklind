@@ -227,7 +227,7 @@ function download_src() {
 		git fetch --all
 		git checkout master
 	fi
-	git submodule update --checkout --init --recursive --remote .
+	git submodule update --init --recursive --remote .
 	git_deps[lind_experiments]="$LIND_EXPERIMENTS_URL"
 	git_deps[lind-misc]="$LIND_MISC_URL"
 	git_deps[third_party]="$THIRD_PARTY_URL"
@@ -391,7 +391,6 @@ function build_repy() {
 	mkdir -pv "$REPY_PATH_REPY"
 	print "Building Repy in $REPY_SRC to $REPY_PATH"
 	cd "$NACL_REPY"
-	git checkout develop
 	cp -fv ./seattlelib/xmlrpc* "$REPY_PATH_REPY/"
 	python2 ./preparetest.py -t -f "$REPY_PATH_REPY"
 	print "Done building Repy in \"$REPY_PATH_REPY\""
