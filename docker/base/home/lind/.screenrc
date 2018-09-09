@@ -128,7 +128,7 @@ deflogin on
 defmousetrack off
 defnonblock on
 defobuflimit 1024
-defscrollback 10000
+defscrollback 1000
 # password none'
 bell on
 vbell on

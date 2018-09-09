@@ -446,6 +446,7 @@ augroup fileTypes
 	au BufNewFile,BufReadPost *.md set filetype=markdown
 	au BufNewFile,BufReadPost PKGBUILD set filetype=sh
 	au BufNewFile,BufReadPost fcr-* set filetype=crontab
+	au BufNewFile,BufReadPost *.\(repy\|mix\) set filetype=python
 
 	" fallback
 	au BufNewFile,BufReadPost * setf cfg
@@ -869,8 +870,8 @@ let g:clang_cpp_options=''
 	\ . '-D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 '
 	\ . '-I./ -I../ -I../../ -I../../../ -I./src/ -I./t/ '
 	\ . '-I./trusted/include/ -I./untrusted/include -I./include/ '
-	\ . '-I/usr/include/python2.7/ -I/inc/python3.6m/ '
-	\ . '-I/usr/lind_project/ -I/usr/lind_project/lind_glibc/sysdeps/nacl/ '
+	\ . '-I/usr/include/python2.7/ -I/usr/include/python3.6m/ '
+	\ . '-I/p/lind_project/ -I/p/lind_project/lind_glibc/sysdeps/nacl/ '
 	\ . '-Wall -Wextra -pedantic '
 	\ . '-Wno-gnu-statement-expression '
 	\ . '-Wno-missing-braces -Wno-missing-field-initializers '
@@ -887,8 +888,8 @@ let g:ale_c_clang_options=''
 	\ . '-D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700 '
 	\ . '-I./ -I../ -I../../ -I../../../ -I./src/ -I./t/ '
 	\ . '-I./trusted/include/ -I./untrusted/include -I./include/ '
-	\ . '-I/usr/include/python2.7/ -I/inc/python3.6m/ '
-	\ . '-I/usr/lind_project/ -I/usr/lind_project/lind_glibc/sysdeps/nacl/ '
+	\ . '-I/usr/include/python2.7/ -I/usr/include/python3.6m/ '
+	\ . '-I/p/lind_project/ -I/p/lind_project/lind_glibc/sysdeps/nacl/ '
 	\ . '-Wall -Wextra -pedantic '
 	\ . '-Wno-gnu-statement-expression '
 	\ . '-Wno-missing-braces -Wno-missing-field-initializers '

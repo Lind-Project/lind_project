@@ -2,11 +2,13 @@
 
 # Unset previous function/alias instances
 unset -f define defrag fc java l sudo wd which 2>/dev/null
-unalias {1..9} b2p c d es f gbr gco gcs gg gm h history java 2>/dev/null
+unalias {1..9} b2p c d es f gbr gco gcs gg gm h history i java 2>/dev/null
 unalias md meminfo node o p2b rd ru s sd sf si u v which-command 2>/dev/null
 unalias xi xo xpi xpo z zz 2>/dev/null
 
 # Custom aliases
+alias bmake='env -u MAKEFLAGS bmake'
+alias ly='lynx -accept_all_cookies -prettysrc -session="$HOME/.lynx_session" -short_url -use_mouse'
 alias rstview='restview'
 alias lfd='ls -lAhqiQFs1 --color=auto /proc/$$/fd'
 alias show-sgcc='gcc -c -g -Wa,-a,-ad'
