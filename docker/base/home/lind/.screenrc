@@ -74,8 +74,8 @@ bindkey -m \,
 bindkey -m .
 bindkey -m "\033;" stuff ^B
 bindkey -m "\033'" stuff ^F
-# PgUp | Enter cop:y/scrollback mode and page up
-# PgDown | Enter copy/scrollback mode and page down
+# pgup | enter cop:y/scrollback mode and page up
+# pgdown | enter copy/scrollback mode and page down
 # bindkey -k kP eval copy "stuff ^B"
 # bindkey -k kN eval copy "stuff ^F"
 bindkey -m -k kP stuff ^B
@@ -87,10 +87,10 @@ bindkey -m ^E stuff "$}{"
 # bindkey -m "\033[1;5C" stuff "]"
 bindkey -m "\033[1;5D" stuff "["
 bindkey -m "\033[1;5C" stuff "}}["
-## M-< and M-> for start/end of buffer
+# m-< and m-> for start/end of buffer
 bindkey -m "\033<" stuff "g"
 bindkey -m "\033>" stuff "G"
-## Easier scrolling
+# easier scrolling
 # bindkey "\033[M`[8" eval 'copy' 'stuff ^B'
 # bindkey "\033[MaZ8" eval 'copy' 'stuff ^F'
 
@@ -100,11 +100,11 @@ backtick 3 5 5 "whoami"
 backtick 4 5 5 "date"
 backtick 5 5 5 true
 
-## Kill startup message
+# kill startup message
 startup_message off
 attrcolor b ".I"
 attrcolor i "+b"
-# attrcolor u "+u"
+attrcolor u "+u"
 sorendition "+bi Dw"
 # sorendition "+biu Dw"
 # rendition bell "=bu"
@@ -138,28 +138,34 @@ msgwait 3
 activity "Wuff!!"
 vbell_msg "Wuff!!  ----  Wuff!!"
 bell_msg "🐶 WOOF!!! ——— WOOF!!! 🐶 "
-# bell_msg "!!! WOOF WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOF WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOF WOOOOOOOOOOOOOOOOOOOOOOOOOOOOOF WOOF !!!"
-# bell_msg "WOOOF WOOF WOOF WOOF WOOOOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOF WOOOOOOOOF WOOF WOOOOOOF"
 
 termcapinfo * "Z0=\E[?3h:Z1=\E[?3l"
 termcapinfo gnome* "XT"
-## Informs screen that all terminals that begin with “xterm” have firm auto-margins that allow the last
-## position on the screen to be updated (LP), but they don't really have a status line (no hs - append @
-## to turn entries off). Note that we assume LP for all terminal names that start with “vt”, but only
-## if you don't specify a termcap command for that terminal.
+# informs screen that all terminals that begin with “xterm” have firm
+# auto-margins that allow the last position on the screen to be updated
+# (lp), but they don't really have a status line (no hs - append @ to
+# turn entries off). note that we assume lp for all terminal names that
+# start with “vt”, but only if you don't specify a termcap command for
+# that terminal.
 termcapinfo xterm*|xs "ti@:te@:xn:hs@:Co#256:LP:AB=\E[48;5;%dm:AF=\E[38;5;%dm"
-## Specifies the firm-margined LP capability for all terminals that begin with “vt”, and the second line
-## will also add the escape-sequences to switch into (Z0) and back out of (Z1) 132-character-per-line mode
-## if this is a VT102 or VT220. (You must specify Z0 and Z1 in your termcap to use the width-changing commands.)
+# specifies the firm-margined lp capability for all terminals that begin with
+# “vt”, and the second line will also add the escape-sequences to switch into
+# (z0) and back out of (z1) 132-character-per-line mode if this is a vt102 or
+# vt220. (you must specify z0 and z1 in your termcap to use the width-changing
+# commands.)
 termcapinfo vt* "LP:xn"
 termcapinfo vt102|vt220 "Z0=\E[?3h:Z1=\E[?3l"
-## This leaves your vt100 termcap alone and adds the function key labels to each window"s termcap entry.
+# this leaves your vt100 termcap alone and adds the function key labels to each
+# window's termcap entry.
 termcapinfo vt100  ""  "l0=PF1:l1=PF2:l2=PF3:l3=PF4"
-## Takes a h19 or z19 termcap and turns off auto-margins (am@) and enables the insert mode (im) and end-insert (ei)
-## capabilities (the @ in the im string is after the =, so it is part of the string). Having the im and ei
-## definitions put into your terminal's termcap will cause screen to automatically advertise the character-insert
-## capability in each window's termcap. Each window will also get the delete-character capability (dc) added to
-## its termcap, which screen will translate into a line-update for the terminal (we"re pretending it doesn"t support character deletion).
+# takes a h19 or z19 termcap and turns off auto-margins (am@) and enables the
+# insert mode (im) and end-insert (ei) capabilities (the @ in the im string
+# is after the =, so it is part of the string). having the im and ei definitions
+# put into your terminal's termcap will cause screen to automatically advertise
+# the character-insert capability in each window's termcap. each window will
+# also get the delete-character capability (dc) added to its termcap, which
+# screen will translate into a line-update for the terminal (we're pretending
+# it doesn't support character deletion).
 termcapinfo h19|z19  "am@:im=\E@:ei=\EO" "dc=\E[P"
 termcapinfo st* "ti@:te@:hs"
 # termcapinfo st* "ti@:te@:LP:xn:am:bce:hs@:mir:msgr:npc:xenl:oc@:initc@:smcup=\E[?1049h:rmcup=\E[?1049l"
@@ -168,32 +174,14 @@ termcapinfo rxvt* "Co#256:AB=\E[48;5;%dm:AF=\E[38;5;%dm:ti@:te@:hs@:ts=\E]2;:fs=
 
 term screen-256color-italic
 # term screen-256color-it
-# term screen-256color-bce-it
-# term screen-256color-bce-s-it
-# term st
-# term st-256color
-# term xterm-256color
-# term xterm-256color-it
-# term rxvt-unicode
-# term rxvt-unicode-256color
 
-## yes, master is development branch and has improved escape codes
-## allowing for 256 and truecolor in hardstatus (though truecolor escapes
-## seem broken at the moment, will need to look at it).
-##
-## Colors are defined as pairs inside brackets separated by semicolon,
-## foreground first, background second. You can use '-' or empty field to
-## "reset" color to default. Truecolor defines are prefixed by x character.
-##
-## For example
-## hardstatus alwayslastline "%{1;2} red on green %{-;-}"
-## hardstatus alwaysfirstline "%{199;77} magenta on light green %{-;-}"
-## hardstatus alwayslastline "%{xFF0000;x00FF00} red on green in truecolor %{-;-}"
 hardstatus on
 caption always
 hardstatus alwayslastline
 windowlist string "%4n %h%=%f"
 caption string "%{= kK}%{+b ..}%?%E%{+r ..}%?%?%P%{+u ..}%?:%{+b ..}%?%E%{+r kK}%?%?%P%{+u kK}%?:%{+b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?[%{+b kG}%?%E%{+r kG}%?%?%P%{+u kG}%? %S %{+b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?]%{+b kW}%?%E%{+r kW}%?%?%P%{+u kW}%?%= %?%-Lw%?%{+b kR}%?%E%{+r kR}%?%?%P%{+u kR}%?%n*%f %t%?%{+b kR}%?%E%{+r kR}%?%?%P%{+u kR}%?(%u)%?%{=b kW}%?%E%{+r kW}%?%?%P%{+u kW}%?%?%+Lw%? %=%{+b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?[%{+b kG}%?%E%{+r kG}%?%?%P%{+u kG}%? %h %{+b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?]%{-b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?:%{+b kK}%?%E%{+r kK}%?%?%P%{+u kK}%?:%5`"
 hardstatus string "%{= kK}%{= kG}%?%E%{+r kG}%?%?%P%{+u kG}%?[ %{= kW}%?%E%{+r kW}%?%?%P%{+u kW}%?%3`%{= kR}%?%E%{+r kR}%?%?%P%{+u kR}%?@%{= kW}%?%E%{+r kW}%?%?%P%{+u kW}%?%H%{= kG}%?%E%{+r kG}%?%?%P%{+u kG}%? ][ %{= kY}%?%E%{+r kY}%?%?%P%{+u kY}%?Load%{= kW}%?%E%{+r kW}%?%?%P%{+u kW}%?: %{= kY}%?%E%{+r kY}%?%?%P%{+u kY}%?%2` %{= kG}%?%E%{+r kG}%?%?%P%{+u kG}%?]%=[ %{kM}%?%E%{+r kM}%?%?%P%{+u kM}%?%1`%{= kG}%?%E%{+r kG}%?%?%P%{+u kG}%? ][ %{kB}%?%E%{+r kB}%?%?%P%{+u kB}%?%4` %{= kG}%?%E%{+r kG}%?%?%P%{+u kG}%?]%5`"
+
+chdir /p/linux
 
 # vi:ft=screen:
