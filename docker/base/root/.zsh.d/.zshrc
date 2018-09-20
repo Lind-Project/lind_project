@@ -233,7 +233,7 @@ for mode in $kbd_modes; do
 	bindkey -M "$mode" "\e;" fzf-completion
 	bindkey -M "$mode" "\e\C-i" fasd-complete
 	bindkey -M "$mode" "\e[Z" reverse-menu-complete
-	bindkey -M "$mode" "\C-i" "$fzf_default_completion"
+	bindkey -M "$mode" "\C-i" complete-word
 	bindkey -M "$mode" "\ei" zle-locate-widget
 	bindkey -M "$mode" "\er" fzf-history-widget
 	bindkey -M "$mode" "\C-t" transpose-words
