@@ -42,7 +42,7 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
      "python2", "python2-pip", "python2-setuptools", "p7zip", "fuse3", "ack", \
      "python2-virtualenv", "python-virtualenvwrapper", "pkgfile", "dhcpcd", \
      "iputils","python", "iproute2", "net-tools", "openresolv", "openssh", \
-     "subversion", "pacman-contrib", "tree", "psmisc", "lsof", "wget", i\
+     "subversion", "pacman-contrib", "tree", "psmisc", "lsof", "wget", \
      "pinfo", "asp","unrar", "expac", "inetutils", "tmux", "screen", \
      "bash-completion", "mlocate", "shadow", "grml-zsh-config", "ncdu", \
      "bind-tools", "cowsay", "filesystem", "linux-headers", "linux-docs", \

@@ -334,7 +334,7 @@ function clean_toolchain() {
 	cd "$NACL_TOOLCHAIN_BASE" && rm -rf out BUILD
 }
 
-# copy the toolchain and liblind into the repy subdir
+# copy the toolchain into the repy subdir
 #
 function install_to_path() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
@@ -356,11 +356,6 @@ function install_to_path() {
 	chmod +x "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
 
 	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"  "$REPY_PATH_LIB/glibc"
-
-	print "Building liblind... "
-	cd "$MISC_DIR/liblind"
-	make clean
-	make all
 
 	print "Copying glibc into repy virtual filesytem"
 	cd "$REPY_PATH/repy"
@@ -560,9 +555,6 @@ function build_glibc() {
 	print ""
 	fortune 2>/dev/null || print "Fortune Not Found. Skipping." >&2
 	print "" "Copying component.h header to glibc: "
-	cd "$MISC_DIR/liblind"
-	mkdir -p "$LIND_GLIBC_SRC/sysdeps/nacl/sysdeps/nacl/"
-	cp -pfv component.h "$LIND_GLIBC_SRC/sysdeps/nacl/"
 
 	print "Building glibc"
 
