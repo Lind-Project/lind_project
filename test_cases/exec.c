@@ -10,14 +10,15 @@ extern char **environ;
 int main(void)
 {
 	char *args[] = {"/hello", 0};
+	FILE *fp = stdout;
 
-	printf("environ = [%p]\n", (void *)environ);
-	printf("executing: %s", args[0]);
+	fprintf(fp, "environ = [%p]\n", (void *)environ);
+	fprintf(fp, "executing: %s", args[0]);
 	for (size_t i = 1; args[i]; i++) {
-		putchar(' ');
-		printf("%s", args[i]);
+		putc(' ', fp);
+		fprintf(fp, "%s", args[i]);
 	}
-	putchar('\n');
+	putc('\n', fp);
 
 	/* execv(args[0], args); */
 	execve(args[0], args, environ);
