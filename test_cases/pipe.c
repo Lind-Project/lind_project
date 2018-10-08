@@ -31,8 +31,8 @@ int main(void)
 	}
 	printf("read() ret: %d\n", ret);
 
-	/* close(fd[0]); */
-	/* close(fd[1]); */
+	close(fd[0]);
+	close(fd[1]);
 	puts(str);
 
 	return 0;
