@@ -46,7 +46,7 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
      "pinfo", "asp","unrar", "expac", "inetutils", "tmux", "screen", \
      "bash-completion", "mlocate", "shadow", "grml-zsh-config", "ncdu", \
      "bind-tools", "cowsay", "filesystem", "linux-headers", "linux-docs", \
-     "man-pages", "man-db", "util-linux"]
+     "man-pages", "man-db", "util-linux", "help2man"]
 RUN ["/usr/bin/pkgfile", "--update"]
 
 USER lind
