@@ -12,7 +12,7 @@ int main(void)
 	char str[] = "write succeeded\n";
 
 	puts("attempting to write to STDOUT_FILENO");
-	write(STDOUT_FILENO, str, sizeof str);
+	write(STDOUT_FILENO, str, sizeof str - 1);
 
 	return 0;
 }
