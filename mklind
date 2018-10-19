@@ -13,7 +13,7 @@ usage+=$'Usage:\n'
 usage+=$'\t'"$0 [-ehv] [targets]"$'\n'
 usage+=$'\n'
 usage+=$'Options:\n'
-usage+=$'\t-e\tUse default environment.\n'
+usage+=$'\t-e\tUse custom environment instead of defaults for directory paths.\n'
 usage+=$'\t-h\tDisplay this help.\n'
 usage+=$'\t-v\tDisplay script version.\n'
 
@@ -24,6 +24,8 @@ line="$LINENO"
 start_time=0
 # signals which trigger abort() function
 err_signals=(ERR INT)
+# use the default environment by default
+default_env=1
 
 # wrapper for desired logging command
 #
@@ -39,7 +41,7 @@ function get_build_time() {
 		diff_time="$((end_time - start_time))"
 		print $'\a' "It took $diff_time seconds"
 	fi
-	print "" "All done."
+	print "" "All done." >&2
 }
 
 # print out error information and abort
@@ -62,36 +64,8 @@ unset CFLAGS CPATH CPPFLAGS CXXFLAGS LDFLAGS
 for word; do
 	case "$word" in
 	-*e*)
-		# setup and print out the default environment
-		export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
-		export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
-		export LIND_SRC="${LIND_SRC:-$LIND_BASE/lind}"
-		export LIND_MONITOR="${LIND_MONITOR:-$LIND_BASE/reference_monitor}"
-		export REPY_PATH="${REPY_PATH:-$LIND_SRC/repy}"
-		export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$REPY_PATH/sdk}"
-		export PYTHON="${PYTHON:-python2}"
-		export PNACLPYTHON="${PNACLPYTHON:-python2}"
-		export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
-
-		print
-		print '======================================================'
-		print 'USING DEFAULT LIND ENVIRONMENT:'
-		print '======================================================'
-		print
-		cat <<-EOF
-			export LIND_PREFIX="$LIND_PREFIX"
-			export LIND_BASE="$LIND_BASE"
-			export LIND_SRC="$LIND_SRC"
-			export LIND_MONITOR="$LIND_MONITOR"
-			export REPY_PATH="$REPY_PATH"
-			export NACL_SDK_ROOT="$NACL_SDK_ROOT"
-			export PYTHON="$PYTHON"
-			export PNACLPYTHON="$PNACLPYTHON"
-			export LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-		EOF
-		print
-		print '======================================================'
-		print
+		# don't setup and print out the default environment
+		default_env=0
 		# remove -e flag after setting up environment using '!' as the sentinel
 		mapfile -t argv < <(printf '%s\n' "${@//-*e*/!}" | sed '/!/d' | sort | uniq)
 		set -- "${argv[@]}"
@@ -124,6 +98,38 @@ for word; do
 		;;
 	esac
 done
+
+if ((default_env)); then
+	export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
+	export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
+	export LIND_SRC="${LIND_SRC:-$LIND_BASE/lind}"
+	export LIND_MONITOR="${LIND_MONITOR:-$LIND_BASE/reference_monitor}"
+	export REPY_PATH="${REPY_PATH:-$LIND_SRC/repy}"
+	export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$REPY_PATH/sdk}"
+	export PYTHON="${PYTHON:-python2}"
+	export PNACLPYTHON="${PNACLPYTHON:-python2}"
+	export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
+
+	print
+	print '======================================================'
+	print 'USING DEFAULT LIND ENVIRONMENT:'
+	print '======================================================'
+	print
+	cat <<-EOF
+		export LIND_PREFIX="$LIND_PREFIX"
+		export LIND_BASE="$LIND_BASE"
+		export LIND_SRC="$LIND_SRC"
+		export LIND_MONITOR="$LIND_MONITOR"
+		export REPY_PATH="$REPY_PATH"
+		export NACL_SDK_ROOT="$NACL_SDK_ROOT"
+		export PYTHON="$PYTHON"
+		export PNACLPYTHON="$PNACLPYTHON"
+		export LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+	EOF
+	print
+	print '======================================================'
+	print
+fi
 
 if [[ -z "$REPY_PATH" ]]; then
 	print "Need to set REPY_PATH" >&2
