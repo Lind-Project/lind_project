@@ -57,9 +57,6 @@ function abort() {
 trap -- 'get_build_time' EXIT
 trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
-# guard against incompatible compiler flags
-unset CFLAGS CPATH CPPFLAGS CXXFLAGS LDFLAGS
-
 # check for flags
 for word; do
 	case "$word" in
