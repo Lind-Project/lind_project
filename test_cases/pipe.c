@@ -15,8 +15,10 @@ int main(void)
 	char str[4096] = {0};
 	int ret, fd[2];
 
-	perror("pipe()");
-	pipe(fd);
+	if (pipe(fd) < 0) {
+		perror("pipe()");
+		exit(EXIT_FAILURE);
+	}
 	printf("pipe() ret: [%d, %d]\n", fd[0], fd[1]);
 
 	if ((ret = write(fd[1], "hi\n", 3)) < 0) {
@@ -31,9 +33,22 @@ int main(void)
 	}
 	printf("read() ret: %d\n", ret);
 
-	close(fd[0]);
-	close(fd[1]);
+	for (size_t i = 0; i < sizeof fd / sizeof *fd; i++) {
+		if (close(fd[i]) < 0) {
+			perror("close()");
+			exit(EXIT_FAILURE);
+		}
+	}
 	puts(str);
+
+	/* double close() error injection */
+
+	/*
+	 * if (close(fd[0]) < 0) {
+	 *         perror("second close(fd[0])");
+	 *         exit(EXIT_FAILURE);
+	 * }
+	 */
 
 	return 0;
 }
