@@ -46,10 +46,14 @@ int main(void)
 		exit(EXIT_SUCCESS);
 	}
 
-	printf("pid %d waiting on %d\n", getpid(), pid);
-	if (waitpid(pid, &pret, 0) < 0)
-		perror("waitpid()");
-	printf("pid = %d, ret = %d, status = %d\n", getpid(), pid, pret);
+	/* commented out to test wait() for deadlocks -jp */
+	/*
+	 * printf("pid %d waiting on %d\n", getpid(), pid);
+	 * if (waitpid(pid, &pret, 0) < 0)
+	 *         perror("waitpid()");
+	 * printf("pid = %d, ret = %d, status = %d\n", getpid(), pid, pret);
+	 */
+
 	printf("pid %d forking\n", getpid());
 	fflush(0);
 

@@ -27,6 +27,9 @@ err_signals=(ERR INT)
 # use the default environment by default
 default_env=1
 
+# guard against incompatible compiler flags
+unset CFLAGS CPATH CPPFLAGS CXXFLAGS LDFLAGS
+
 # wrapper for desired logging command
 #
 function print() {
