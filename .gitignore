@@ -24,6 +24,7 @@ validator_snapshots/
 repy/
 nacl/
 /lind/*/
+/venv/
 /virtualenvs/*/
 !/virtualenvs/
 /test_cases/*
