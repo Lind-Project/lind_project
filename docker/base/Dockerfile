@@ -1,5 +1,5 @@
 FROM archlinux/base
-LABEL lind "v1.0-rc2"
+LABEL lind "v1.0-rc3"
 LABEL description "Lind NaCl Glibc Toolchain (Base)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
@@ -40,13 +40,12 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
      "ncurses", "gcc-libs", "lib32-gcc-libs", "gperf", "diffutils", "fzf", \
      "gperftools", "texinfo", "fortune-mod", "gnupg", "highlight", "fasd", \
      "python2", "python2-pip", "python2-setuptools", "p7zip", "fuse3", "ack", \
-     "python2-virtualenv", "python-virtualenvwrapper", "pkgfile", "dhcpcd", \
-     "iputils","python", "iproute2", "net-tools", "openresolv", "openssh", \
-     "subversion", "pacman-contrib", "tree", "psmisc", "lsof", "wget", \
-     "pinfo", "asp","unrar", "expac", "inetutils", "tmux", "screen", \
-     "bash-completion", "mlocate", "shadow", "grml-zsh-config", "ncdu", \
-     "bind-tools", "cowsay", "filesystem", "linux-headers", "linux-docs", \
-     "man-pages", "man-db", "util-linux", "help2man"]
+     "python2-virtualenv", "pkgfile", "dhcpcd", "iputils","python", "iproute2", \
+     "net-tools", "openresolv", "openssh", "subversion", "pacman-contrib", \
+     "tree", "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", \
+     "inetutils", "tmux", "screen", "bash-completion", "mlocate", "shadow", \
+     "ncdu", "bind-tools", "cowsay", "filesystem", "linux-headers", \
+     "linux-docs", "man-pages", "man-db", "util-linux", "help2man"]
 RUN ["/usr/bin/pkgfile", "--update"]
 
 USER lind
