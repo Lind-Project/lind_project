@@ -206,9 +206,9 @@ function clean_src() {
 
 	print "Cleaning Lind..."
 	cd "$LIND_BASE"
-	rm -rf "$NACL_PORTS_DIR"
-	rm -rf lind_experiments lind-misc third_party lss
-	rm -rf nacl_repy nacl-gcc nacl-binutils lind_glibc
+	rm -rf -- "$NACL_PORTS_DIR"
+	rm -rf -- lind_experiments lind-misc third_party lss
+	rm -rf -- nacl_repy nacl-gcc nacl-binutils lind_glibc
 }
 
 # download sources
@@ -245,7 +245,7 @@ function download_src() {
 	# fallback
 	for dir in "${!git_deps[@]}"; do
 		[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
-		rm -rf "${LIND_SRC:?}/$dir"
+		rm -rf -- "${LIND_SRC:?}/$dir"
 		ln -Trsv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
 		(cd "$LIND_SRC/$dir" && git checkout develop)
 	done
@@ -297,10 +297,10 @@ function download_src() {
 		gclient sync
 		ln -Trsv "$LIND_BASE/native_client" "$NACL_BASE"
 		cd "$NACL_TOOLCHAIN_BASE"
-		rm -rf SRC
+		rm -rf -- SRC
 		make sync-pinned
 		cd SRC
-		rm -rf glibc gcc binutils
+		rm -rf -- glibc gcc binutils
 		ln -Trsv "$LIND_GLIBC_SRC" ./glibc
 		ln -Trsv "$NACL_GCC_SRC" ./gcc
 		ln -Trsv "$NACL_BINUTILS_SRC" ./binutils
@@ -318,7 +318,7 @@ function download_src() {
 	fi
 
 	cd "$LIND_BASE"
-	rm -rfv _gclient_*
+	rm -rfv -- _gclient_*
 }
 
 # wipe the entire modular build toolchain build tree, then rebuild it
@@ -396,7 +396,7 @@ function build_repy() {
 	cat \
 		<"./$lind_serv.new" \
 		>"./$lind_serv"
-	rm -fv -- "./$lind_serv.new"
+	rm -fv -- -- "./$lind_serv.new"
 	for file in *.mix; do
 		"$MISC_DIR/check_includes.sh" "$file"
 	done
@@ -425,7 +425,7 @@ function test_glibc() {
 	make clean
 	PATH="$LIND_BASE:$PATH" make all
 	cd ..
-	rm -rfv lind.metadata linddata.*
+	rm -rfv -- lind.metadata linddata.*
 	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
 }
 
@@ -514,7 +514,7 @@ function build_nacl() {
 			# preserve executability
 			"${PYSED[@]}" <"$file" >"$file.new"
 			cat <"$file.new" >"$file"
-			rm -f "$file.new"
+			rm -f -- "$file.new"
 		done
 
 	# skip broken tests for now
@@ -556,7 +556,7 @@ function build_glibc() {
 
 	# turns out this works better if you do it from the nacl base dir
 	cd "$NACL_TOOLCHAIN_BASE"
-	rm -fr BUILD out
+	rm -rf -- BUILD out
 	make clean
 
 	PATH="$LIND_BASE:$PATH" make -j"$JOBS" build-with-glibc
@@ -579,7 +579,7 @@ function update_glibc2() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	cd "$NACL_TOOLCHAIN_BASE"
-	rm -rf BUILD/stamp-glibc64
+	rm -rf -- BUILD/stamp-glibc64
 	PATH="$LIND_BASE:$PATH" make -j"$JOBS" BUILD/stamp-glibc64
 }
 
