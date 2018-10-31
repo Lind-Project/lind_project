@@ -521,11 +521,15 @@ function build_nacl() {
 	cd "$NACL_BASE"
 	PATH="$LIND_BASE:$PATH" \
 		python2 ./scons.py \
-		--verbose --mode="$MODE,nacl" \
-		--nacl_glibc -j"$JOBS" \
-		nacl_pic=1 werror=0 \
-		skip_trusted_tests=1 disable_flaky_tests=1 \
-		platform=x86-64
+			--verbose \
+			--mode="$MODE,nacl" \
+			--nacl_glibc \
+			-j"$JOBS" \
+			nacl_pic=1 \
+			werror=0 \
+			skip_trusted_tests=1 \
+			disable_flaky_tests=1 \
+			platform=x86-64
 	print "Done building NaCl"
 }
 
@@ -536,9 +540,15 @@ function clean_nacl() {
 
 	cd "$NACL_BASE"
 	PATH="$LIND_BASE:$PATH" \
-		python2 ./scons.py --verbose --mode="$MODE,nacl" \
-		nacl_pic=1 werror=0 \
-		platform=x86-64 --nacl_glibc -j"$JOBS" -c
+		python2 ./scons.py \
+			--verbose \
+			--mode="$MODE,nacl" \
+			--nacl_glibc \
+			-j"$JOBS" \
+			-c \
+			nacl_pic=1 \
+			werror=0 \
+			platform=x86-64
 	print "Done Cleaning NaCl"
 }
 
