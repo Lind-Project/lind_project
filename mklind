@@ -279,6 +279,7 @@ function download_src() {
 			print "Command \`python2 -m virtualenv ./venv\` failed" >&2
 			false
 		fi
+		# shellcheck disable=SC1090
 		. "$LIND_BASE/venv/bin/activate"
 
 		# install pip dependencies
