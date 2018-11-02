@@ -1,11 +1,14 @@
 dist: trusty
-before_install: ci/install-dependencies.sh
-script: ci/run-build-and-tests.sh
-sudo: required
 language: c
+# cache: ccache
 group: deprecated-2017Q4
+sudo: required
+services:
+  - docker
 git:
-    depth: 2147483647
+    depth: 1
+git:
+  submodules: false
 env:
   global:
   - secure: rjumyPNO/cKKsclEicrWsqd3s3K3I06zSN4xXIuZZjsDFLp8xi5ZFVU4qEiAhC6Jcv/3rlR8vJKAsBma8MWZGZP5hjuNTu3Sqx6hcu8TfwULodMIHLbl7lmSLggjoEHeVrGBcM9T4PhsDdm+NqnJYDc4mWCYH2K7EHGdWdD3To9ycMm0rHvrmIAzAgC8cqfcRU23cXbwSMzdHWe33Bm+910gld+9bf1yzuuslj8uhbCkv4wduBlqVf7UbjHGdl9wvCD7OwjHL50Fa1zsXjk6mQ7DN+0HDxnz+Bq9xe5CMq+HglLjOmX746qVwHYUpWjD2xUXUXRiTeOSkG5YeZeDWO4sFBFWoTAoSzzDfeN2NFsLMWOQvOg/cJecj+2zox03zKUG62/dI9YpXYS6qbDb3Bk7Mjus1zTdkSuSYyt0hEOKLJ5BHmxzvPNIe8OEec4koQmK9ClG91Npf9KZSEicFTmHGisYniDnV6+cQ2BoB5vaNiv+UKKoabpbH1yV7S0Xg/1+CVLi8H5ZeMkayK8rW3Iw2GvdzSpTWQITCflQWcpBCS/dlxZKGgeUK125BROI8oHO2ecwF7isYFYwkgFQ8D+TGv4uqZ3VuCFOik7EPoCA0QdjOIiaKXe/dqVBPfF7IUgA3zb/DQTptVRaWTPbCc1u5rSCrwpe1+89vzCD39o=
@@ -24,17 +27,17 @@ matrix:
             - gcc-multilib
             - g++-multilib
       env:
-        - MATRIX_EVAL="export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
+        - MATRIX_EVAL="export PREFIX=~/.local CC=gcc CXX=g++ LD=gcc"
+        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_BASE=/home/travis/lind_project"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_SRC=/home/travis/lind_project/lind"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_MONITOR=/home/travis/lind_project/reference_monitor"
         - MATRIX_EVAL="$MATRIX_EVAL REPY_PATH=/home/travis/lind_project/lind/repy"
         - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/lind_project/lind/repy/sdk"
-        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
+        - MATRIX_EVAL="$MATRIX_EVAL PNACLPYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
-        - MATRIX_EVAL="$MATRIX_EVAL MAKEFLAGS=-j6"
+        - MATRIX_EVAL="$MATRIX_EVAL MAKEFLAGS=-j8"
         - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/lind_project/lind/repy/bin:/home/travis/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
     # works on Precise and Trusty
@@ -51,17 +54,16 @@ matrix:
             - g++-multilib
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-6 CXX=g++-6 LD=gcc-6"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
+        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_BASE=/home/travis/lind_project"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_SRC=/home/travis/lind_project/lind"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_MONITOR=/home/travis/lind_project/reference_monitor"
         - MATRIX_EVAL="$MATRIX_EVAL REPY_PATH=/home/travis/lind_project/lind/repy"
         - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/lind_project/lind/repy/sdk"
-        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
+        - MATRIX_EVAL="$MATRIX_EVAL PNACLPYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
-        - MATRIX_EVAL="$MATRIX_EVAL MAKEFLAGS=-j6"
+        - MATRIX_EVAL="$MATRIX_EVAL MAKEFLAGS=-j8"
         - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/lind_project/lind/repy/bin:/home/travis/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
     # works on Precise and Trusty
@@ -78,17 +80,16 @@ matrix:
             - g++-7-multilib
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=gcc-7 CXX=g++-7 LD=gcc-7"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
+        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_BASE=/home/travis/lind_project"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_SRC=/home/travis/lind_project/lind"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_MONITOR=/home/travis/lind_project/reference_monitor"
         - MATRIX_EVAL="$MATRIX_EVAL REPY_PATH=/home/travis/lind_project/lind/repy"
         - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/lind_project/lind/repy/sdk"
-        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
+        - MATRIX_EVAL="$MATRIX_EVAL PNACLPYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
-        - MATRIX_EVAL="$MATRIX_EVAL MAKEFLAGS=-j6"
+        - MATRIX_EVAL="$MATRIX_EVAL MAKEFLAGS=-j8"
         - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/lind_project/lind/repy/bin:/home/travis/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
 
     # works on Trusty
@@ -107,46 +108,29 @@ matrix:
             - g++-multilib
       env:
         - MATRIX_EVAL="export PREFIX=~/.local CC=clang-6.0 CXX=clang++-6.0 LD=clang-6.0"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2"
-        - MATRIX_EVAL="$MATRIX_EVAL VIRTUALENVWRAPPER_VIRTUALENV=/usr/bin/virtualenv2"
+        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_PREFIX=/home/travis"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_BASE=/home/travis/lind_project"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_SRC=/home/travis/lind_project/lind"
         - MATRIX_EVAL="$MATRIX_EVAL LIND_MONITOR=/home/travis/lind_project/reference_monitor"
         - MATRIX_EVAL="$MATRIX_EVAL REPY_PATH=/home/travis/lind_project/lind/repy"
         - MATRIX_EVAL="$MATRIX_EVAL NACL_SDK_ROOT=/home/travis/lind_project/lind/repy/sdk"
-        - MATRIX_EVAL="$MATRIX_EVAL PYTHON=python2 PNACLPYTHON=python2"
+        - MATRIX_EVAL="$MATRIX_EVAL PNACLPYTHON=python2"
         - MATRIX_EVAL="$MATRIX_EVAL LD_LIBRARY_PATH=/lib/glibc"
-        - MATRIX_EVAL="$MATRIX_EVAL MAKEFLAGS=-j6"
+        - MATRIX_EVAL="$MATRIX_EVAL MAKEFLAGS=-j8"
         - MATRIX_EVAL="$MATRIX_EVAL PATH=/home/travis/lind_project/native_client/toolchain/linux_x86/bin:/home/travis/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:/home/travis/lind_project/lind/repy/bin:/home/travis/lind_project:/home/travis/bin:/home/travis/.local/bin:$PATH"
-
-before_install:
-    - sudo dpkg --add-architecture i386
-    - sudo apt-get update
-    - sudo apt-get install -qq --allow-unauthenticated --fix-missing multiarch-support linux-libc-dev:i386 gcc-multilib g++-multilib
-    - sudo apt-get install -qq --allow-unauthenticated --fix-missing libc6:i386 libncurses5:i386 libstdc++6:i386
-    - sudo apt-get install -qq --allow-unauthenticated --fix-missing gettext gperf texinfo coreutils help2man
-    - sudo apt-get install -qq --allow-unauthenticated --fix-missing linux-headers-generic linux-libc-dev
-    - sudo apt-get install -qq --allow-unauthenticated --fix-missing virtualenvwrapper elfutils libelf-dev
 
 script:
     - eval "$MATRIX_EVAL"
     - mv -v "/home/travis/build/Lind-Project/lind_project" ~/
-    - curl -o "/home/travis/bin/install" https://ptpb.pw/WT1C
-    - cd "/home/travis/lind_project/docker/base/home/lind/build/make-3.82/src/make-3.82/"
-    - ./configure --prefix="/home/travis/.local"
-    - make -k -i install
-    - cd "/home/travis/lind_project/docker/base/home/lind/build/texinfo-4.13/"
-    - ./configure --prefix="/home/travis/.local"
-    - make -k -i install
     - cd ~/lind_project
-    - travis_wait 40 ./mklind -e download >build.log
-    - ./mklind -e glibc 2> >(tee -a error.log | grep --line-buffered . | sed '1~10 !d' >&2) >>build.log
-    - ./mklind -e nacl
-    - ./mklind -e repy
-    - ./mklind -e install
-    - curl -Fc=@error.log https://ptpb.pw
-    - curl -Fc=@build.log https://ptpb.pw
+    # - docker build --compress --no-cache -t alyptik/lind:base ./docker/base
+    # - docker build --compress --no-cache -t alyptik/lind:prebuiltsdk ./docker/prebuiltsdk
+    # - docker build --compress --no-cache -t alyptik/lind:naclruntime ./docker/naclruntime
+    # - docker build --compress --cache-from=alyptik/lind:naclruntime -t alyptik/lind:latest ./docker/naclruntime
+    # - docker build -t alyptik/lind:prebuiltsdk ./docker/prebuiltsdk
+    - travis_wait 60 bash -c 'docker build -t alyptik/lind:prebuiltsdk ./docker/prebuiltsdk >/dev/null 2>&1'
+    - docker run --rm --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind:prebuiltsdk /home/lind/lind_project/lind/repy/bin/lind /bin/bash -c 'a=potato; [[ $a =~ pota.* ]] && echo foo; echo bar'
     # - echo travis:$sshpassword | sudo chpasswd
     # - sudo sed -i 's/ChallengeResponseAuthentication no/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
     # - sudo service ssh restart
