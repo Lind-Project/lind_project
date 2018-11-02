@@ -7,7 +7,6 @@ repy
 nacl
 misc
 nacl_repy
-native_client
 /lind/Makefile
 
 # lind specific directories

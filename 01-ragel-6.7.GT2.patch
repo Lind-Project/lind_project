@@ -1,0 +1,276 @@
+GT2 patch as found in ragel-6-gt2 branch.
+
+More info: http://www.complang.org/pipermail/ragel-users/2012-May/002831.html
+
+--- ragel/cdgoto.cpp
++++ ragel/cdgoto.cpp
+@@ -34,6 +34,11 @@
+ 	return out;
+ }
+ 
++int GotoCodeGen::TRANS_NR( RedTransAp *trans )
++{
++	return trans->id;
++}
++
+ std::ostream &GotoCodeGen::TO_STATE_ACTION_SWITCH()
+ {
+ 	/* Walk the list of functions, printing the cases. */
+@@ -109,6 +114,86 @@
+ }
+ 
+ 
++void GotoCodeGen::emitTableSwitch( RedStateAp *state )
++{
++	/* Load up the singles. */
++	int numSingles = state->outSingle.length();
++	RedTransEl *sdata = state->outSingle.data;
++
++	/* Load up the ranges.  */
++	int numRanges = state->outRange.length();
++	RedTransEl *rdata = state->outRange.data;
++
++	int minId = INT_MAX;
++	int maxId = INT_MIN;
++
++	for ( Key i = keyOps->minKey; i <= keyOps->maxKey; i.increment() ) {
++		RedTransAp *trans = state->defTrans;
++		for ( int j = 0; j < numRanges; j++ )
++			if ( ( rdata[j].lowKey.getVal() <= i ) && ( i <= rdata[j].highKey.getVal() ) )
++				trans = rdata[j].value;
++		for ( int j = 0; j < numSingles; j++ )
++			if ( i == sdata[j].lowKey.getVal() )
++				trans = sdata[j].value;
++		if ( minId > TRANS_NR(trans) )
++			minId = TRANS_NR(trans);
++		if ( maxId < TRANS_NR(trans) )
++			maxId = TRANS_NR(trans);
++	}
++
++	if ( (maxId - minId) <= UCHAR_MAX )
++		out << "\t{\n" <<
++			"\t\tstatic const unsigned char jump_table[] = ";
++	else if ( (maxId - minId) <= USHRT_MAX )
++		out << "\t{\n" <<
++			"\t\tstatic const unsigned short jump_table[] = ";
++	else
++		out << "\t{\n" <<
++			"\t\tstatic const int jump_table[] = ";
++
++	char delimiter = '{';
++	for ( Key i = keyOps->minKey; i <= keyOps->maxKey; i.increment() ) {
++		RedTransAp *trans = state->defTrans;
++		for ( int j = 0; j < numRanges; j++ )
++			if ( ( rdata[j].lowKey.getVal() <= i ) && ( i <= rdata[j].highKey.getVal() ) )
++				trans = rdata[j].value;
++		for ( int j = 0; j < numSingles; j++ )
++			if ( i == sdata[j].lowKey.getVal() )
++				trans = sdata[j].value;
++		if ( minId >= 0 && maxId <= UCHAR_MAX )
++			out << delimiter << " " << TRANS_NR(trans);
++		else if ( (maxId - minId) <= UCHAR_MAX )
++			out << delimiter << " " << (TRANS_NR(trans) - minId);
++		else if ( minId >= 0 && maxId <= USHRT_MAX )
++			out << delimiter << " " << TRANS_NR(trans);
++		else if ( (maxId - minId) <= USHRT_MAX )
++			out << delimiter << " " << (TRANS_NR(trans) - minId);
++		else
++			out << delimiter << " " << TRANS_NR(trans);
++		delimiter = ',';
++	}
++	out << " };\n";
++
++	if (keyOps->minKey != 0 )
++		out << "\t\t" << vCS() << " = jump_table[" << GET_WIDE_KEY(state) << "-" <<
++			WIDE_KEY(state, keyOps->minKey) << "]";
++	else
++		out << "\t\t" << vCS() << " = jump_table[" << GET_WIDE_KEY(state) << "]";
++	if ( minId >= 0 && maxId <= UCHAR_MAX )
++		out << ";\n";
++	else if ( (maxId - minId) <= UCHAR_MAX )
++		out << " + " << minId << ";\n";
++	else if ( minId >= 0 && maxId <= USHRT_MAX )
++		out << ";\n";
++	else if ( (maxId - minId) <= USHRT_MAX )
++		out << " + " << minId << ";\n";
++	else
++		out << ";\n";
++
++	out << "\t\tgoto _again;\n"
++	       "\t}\n";
++}
++
+ void GotoCodeGen::emitSingleSwitch( RedStateAp *state )
+ {
+ 	/* Load up the singles. */
+@@ -361,16 +446,24 @@
+ 				emitCondBSearch( st, 1, 0, st->stateCondVect.length() - 1 );
+ 			}
+ 
+-			/* Try singles. */
+-			if ( st->outSingle.length() > 0 )
+-				emitSingleSwitch( st );
+-
+-			/* Default case is to binary search for the ranges, if that fails then */
+-			if ( st->outRange.length() > 0 )
+-				emitRangeBSearch( st, 1, 0, st->outRange.length() - 1 );
++			if ( (st->outSingle.length() + st->outRange.length() * 2) > maxTransitions) {
++
++				emitTableSwitch( st );
++
++			} else {
+ 
+-			/* Write the default transition. */
+-			TRANS_GOTO( st->defTrans, 1 ) << "\n";
++				/* Try singles. */
++				if ( st->outSingle.length() > 0 )
++					emitSingleSwitch( st );
++
++				/* Default case is to binary search for the ranges, if that fails then */
++				if ( st->outRange.length() > 0 )
++					emitRangeBSearch( st, 1, 0, st->outRange.length() - 1 );
++
++				/* Write the default transition. */
++				TRANS_GOTO( st->defTrans, 1 ) << "\n";
++
++			}
+ 		}
+ 	}
+ 	return out;
+--- ragel/cdgoto.h
++++ ragel/cdgoto.h
+@@ -74,7 +74,9 @@
+ 	void STATE_CONDS( RedStateAp *state, bool genDefault ); 
+ 
+ 	virtual std::ostream &TRANS_GOTO( RedTransAp *trans, int level );
++	virtual int TRANS_NR( RedTransAp *trans );
+ 
++	void emitTableSwitch( RedStateAp *state );
+ 	void emitSingleSwitch( RedStateAp *state );
+ 	void emitRangeBSearch( RedStateAp *state, int level, int low, int high );
+ 
+--- ragel/cdipgoto.cpp	2011-02-11 07:14:43.000000000 +0300
++++ ragel/cdipgoto.cpp	2012-05-13 15:20:11.433272943 +0400
+@@ -27,9 +27,20 @@
+ #include "gendata.h"
+ #include "bstmap.h"
+ 
++bool IpGotoCodeGen::useTransInAgainLabel()
++{
++	for ( RedStateList::Iter st = redFsm->stateList; st.lte(); st++ )
++		if ( st == redFsm->errState )
++			continue;
++		else if ( (st->outSingle.length() + st->outRange.length() * 2) > maxTransitions)
++			return true;
++	return false;
++}
++
+ bool IpGotoCodeGen::useAgainLabel()
+ {
+-	return redFsm->anyRegActionRets() || 
++	return useTransInAgainLabel() ||
++			redFsm->anyRegActionRets() || 
+ 			redFsm->anyRegActionByValControl() || 
+ 			redFsm->anyRegNextStmt();
+ }
+@@ -243,6 +254,18 @@
+ 	return out;
+ }
+ 
++int IpGotoCodeGen::TRANS_NR( RedTransAp *trans )
++{
++	if ( trans->action != 0 ) {
++		/* Go to the transition which will go to the state. */
++		return trans->id + redFsm->stateList.length();
++	}
++	else {
++		/* Go directly to the target state. */
++		return trans->targ->id;
++	}
++}
++
+ std::ostream &IpGotoCodeGen::EXIT_STATES()
+ {
+ 	for ( RedStateList::Iter st = redFsm->stateList; st.lte(); st++ ) {
+@@ -258,6 +281,13 @@
+ std::ostream &IpGotoCodeGen::AGAIN_CASES()
+ {
+ 	for ( RedStateList::Iter st = redFsm->stateList; st.lte(); st++ ) {
++		if ( useTransInAgainLabel() )
++			for ( int it = 0; it < st->numInTrans; it++ ) {
++				RedTransAp *trans = st->inTrans[it];
++				if ( trans->action != 0 && trans->labelNeeded )
++					out <<
++						"\t\tcase " << (trans->id + redFsm->stateList.length()) << ": goto tr" << trans->id << ";\n";
++			}
+ 		out << 
+ 			"		case " << st->id << ": goto st" << st->id << ";\n";
+ 	}
+@@ -409,7 +439,6 @@
+ 			out << 
+ 				"	" << P() << " += 1;\n";
+ 		}
+-
+ 		out << "_resume:\n";
+ 	}
+ 
+--- ragel/cdipgoto.h
++++ ragel/cdipgoto.h
+@@ -40,6 +40,7 @@
+ 
+ 	std::ostream &EXIT_STATES();
+ 	std::ostream &TRANS_GOTO( RedTransAp *trans, int level );
++	int TRANS_NR( RedTransAp *trans );
+ 	std::ostream &FINISH_CASES();
+ 	std::ostream &AGAIN_CASES();
+ 
+@@ -58,6 +59,7 @@
+ 	virtual void writeExec();
+ 
+ protected:
++	bool useTransInAgainLabel();
+ 	bool useAgainLabel();
+ 
+ 	/* Called from GotoCodeGen::STATE_GOTOS just before writing the gotos for
+--- ragel/main.cpp
++++ ragel/main.cpp
+@@ -83,6 +83,8 @@
+ /* Target language and output style. */
+ CodeStyle codeStyle = GenTables;
+ 
++long maxTransitions = LONG_MAX;
++
+ int numSplitPartitions = 0;
+ bool noLineDirectives = false;
+ 
+@@ -139,6 +140,7 @@
+ "   -G1                  Faster goto-driven FSM\n"
+ "code style: (C/D)\n"
+ "   -G2                  Really fast goto-driven FSM\n"
++"   -GT2                 Really fast goto-driven FSM with table-driven fallback\n"
+ "   -P<N>                N-Way Split really fast goto-driven FSM\n"
+ 	;	
+ 
+@@ -407,7 +409,10 @@
+ 					codeStyle = GenFGoto;
+ 				else if ( pc.paramArg[0] == '2' )
+ 					codeStyle = GenIpGoto;
+-				else {
++				else if ( pc.paramArg[0] == 'T' && pc.paramArg[1] == '2' ) {
++					codeStyle = GenIpGoto;
++					maxTransitions = 16;
++				} else {
+ 					error() << "-G" << pc.paramArg[0] << 
+ 							" is an invalid argument" << endl;
+ 					exit(1);
+--- ragel/ragel.h
++++ ragel/ragel.h
+@@ -109,6 +109,8 @@
+ extern int numSplitPartitions;
+ extern bool noLineDirectives;
+ 
++extern long maxTransitions;
++
+ std::ostream &error();
+ 
+ /* Target language and output style. */

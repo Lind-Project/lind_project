@@ -1,0 +1,46 @@
+Make it possible to actually inhibit writing of #line directives.
+
+--- ragel/cdcodegen.cpp
++++ ragel/cdcodegen.cpp
+@@ -50,6 +50,9 @@
+ 
+ void cdLineDirective( ostream &out, const char *fileName, int line )
+ {
++	if ( reallyNoLineDirectives )
++		return;
++
+ 	if ( noLineDirectives )
+ 		out << "/* ";
+ 
+--- ragel/main.cpp
++++ ragel/main.cpp
+@@ -87,6 +87,7 @@
+ 
+ int numSplitPartitions = 0;
+ bool noLineDirectives = false;
++bool reallyNoLineDirectives = false;
+ 
+ bool displayPrintables = false;
+ 
+@@ -429,7 +430,10 @@
+ 				break;
+ 
+ 			case 'L':
+-				noLineDirectives = true;
++				if ( noLineDirectives )
++					reallyNoLineDirectives = true;
++				else
++					noLineDirectives = true;
+ 				break;
+ 			}
+ 			break;
+--- ragel/ragel.h
++++ ragel/ragel.h
+@@ -108,6 +108,7 @@
+ /* Options. */
+ extern int numSplitPartitions;
+ extern bool noLineDirectives;
++extern bool reallyNoLineDirectives;
+ 
+ extern long maxTransitions;
+ 
