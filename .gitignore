@@ -15,6 +15,7 @@ misc/
 tools/
 build/
 testing/
+_bad_scm/
 breakpad/
 naclports/
 buildtools/
