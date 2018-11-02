@@ -64,51 +64,34 @@ exec 9>&1
 trap -- '{ exec >&9; get_build_time; }' EXIT
 trap -- '{ exec >&9; args="$*" line="$LINENO" abort; }' "${err_signals[@]}"
 
-# check for flags
-for word; do
-	case "$word" in
-	-*e*)
-		# remove -e flag after setting up environment using '!' as the sentinel
-		default_env=0
-		mapfile -t argv < <(printf '%s\n' "$@" | sed '/-.*e/ s/e//g' | sort | uniq)
-		set -- "${argv[@]}"
-		unset argv
-		;;
+# option handling
+while getopts :eqhv opt; do
+	case "$opt" in
+	# use custom environment
+	e)
+		default_env=0;;
 
-	-*q*)
-		# remove -q flag after redirecting stdout using '!' as the sentinel
-		exec >/dev/null
-		mapfile -t argv < <(printf '%s\n' "$@" | sed '/-.*q/ s/q//g' | sort | uniq)
-		set -- "${argv[@]}"
-		unset argv
-		;;
+	# only print errors
+	q)
+		exec >/dev/null;;
 
-	-*h*)
-		# exit after printing usage
+	# show usage information
+	h)
 		print "$usage" >&2
-		exit
-		;;
+		exit;;
 
-	-*v*)
-		# exit after printing version
+	# show version information
+	v)
 		print "Lind $version NaCl Toolchain Build Script" >&2
-		exit
-		;;
+		exit;;
 
-	-*)
-		# stop processing options after '-' or '--'
-		if [[ "$word" == -- || "$word" == - ]]; then
-			break
-		# ignore more than two '-'
-		elif [[ -z "${word//-/}" ]]; then
-			continue
-		fi
-		# otherwise exit after printing the bad option and usage
-		print "" "Unknown option letter: '${word//-/}'" "$usage" >&2
-		false
-		;;
+	# otherwise exit after printing the bad option and usage
+	:|?)
+		print "Illegal option letter: '$OPTARG'" "$usage" >&2
+		false;;
 	esac
 done
+shift "$((OPTIND - 1))"
 
 if ((default_env)); then
 	export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
