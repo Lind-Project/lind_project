@@ -23,12 +23,12 @@ ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 USER lind
 
 WORKDIR /home/lind/lind_project/
-RUN ["./mklind", "-e", "download"]
-RUN ["./mklind", "-e", "nacl"]
-RUN ["./mklind", "-e", "repy"]
-RUN ["./mklind", "-e", "glibc"]
-RUN ["./mklind", "-e", "install"]
-RUN ["./mklind", "-e", "cleanall"]
+RUN ["./mklind", "-qe", "download"]
+RUN ["./mklind", "-qe", "nacl"]
+RUN ["./mklind", "-qe", "repy"]
+RUN ["./mklind", "-qe", "glibc"]
+RUN ["./mklind", "-qe", "install"]
+RUN ["./mklind", "-qe", "cleanall"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello"]
 WORKDIR /home/lind/lind_project/test_cases/bash/
