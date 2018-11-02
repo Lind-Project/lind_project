@@ -36,3 +36,7 @@
 	path = lind-misc
 	url = https://github.com/Lind-Project/Lind-misc.git
 	branch = develop
+[submodule "native_client"]
+	path = native_client
+	url = https://github.com/Lind-Project/native_client.git
+	branch = develop
