@@ -16,10 +16,6 @@
 	path = lind_experiments
 	url = https://github.com/Lind-Project/lind_experiments.git
 	branch = develop
-[submodule "third_party"]
-	path = third_party
-	url = https://github.com/Lind-Project/third_party.git
-	branch = develop
 [submodule "nacl-gcc"]
 	path = nacl-gcc
 	url = https://github.com/Lind-Project/nacl-gcc.git
