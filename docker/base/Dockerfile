@@ -68,7 +68,6 @@ RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/root/.cvsignor
 RUN ["/usr/bin/ln", "-rsv", "/home/lind/lind_project", "./"]
 WORKDIR /root/build/
 RUN ["/usr/bin/lesskey"]
-RUN ["/usr/bin/pip2", "install", "--user", "-Ur", "requirements.txt"]
 RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
 
 USER lind
