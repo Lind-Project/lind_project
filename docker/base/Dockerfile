@@ -51,7 +51,7 @@ RUN ["/usr/bin/pkgfile", "--update"]
 USER lind
 
 WORKDIR /home/lind/
-RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind"]
+RUN ["/usr/bin/git", "config", "--global", "user.name", "lind"]
 RUN ["/usr/bin/git", "config", "--global", "user.email", "lind@nyu.edu"]
 RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/home/lind/.cvsignore"]
 RUN ["/usr/bin/git", "clone", "--progress", "-j8", "https://github.com/Lind-Project/lind_project.git"]
@@ -62,8 +62,8 @@ RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
 USER root
 
 WORKDIR /root/
-RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind"]
-RUN ["/usr/bin/git", "config", "--global", "user.email", "wooo@weee.woah"]
+RUN ["/usr/bin/git", "config", "--global", "user.name", "root"]
+RUN ["/usr/bin/git", "config", "--global", "user.email", "root@nyu.edu"]
 RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/root/.cvsignore"]
 RUN ["/usr/bin/ln", "-rsv", "/home/lind/lind_project", "./"]
 WORKDIR /root/build/
