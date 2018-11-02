@@ -182,7 +182,6 @@ readonly NACL_SDK_ROOT="$REPY_PATH_SDK"
 readonly LIND_URL='https://github.com/Lind-Project/lind_project.git'
 readonly LIND_EXPERIMENTS_URL='https://github.com/Lind-Project/lind_experiments.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
-readonly THIRD_PARTY_URL='https://github.com/Lind-Project/third_party.git'
 readonly LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_GCC_URL='https://github.com/Lind-Project/nacl-gcc.git'
@@ -207,7 +206,7 @@ function clean_src() {
 	print "Cleaning Lind..."
 	cd "$LIND_BASE"
 	rm -rf -- "$NACL_PORTS_DIR"
-	rm -rf -- lind_experiments lind-misc third_party lss
+	rm -rf -- lind_experiments lind-misc lss
 	rm -rf -- nacl_repy nacl-gcc nacl-binutils lind_glibc
 }
 
@@ -216,7 +215,7 @@ function clean_src() {
 function download_src() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
-	local pip_bin pip_ver
+	local pip_bin pip_ver nacl_rev
 	local -A git_deps
 
 	# clone and symlink dependencies
@@ -236,7 +235,6 @@ function download_src() {
 	git submodule update --init --recursive --remote .
 	git_deps[lind_experiments]="$LIND_EXPERIMENTS_URL"
 	git_deps[lind-misc]="$LIND_MISC_URL"
-	git_deps[third_party]="$THIRD_PARTY_URL"
 	git_deps[lss]="$LSS_URL"
 	git_deps[nacl_repy]="$NACL_REPY_URL"
 	git_deps[nacl-gcc]="$NACL_GCC_URL"
@@ -247,22 +245,8 @@ function download_src() {
 	for dir in "${!git_deps[@]}"; do
 		[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
 		rm -rf -- "${LIND_SRC:?}/$dir"
-		ln -Trsv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
+		ln -Trsfv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
 		(cd "$LIND_SRC/$dir" && git checkout develop)
-	done
-
-	# setup toolchain symlinks
-	ln -Trsv "$LIND_BASE/native_client" "$NACL_BASE"
-	cd "$NACL_TOOLCHAIN_BASE"
-	rm -rf -- SRC
-	make sync-pinned
-	cd SRC
-	rm -rf -- glibc gcc binutils
-	ln -Trsv "$LIND_GLIBC_SRC" ./glibc
-	ln -Trsv "$NACL_GCC_SRC" ./gcc
-	ln -Trsv "$NACL_BINUTILS_SRC" ./binutils
-	for dir in glibc gcc binutils; do
-		(cd "$dir" && git checkout develop)
 	done
 
 	# install gclient
@@ -303,6 +287,25 @@ function download_src() {
 			false
 		fi
 	fi
+
+	# setup toolchain
+	ln -Trsfv "$LIND_BASE/native_client" "$NACL_BASE"
+	cd "$NACL_BASE"
+	nacl_rev="${NATIVE_CLIENT_URL}@$(git rev-parse develop)"
+	cd "$LIND_BASE"
+	gclient config --name=native_client "$nacl_rev" --git-deps
+	gclient sync
+	cd "$NACL_TOOLCHAIN_BASE"
+	rm -rf -- SRC
+	make sync-pinned
+	cd SRC
+	rm -rf -- glibc gcc binutils
+	ln -Trsfv "$LIND_GLIBC_SRC" ./glibc
+	ln -Trsfv "$NACL_GCC_SRC" ./gcc
+	ln -Trsfv "$NACL_BINUTILS_SRC" ./binutils
+	for dir in glibc gcc binutils; do
+		(cd "$dir" && git checkout develop)
+	done
 
 	# clone nacl external ports
 	if [[ ! -e "$NACL_PORTS_DIR/src" ]]; then
