@@ -249,8 +249,8 @@ function download_src() {
 		(cd "$LIND_SRC/$dir" && git checkout develop)
 	done
 
-	# install gclient
-	if ! command -v gclient >/dev/null 2>&1; then
+	# start virtualenv if needed
+	if [[ -z "$VIRTUAL_ENV" ]]; then
 		# find pip executable
 		if command -v pip2 >/dev/null 2>&1; then
 			pip_bin="pip2"
