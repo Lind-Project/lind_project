@@ -5,7 +5,7 @@
 
 # default target shows `select` menu
 all lind:
-	@./mklind -e
+	@./mklind
 
 .PHONY: Makefile all lind run shell list show
 .PHONY: latest naclruntime prebuiltsdk base
