@@ -1,10 +1,8 @@
-FROM alyptik/lind:base
-LABEL lind "v1.0-rc3"
+FROM alyptik/lind:prebuiltsdk
+LABEL lind "v1.0-rc4"
 LABEL description "Lind NaCl Runtime (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
-ENV VIRTUALENVWRAPPER_PYTHON "/usr/bin/python2"
-ENV VIRTUALENVWRAPPER_VIRTUALENV "/usr/bin/virtualenv2"
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
 ENV LIND_SRC "$LIND_BASE/lind"
@@ -23,12 +21,9 @@ ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 USER lind
 
 WORKDIR /home/lind/lind_project/
-RUN ["./mklind", "-qe", "download"]
 RUN ["./mklind", "-qe", "nacl"]
 RUN ["./mklind", "-qe", "repy"]
-RUN ["./mklind", "-qe", "glibc"]
 RUN ["./mklind", "-qe", "install"]
-RUN ["./mklind", "-qe", "cleanall"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/fork.c", "-o", "lind/repy/repy/fork"]
 RUN ["/usr/bin/env", "x86_64-nacl-gcc", "test_cases/hello.c", "-o", "lind/repy/repy/hello"]
 WORKDIR /home/lind/lind_project/test_cases/bash/

@@ -1,5 +1,5 @@
 FROM archlinux/base
-LABEL lind "v1.0-rc3"
+LABEL lind "v1.0-rc4"
 LABEL description "Lind NaCl Glibc Toolchain (Base)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
@@ -7,8 +7,6 @@ ADD ["etc/", "/etc/"]
 ADD ["home/", "/home/"]
 ADD ["root/", "/root/"]
 
-ENV VIRTUALENVWRAPPER_PYTHON "/usr/bin/python2"
-ENV VIRTUALENVWRAPPER_VIRTUALENV "/usr/bin/virtualenv2"
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
 ENV LIND_SRC "$LIND_BASE/lind"
@@ -88,10 +86,13 @@ RUN ["/usr/bin/makepkg", "--noconfirm", "--skipchecksums", "--skippgpcheck", "-f
 
 USER root
 
-WORKDIR /home/lind/lind_project/
+WORKDIR /home/lind/
 RUN ["/usr/bin/rm", "-rf", "/home/lind/build/", "/root/build/", "/var/cache/pacman/pkg/"]
-RUN ["/usr/bin/chown", "-R", "lind:lind", "/home/lind/"]
+RUN ["/usr/bin/chown", "-Rc", "lind:lind", "."]
 
 USER lind
+
+WORKDIR /home/lind/lind_project/
+RUN ["./mklind", "-qe", "download"]
 
 ENTRYPOINT ["/usr/bin/zsh"]
