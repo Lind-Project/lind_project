@@ -187,8 +187,8 @@ readonly LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_GCC_URL='https://github.com/Lind-Project/nacl-gcc.git'
 readonly NACL_BINUTILS_URL='https://github.com/Lind-Project/nacl-binutils.git'
-readonly NACL_GCLIENT_URL='https://github.com/Lind-Project/native_client.git@develop'
 readonly NACL_PORTS_URL='https://chromium.googlesource.com/external/naclports.git'
+readonly NATIVE_CLIENT_URL='https://github.com/Lind-Project/native_client.git'
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 
 readonly -a PYGREPL=(grep '-RPIl' -- '(^|[\s'"'"'"/-])(python)(\s|\.exe|\b)' './')
@@ -242,12 +242,27 @@ function download_src() {
 	git_deps[nacl-gcc]="$NACL_GCC_URL"
 	git_deps[nacl-binutils]="$NACL_BINUTILS_URL"
 	git_deps[lind_glibc]="$LIND_GLIBC_URL"
+	git_deps[native_client]="$NATIVE_CLIENT_URL"
 	# fallback
 	for dir in "${!git_deps[@]}"; do
 		[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
 		rm -rf -- "${LIND_SRC:?}/$dir"
 		ln -Trsv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
 		(cd "$LIND_SRC/$dir" && git checkout develop)
+	done
+
+	# setup toolchain symlinks
+	ln -Trsv "$LIND_BASE/native_client" "$NACL_BASE"
+	cd "$NACL_TOOLCHAIN_BASE"
+	rm -rf -- SRC
+	make sync-pinned
+	cd SRC
+	rm -rf -- glibc gcc binutils
+	ln -Trsv "$LIND_GLIBC_SRC" ./glibc
+	ln -Trsv "$NACL_GCC_SRC" ./gcc
+	ln -Trsv "$NACL_BINUTILS_SRC" ./binutils
+	for dir in glibc gcc binutils; do
+		(cd "$dir" && git checkout develop)
 	done
 
 	# install gclient
@@ -287,26 +302,6 @@ function download_src() {
 			print "Installing dependencies from requirements.txt failed" >&2
 			false
 		fi
-	fi
-
-	# clone nacl
-	if [[ ! -e "$NACL_BASE" ]]; then
-		mkdir -p "$NACL_SRC"
-		cd "$LIND_BASE"
-		gclient config --name=native_client "$NACL_GCLIENT_URL" --git-deps
-		gclient sync
-		ln -Trsv "$LIND_BASE/native_client" "$NACL_BASE"
-		cd "$NACL_TOOLCHAIN_BASE"
-		rm -rf -- SRC
-		make sync-pinned
-		cd SRC
-		rm -rf -- glibc gcc binutils
-		ln -Trsv "$LIND_GLIBC_SRC" ./glibc
-		ln -Trsv "$NACL_GCC_SRC" ./gcc
-		ln -Trsv "$NACL_BINUTILS_SRC" ./binutils
-		for dir in glibc gcc binutils; do
-			(cd "$dir" && git checkout develop)
-		done
 	fi
 
 	# clone nacl external ports
