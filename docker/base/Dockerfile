@@ -52,12 +52,11 @@ USER lind
 
 WORKDIR /home/lind/
 RUN ["/usr/bin/git", "config", "--global", "user.name", "Lind"]
-RUN ["/usr/bin/git", "config", "--global", "user.email", "wooo@weee.woah"]
+RUN ["/usr/bin/git", "config", "--global", "user.email", "lind@nyu.edu"]
 RUN ["/usr/bin/git", "config", "--global", "core.excludesFile", "/home/lind/.cvsignore"]
-RUN ["/usr/bin/git", "clone", "--progress", "-j4", "https://github.com/Lind-Project/lind_project.git"]
+RUN ["/usr/bin/git", "clone", "--progress", "-j8", "https://github.com/Lind-Project/lind_project.git"]
 WORKDIR /home/lind/build/
 RUN ["/usr/bin/lesskey"]
-RUN ["/usr/bin/pip2", "install", "--user", "-Ur", "requirements.txt"]
 RUN ["/usr/bin/tic", "screen-256color-italic.terminfo"]
 
 USER root
