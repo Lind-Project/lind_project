@@ -285,7 +285,7 @@ function download_src() {
 	# setup toolchain
 	ln -Trsfv "$LIND_BASE/native_client" "$NACL_BASE"
 	cd "$NACL_BASE"
-	nacl_rev="${NATIVE_CLIENT_URL}@$(git rev-parse develop)"
+	nacl_rev="${NATIVE_CLIENT_URL}@develop"
 	cd "$LIND_BASE"
 	gclient config --name=native_client "$nacl_rev" --git-deps
 	gclient sync
@@ -309,7 +309,9 @@ function download_src() {
 		gclient sync
 	fi
 
+	# gclient overwrites our Docker Makefile
 	cd "$LIND_BASE"
+	git checkout -- Makefile
 	rm -rfv -- _gclient_* _bad_scm
 }
 
