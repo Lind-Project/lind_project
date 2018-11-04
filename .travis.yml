@@ -6,8 +6,6 @@ services:
   - docker
 git:
     depth: 1
-git:
-  submodules: false
 
 matrix:
   include:
@@ -26,8 +24,7 @@ before_install:
     - git submodule update --init --recursive --remote .
 
 script:
-    - cd docker/naclruntime
-    - docker build -t alyptik/lind:latest .
+    - docker build -t alyptik/lind:latest ./docker/naclruntime
     - docker run --rm --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind:latest /home/lind/lind_project/lind/repy/bin/lind /bin/bash -c 'a=potato; [[ $a =~ pota.* ]] && echo foo; echo bar' || true
 
 # vi:ft=yaml:

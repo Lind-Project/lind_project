@@ -42,7 +42,7 @@ RUN ["/usr/bin/pacman", "-Syu", "--needed", "--noconfirm", "base-devel", \
      "net-tools", "openresolv", "openssh", "subversion", "pacman-contrib", \
      "tree", "psmisc", "lsof", "wget", "pinfo", "asp","unrar", "expac", \
      "inetutils", "tmux", "screen", "bash-completion", "mlocate", "shadow", \
-     "ncdu", "bind-tools", "cowsay", "filesystem", "linux-headers", \
+     "ncdu", "bind-tools", "cowsay", "filesystem", "linux-headers", "grml-zsh-config", \
      "linux-docs", "man-pages", "man-db", "util-linux", "help2man"]
 RUN ["/usr/bin/pkgfile", "--update"]
 
