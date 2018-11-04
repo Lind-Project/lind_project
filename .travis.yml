@@ -26,6 +26,8 @@ before_install:
     - git submodule update --init --recursive --remote .
 
 script:
-    - travis_wait 60 bash -c 'docker build -t alyptik/lind:prebuiltsdk ./docker/prebuiltsdk 2>&1'
+    - cd docker/naclruntime
+    - docker build -t alyptik/lind:latest .
+    - docker run --rm --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind:naclruntime /home/lind/lind_project/lind/repy/bin/lind /bin/bash -c 'a=potato; [[ $a =~ pota.* ]] && echo foo; echo bar' || true
 
 # vi:ft=yaml:
