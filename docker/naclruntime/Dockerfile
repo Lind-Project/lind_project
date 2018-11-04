@@ -43,5 +43,4 @@ RUN ["/usr/bin/env", "script", "-qfc", "$(printf '%q ' lind /fork)", "/dev/null"
 RUN ["/usr/bin/env", "script", "-qfc", "$(printf '%q ' lind /hello)", "/dev/null"]
 RUN ["/usr/bin/env", "script", "-qfc", "$(printf '%q ' lind /bin/bash --version)", "/dev/null"]
 
-ENTRYPOINT ["/usr/bin/zsh"]
-CMD ["-c", "lind /fork; lind /hello; lind /bin/bash --version; exec zsh"]
+CMD ["/usr/bin/bash", "-c", "lind /fork; lind /hello; lind /bin/bash --version; exec bash"]
