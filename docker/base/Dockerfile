@@ -95,4 +95,4 @@ USER lind
 WORKDIR /home/lind/lind_project/
 RUN ["./mklind", "-qe", "download"]
 
-ENTRYPOINT ["/usr/bin/zsh"]
+CMD ["/usr/bin/bash"]

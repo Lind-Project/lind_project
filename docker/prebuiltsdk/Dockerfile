@@ -23,4 +23,4 @@ USER lind
 WORKDIR /home/lind/lind_project/
 RUN ["./mklind", "-qe", "glibc"]
 
-ENTRYPOINT ["/usr/bin/zsh"]
+CMD ["/usr/bin/bash"]
