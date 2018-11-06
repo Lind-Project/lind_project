@@ -252,7 +252,8 @@ function download_src() {
 	# initialize native client toolchain
 	ln -Trsfv "$LIND_BASE/native_client" "$NACL_BASE"
 	cd "$LIND_BASE"
-	nacl_rev="${NATIVE_CLIENT_URL}@develop"
+	# default to develop branch if not building inside travis
+	nacl_rev="${NATIVE_CLIENT_URL}@${TRAVIS_COMMIT:-develop}"
 	gclient config --name=native_client --git-deps "$nacl_rev"
 	gclient sync
 
@@ -330,7 +331,13 @@ function build_repy() {
 
 	mkdir -pv "$REPY_PATH_REPY"
 	print "Building Repy in $REPY_SRC to $REPY_PATH"
+
+	# checkout the correct revision if building inside travis
 	cd "$NACL_REPY"
+	if [[ -n "$TRAVIS_COMMIT" ]]; then
+		git fetch --all
+		git checkout "$TRAVIS_COMMIT"
+	fi
 	cp -fv ./seattlelib/xmlrpc* "$REPY_PATH_REPY/"
 	python2 ./preparetest.py -t -f "$REPY_PATH_REPY"
 	print "Done building Repy in \"$REPY_PATH_REPY\""
@@ -466,8 +473,13 @@ function build_nacl() {
 			rm -f -- "$file.new"
 		done
 
-	# skip broken tests for now
+	# checkout the correct revision if building inside travis
 	cd "$NACL_BASE"
+	if [[ -n "$TRAVIS_COMMIT" ]]; then
+		git fetch --all
+		git checkout "$TRAVIS_COMMIT"
+	fi
+	# skip broken tests for now
 	PATH="$LIND_BASE:$PATH" \
 		python2 ./scons.py \
 			--verbose \
@@ -513,6 +525,12 @@ function build_glibc() {
 
 	print "Building glibc"
 
+	# checkout the correct revision if building inside travis
+	cd "$NACL_BASE"
+	if [[ -n "$TRAVIS_COMMIT" ]]; then
+		git fetch --all
+		git checkout "$TRAVIS_COMMIT"
+	fi
 	# turns out this works better if you do it from the nacl base dir
 	cd "$NACL_TOOLCHAIN_BASE"
 	rm -rf -- BUILD out
