@@ -262,9 +262,9 @@ function download_src() {
 	rm -rf -- SRC
 	make sync-pinned
 	for dir in "${!toolchain_deps[@]}"; do
-		rm -rf -- "$dir"
-		ln -Trsfv "${toolchain_deps[$dir]}" "$dir"
-		(cd "$dir" && git checkout develop)
+		rm -rf -- "SRC/$dir"
+		ln -Trsfv "${toolchain_deps[$dir]}" "SRC/$dir"
+		(cd "SRC/$dir" && git checkout develop)
 	done
 
 	# clone external application ports
