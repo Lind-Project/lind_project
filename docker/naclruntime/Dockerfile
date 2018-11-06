@@ -21,6 +21,8 @@ ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 USER lind
 
 WORKDIR /home/lind/lind_project/
+RUN ["/usr/bin/git", "pull", "-t", "-j8"]
+RUN ["/usr/bin/git", "submodule", "update", "--recursive", "--remote", "."]
 RUN ["./mklind", "-qe", "nacl"]
 RUN ["./mklind", "-qe", "repy"]
 RUN ["./mklind", "-qe", "install"]
