@@ -210,23 +210,9 @@ function download_src() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
 	local pip_bin pip_ver nacl_rev
-	local -A git_deps
+	local -A git_deps toolchain_deps
 
-	# clone and symlink dependencies
-	mkdir -p "$LIND_BASE" "$LIND_SRC" "$NACL_SRC"
-	cd "$LIND_BASE"
-
-	# make sure we are in the git root of "Lind-Project/lind_project"
-	git init
-	if [[ "$(git config remote.origin.url)" != *lind_project* ]]; then
-		if ! git remote add origin "$LIND_URL"; then
-			print "LIND_BASE already an initialized git directory" >&2
-			false
-		fi
-		git fetch --all
-		git checkout master
-	fi
-	git submodule update --init --recursive --remote .
+	# populate associative arrays
 	git_deps[lind_experiments]="$LIND_EXPERIMENTS_URL"
 	git_deps[lind-misc]="$LIND_MISC_URL"
 	git_deps[lss]="$LSS_URL"
@@ -235,7 +221,27 @@ function download_src() {
 	git_deps[nacl-binutils]="$NACL_BINUTILS_URL"
 	git_deps[lind_glibc]="$LIND_GLIBC_URL"
 	git_deps[native_client]="$NATIVE_CLIENT_URL"
-	# fallback
+	toolchain_deps[gcc]="$NACL_GCC_SRC"
+	toolchain_deps[glibc]="$LIND_GLIBC_SRC"
+	toolchain_deps[binutils]="$NACL_BINUTILS_SRC"
+
+	# clone and symlink dependencies
+	mkdir -p "$LIND_BASE" "$LIND_SRC" "$NACL_SRC"
+	cd "$LIND_BASE"
+
+	# make sure we are in the git root of "Lind-Project/lind_project"
+	git init
+	if [[ "$(git config remote.origin.url)" != *Lind-Project/lind_project* ]]; then
+		if ! git remote add origin "$LIND_URL"; then
+			print "LIND_BASE already an initialized git directory" >&2
+			false
+		fi
+		git fetch --all
+		git checkout master
+	fi
+
+	# symlink submodules
+	git submodule update --init --recursive --remote .
 	for dir in "${!git_deps[@]}"; do
 		[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
 		rm -rf -- "${LIND_SRC:?}/$dir"
@@ -243,69 +249,28 @@ function download_src() {
 		(cd "$LIND_SRC/$dir" && git checkout develop)
 	done
 
-	# start virtualenv if needed
-	if [[ -z "$VIRTUAL_ENV" ]]; then
-		# find pip executable
-		if command -v pip2 >/dev/null 2>&1; then
-			pip_bin="pip2"
-		elif command -v pip >/dev/null 2>&1; then
-			pip_bin="pip"
-		else
-			print "Need to install pip/pip2 in order to build Lind" >&2
-			false
-		fi
-		# check pip version
-		pip_ver="$("$pip_bin" --version | sed 's/.*(python \([0-9\.]\+\)).*/\1/')"
-		if [[ "$pip_ver" != 2* ]]; then
-			print "Need python2 version of pip in order to build Lind" >&2
-			false
-		fi
-		# install virtualenv modules
-		if ! "$pip_bin" install -U --user virtualenv; then
-			print "Need python virtualenv/virtualenv2 in order to build Lind" >&2
-			false
-		fi
-
-		# start up virtualenv
-		export PATH="$HOME/.local/bin:$PATH"
-		if ! python2 -m virtualenv "$LIND_BASE/venv"; then
-			print "Command \`python2 -m virtualenv ./venv\` failed" >&2
-			false
-		fi
-		# shellcheck disable=SC1090
-		. "$LIND_BASE/venv/bin/activate"
-
-		# install pip dependencies
-		if ! pip install -Ur "$LIND_BASE/requirements.txt"; then
-			print "Installing dependencies from requirements.txt failed" >&2
-			false
-		fi
-	fi
-
-	# setup toolchain
+	# initialize native client toolchain
 	ln -Trsfv "$LIND_BASE/native_client" "$NACL_BASE"
-	cd "$NACL_BASE"
-	nacl_rev="${NATIVE_CLIENT_URL}@develop"
 	cd "$LIND_BASE"
-	gclient config --name=native_client "$nacl_rev" --git-deps
+	nacl_rev="${NATIVE_CLIENT_URL}@develop"
+	gclient config --name=native_client --git-deps "$nacl_rev"
 	gclient sync
+
+	# symlink toolchain dependencies
 	cd "$NACL_TOOLCHAIN_BASE"
 	rm -rf -- SRC
 	make sync-pinned
-	cd SRC
-	rm -rf -- glibc gcc binutils
-	ln -Trsfv "$LIND_GLIBC_SRC" ./glibc
-	ln -Trsfv "$NACL_GCC_SRC" ./gcc
-	ln -Trsfv "$NACL_BINUTILS_SRC" ./binutils
-	for dir in glibc gcc binutils; do
+	for dir in "${!toolchain_deps[@]}"; do
+		rm -rf -- "$dir"
+		ln -Trsfv "${toolchain_deps[$dir]}" "$dir"
 		(cd "$dir" && git checkout develop)
 	done
 
-	# clone nacl external ports
+	# clone external application ports
 	if [[ ! -e "$NACL_PORTS_DIR/src" ]]; then
 		mkdir -p "$NACL_PORTS_DIR"
 		cd "$NACL_PORTS_DIR"
-		gclient config --name=src "$NACL_PORTS_URL" --git-deps
+		gclient config --name=src --git-deps "$NACL_PORTS_URL"
 		gclient sync
 	fi
 
@@ -352,16 +317,6 @@ function install_to_path() {
 	"$REPY_PATH_BIN/lindfs" cp "$REPY_PATH_LIB/"
 
 	print "Done."
-}
-
-# check the $REPY_PATH location to make sure it is safe to be installing stuff there.
-#
-function check_install_dir() {
-	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
-
-	[[ ! -d "$REPY_PATH" && -e "$REPY_PATH" ]] && false
-	# and if it does not exist, make it.
-	mkdir -p "$REPY_PATH"
 }
 
 # install repy into $REPY_PATH with the prepare_tests script.
@@ -439,7 +394,7 @@ function test_repy() {
 		python2 "$file"
 	done
 	# reset signal dispositions
-	trap - ERR TERM
+	trap -- - ERR TERM
 
 	# run the struct test
 	file="ut_seattlelibtests_teststruct.py"
@@ -596,7 +551,8 @@ function build_docker() {
 	docker image rm -f alyptik/lind:base alyptik/lind:prebuiltsdk alyptik/lind:latest
 	docker build -t alyptik/lind:base ./docker/base
 	docker build -t alyptik/lind:prebuiltsdk ./docker/prebuiltsdk
-	docker build --cache-from=alyptik/lind:prebuiltsdk -t alyptik/lind:latest ./docker/prebuiltsdk
+	docker build -t alyptik/lind:naclruntime ./docker/naclruntime
+	docker build --cache-from=alyptik/lind:naclruntime -t alyptik/lind:latest ./docker/naclruntime
 }
 
 # prompt for target if none given on command line
@@ -614,6 +570,43 @@ fi
 
 # all scripts assume we start here
 start_time="$(date +%s)"
+
+# start virtualenv if needed
+if [[ -z "$VIRTUAL_ENV" ]]; then
+	# find pip executable
+	if command -v pip2 >/dev/null 2>&1; then
+		pip_bin="pip2"
+	elif command -v pip >/dev/null 2>&1; then
+		pip_bin="pip"
+	else
+		print "Need to install pip/pip2 in order to build Lind" >&2
+		false
+	fi
+	# check pip version
+	pip_ver="$("$pip_bin" --version | sed 's/.*(python \([0-9\.]\+\)).*/\1/')"
+	if [[ "$pip_ver" != 2* ]]; then
+		print "Need python2 version of pip in order to build Lind" >&2
+		false
+	fi
+	# install virtualenv modules
+	if ! "$pip_bin" install -U --user virtualenv; then
+		print "Need python virtualenv/virtualenv2 in order to build Lind" >&2
+		false
+	fi
+
+	# start up virtualenv
+	if ! python2 -m virtualenv "$LIND_BASE/venv"; then
+		print "Command \`python2 -m virtualenv ./venv\` failed" >&2
+		false
+	fi
+	# shellcheck disable=SC1090
+	. "$LIND_BASE/venv/bin/activate"
+	# install pip dependencies
+	if ! pip install -Ur "$LIND_BASE/requirements.txt"; then
+		print "Installing dependencies from requirements.txt failed" >&2
+		false
+	fi
+fi
 
 # show command that will be executed
 print "" "Command line arguments: $0 $*" ""
