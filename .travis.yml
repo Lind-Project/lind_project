@@ -31,7 +31,7 @@ script:
     #
     # TODO: modify loader to only return non-zero on errors -jp
     - cd ./docker/naclruntime
-    - docker build -t alyptik/lind:naclruntime .
+    - docker build --build-arg=TRAVIS_COMMIT="$TRAVIS_COMMIT" -t alyptik/lind:naclruntime .
     - docker run --rm --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind:naclruntime "$REPY_PATH/bin/lind" /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched"' || true
 
 # vi:ft=yaml:
