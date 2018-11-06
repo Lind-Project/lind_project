@@ -4,7 +4,7 @@ LABEL description "Lind NaCl Runtime (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
 # defaults to develop
-ARG TRAVIS_COMMIT
+ARG BRANCH
 
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"

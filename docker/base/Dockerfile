@@ -7,6 +7,9 @@ ADD ["etc/", "/etc/"]
 ADD ["home/", "/home/"]
 ADD ["root/", "/root/"]
 
+# defaults to develop
+ARG BRANCH
+
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
 ENV LIND_SRC "$LIND_BASE/lind"

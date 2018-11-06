@@ -3,6 +3,9 @@ LABEL lind "v1.0-rc4"
 LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
+# defaults to develop
+ARG BRANCH
+
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
 ENV LIND_SRC "$LIND_BASE/lind"
