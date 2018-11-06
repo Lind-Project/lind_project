@@ -31,7 +31,8 @@ script:
     #
     # TODO: modify loader to only return non-zero on errors -jp
     - cd ./docker/naclruntime
-    - docker build --build-arg=TRAVIS_COMMIT="$TRAVIS_COMMIT" -t alyptik/lind:naclruntime .
-    - docker run --rm --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind:naclruntime "$REPY_PATH/bin/lind" /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched"' || true
+    - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then BRANCH="$TRAVIS_BRANCH"; else BRANCH="$TRAVIS_PULL_REQUEST_BRANCH"; fi
+    - docker build --build-arg=BRANCH="$BRANCH" -t alyptik/lind:latest .
+    - docker run --rm --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind:latest "$REPY_PATH/bin/lind" /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched"' || true
 
 # vi:ft=yaml:

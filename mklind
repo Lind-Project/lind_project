@@ -253,7 +253,7 @@ function download_src() {
 	ln -Trsfv "$LIND_BASE/native_client" "$NACL_BASE"
 	cd "$LIND_BASE"
 	# default to develop branch if not building inside travis
-	nacl_rev="${NATIVE_CLIENT_URL}@${TRAVIS_COMMIT:-develop}"
+	nacl_rev="${NATIVE_CLIENT_URL}@${BRANCH:-develop}"
 	gclient config --name=native_client --git-deps "$nacl_rev"
 	gclient sync
 
@@ -334,9 +334,9 @@ function build_repy() {
 
 	# checkout the correct revision if building inside travis
 	cd "$NACL_REPY"
-	if [[ -n "$TRAVIS_COMMIT" ]]; then
+	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
-		git checkout "$TRAVIS_COMMIT"
+		git checkout "$BRANCH"
 	fi
 	cp -fv ./seattlelib/xmlrpc* "$REPY_PATH_REPY/"
 	python2 ./preparetest.py -t -f "$REPY_PATH_REPY"
@@ -475,9 +475,9 @@ function build_nacl() {
 
 	# checkout the correct revision if building inside travis
 	cd "$NACL_BASE"
-	if [[ -n "$TRAVIS_COMMIT" ]]; then
+	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
-		git checkout "$TRAVIS_COMMIT"
+		git checkout "$BRANCH"
 	fi
 	# skip broken tests for now
 	PATH="$LIND_BASE:$PATH" \
@@ -527,9 +527,9 @@ function build_glibc() {
 
 	# checkout the correct revision if building inside travis
 	cd "$NACL_BASE"
-	if [[ -n "$TRAVIS_COMMIT" ]]; then
+	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
-		git checkout "$TRAVIS_COMMIT"
+		git checkout "$BRANCH"
 	fi
 	# turns out this works better if you do it from the nacl base dir
 	cd "$NACL_TOOLCHAIN_BASE"
