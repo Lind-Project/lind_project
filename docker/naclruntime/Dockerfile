@@ -3,6 +3,9 @@ LABEL lind "v1.0-rc4"
 LABEL description "Lind NaCl Runtime (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
+# defaults to develop
+ARG TRAVIS_COMMIT
+
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
 ENV LIND_SRC "$LIND_BASE/lind"
@@ -45,4 +48,5 @@ RUN ["/usr/bin/env", "script", "-qfc", "$(printf '%q ' lind /fork)", "/dev/null"
 RUN ["/usr/bin/env", "script", "-qfc", "$(printf '%q ' lind /hello)", "/dev/null"]
 RUN ["/usr/bin/env", "script", "-qfc", "$(printf '%q ' lind /bin/bash --version)", "/dev/null"]
 
+# default to running test cases then a shell if no arguments are passed to `docker run`
 CMD ["/usr/bin/bash", "-c", "lind /fork; lind /hello; lind /bin/bash --version; exec bash"]
