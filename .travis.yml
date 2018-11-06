@@ -2,14 +2,18 @@ dist: trusty
 language: c
 group: deprecated-2017Q4
 sudo: required
+
+env:
+  - REPY_PATH="/home/lind/lind_project/lind/repy"
+
 services:
   - docker
+
 git:
     depth: 1
 
 matrix:
   include:
-    # works on Precise and Trusty
     - os: linux
       addons:
         apt:
@@ -20,11 +24,14 @@ matrix:
             - gcc-multilib
             - g++-multilib
 
-before_install:
-    - git submodule update --init --recursive --remote .
-
 script:
-    - docker build -t alyptik/lind:latest ./docker/naclruntime
-    - docker run --rm --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind:latest /home/lind/lind_project/lind/repy/bin/lind /bin/bash -c 'a=potato; [[ $a =~ pota.* ]] && echo foo; echo bar' || true
+    # Run a test of the loader after building. Since the loader always
+    # returns non-zerom even if there were no errors, the results must
+    # be examined manually.
+    #
+    # TODO: modify loader to only return non-zero on errors -jp
+    - cd ./docker/naclruntime
+    - docker build -t alyptik/lind:latest .
+    - docker run --rm --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind:latest "$REPY_PATH/bin/lind" /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched"' || true
 
 # vi:ft=yaml:
