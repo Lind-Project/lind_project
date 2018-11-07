@@ -3,8 +3,8 @@ LABEL lind "v1.0-rc4"
 LABEL description "Lind NaCl Runtime (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
 
-# defaults to develop
 ARG BRANCH
+ENV BRANCH "${BRANCH:-develop}"
 
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"

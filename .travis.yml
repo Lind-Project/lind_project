@@ -9,9 +9,6 @@ env:
 services:
   - docker
 
-git:
-    depth: 1
-
 matrix:
   include:
     - os: linux
