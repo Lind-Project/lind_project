@@ -336,7 +336,7 @@ function build_repy() {
 	cd "$NACL_REPY"
 	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
-		git checkout "$BRANCH"
+		git checkout "$BRANCH" || true
 	fi
 	cp -fv ./seattlelib/xmlrpc* "$REPY_PATH_REPY/"
 	python2 ./preparetest.py -t -f "$REPY_PATH_REPY"
@@ -477,7 +477,7 @@ function build_nacl() {
 	cd "$NACL_BASE"
 	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
-		git checkout "$BRANCH"
+		git checkout "$BRANCH" || true
 	fi
 	# skip broken tests for now
 	PATH="$LIND_BASE:$PATH" \
@@ -529,7 +529,7 @@ function build_glibc() {
 	cd "$NACL_BASE"
 	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
-		git checkout "$BRANCH"
+		git checkout "$BRANCH" || true
 	fi
 	# turns out this works better if you do it from the nacl base dir
 	cd "$NACL_TOOLCHAIN_BASE"
