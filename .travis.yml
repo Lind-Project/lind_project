@@ -2,10 +2,10 @@ dist: trusty
 language: c
 group: deprecated-2017Q4
 sudo: required
-
+git:
+  submodules: false
 env:
   - REPY_PATH="/home/lind/lind_project/lind/repy"
-
 services:
   - docker
 
@@ -22,15 +22,15 @@ matrix:
             - g++-multilib
 
 script:
-    # Run a test of the loader after building. Since the loader always
-    # returns non-zerom even if there were no errors, the results must
-    # be examined manually.
+    # special case pull requests so they build the source and not the target branch
+    - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then cur_branch="$TRAVIS_BRANCH"; else cur_branch="$TRAVIS_PULL_REQUEST_BRANCH"; fi
+    # skip building the master and lind branches as those don't exist in all subrepositories
     #
-    # TODO: modify loader to only return non-zero on errors -jp
+    # TODO: make subrepository branch names consistent and remove special casing of master and lind -jp
+    - if [[ "$cur_branch" == master || "$cur_branch" == lind ]]; then cur_branch="develop"; fi
+    # run a test of the loader after building
     - cd ./docker/naclruntime
-    - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then BRANCH="$TRAVIS_BRANCH"; else BRANCH="$TRAVIS_PULL_REQUEST_BRANCH"; fi
-    - if [[ "$BRANCH" == master ]]; then BRANCH="develop"; fi
-    - docker build --build-arg=BRANCH="$BRANCH" -t alyptik/lind .
-    - docker run --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind "$REPY_PATH/bin/lind" /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched"' || true
+    - docker build --build-arg=BRANCH="$cur_branch" -t alyptik/lind .
+    - docker run --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind "$REPY_PATH/bin/lind" /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched; exec /fork"'
 
 # vi:ft=yaml:
