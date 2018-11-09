@@ -1,0 +1,17 @@
+#! /bin/sh
+#
+# Created by configure
+
+CC="x86_64-nacl-gcc"; export CC
+CFLAGS="-Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3"; export CFLAGS
+LDFLAGS="-Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -Wl,-O2,-z,relro,-z,now,-z,noexecstack -Wl,--as-needed,--sort-common,--warn-common"; export LDFLAGS
+"./configure" \
+"--host=x86_64-pc-nacl" \
+"--with-included-apr" \
+"--with-expat=builtin" \
+"--prefix=/home/jp/lind_project/lind/repy/repy" \
+"host_alias=x86_64-pc-nacl" \
+"CC=x86_64-nacl-gcc" \
+"CFLAGS=-Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3" \
+"LDFLAGS=-Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -Wl,-O2,-z,relro,-z,now,-z,noexecstack -Wl,--as-needed,--sort-common,--warn-common" \
+"$@"
