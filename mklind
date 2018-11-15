@@ -164,7 +164,6 @@ readonly LIND_GLIBC_SRC="$LIND_BASE/lind_glibc"
 readonly NACL_GCC_SRC="$LIND_BASE/nacl-gcc"
 readonly NACL_BINUTILS_SRC="$LIND_BASE/nacl-binutils"
 readonly NACL_REPY="$LIND_BASE/nacl_repy"
-readonly NACL_PORTS_DIR="$LIND_BASE/naclports"
 
 readonly REPY_PATH="$REPY_PATH"
 readonly REPY_PATH_BIN="$REPY_PATH/bin"
@@ -180,7 +179,6 @@ readonly LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_GCC_URL='https://github.com/Lind-Project/nacl-gcc.git'
 readonly NACL_BINUTILS_URL='https://github.com/Lind-Project/nacl-binutils.git'
-readonly NACL_PORTS_URL='https://chromium.googlesource.com/external/naclports.git'
 readonly NATIVE_CLIENT_URL='https://github.com/Lind-Project/native_client.git'
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 
@@ -199,7 +197,6 @@ function clean_src() {
 
 	print "Cleaning Lind..."
 	cd "$LIND_BASE"
-	rm -rf -- "$NACL_PORTS_DIR"
 	rm -rf -- lind_experiments lind-misc lss
 	rm -rf -- nacl_repy nacl-gcc nacl-binutils lind_glibc
 }
@@ -266,14 +263,6 @@ function download_src() {
 		ln -Trsfv "${toolchain_deps[$dir]}" "SRC/$dir"
 		(cd "SRC/$dir" && git checkout develop)
 	done
-
-	# clone external application ports
-	if [[ ! -e "$NACL_PORTS_DIR/src" ]]; then
-		mkdir -p "$NACL_PORTS_DIR"
-		cd "$NACL_PORTS_DIR"
-		gclient config --name=src --git-deps "$NACL_PORTS_URL"
-		gclient sync
-	fi
 
 	# gclient overwrites our Docker Makefile
 	cd "$LIND_BASE"
