@@ -1,0 +1,50 @@
+#!/bin/bash
+
+if [[ "$*" =~ (^|[[:blank:]])(-h|--help)([[:blank:]]|$) ]]; then
+	if [[ -f ./configure ]]; then
+		./configure --help
+		exit 1
+	fi
+	./buildconf --help
+	exit 1
+fi
+
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS="-L${PREFIX:-$HOME/lind_project/lind/repy/repy}/lib -DPTHREAD_MUTEX_RECURSIVE=1 -g"
+export CXXFLAGS="-L${PREFIX:-$HOME/lind_project/lind/repy/repy}/lib -DPTHREAD_MUTEX_RECURSIVE=1 -g"
+export LDFLAGS="-L${PREFIX:-$HOME/lind_project/lind/repy/repy}/lib -g"
+export PREFIX="${PREFIX:-$HOME/lind_project/lind/repy/repy}"
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+
+mkdir -pv -- apr
+make distclean || true
+rm -fv -- ./configure
+cd srclib/apr  \
+	&& (make distclean || true) \
+	&& rm -fv -- ./configure \
+	&& ./bootstrap_nacl --prefix="${PREFIX:-$HOME/lind_project/lind/repy/repy}" \
+	&& make install
+cp -fv -- srclib/apr-util/include/{apr_{hooks,optional_hooks,buckets,uri,optional},apu}.h include/
+
+./buildconf
+./configure \
+	--with-included-apr \
+	--with-expat="${PREFIX:-$HOME/lind_project/lind/repy/repy}/lib" \
+	--host=x86_64-nacl \
+	--prefix="${PREFIX:-$HOME/lind_project/lind/repy/repy}" \
+	"$@" \
+	ac_cv_file__dev_zero="yes" \
+	ac_cv_func_setpgrp_void="yes" \
+	apr_cv_tcp_nodelay_with_cork="yes" \
+	ap_cv_void_ptr_lt_long="no" \
+	ac_cv_sizeof_struct_iovec="8" \
+	apr_cv_process_shared_works="yes" \
+	apr_cv_mutex_robust_shared="no" \
+	apr_cv_mutex_recursive="yes" \
+	apu_has_expat="1"
+
+patch -Np1 <./httpd.h.patch || true
+
+make

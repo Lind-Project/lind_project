@@ -8,6 +8,6 @@
 #   $ . path/to/apr-util/export_vars.sh
 #
 
-APRUTIL_EXPORT_INCLUDES="-I/lib/include"
+APRUTIL_EXPORT_INCLUDES=""
 APRUTIL_EXPORT_LIBS=""
-APRUTIL_LDFLAGS="-L/lib/lib"
+APRUTIL_LDFLAGS=""

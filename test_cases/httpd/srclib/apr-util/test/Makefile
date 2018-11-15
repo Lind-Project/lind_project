@@ -10,7 +10,7 @@ srcdir = .
 #   programs such as sockperf, that have to be invoked in a special sequence
 #   or with special parameters
 
-INCLUDES = -I/home/jp/lind_project/test_cases/httpd/srclib/apr-util/include -I/home/jp/lind_project/test_cases/httpd/srclib/apr-util/include/private  -I/home/jp/lind_project/test_cases/httpd/srclib/apr/include  -I/lib/include
+INCLUDES = -I/home/jp/lind_project/test_cases/httpd/srclib/apr-util/include -I/home/jp/lind_project/test_cases/httpd/srclib/apr-util/include/private  -I/home/jp/lind_project/test_cases/httpd/srclib/apr/include  
 
 STDTEST_PORTABLE = dbd testall
 
@@ -30,7 +30,7 @@ CLEAN_TARGETS = manyfile.bin testfile.txt data/sqlite*.db
 # bring in rules.mk for standard functionality
 include /home/jp/lind_project/test_cases/httpd/srclib/apr-util/build/rules.mk
 APRUTIL_LIBS =  /home/jp/lind_project/test_cases/httpd/srclib/apr/libapr-1.la -lrt -lcrypt  -ldl
-APRUTIL_LDFLAGS = $(ALL_LDFLAGS) -no-install -L/lib/lib
+APRUTIL_LDFLAGS = $(ALL_LDFLAGS) -no-install 
 
 # link programs using -no-install to get real executables not
 # libtool wrapper scripts which link an executable when first run.

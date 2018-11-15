@@ -1,6 +1,5 @@
 
-CLEAN_TARGETS = gen_test_char test_char.h \
-	ApacheCoreOS2.def httpd.exp export_files \
+CLEAN_TARGETS = ApacheCoreOS2.def httpd.exp export_files \
 	exports.c export_vars.h
 
 SUBDIRS = mpm
@@ -17,21 +16,10 @@ LTLIBRARY_SOURCES = \
 	eoc_bucket.c eor_bucket.c core_filters.c \
 	util_expr_parse.c util_expr_scan.c util_expr_eval.c
 
-LTLIBRARY_DEPENDENCIES = test_char.h
-
 TARGETS = delete-exports $(LTLIBRARY_NAME) $(CORE_IMPLIB_FILE) export_vars.h httpd.exp
 
 include $(top_builddir)/build/rules.mk
 include $(top_srcdir)/build/library.mk
-
-gen_test_char_OBJECTS = gen_test_char.lo
-gen_test_char: $(gen_test_char_OBJECTS)
-	$(LINK) $(EXTRA_LDFLAGS) $(gen_test_char_OBJECTS) $(EXTRA_LIBS)
-
-test_char.h: gen_test_char
-	./gen_test_char > test_char.h
-
-util.lo: test_char.h
 
 EXPORT_DIRS = $(top_srcdir)/include $(top_srcdir)/os/$(OS_DIR)
 EXPORT_DIRS_APR = $(APR_INCLUDEDIR) $(APU_INCLUDEDIR)

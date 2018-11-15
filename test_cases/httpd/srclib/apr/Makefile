@@ -36,7 +36,7 @@ INSTALL_DATA = ${INSTALL} -m 644
 # Rules for building specific targets, starting with 'all' for
 # building the entire package.
 #
-TARGETS = $(TARGET_LIB) include/private/apr_escape_test_char.h apr.exp apr-config.out build/apr_rules.out
+TARGETS = $(TARGET_LIB) apr.exp apr-config.out build/apr_rules.out
 
 LT_VERSION = -version-info 6:5:6
 
@@ -45,9 +45,7 @@ include /home/jp/lind_project/test_cases/httpd/srclib/apr/build/apr_rules.mk
 include /home/jp/lind_project/test_cases/httpd/srclib/apr/build-outputs.mk
 
 CLEAN_TARGETS = apr-config.out apr.exp exports.c export_vars.c .make.dirs \
-	build/apr_rules.out tools/gen_test_char \
-	tools/gen_test_char.o tools/gen_test_char.lo \
-	include/private/apr_escape_test_char.h
+	build/apr_rules.out
 DISTCLEAN_TARGETS = config.cache config.log config.status \
 	include/apr.h include/arch/unix/apr_private.h \
 	libtool $(APR_CONFIG) build/apr_rules.mk apr.pc \
@@ -104,8 +102,6 @@ install: $(TARGETS)
 $(TARGET_LIB): $(OBJECTS)
 	$(LINK) -rpath $(libdir) $(OBJECTS) $(ALL_LIBS)
 
-encoding/apr_escape.lo: include/private/apr_escape_test_char.h 
-
 exports.c: $(HEADERS)
 	$(APR_MKEXPORT) $(HEADERS) > $@
 
@@ -131,18 +127,6 @@ check: $(TARGET_LIB)
 
 etags:
 	etags `find . -name '*.[ch]'`
-
-OBJECTS_gen_test_char = tools/gen_test_char.lo $(LOCAL_LIBS)
-tools/gen_test_char.lo: tools/gen_test_char.c
-	$(APR_MKDIR) tools
-	$(LT_COMPILE)
-
-tools/gen_test_char: $(OBJECTS_gen_test_char)
-	$(LINK_PROG) $(OBJECTS_gen_test_char) $(ALL_LIBS)
-
-include/private/apr_escape_test_char.h: tools/gen_test_char
-	$(APR_MKDIR) include/private
-	tools/gen_test_char > $@
 
 LINK_PROG = $(LIBTOOL) $(LTFLAGS) --mode=link $(COMPILE) $(LT_LDFLAGS) \
 	    -no-install $(ALL_LDFLAGS) -o $@
