@@ -1,0 +1,6 @@
+NAME=nettle
+VERSION=3.2
+URL=ftp://ftp.gnu.org/gnu/nettle/nettle-3.2.tar.gz
+DEPENDS=(gmp)
+LICENSE=LGPL
+SHA1=b2eb5b36e65a8d3ed60ff81ec897044dead6dae0

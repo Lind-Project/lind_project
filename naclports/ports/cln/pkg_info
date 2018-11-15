@@ -1,0 +1,6 @@
+NAME=cln
+VERSION=1.3.4
+URL=http://www.ginac.de/CLN/cln-1.3.4.tar.bz2
+LICENSE=GPL2
+SHA1=76f73071236ead72ba5c9ee892f29ca24e557b8c
+DISABLED_TOOLCHAIN=(emscripten glibc pnacl clang-newlib/arm)

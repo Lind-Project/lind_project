@@ -1,0 +1,34 @@
+diff --git a/lib/gnutls_global.c b/lib/gnutls_global.c
+index 9bda352..8756daf 100644
+--- a/lib/gnutls_global.c
++++ b/lib/gnutls_global.c
+@@ -54,7 +54,15 @@
+ int __attribute__((weak)) _gnutls_global_init_skip(void);
+ int _gnutls_global_init_skip(void)
+ {
++#ifdef __native_client__
++	/* _gnutls_rnd_init() will fail if nacl_io_init() or
++	 * nacl_io_init_ppapi() has not run yet.  Only the app can invoke
++	 * the latter function (and only one can be called).
++	 */
++	return 1;
++#else
+ 	return 0;
++#endif
+ }
+ 
+ /* created by asn1c */
+diff --git a/lib/x509/verify-high2.c b/lib/x509/verify-high2.c
+index 558fa89..902f55c 100644
+--- a/lib/x509/verify-high2.c
++++ b/lib/x509/verify-high2.c
+@@ -37,8 +37,8 @@
+ 
+ #include <dirent.h>
+ 
+-#ifndef _DIRENT_HAVE_D_TYPE
++#if !defined(_DIRENT_HAVE_D_TYPE) && !defined(__native_client__)
+ # ifdef DT_UNKNOWN
+ #  define _DIRENT_HAVE_D_TYPE
+ # endif
+ #endif

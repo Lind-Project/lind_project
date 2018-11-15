@@ -1,0 +1,24 @@
+diff --git a/build/make/Makefile b/build/make/Makefile
+--- a/build/make/Makefile
++++ b/build/make/Makefile
+@@ -207,6 +207,8 @@ $(BUILD_PFX)%.asm.s: %.asm
+ # If we're in debug mode, pretend we don't have GNU strip, to fall back to
+ # the copy implementation
+ HAVE_GNU_STRIP := $(if $(CONFIG_DEBUG),,$(HAVE_GNU_STRIP))
++# We don't have STRIP in new pnacl driver so fall back to using cp
++HAVE_GNU_STRIP := $(if $(filter $(NACL_ARCH), le32),,$(HAVE_GNU_STRIP))
+ ifeq ($(HAVE_GNU_STRIP),yes)
+ # Older binutils strip global symbols not needed for relocation processing
+ # when given --strip-unneeded. Using nm and awk to identify globals and
+diff --git a/build/make/configure.sh b/build/make/configure.sh
+--- a/build/make/configure.sh
++++ b/build/make/configure.sh
+@@ -428,7 +428,7 @@ NM=${NM}
+ 
+ CFLAGS  = ${CFLAGS}
+ CXXFLAGS  = ${CXXFLAGS}
+-ARFLAGS = -rus\$(if \$(quiet),c,v)
++ARFLAGS = rus\$(if \$(quiet),c,v)
+ LDFLAGS = ${LDFLAGS}
+ ASFLAGS = ${ASFLAGS}
+ extralibs = ${extralibs}

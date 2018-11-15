@@ -1,0 +1,10 @@
+NAME=python
+VERSION=2.7.11
+ARCHIVE_ROOT=Python-2.7.11
+URL=http://www.python.org/ftp/python/2.7.11/Python-2.7.11.tgz
+LICENSE=CUSTOM:LICENSE
+DEPENDS=(glibc-compat readline zlib libtar nacl-spawn openssl bzip2 python-host)
+CONFLICTS=(python-static)
+# incomplete lconv struct
+SHA1=62a0b1b703d42999cc4aa9ee3c55eb7efe35802a
+DISABLED_TOOLCHAIN=(emscripten)

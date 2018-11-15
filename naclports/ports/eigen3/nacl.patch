@@ -1,0 +1,26 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -161,7 +161,9 @@ if(NOT MSVC)
+   if(COMPILER_SUPPORT_STRICTANSI)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -strict-ansi")
+   else()
+-    ei_add_cxx_compiler_flag("-ansi")
++    if(NOT NACL)
++      ei_add_cxx_compiler_flag("-ansi")
++    endif()
+   endif()
+   
+   set(CMAKE_REQUIRED_FLAGS "")
+diff --git a/cmake/EigenTesting.cmake b/cmake/EigenTesting.cmake
+--- a/cmake/EigenTesting.cmake
++++ b/cmake/EigenTesting.cmake
+@@ -324,7 +324,7 @@ macro(ei_get_compilerver VAR)
+     # on all other system we rely on ${CMAKE_CXX_COMPILER}
+     # supporting a "--version" or "/version" flag
+     
+-    if(WIN32 AND ${CMAKE_CXX_COMPILER_ID} EQUAL "Intel")
++    if(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" EQUAL "Intel")
+       set(EIGEN_CXX_FLAG_VERSION "/version")
+     else()
+       set(EIGEN_CXX_FLAG_VERSION "--version")

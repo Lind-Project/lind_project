@@ -1,0 +1,7 @@
+NAME=openconnect
+VERSION=489cb6c1023d
+URL=git://git.infradead.org/users/dwmw2/openconnect.git@489cb6c1023d
+LICENSE=LGPL2.1
+DEPENDS=(glibc-compat libxml2 gnutls zlib lz4 stoken)
+# Disabled on OSX due to lack of libtoolize.
+BUILD_OS=linux

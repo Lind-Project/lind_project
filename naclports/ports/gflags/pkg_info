@@ -1,0 +1,7 @@
+NAME=gflags
+VERSION=2.1.2
+URL=https://github.com/gflags/gflags/archive/v2.1.2/gflags-2.1.2.tar.gz
+LICENSE=BSD
+SHA1=8bdbade9d041339dc14b4ab426e2354a5af38478
+# https://bugs.chromium.org/p/webports/issues/detail?id=243
+DISABLED_TOOLCHAIN=(emscripten)

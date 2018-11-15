@@ -1,0 +1,11 @@
+{
+  "browser": true,
+  "globalstrict": true,
+  "sub": true,
+  "devel": true,
+  "shadow": true,
+  "globals": {
+    "chrome": true,
+    "Promise": true
+  }
+}

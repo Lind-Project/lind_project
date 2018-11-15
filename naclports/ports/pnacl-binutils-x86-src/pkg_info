@@ -1,0 +1,5 @@
+NAME=pnacl-binutils-x86-src
+VERSION=0.0.1
+ARCHIVE_ROOT=binutils
+URL=https://chromium.googlesource.com/native_client/nacl-binutils.git@1d8592c
+LICENSE=BSD

@@ -1,0 +1,9 @@
+NAME=grpc
+VERSION=0.12.0
+DEPENDS=(protobuf openssl zlib gflags)
+LICENSE=CUSTOM:README
+URL=https://github.com/grpc/grpc.git@9fad88fe
+# Disabled for older glibc compilers due to lack of full C++11 support.
+DISABLED_TOOLCHAIN=(glibc/x86_64 glibc/i686)
+# Uses 'cp -l' to create symlink tree, which is not supported on OSX
+BUILD_OS=linux

@@ -1,0 +1,9 @@
+NAME=pnacl
+VERSION=0.0.1
+ARCHIVE_ROOT=native_client
+URL=https://chromium.googlesource.com/native_client/src/native_client.git@0fdb5d2
+LICENSE=BSD
+DEPENDS=(glibc-compat nacl-spawn pnacl-clang-src pnacl-binutils-src pnacl-llvm-src pnacl-binutils-x86-src)
+# x86 glibc toolchain is too old to build clang
+# arm glibc fails with unrecognized command line option ‘-stdlib=libc++’
+DISABLED_TOOLCHAIN=(glibc emscripten)

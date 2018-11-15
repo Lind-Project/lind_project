@@ -1,0 +1,12 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -293,7 +293,7 @@ foreach (TYPE IN ITEMS STATIC SHARED)
+       if (BUILD_gflags${opts}_LIB)
+         add_library (gflags${opts}-${type} ${TYPE} ${GFLAGS_SRCS} ${PRIVATE_HDRS} ${PUBLIC_HDRS})
+         if (opts MATCHES "nothreads")
+-          set (defines "GFLAGS_IS_A_DLL=${GFLAGS_IS_A_DLL};NOTHREADS")
++          set (defines "GFLAGS_IS_A_DLL=${GFLAGS_IS_A_DLL};NO_THREADS")
+         else ()
+           set (defines "GFLAGS_IS_A_DLL=${GFLAGS_IS_A_DLL}")
+           if (CMAKE_USE_PTHREADS_INIT)

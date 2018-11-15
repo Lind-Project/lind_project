@@ -1,0 +1,3 @@
+NAME=glibc-compat
+DEPENDS=(corelibs gtest)
+VERSION=0.1

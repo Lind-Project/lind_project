@@ -1,0 +1,7 @@
+NAME=libpng
+VERSION=1.6.20
+URL=http://download.sf.net/libpng/libpng-1.6.20.tar.gz
+LICENSE=CUSTOM:LICENSE
+DEPENDS=(zlib)
+SHA1=0b3712365571199ef7864177faa0f6e9f4d946ab
+CONFLICTS=(libpng12)

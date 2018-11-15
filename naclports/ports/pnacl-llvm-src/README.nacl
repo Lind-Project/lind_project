@@ -1,0 +1,10 @@
+This source tree is a pinned revsion of that NaCl llvm repository.
+
+The nacl.patch contains changes needed to make llvm build with
+the nacl and pnacl toolchains.
+
+1. Fix unused symbol errors in Signals.inc
+
+2. Remove inline assembly use of xgetbv instruction
+
+3. Makefile.rules: Don't attempt to build loadable modules when ENABLE_SHARED=0
