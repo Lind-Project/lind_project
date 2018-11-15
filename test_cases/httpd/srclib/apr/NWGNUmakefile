@@ -1,31 +1,40 @@
 #
+# Define our macros with defaults if we dont got them already.
+#
+ifndef APR_WORK
+export APR_WORK = $(CURDIR)
+endif
+ifneq "$(wildcard $(APR_WORK)/include/apr_version.h)" "$(APR_WORK)/include/apr_version.h"
+$(error APR_WORK does not point to a valid APR source tree) 
+endif
+ifndef APU_WORK
+export APU_WORK = $(CURDIR)/../apr-util
+endif
+ifneq "$(wildcard $(APU_WORK)/include/apu_version.h)" "$(APU_WORK)/include/apu_version.h"
+$(error APU_WORK does not point to a valid APU source tree) 
+endif
+
+#
 # Declare the sub-directories to be built here
 #
 
 SUBDIRS = \
-	build \
-	xml \
-	$(EOLIST)
+		build \
+		$(APU_WORK) \
+		$(EOLIST)
 
-ifdef WITH_APR_DBD
+ifeq "$(TEST)" "1"
 SUBDIRS += \
-	dbd \
-	$(EOLIST) 
-endif
-
-ifdef WITH_APR_DBM
-SUBDIRS += \
-	dbm \
-	$(EOLIST) 
+		test \
+		$(APU_WORK)/test \
+		$(EOLIST)
 endif
 
 #
 # Get the 'head' of the build environment.  This includes default targets and
 # paths to tools
 #
-ifndef APR_WORK
-export APR_WORK = $(CURDIR)
-endif
+
 include $(APR_WORK)/build/NWGNUhead.inc
 
 #
@@ -42,10 +51,13 @@ include $(APR_WORK)/build/NWGNUhead.inc
 XINCDIRS	+= \
 			$(APR)/include \
 			$(APR)/include/private \
-			$(APR)/include/arch/netware \
+			$(APR)/include/arch/NetWare \
 			$(APR)/include/arch/unix \
-			$(APR)/dbm/sdbm \
+			$(APR)/memory/unix \
 			$(APR)/random/unix \
+			$(APU)/include \
+			$(APU)/xml \
+			$(LDAPSDK)/inc \
 			$(EOLIST)
 
 #
@@ -176,7 +188,7 @@ XDCDATA		=
 # If there is an NLM target, put it here
 #
 TARGET_nlm = \
-	$(OBJDIR)/$(NLM_NAME).nlm \
+	$(OBJDIR)/aprlib.nlm \
 	$(EOLIST)
 
 #
@@ -201,23 +213,17 @@ FILES_nlm_objs = \
 FILES_nlm_libs = \
 	$(PRELUDE) \
 	$(APRLIB) \
-	$(APRXMLLIB) \
+	$(APULIB) \
+	$(APULDAPLIB) \
+	$(APUXMLLIB) \
 	$(EOLIST)
-
-ifdef EXPATSDK
-ifdef EXPAT_LINK_STATIC
-FILES_nlm_libs += \
-	$(EXPAT_LIB) \
-	$(EOLIST)
-endif
-endif
 
 #
 # These are the modules that the above NLM target depends on to load.
 # These will be added as a module command in the link.opt file.
 #
 FILES_nlm_modules = \
-	libc \
+	Libc \
 	$(EOLIST)
 
 # Include the Winsock libraries if Winsock is being used
@@ -226,12 +232,12 @@ FILES_nlm_modules += ws2_32 \
 	$(EOLIST)
 endif
 
-ifdef EXPATSDK
-ifndef EXPAT_LINK_STATIC
+#If the LDAP support is defined then add the auto-load modules
+ifneq "$(LDAPSDK)" ""
 FILES_nlm_modules += \
-	$(EXPAT_NLM) \
+	lldapsdk \
+	lldapssl \
 	$(EOLIST)
-endif
 endif
 
 #
@@ -253,27 +259,25 @@ FILE_nlm_copyright =
 # Any additional imports go here
 #
 FILES_nlm_Ximports = \
-	@$(NOVI)/libc.imp \
-	@$(NOVI)/netware.imp \
+	@libc.imp \
+	@netware.imp \
 	$(EOLIST)
 
 # Include the Winsock imports if Winsock is being used
 ifndef USE_STDSOCKETS
 FILES_nlm_Ximports +=  \
-	@$(NOVI)/ws2nlm.imp \
-	$(EOLIST)
-FILES_nlm_imports +=  \
+	@ws2nlm.imp \
 	WSAStartupRTags \
 	WSACleanupRTag \
 	$(EOLIST)
 endif
 
-ifdef EXPATSDK
-ifndef EXPAT_LINK_STATIC
+#If the LDAP support is defined then add the imports
+ifneq "$(LDAPSDK)" ""
 FILES_nlm_Ximports += \
-	@$(EXPAT_IMP) \
+	@lldapsdk.imp \
+	@lldapssl.imp \
 	$(EOLIST)
-endif
 endif
 
 #
@@ -289,62 +293,27 @@ FILES_nlm_exports = \
 #
 FILES_lib_objs = \
 	$(OBJDIR)/apr_atomic.o \
-	$(OBJDIR)/apr_base64.o \
-	$(OBJDIR)/apr_brigade.o \
-	$(OBJDIR)/apr_buckets.o \
-	$(OBJDIR)/apr_buckets_alloc.o \
-	$(OBJDIR)/apr_buckets_eos.o \
-	$(OBJDIR)/apr_buckets_file.o \
-	$(OBJDIR)/apr_buckets_flush.o \
-	$(OBJDIR)/apr_buckets_heap.o \
-	$(OBJDIR)/apr_buckets_mmap.o \
-	$(OBJDIR)/apr_buckets_pipe.o \
-	$(OBJDIR)/apr_buckets_pool.o \
-	$(OBJDIR)/apr_buckets_refcount.o \
-	$(OBJDIR)/apr_buckets_simple.o \
-	$(OBJDIR)/apr_buckets_socket.o \
 	$(OBJDIR)/apr_cpystrn.o \
-	$(OBJDIR)/apr_date.o \
-	$(OBJDIR)/apr_dbd.o \
-	$(OBJDIR)/apr_dbm.o \
-	$(OBJDIR)/apr_dbm_berkeleydb.o \
-	$(OBJDIR)/apr_dbm_sdbm.o \
 	$(OBJDIR)/apr_escape.o \
 	$(OBJDIR)/apr_fnmatch.o \
 	$(OBJDIR)/apr_getpass.o \
 	$(OBJDIR)/apr_hash.o \
-	$(OBJDIR)/apr_hooks.o \
-	$(OBJDIR)/apr_md4.o \
-	$(OBJDIR)/apr_md5.o \
-	$(OBJDIR)/apr_memcache.o \
-	$(OBJDIR)/apr_passwd.o \
 	$(OBJDIR)/apr_pools.o \
-	$(OBJDIR)/apr_queue.o \
 	$(OBJDIR)/apr_random.o \
-	$(OBJDIR)/apr_redis.o \
-	$(OBJDIR)/apr_reslist.o \
-	$(OBJDIR)/apr_rmm.o \
-	$(OBJDIR)/apr_sha1.o \
-	$(OBJDIR)/apr_siphash.o \
- 	$(OBJDIR)/apr_skiplist.o \
+	$(OBJDIR)/apr_skiplist.o \
 	$(OBJDIR)/apr_snprintf.o \
 	$(OBJDIR)/apr_strings.o \
-	$(OBJDIR)/apr_strmatch.o \
 	$(OBJDIR)/apr_strnatcmp.o \
 	$(OBJDIR)/apr_strtok.o \
 	$(OBJDIR)/apr_tables.o \
-	$(OBJDIR)/apr_thread_pool.o \
-	$(OBJDIR)/apr_uri.o \
-	$(OBJDIR)/apu_dso.o \
 	$(OBJDIR)/buffer.o \
 	$(OBJDIR)/charset.o \
-	$(OBJDIR)/crypt_blowfish.o \
-	$(OBJDIR)/common.o \
 	$(OBJDIR)/copy.o \
+	$(OBJDIR)/common.o \
 	$(OBJDIR)/dir.o \
 	$(OBJDIR)/dso.o \
-	$(OBJDIR)/env.o \
 	$(OBJDIR)/errorcodes.o \
+	$(OBJDIR)/env.o \
 	$(OBJDIR)/fileacc.o \
 	$(OBJDIR)/filedup.o \
 	$(OBJDIR)/filepath.o \
@@ -354,29 +323,23 @@ FILES_lib_objs = \
 	$(OBJDIR)/flock.o \
 	$(OBJDIR)/fullrw.o \
 	$(OBJDIR)/getopt.o \
-	$(OBJDIR)/getuuid.o \
 	$(OBJDIR)/groupinfo.o \
-	$(OBJDIR)/inet_ntop.o \
 	$(OBJDIR)/inet_pton.o \
+	$(OBJDIR)/inet_ntop.o \
 	$(OBJDIR)/mktemp.o \
 	$(OBJDIR)/mmap.o \
 	$(OBJDIR)/multicast.o \
 	$(OBJDIR)/open.o \
-	$(OBJDIR)/otherchild.o \
 	$(OBJDIR)/pipe.o \
-	$(OBJDIR)/pollcb.o \
-	$(OBJDIR)/pollset.o \
-	$(OBJDIR)/printf.o \
+	$(OBJDIR)/otherchild.o \
 	$(OBJDIR)/proc.o \
-	$(OBJDIR)/proc_mutex.o \
 	$(OBJDIR)/procsup.o \
+	$(OBJDIR)/proc_mutex.o \
 	$(OBJDIR)/rand.o \
 	$(OBJDIR)/readwrite.o \
-	$(OBJDIR)/sdbm.o \
-	$(OBJDIR)/sdbm_hash.o \
-	$(OBJDIR)/sdbm_lock.o \
-	$(OBJDIR)/sdbm_pair.o \
 	$(OBJDIR)/seek.o \
+	$(OBJDIR)/pollcb.o \
+	$(OBJDIR)/pollset.o \
 	$(OBJDIR)/select.o \
 	$(OBJDIR)/sendrecv.o \
 	$(OBJDIR)/sha2.o \
@@ -397,12 +360,11 @@ FILES_lib_objs = \
 	$(OBJDIR)/time.o \
 	$(OBJDIR)/timestr.o \
 	$(OBJDIR)/userinfo.o \
-	$(OBJDIR)/uuid.o \
 	$(OBJDIR)/version.o \
 	$(OBJDIR)/waitio.o \
 	$(OBJDIR)/wakeup.o \
-	$(OBJDIR)/xlate.o \
 	$(EOLIST)
+
 
 #
 # implement targets and dependancies (leave this section alone)
@@ -416,14 +378,15 @@ nlms :: libs $(TARGET_nlm)
 # Updated this target to create necessary directories and copy files to the
 # correct place.  (See $(APR_WORK)/build/NWGNUhead.inc for examples)
 #
-
 install :: nlms $(INSTDIRS) FORCE
 	$(call COPY,$(APR)/$(TARGET_nlm),$(INSTALLBASE)/)
 ifndef DEST
-	-$(call COPY,$(APR)/STATUS,$(INSTALLBASE)/STATUS.apr)
 	-$(call COPY,$(APR)/LICENSE,$(INSTALLBASE)/)
+	-$(call COPY,$(APR)/STATUS,$(INSTALLBASE)/STATUS.apr)
 	-$(call COPY,$(APR)/CHANGES,$(INSTALLBASE)/CHANGES.apr)
-	@-$(call COPYR,$(APR)/docs,$(INSTALLBASE)/docs/)
+	-$(call COPY,$(APU)/STATUS,$(INSTALLBASE)/STATUS.apu)
+	-$(call COPY,$(APU)/CHANGES,$(INSTALLBASE)/CHANGES.apu)
+	-$(call COPYR,$(APR)/docs,$(INSTALLBASE)/docs/)
 endif
 
 ifndef DEST
@@ -431,8 +394,11 @@ installdev :: $(INSTDEVDIRS) FORCE
 	$(call COPY,$(APR)/include/*.h,$(INSTALLBASE)/include/)
 	$(call COPY,$(APR)/*.imp,$(INSTALLBASE)/lib/)
 	$(call COPY,$(APR)/misc/netware/*.xdc,$(INSTALLBASE)/lib/)
-	$(call COPY,$(APR)/$(TARGET_lib),$(INSTALLBASE)/lib/)
 	$(call COPY,$(APR)/$(TARGET_nlm),$(INSTALLBASE)/bin/)
+	$(call COPY,$(APRLIB),$(INSTALLBASE)/lib/)
+	$(call COPY,$(APULIB),$(INSTALLBASE)/lib/)
+	$(call COPY,$(APULDAPLIB),$(INSTALLBASE)/lib/)
+	$(call COPY,$(APUXMLLIB),$(INSTALLBASE)/lib/)
 
 $(INSTDEVDIRS) ::
 	$(call MKDIR,$@)
@@ -442,18 +408,21 @@ endif
 # Any specialized rules here
 #
 
-vpath filepath.c file_io/win32
-vpath %.c atomic/netware:strings:tables:passwd:time/unix
-vpath %.c file_io/netware:file_io/unix:locks/netware:misc/netware:misc/unix
-vpath %.c threadproc/netware:poll/unix:shmem/unix:support/unix:random/unix
-vpath %.c dso/netware:memory/unix:mmap/unix:user/netware:util-misc
-vpath %.c buckets:crypto:dbd:dbm:dbm/sdbm:encoding:hooks:memcache:redis:misc:strmatch:uri:xlate
+vpath %.c atomic/netware:strings:tables:passwd:lib:time/unix
+vpath %.c file_io/unix:locks/netware:misc/netware:misc/unix:threadproc/netware
+vpath %.c poll/unix:shmem/unix:support/unix:random/unix
+vpath %.c dso/netware:memory/unix:mmap/unix:user/netware:encoding
 
 # Use the win32 network_io if Winsock is being used
 ifndef USE_STDSOCKETS
 vpath %.c network_io/win32
 endif
 vpath %.c network_io/unix
+
+$(OBJDIR)/%.o: file_io/netware/%.c $(OBJDIR)/$(NLM_NAME)_cc.opt
+#	@echo Compiling $<
+	@echo $(DL)CC   $<$(DL)
+	$(CC) $< -cwd source -o=$@ @$(OBJDIR)/$(NLM_NAME)_cc.opt
 
 #
 # Include the 'tail' makefile that has targets that depend on variables defined

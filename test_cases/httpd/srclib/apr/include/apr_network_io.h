@@ -441,31 +441,6 @@ APR_DECLARE(apr_status_t) apr_sockaddr_info_copy(apr_sockaddr_t **dst,
                                                  const apr_sockaddr_t *src,
                                                  apr_pool_t *p);
 
-/* Set the zone of an IPv6 link-local address object.
- * @param sa Socket address object
- * @param zone_id Zone ID (textual "eth0" or numeric "3").
- * @return Returns APR_EBADIP for non-IPv6 socket or an IPv6 address
- * which isn't link-local.
- */
-APR_DECLARE(apr_status_t) apr_sockaddr_zone_set(apr_sockaddr_t *sa,
-                                                const char *zone_id);
-
-
-/* Retrieve the zone of an IPv6 link-local address object.
- * @param sa Socket address object
- * @param name If non-NULL, set to the textual representation of the zone id
- * @param id If non-NULL, set to the integer zone id
- * @param p Pool from which *name is allocated if used.
- * @return Returns APR_EBADIP for non-IPv6 socket or socket without any zone id
- * set, or other error if the interface could not be mapped to a name.
- * @remark Both name and id may be NULL, neither are modified if
- * non-NULL in error cases.
- */
-APR_DECLARE(apr_status_t) apr_sockaddr_zone_get(const apr_sockaddr_t *sa,
-                                                const char **name,
-                                                apr_uint32_t *id,
-                                                apr_pool_t *p);                                                
-    
 /**
  * Look up the host name from an apr_sockaddr_t.
  * @param hostname The hostname.
@@ -635,7 +610,6 @@ APR_DECLARE(apr_status_t) apr_socket_recvfrom(apr_sockaddr_t *from,
  * The number of bytes actually sent is stored in the len parameter.
  * The offset parameter is passed by reference for no reason; its
  * value will never be modified by the apr_socket_sendfile() function.
- * It is possible for both bytes to be sent and an error to be returned.
  */
 APR_DECLARE(apr_status_t) apr_socket_sendfile(apr_socket_t *sock, 
                                               apr_file_t *file,
@@ -667,16 +641,6 @@ APR_DECLARE(apr_status_t) apr_socket_sendfile(apr_socket_t *sock,
  */
 APR_DECLARE(apr_status_t) apr_socket_recv(apr_socket_t *sock, 
                                    char *buf, apr_size_t *len);
-
-/**
- * Wait for a socket to be ready for input or output
- * @param sock the socket to wait on
- * @param direction whether to wait for reading or writing to be ready
- * @remark Will time out if socket has a time out set for it
- * @remark direction can be either APR_WAIT_READ or APR_WAIT_WRITE
- */
-APR_DECLARE(apr_status_t) apr_socket_wait(apr_socket_t *sock, 
-                                          apr_wait_type_t direction);
 
 /**
  * Setup socket options for the specified socket
@@ -854,9 +818,11 @@ APR_DECLARE(int) apr_ipsubnet_test(apr_ipsubnet_t *ipsub, apr_sockaddr_t *sa);
  * @param name The accept filter
  * @param args Any extra args to the accept filter.  Passing NULL here removes
  *             the accept filter. 
+ * @bug name and args should have been declared as const char *, as they are in
+ * APR 2.0
  */
-apr_status_t apr_socket_accept_filter(apr_socket_t *sock, const char *name,
-                                      const char *args);
+apr_status_t apr_socket_accept_filter(apr_socket_t *sock, char *name,
+                                      char *args);
 #endif
 
 /**

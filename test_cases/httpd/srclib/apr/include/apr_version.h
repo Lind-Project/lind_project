@@ -50,26 +50,26 @@
  * programs such as structure size changes.  No binary compatibility is
  * possible across a change in the major version.
  */
-#define APR_MAJOR_VERSION       2
+#define APR_MAJOR_VERSION       1
 
 /** minor version
  * Minor API changes that do not cause binary compatibility problems.
  * Reset to 0 when upgrading APR_MAJOR_VERSION
  */
-#define APR_MINOR_VERSION       0
+#define APR_MINOR_VERSION       6
 
 /** patch level 
  * The Patch Level never includes API changes, simply bug fixes.
  * Reset to 0 when upgrading APR_MINOR_VERSION
  */
-#define APR_PATCH_VERSION       0
+#define APR_PATCH_VERSION       5
 
 /** 
  * The symbol APR_IS_DEV_VERSION is only defined for internal,
  * "development" copies of APR.  It is undefined for released versions
  * of APR.
  */
-#define APR_IS_DEV_VERSION
+/* #undef APR_IS_DEV_VERSION */
 
 /**
  * Check at compile time if the APR version is at least a certain
@@ -114,9 +114,9 @@
 
 /** An alternative formatted string of APR's version */
 /* macro for Win32 .rc files using numeric csv representation */
-#define APR_VERSION_STRING_CSV APR_MAJOR_VERSION, \
-                               APR_MINOR_VERSION, \
-                               APR_PATCH_VERSION
+#define APR_VERSION_STRING_CSV APR_MAJOR_VERSION ##, \
+                             ##APR_MINOR_VERSION ##, \
+                             ##APR_PATCH_VERSION
 
 
 #ifndef APR_VERSION_ONLY

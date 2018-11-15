@@ -20,6 +20,8 @@
  * which unix creates at ./configure time.
  */
 
+#ifdef NETWARE
+
 #ifndef APR_PRIVATE_H
 #define APR_PRIVATE_H
 
@@ -34,10 +36,17 @@
 /* Include alloca.h to get compiler-dependent defines */ 
 #include <alloca.h>
 
+#include <sys/types.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <library.h>
+#include <netware.h>
+
 /* Use this section to define all of the HAVE_FOO_H
  * that are required to build properly.
  */
-#define HAVE_ALLOCA_H   1
 #define HAVE_DLFCN_H    1
 #define HAVE_LIMITS_H   1
 #define HAVE_SIGNAL_H   1
@@ -75,6 +84,8 @@
 #if (CURRENT_NDK_THRESHOLD < 709060000)
 #define getpass_r       getpassword
 #endif
+
+/*#define DSO_USE_DLFCN */
 
 #ifdef NW_BUILD_IPV6
 #define HAVE_GETADDRINFO 1
@@ -124,13 +135,13 @@
 #define SIGBUS          SIGSEGV
 #endif
 
-#define _getch()               getcharacter()
+#define _getch          getcharacter
 
-#define SIZEOF_CHAR            1
-#define SIZEOF_SHORT           2
-#define SIZEOF_INT             4
-#define SIZEOF_LONGLONG        8
-#define SIZEOF_SSIZE_T         SIZEOF_INT
+#define SIZEOF_SHORT    2
+#define SIZEOF_INT      4
+#define SIZEOF_LONGLONG 8
+#define SIZEOF_CHAR     1
+#define SIZEOF_SSIZE_T  SIZEOF_INT
 
 void netware_pool_proc_cleanup();
 
@@ -155,6 +166,7 @@ typedef struct app_data {
     rtag_t  gs_lookup_rtag;
     rtag_t  gs_event_rtag;
     rtag_t  gs_pcp_rtag;
+    void*   gs_ldap_xref_lock;
     void*   gs_xref_head;
 } APP_DATA;
 
@@ -184,27 +196,10 @@ void* getStatCache();
 /* used to check DWORD overflow for 64bit compiles */
 #define APR_DWORD_MAX   0xFFFFFFFFUL
 
-/* Always compile Netware with DSO support for .nlm builds */
-#define APU_DSO_BUILD   0
-
 /*
- * NetWare does not have GDBM, and we always use the bundled (new) Expat
+ * Include common private declarations.
  */
-
-/* Define if you have the gdbm library (-lgdbm). */
-/* #undef HAVE_LIBGDBM */
-
-/* define if Expat 1.0 or 1.1 was found */
-/* #undef APR_HAVE_OLD_EXPAT */
-
-/* NetWare uses its own ICONV implementation. */
-#define HAVE_ICONV_H 1
-
-/*
- * check for newer NDKs which use now correctly 'const char*' with iconv.
- */
-#if (CURRENT_NDK_THRESHOLD >= 705110000)
-#define APU_ICONV_INBUF_CONST
-#endif
+#include "../apr_private_common.h"
 
 #endif  /*APR_PRIVATE_H*/
+#endif  /*NETWARE*/

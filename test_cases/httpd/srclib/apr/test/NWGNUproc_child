@@ -17,7 +17,7 @@ endif
 #
 XINCDIRS	+= \
 			$(APR)/include \
-			$(APR)/include/arch/netware \
+			$(APR)/include/arch/NetWare \
 			$(EOLIST)
 
 #
@@ -95,7 +95,7 @@ NLM_NAME	= proc_child
 # This is used by the link '-desc ' directive. 
 # If left blank, NLM_NAME will be used.
 #
-NLM_DESCRIPTION	= child NLM to test the proc layer
+NLM_DESCRIPTION	=  child NLM to test the proc layer
 
 #
 # This is used by the '-threadname' directive.  If left blank,
@@ -155,7 +155,7 @@ XDCDATA		=
 # If there is an NLM target, put it here
 #
 TARGET_nlm = \
-	$(OBJDIR)/$(NLM_NAME).nlm \
+	$(OBJDIR)/proc_child.nlm \
 	$(EOLIST)
 
 #
@@ -169,7 +169,7 @@ TARGET_lib = \
 # Paths must all use the '/' character
 #
 FILES_nlm_objs = \
-	$(OBJDIR)/$(NLM_NAME).o \
+	$(OBJDIR)/proc_child.o \
 	$(EOLIST)
 
 #
@@ -186,7 +186,7 @@ FILES_nlm_libs = \
 #
 FILES_nlm_modules = \
 	aprlib \
-	libc \
+	Libc \
 	$(EOLIST)
 
 #
@@ -208,8 +208,8 @@ FILE_nlm_copyright =
 # Any additional imports go here
 #
 FILES_nlm_Ximports = \
-	@$(APR)/aprlib.imp \
-	@$(NOVI)/libc.imp \
+	@aprlib.imp \
+	@libc.imp \
 	$(EOLIST)
  
 #   

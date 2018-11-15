@@ -61,15 +61,14 @@ APR_DECLARE(apr_status_t) apr_thread_cond_destroy(apr_thread_cond_t *cond)
     return apr_pool_cleanup_run(cond->pool, cond, thread_cond_cleanup);
 }
 
-static APR_INLINE apr_status_t thread_cond_timedwait(apr_thread_cond_t *cond,
-                                                     apr_thread_mutex_t *mutex,
-                                                     apr_interval_time_t timeout)
+static APR_INLINE apr_status_t _thread_cond_timedwait(apr_thread_cond_t *cond,
+                                                      apr_thread_mutex_t *mutex,
+                                                      DWORD timeout_ms )
 {
     DWORD res;
     apr_status_t rv;
     unsigned int wake = 0;
     unsigned long generation;
-    DWORD timeout_ms = 0;
 
     EnterCriticalSection(&cond->csection);
     cond->num_waiting++;
@@ -79,28 +78,7 @@ static APR_INLINE apr_status_t thread_cond_timedwait(apr_thread_cond_t *cond,
     apr_thread_mutex_unlock(mutex);
 
     do {
-        apr_interval_time_t t = timeout;
-
-        do {
-            if (t < 0) {
-                timeout_ms = INFINITE;
-            }
-            else if (t > 0) {
-                /* Given timeout is 64bit usecs whereas Windows timeouts are
-                 * 32bit msecs and below INFINITE (2^32 - 1), so we may need
-                 * multiple timed out waits...
-                 */
-                if (t > apr_time_from_msec(INFINITE - 1)) {
-                    timeout_ms = INFINITE - 1;
-                    t -= apr_time_from_msec(INFINITE - 1);
-                }
-                else {
-                    timeout_ms = (DWORD)apr_time_as_msec(t);
-                    t = 0;
-                }
-            }
-            res = WaitForSingleObject(mutex->handle, timeout_ms);
-        } while (res == WAIT_TIMEOUT && t > 0);
+        res = WaitForSingleObject(cond->semaphore, timeout_ms);
 
         EnterCriticalSection(&cond->csection);
 
@@ -137,14 +115,16 @@ static APR_INLINE apr_status_t thread_cond_timedwait(apr_thread_cond_t *cond,
 APR_DECLARE(apr_status_t) apr_thread_cond_wait(apr_thread_cond_t *cond,
                                                apr_thread_mutex_t *mutex)
 {
-    return thread_cond_timedwait(cond, mutex, (apr_interval_time_t)-1);
+    return _thread_cond_timedwait(cond, mutex, INFINITE);
 }
 
 APR_DECLARE(apr_status_t) apr_thread_cond_timedwait(apr_thread_cond_t *cond,
                                                     apr_thread_mutex_t *mutex,
                                                     apr_interval_time_t timeout)
 {
-    return thread_cond_timedwait(cond, mutex, timeout);
+    DWORD timeout_ms = (DWORD) apr_time_as_msec(timeout);
+
+    return _thread_cond_timedwait(cond, mutex, timeout_ms);
 }
 
 APR_DECLARE(apr_status_t) apr_thread_cond_signal(apr_thread_cond_t *cond)

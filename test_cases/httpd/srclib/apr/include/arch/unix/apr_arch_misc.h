@@ -55,6 +55,7 @@ struct apr_other_child_rec_t {
     apr_proc_t *proc;
     void (*maintenance) (int, void *, int);
     void *data;
+    apr_os_file_t write_fd;
 };
 
 #if defined(WIN32) || defined(NETWARE)

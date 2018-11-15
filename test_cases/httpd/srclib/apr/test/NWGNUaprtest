@@ -17,7 +17,7 @@ endif
 #
 XINCDIRS	+= \
 			$(APR)/include \
-			$(APR)/include/arch/netware \
+			$(APR)/include/arch/NetWare \
 			$(EOLIST)
 
 #
@@ -106,7 +106,7 @@ NLM_THREAD_NAME	= $(NLM_NAME)
 # This is used by the '-screenname' directive.  If left blank,
 # 'Apache for NetWare' Thread will be used.
 #
-NLM_SCREEN_NAME	= $(NLM_NAME)
+NLM_SCREEN_NAME = aprtest
 
 #
 # If this is specified, it will override VERSION value in 
@@ -154,7 +154,7 @@ XDCDATA		=
 # If there is an NLM target, put it here
 #
 TARGET_nlm = \
-	$(OBJDIR)/$(NLM_NAME).nlm \
+	$(OBJDIR)/aprtest.nlm \
 	$(EOLIST)
 
 #
@@ -172,13 +172,6 @@ FILES_nlm_objs = \
 	$(OBJDIR)/abts.o \
 	$(OBJDIR)/testargs.o \
 	$(OBJDIR)/testatomic.o \
-	$(OBJDIR)/testbase64.o \
-	$(OBJDIR)/testbuckets.o \
-	$(OBJDIR)/testcond.o \
-	$(OBJDIR)/testcrypto.o \
-	$(OBJDIR)/testdate.o \
-	$(OBJDIR)/testdbd.o \
-	$(OBJDIR)/testdbm.o \
 	$(OBJDIR)/testdir.o \
 	$(OBJDIR)/testdup.o \
 	$(OBJDIR)/testdso.o \
@@ -192,57 +185,41 @@ FILES_nlm_objs = \
 	$(OBJDIR)/testfnmatch.o \
 	$(OBJDIR)/testglobalmutex.o \
 	$(OBJDIR)/testhash.o \
-	$(OBJDIR)/testhooks.o \
 	$(OBJDIR)/testipsub.o \
 	$(OBJDIR)/testlfs.o \
-	$(OBJDIR)/testlfsabi.o \
-	$(OBJDIR)/testlfsabi32.o \
-	$(OBJDIR)/testlfsabi64.o \
 	$(OBJDIR)/testlock.o \
-	$(OBJDIR)/testmd4.o \
-	$(OBJDIR)/testmd5.o \
+        $(OBJDIR)/testcond.o \
 	$(OBJDIR)/testmmap.o \
-	$(OBJDIR)/testmemcache.o \
 	$(OBJDIR)/testnames.o \
 	$(OBJDIR)/testoc.o \
-	$(OBJDIR)/testpass.o \
 	$(OBJDIR)/testpath.o \
 	$(OBJDIR)/testpipe.o \
 	$(OBJDIR)/testpoll.o \
 	$(OBJDIR)/testpools.o \
 	$(OBJDIR)/testproc.o \
 	$(OBJDIR)/testprocmutex.o \
-	$(OBJDIR)/testqueue.o \
-	$(OBJDIR)/testreslist.o \
 	$(OBJDIR)/testrand.o \
-	$(OBJDIR)/testrmm.o \
 	$(OBJDIR)/testshm.o \
-	$(OBJDIR)/testsiphash.o \
 	$(OBJDIR)/testskiplist.o \
 	$(OBJDIR)/testsleep.o \
 	$(OBJDIR)/testsock.o \
 	$(OBJDIR)/testsockets.o \
 	$(OBJDIR)/testsockopt.o \
 	$(OBJDIR)/teststr.o \
-	$(OBJDIR)/teststrmatch.o \
 	$(OBJDIR)/teststrnatcmp.o \
 	$(OBJDIR)/testtable.o \
 	$(OBJDIR)/testtemp.o \
 	$(OBJDIR)/testthread.o \
 	$(OBJDIR)/testtime.o \
 	$(OBJDIR)/testud.o \
-	$(OBJDIR)/testuri.o \
 	$(OBJDIR)/testuser.o \
 	$(OBJDIR)/testutil.o \
-	$(OBJDIR)/testuuid.o \
 	$(OBJDIR)/testvsn.o \
-	$(OBJDIR)/testxml.o \
-	$(OBJDIR)/testxlate.o \
 	$(OBJDIR)/nw_misc.o \
 	$(EOLIST) 
 
 # Pending tests
-
+	
 #
 # These are the LIB files needed to create the NLM target above.
 # These will be added as a library command in the link.opt file.
@@ -279,18 +256,13 @@ FILE_nlm_copyright =
 # Any additional imports go here
 #
 FILES_nlm_Ximports = \
-	@$(APR)/aprlib.imp \
-	@$(NOVI)/libc.imp \
+	@libc.imp \
+	@aprlib.imp \
 	$(EOLIST)
- 
-# Include the Winsock imports if Winsock is being used
+
+# Don't link with Winsock if standard sockets are being used
 ifndef USE_STDSOCKETS
-FILES_nlm_Ximports +=  \
-	@$(NOVI)/ws2nlm.imp \
-	$(EOLIST)
-FILES_nlm_imports +=  \
-	WSAStartupRTags \
-	WSACleanupRTag \
+FILES_nlm_Ximports += @ws2nlm.imp \
 	$(EOLIST)
 endif
 

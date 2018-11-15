@@ -496,69 +496,6 @@ static void test_get_addr(abts_case *tc, void *data)
     apr_pool_destroy(subp);
 }
 
-static void test_wait(abts_case *tc, void *data)
-{
-    apr_status_t rv;
-    apr_socket_t *server;
-    apr_socket_t *server_connection;
-    apr_sockaddr_t *server_addr;
-    apr_socket_t *client;
-    apr_interval_time_t delay = 200000;
-    apr_time_t start_time;
-    apr_time_t end_time;
-    apr_size_t nbytes;
-    int connected = FALSE;
-
-    server = setup_socket(tc);
-    if (!server) return;
-
-    rv = apr_sockaddr_info_get(&server_addr, socket_name, socket_type, 8021, 0, p);
-    APR_ASSERT_SUCCESS(tc, "setting up sockaddr", rv);
-
-    rv = apr_socket_create(&client, server_addr->family, SOCK_STREAM, 0, p);
-    APR_ASSERT_SUCCESS(tc, "creating client socket", rv);
-
-    rv = apr_socket_timeout_set(client, 0);
-    APR_ASSERT_SUCCESS(tc, "setting client socket timeout", rv);
-
-    rv = apr_socket_connect(client, server_addr);
-
-    if (rv == APR_SUCCESS) {
-        connected = TRUE;
-    }
-    else {
-        ABTS_ASSERT(tc, "connecting client to server", APR_STATUS_IS_EINPROGRESS(rv));
-    }
-
-    rv = apr_socket_accept(&server_connection, server, p);
-    APR_ASSERT_SUCCESS(tc, "accepting client connection", rv);
-
-    if (!connected) {
-        rv = apr_socket_connect(client, server_addr);
-        APR_ASSERT_SUCCESS(tc, "connecting client to server", rv);
-    }
-
-    rv = apr_socket_timeout_set(client, delay);
-    APR_ASSERT_SUCCESS(tc, "setting client socket timeout", rv);
-
-    start_time = apr_time_now();
-    rv = apr_socket_wait(client, APR_WAIT_READ);
-    ABTS_INT_EQUAL(tc, 1, APR_STATUS_IS_TIMEUP(rv));
-
-    end_time = apr_time_now();
-    ABTS_ASSERT(tc, "apr_socket_wait() waited for the time out", end_time - start_time >= delay);
-
-    nbytes = 4;
-    rv = apr_socket_send(server_connection, "data", &nbytes);
-    APR_ASSERT_SUCCESS(tc, "Couldn't write to client", rv);
-
-    rv = apr_socket_wait(client, APR_WAIT_READ);
-    APR_ASSERT_SUCCESS(tc, "Wait for socket failed", rv);
-
-    rv = apr_socket_close(server);
-    APR_ASSERT_SUCCESS(tc, "couldn't close server socket", rv);
-}
-
 /* Make sure that setting a connected socket non-blocking works
  * when the listening socket was non-blocking.
  * If APR thinks that non-blocking is inherited but it really
@@ -640,100 +577,6 @@ static void test_freebind(abts_case *tc, void *data)
 #endif
 }
 
-#define TEST_ZONE_ADDR "fe80::1"
-
-#ifdef __linux__
-/* Reasonable bet that "lo" will exist. */
-#define TEST_ZONE_NAME "lo"
-/* ... fill in other platforms here */
-#endif
-
-#ifdef TEST_ZONE_NAME 
-#define TEST_ZONE_FULLADDR TEST_ZONE_ADDR "%" TEST_ZONE_NAME
-#endif
-
-static void test_zone(abts_case *tc, void *data)
-{
-#if APR_HAVE_IPV6
-    apr_sockaddr_t *sa;
-    apr_status_t rv;
-    const char *name = NULL;
-    apr_uint32_t id = 0;
-    
-    rv = apr_sockaddr_info_get(&sa, "127.0.0.1", APR_INET, 8080, 0, p);
-    APR_ASSERT_SUCCESS(tc, "Problem generating sockaddr", rv);
-
-    /* Fail for an IPv4 address! */
-    ABTS_INT_EQUAL(tc, APR_EBADIP,
-                   apr_sockaddr_zone_set(sa, "1"));
-    ABTS_INT_EQUAL(tc, APR_EBADIP,
-                   apr_sockaddr_zone_get(sa, &name, &id, p));
-    
-    rv = apr_sockaddr_info_get(&sa, "::1", APR_INET6, 8080, 0, p);
-    APR_ASSERT_SUCCESS(tc, "Problem generating sockaddr", rv);
-
-    /* Fail for an address which isn't link-local */
-    ABTS_INT_EQUAL(tc, APR_EBADIP, apr_sockaddr_zone_set(sa, "1"));
-
-    rv = apr_sockaddr_info_get(&sa, TEST_ZONE_ADDR, APR_INET6, 8080, 0, p);
-    APR_ASSERT_SUCCESS(tc, "Problem generating sockaddr", rv);
-
-    ABTS_INT_EQUAL(tc, APR_EBADIP, apr_sockaddr_zone_get(sa, &name, &id, p));
-
-#ifdef TEST_ZONE_NAME
-    {
-        apr_sockaddr_t *sa2;
-        char buf[50];
-        
-        APR_ASSERT_SUCCESS(tc, "Set zone to " TEST_ZONE_NAME,
-                           apr_sockaddr_zone_set(sa, TEST_ZONE_NAME));
-        
-        APR_ASSERT_SUCCESS(tc, "Get zone",
-                           apr_sockaddr_zone_get(sa, NULL, NULL, p));
-        
-        APR_ASSERT_SUCCESS(tc, "Get zone",
-                           apr_sockaddr_zone_get(sa, &name, &id, p));
-        ABTS_STR_EQUAL(tc, TEST_ZONE_NAME, name);
-        ABTS_INT_NEQUAL(tc, 0, id); /* Only guarantee is that it should be non-zero */
-
-        /* Check string translation. */
-        APR_ASSERT_SUCCESS(tc, "get IP address",
-                           apr_sockaddr_ip_getbuf(buf, 50, sa));
-        ABTS_STR_EQUAL(tc, TEST_ZONE_FULLADDR, buf);
-
-        memset(buf, 'A', sizeof buf);
-        ABTS_INT_EQUAL(tc, APR_ENOSPC, apr_sockaddr_ip_getbuf(buf, strlen(TEST_ZONE_ADDR), sa));
-        ABTS_INT_EQUAL(tc, APR_ENOSPC, apr_sockaddr_ip_getbuf(buf, strlen(TEST_ZONE_FULLADDR), sa));
-        
-        APR_ASSERT_SUCCESS(tc, "get IP address",
-                           apr_sockaddr_ip_getbuf(buf, strlen(TEST_ZONE_FULLADDR) + 1, sa));
-        /* Check for overflow. */
-        ABTS_INT_EQUAL(tc, 'A', buf[strlen(buf) + 1]);
-        
-        rv = apr_sockaddr_info_copy(&sa2, sa, p);
-        APR_ASSERT_SUCCESS(tc, "Problem copying sockaddr", rv);
-
-        /* Copy copied zone matches */
-        APR_ASSERT_SUCCESS(tc, "Get zone",
-                           apr_sockaddr_zone_get(sa2, &name, &id, p));
-        ABTS_STR_EQUAL(tc, TEST_ZONE_NAME, name);
-        ABTS_INT_NEQUAL(tc, 0, id); /* Only guarantee is that it should be non-zero */
-
-        /* Should match self and copy */
-        ABTS_INT_NEQUAL(tc, 0, apr_sockaddr_equal(sa, sa));
-        ABTS_INT_NEQUAL(tc, 0, apr_sockaddr_equal(sa2, sa2));
-        ABTS_INT_NEQUAL(tc, 0, apr_sockaddr_equal(sa2, sa));
-
-        /* Should not match against copy without zone set. */
-        rv = apr_sockaddr_info_get(&sa2, TEST_ZONE_ADDR, APR_INET6, 8080, 0, p);
-        APR_ASSERT_SUCCESS(tc, "Problem generating sockaddr", rv);
-
-        ABTS_INT_EQUAL(tc, 0, apr_sockaddr_equal(sa2, sa));
-    }
-#endif /* TEST_ZONE_NAME */
-#endif /* APR_HAVE_IPV6 */
-}
-    
 abts_suite *testsock(abts_suite *suite)
 {
     suite = ADD_SUITE(suite)
@@ -748,20 +591,16 @@ abts_suite *testsock(abts_suite *suite)
     abts_run_test(suite, test_timeout, NULL);
     abts_run_test(suite, test_print_addr, NULL);
     abts_run_test(suite, test_get_addr, NULL);
-    abts_run_test(suite, test_wait, NULL);
     abts_run_test(suite, test_nonblock_inheritance, NULL);
     abts_run_test(suite, test_freebind, NULL);
-    abts_run_test(suite, test_zone, NULL);
+
 #if APR_HAVE_SOCKADDR_UN
     socket_name = UNIX_SOCKET_NAME;
     socket_type = APR_UNIX;
-    /* in case AF_UNIX socket exists from a previous run: */
-    apr_file_remove(socket_name, p);
     abts_run_test(suite, test_create_bind_listen, NULL);
     abts_run_test(suite, test_send, NULL);
     abts_run_test(suite, test_recv, NULL);
     abts_run_test(suite, test_timeout, NULL);
-    abts_run_test(suite, test_wait, NULL);
 #endif
     return suite;
 }

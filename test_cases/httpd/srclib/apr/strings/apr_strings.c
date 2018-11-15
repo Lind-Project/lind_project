@@ -362,21 +362,19 @@ APR_DECLARE(char *) apr_itoa(apr_pool_t *p, int n)
     const int BUFFER_SIZE = sizeof(int) * 3 + 2;
     char *buf = apr_palloc(p, BUFFER_SIZE);
     char *start = buf + BUFFER_SIZE - 1;
-    unsigned int un;
     int negative;
     if (n < 0) {
 	negative = 1;
-	un = -n;
+	n = -n;
     }
     else {
 	negative = 0;
-        un = n;
     }
     *start = 0;
     do {
-	*--start = '0' + (un % 10);
-	un /= 10;
-    } while (un);
+	*--start = '0' + (n % 10);
+	n /= 10;
+    } while (n);
     if (negative) {
 	*--start = '-';
     }
@@ -389,20 +387,18 @@ APR_DECLARE(char *) apr_ltoa(apr_pool_t *p, long n)
     char *buf = apr_palloc(p, BUFFER_SIZE);
     char *start = buf + BUFFER_SIZE - 1;
     int negative;
-    unsigned int un;
     if (n < 0) {
 	negative = 1;
-	un = -n;
+	n = -n;
     }
     else {
 	negative = 0;
-        un = n;
     }
     *start = 0;
     do {
-	*--start = (char)('0' + (un % 10));
-	un /= 10;
-    } while (un);
+	*--start = (char)('0' + (n % 10));
+	n /= 10;
+    } while (n);
     if (negative) {
 	*--start = '-';
     }

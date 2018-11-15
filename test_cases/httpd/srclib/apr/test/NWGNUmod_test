@@ -17,7 +17,7 @@ endif
 #
 XINCDIRS	+= \
 			$(APR)/include \
-			$(APR)/include/arch/netware \
+			$(APR)/include/arch/NetWare \
 			$(EOLIST)
 
 #
@@ -95,13 +95,13 @@ NLM_NAME	= mod_test
 # This is used by the link '-desc ' directive. 
 # If left blank, NLM_NAME will be used.
 #
-NLM_DESCRIPTION	= DSO NLM to test the apr DSO loading layer
+NLM_DESCRIPTION	=  DSO NLM to test the apr DSO loading layer
 
 #
 # This is used by the '-threadname' directive.  If left blank,
 # NLM_NAME Thread will be used.
 #
-NLM_THREAD_NAME	= mod_test
+NLM_THREAD_NAME	= $(NLM_NAME)
 
 #
 # This is used by the '-screenname' directive.  If left blank,
@@ -186,7 +186,7 @@ FILES_nlm_libs = \
 #
 FILES_nlm_modules = \
 	aprlib \
-	libc \
+	Libc \
 	$(EOLIST)
 
 #
@@ -208,8 +208,8 @@ FILE_nlm_copyright =
 # Any additional imports go here
 #
 FILES_nlm_Ximports = \
-	@$(APR)/aprlib.imp \
-	@$(NOVI)/libc.imp \
+	@aprlib.imp \
+	@libc.imp \
 	$(EOLIST)
  
 #   

@@ -22,8 +22,6 @@ mod_proxy_balancer.la: mod_proxy_balancer.slo
 	$(SH_LINK) -rpath $(libexecdir) -module -avoid-version  mod_proxy_balancer.lo $(MOD_PROXY_BALANCER_LDADD)
 mod_proxy_express.la: mod_proxy_express.slo
 	$(SH_LINK) -rpath $(libexecdir) -module -avoid-version  mod_proxy_express.lo $(MOD_PROXY_EXPRESS_LDADD)
-mod_proxy_hcheck.la: mod_proxy_hcheck.slo
-	$(SH_LINK) -rpath $(libexecdir) -module -avoid-version  mod_proxy_hcheck.lo $(MOD_PROXY_HCHECK_LDADD)
 DISTCLEAN_TARGETS = modules.mk
 static = 
-shared =  mod_proxy.la mod_proxy_connect.la mod_proxy_ftp.la mod_proxy_http.la mod_proxy_fcgi.la mod_proxy_scgi.la mod_proxy_uwsgi.la mod_proxy_fdpass.la mod_proxy_wstunnel.la mod_proxy_ajp.la mod_proxy_balancer.la mod_proxy_express.la mod_proxy_hcheck.la
+shared =  mod_proxy.la mod_proxy_connect.la mod_proxy_ftp.la mod_proxy_http.la mod_proxy_fcgi.la mod_proxy_scgi.la mod_proxy_uwsgi.la mod_proxy_fdpass.la mod_proxy_wstunnel.la mod_proxy_ajp.la mod_proxy_balancer.la mod_proxy_express.la

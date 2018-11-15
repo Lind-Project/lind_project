@@ -16,10 +16,8 @@ mod_substitute.la: mod_substitute.slo
 	$(SH_LINK) -rpath $(libexecdir) -module -avoid-version  mod_substitute.lo $(MOD_SUBSTITUTE_LDADD)
 mod_sed.la: mod_sed.slo sed0.slo sed1.slo regexp.slo
 	$(SH_LINK) -rpath $(libexecdir) -module -avoid-version  mod_sed.lo sed0.lo sed1.lo regexp.lo $(MOD_SED_LDADD)
-mod_deflate.la: mod_deflate.slo
-	$(SH_LINK) -rpath $(libexecdir) -module -avoid-version  mod_deflate.lo $(MOD_DEFLATE_LDADD)
 mod_brotli.la: mod_brotli.slo
 	$(SH_LINK) -rpath $(libexecdir) -module -avoid-version  mod_brotli.lo $(MOD_BROTLI_LDADD)
 DISTCLEAN_TARGETS = modules.mk
 static = 
-shared =  mod_buffer.la mod_ratelimit.la mod_reqtimeout.la mod_ext_filter.la mod_request.la mod_include.la mod_filter.la mod_substitute.la mod_sed.la mod_deflate.la mod_brotli.la
+shared =  mod_buffer.la mod_ratelimit.la mod_reqtimeout.la mod_ext_filter.la mod_request.la mod_include.la mod_filter.la mod_substitute.la mod_sed.la mod_brotli.la

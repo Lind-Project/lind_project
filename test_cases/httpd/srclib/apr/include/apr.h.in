@@ -63,10 +63,10 @@
 #define __attribute__(__x)
 #endif
 #define APR_INLINE
-#define APR_HAS_INLINE          0
+#define APR_HAS_INLINE           0
 #else
 #define APR_INLINE __inline__
-#define APR_HAS_INLINE          1
+#define APR_HAS_INLINE           1
 #endif
 
 #define APR_HAVE_ARPA_INET_H     @arpa_ineth@
@@ -76,10 +76,8 @@
 #define APR_HAVE_DIRENT_H        @direnth@
 #define APR_HAVE_ERRNO_H         @errnoh@
 #define APR_HAVE_FCNTL_H         @fcntlh@
-#define APR_HAVE_IFADDRS_H       @ifaddrsh@
 #define APR_HAVE_IO_H            @ioh@
 #define APR_HAVE_LIMITS_H        @limitsh@
-#define APR_HAVE_MSWSOCK_H       @mswsockh@
 #define APR_HAVE_NETDB_H         @netdbh@
 #define APR_HAVE_NETINET_IN_H    @netinet_inh@
 #define APR_HAVE_NETINET_SCTP_H  @netinet_sctph@
@@ -90,7 +88,6 @@
 #define APR_HAVE_SEMAPHORE_H     @semaphoreh@
 #define APR_HAVE_SIGNAL_H        @signalh@
 #define APR_HAVE_STDARG_H        @stdargh@
-#define APR_HAVE_STDDEF_H        @stddefh@
 #define APR_HAVE_STDINT_H        @stdint@
 #define APR_HAVE_STDIO_H         @stdioh@
 #define APR_HAVE_STDLIB_H        @stdlibh@
@@ -111,7 +108,6 @@
 #define APR_HAVE_UNISTD_H        @unistdh@
 #define APR_HAVE_WINDOWS_H       @windowsh@
 #define APR_HAVE_WINSOCK2_H      @winsock2h@
-#define APR_HAVE_WS2TCPIP_H      @ws2tcpiph@
 
 /** @} */
 /** @} */
@@ -131,6 +127,8 @@
 #endif
 
 #ifndef _WIN32_WINNT
+/* Restrict the server to a subset of Windows XP header files by default
+ */
 #define _WIN32_WINNT 0x0501
 #endif
 
@@ -144,42 +142,26 @@
 #define NOIME
 #endif
 
-/* Impossible to include winsock2.h after winsock.h, while windows.h
- * attempts to load winsock.  Setting _WINSOCKAPI_ will dodge this.
- */
-#if APR_HAVE_WINSOCK2_H
-#define _WINSOCKAPI_
-#endif
-
 #include <windows.h>
-#endif /* ndef _WINDOWS_ */
-#endif /* APR_HAVE_WINDOWS_H */
-
-#if APR_HAVE_WINSOCK2_H
+/* 
+ * Add a _very_few_ declarations missing from the restricted set of headers
+ * (If this list becomes extensive, re-enable the required headers above!)
+ * winsock headers were excluded by WIN32_LEAN_AND_MEAN, so include them now
+ */
+#define SW_HIDE             0
+#ifndef _WIN32_WCE
 #include <winsock2.h>
-
-#if APR_HAVE_WS2TCPIP_H
 #include <ws2tcpip.h>
-#endif
-
-#if APR_HAVE_MSWSOCK_H
 #include <mswsock.h>
-#endif
-
-#else /* !APR_HAVE_WINSOCK2_H */
-
-#if APR_HAVE_WINSOCK_H
+#else
 #include <winsock.h>
 #endif
 
-#endif /* !APR_HAVE_WINSOCK2_H */
+#endif /* ndef _WINDOWS_ */
+#endif /* APR_HAVE_WINDOWS_H */
 
 #if APR_HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
-
-#if APR_HAVE_STDDEF_H
-#include <stddef.h>
 #endif
 
 #if APR_HAVE_SYS_SOCKET_H
@@ -334,7 +316,6 @@ typedef  @int_value@             apr_int32_t;
 typedef  unsigned @int_value@    apr_uint32_t;
 
 #define APR_SIZEOF_VOIDP @voidp_size@
-#define APR_SIZEOF_OFF_T @off_t_size@
 
 /*
  * Darwin 10's default compiler (gcc42) builds for both 64 and
@@ -381,14 +362,12 @@ typedef  @ino_t_value@           apr_ino_t;
 
 #if APR_SIZEOF_VOIDP == 8
 typedef  apr_uint64_t            apr_uintptr_t;
-typedef  apr_int64_t             apr_intptr_t;
 #else
 typedef  apr_uint32_t            apr_uintptr_t;
-typedef  apr_int32_t             apr_intptr_t;
 #endif
 
 /* Are we big endian? */
-#define APR_IS_BIGENDIAN        @bigendian@
+#define APR_IS_BIGENDIAN	@bigendian@
 
 /* Mechanisms to properly type numeric literals */
 @int64_literal@
@@ -514,7 +493,7 @@ typedef  apr_int32_t             apr_intptr_t;
 #define APR_DECLARE_NONSTD(type)     type
 
 /**
- * The public APR variables are declared with APR_DECLARE_DATA.
+ * The public APR variables are declared with AP_MODULE_DECLARE_DATA.
  * This assures the appropriate indirection is invoked at compile time.
  * @see APR_DECLARE @see APR_DECLARE_NONSTD
  * @remark Note that the declaration and implementations use different forms,
@@ -542,27 +521,6 @@ typedef  apr_int32_t             apr_intptr_t;
 #define APR_DECLARE_NONSTD(type)     __declspec(dllimport) type __cdecl
 #define APR_DECLARE_DATA             __declspec(dllimport)
 #endif
-
-#if !defined(WIN32) || defined(APU_MODULE_DECLARE_STATIC)
-/**
- * Declare a dso module's exported module structure as APR_MODULE_DECLARE_DATA.
- *
- * Unless APR_MODULE_DECLARE_STATIC is defined at compile time, symbols 
- * declared with APR_MODULE_DECLARE_DATA are always exported.
- * @code
- * module APR_MODULE_DECLARE_DATA mod_tag
- * @endcode
- */
-#define APR_MODULE_DECLARE_DATA
-#else
-#define APR_MODULE_DECLARE_DATA           __declspec(dllexport)
-#endif
-
-/**
- * @deprecated
- * @see APR_MODULE_DECLARE_DATA
- */
-#define APU_MODULE_DECLARE_DATA           APR_MODULE_DECLARE_DATA
 
 /* Define APR_SSIZE_T_FMT.  
  * If ssize_t is an integer we define it to be "d",
@@ -620,9 +578,9 @@ typedef  apr_int32_t             apr_intptr_t;
 
 #undef APR_IS_BIGENDIAN
 #ifdef __BIG_ENDIAN__
- #define APR_IS_BIGENDIAN       1
+ #define APR_IS_BIGENDIAN	1
 #else
- #define APR_IS_BIGENDIAN       0
+ #define APR_IS_BIGENDIAN	0
 #endif
 
 #undef APR_OFF_T_FMT
@@ -631,11 +589,7 @@ typedef  apr_int32_t             apr_intptr_t;
 #endif /* DARWIN_10 */
 
 /* Does the proc mutex lock threads too */
-#ifdef WIN32
-#define APR_PROC_MUTEX_IS_GLOBAL      1
-#else
 #define APR_PROC_MUTEX_IS_GLOBAL      @proc_mutex_is_global@
-#endif
 
 /* Local machine definition for console and log output. */
 #define APR_EOL_STR              "@eolstr@"
@@ -664,43 +618,12 @@ typedef int apr_wait_t;
 
 /** @} */
 
-/*
- * we always have SDBM (it's in our codebase)
- */
-#define APU_HAVE_SDBM   @apu_have_sdbm@
-#define APU_HAVE_GDBM   @apu_have_gdbm@
-#define APU_HAVE_NDBM   @apu_have_ndbm@
-#define APU_HAVE_DB     @apu_have_db@
-
-#if APU_HAVE_DB
-#define APU_HAVE_DB_VERSION    @apu_db_version@
-#endif
-
-#define APU_HAVE_PGSQL         @apu_have_pgsql@
-#define APU_HAVE_MYSQL         @apu_have_mysql@
-#define APU_HAVE_SQLITE3       @apu_have_sqlite3@
-#define APU_HAVE_SQLITE2       @apu_have_sqlite2@
-#define APU_HAVE_ORACLE        @apu_have_oracle@
-#define APU_HAVE_ODBC          @apu_have_odbc@
-
-#define APU_HAVE_CRYPTO        @apu_have_crypto@
-#define APU_HAVE_CRYPTO_PRNG   @apu_have_crypto_prng@
-#define APU_HAVE_OPENSSL       @apu_have_openssl@
-#define APU_HAVE_NSS           @apu_have_nss@
-#define APU_HAVE_COMMONCRYPTO  @apu_have_commoncrypto@
-
-#define APU_HAVE_ICONV         @have_iconv@
-#define APR_HAS_XLATE          (APU_HAVE_ICONV)
-
-#define APU_USE_EXPAT          @apu_has_expat@
-#define APU_USE_LIBXML2        @apu_has_libxml2@
-
 /* Definitions that only Win32 programs need to compile properly. */
 
 /* XXX These simply don't belong here, perhaps in apr_portable.h
  * based on some APR_HAVE_PID/GID/UID?
  */
-#ifdef WIN32
+#ifdef __MINGW32__
 #ifndef __GNUC__
 typedef  int         pid_t;
 #endif

@@ -167,6 +167,7 @@
 #include "common_bufsiz.h"
 #include "unicode.h"
 
+#define lstat stat
 
 /* This is a NOEXEC applet. Be very careful! */
 

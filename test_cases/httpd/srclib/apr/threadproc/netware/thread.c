@@ -67,19 +67,14 @@ APR_DECLARE(apr_status_t) apr_threadattr_guardsize_set(apr_threadattr_t *attr,
 static void *dummy_worker(void *opaque)
 {
     apr_thread_t *thd = (apr_thread_t *)opaque;
-    void *ret;
-
-    apr_pool_owner_set(thd->pool, 0);
-    ret = thd->func(thd, thd->data);
-    apr_pool_destroy(thd->pool);
-    return ret;
+    return thd->func(thd, thd->data);
 }
 
 apr_status_t apr_thread_create(apr_thread_t **new,
-                                            apr_threadattr_t *attr, 
-                                            apr_thread_start_t func,
-                                            void *data,
-                                            apr_pool_t *pool)
+                               apr_threadattr_t *attr, 
+                               apr_thread_start_t func,
+                               void *data,
+                               apr_pool_t *pool)
 {
     apr_status_t stat;
     unsigned long flags = NX_THR_BIND_CONTEXT;
@@ -128,7 +123,7 @@ apr_status_t apr_thread_create(apr_thread_t **new,
         /* size_t stackSize */                stack_size,
         /* unsigned long flags */             NX_CTX_NORMAL,
         /* int *error */                      &stat);
-                                                                           
+
     stat = NXContextSetName(
         /* NXContext_t ctx */  (*new)->ctx,
         /* const char *name */ threadName);

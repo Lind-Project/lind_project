@@ -17,7 +17,7 @@ endif
 #
 XINCDIRS	+= \
 			$(APR)/include \
-			$(APR)/include/arch/netware \
+			$(APR)/include/arch/NetWare \
 			$(EOLIST)
 
 #
@@ -67,8 +67,6 @@ XDEFINES	+= \
 			$(EOLIST)
 
 XLFLAGS		+= \
-			$(EOLIST)
-
 			$(EOLIST)
 endif
 
@@ -157,7 +155,7 @@ XDCDATA		=
 # If there is an NLM target, put it here
 #
 TARGET_nlm = \
-	$(OBJDIR)/$(NLM_NAME).nlm \
+	$(OBJDIR)/globalmutexchild.nlm \
 	$(EOLIST)
 
 #
@@ -171,7 +169,7 @@ TARGET_lib = \
 # Paths must all use the '/' character
 #
 FILES_nlm_objs = \
-	$(OBJDIR)/$(NLM_NAME).o \
+	$(OBJDIR)/globalmutexchild.o \
 	$(EOLIST)
 
 #
@@ -188,7 +186,7 @@ FILES_nlm_libs = \
 #
 FILES_nlm_modules = \
 	aprlib \
-	libc \
+	Libc \
 	$(EOLIST)
 
 #
@@ -210,8 +208,8 @@ FILE_nlm_copyright =
 # Any additional imports go here
 #
 FILES_nlm_Ximports = \
-	@$(APR)/aprlib.imp \
-	@$(NOVI)/libc.imp \
+	@aprlib.imp \
+	@libc.imp \
 	$(EOLIST)
  
 #   

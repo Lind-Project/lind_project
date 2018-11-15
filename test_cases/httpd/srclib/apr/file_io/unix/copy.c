@@ -29,19 +29,19 @@ static apr_status_t apr_file_transfer_contents(const char *from_path,
     apr_fileperms_t perms;
 
     /* Open source file. */
-    status = apr_file_open(&s, from_path, APR_FOPEN_READ, APR_FPROT_OS_DEFAULT, pool);
+    status = apr_file_open(&s, from_path, APR_FOPEN_READ, APR_OS_DEFAULT, pool);
     if (status)
         return status;
 
     /* Maybe get its permissions. */
-    if (to_perms == APR_FPROT_FILE_SOURCE_PERMS) {
+    if (to_perms == APR_FILE_SOURCE_PERMS) {
         status = apr_file_info_get(&finfo, APR_FINFO_PROT, s);
         if (status != APR_SUCCESS && status != APR_INCOMPLETE) {
             apr_file_close(s);  /* toss any error */
             return status;
         }
         perms = finfo.protection;
-        apr_file_perms_set(to_path, perms);  /* ignore any failure */
+        apr_file_perms_set(to_path, perms); /* ignore any failure */
     }
     else
         perms = to_perms;

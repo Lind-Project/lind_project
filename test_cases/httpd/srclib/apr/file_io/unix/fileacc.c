@@ -36,33 +36,33 @@ mode_t apr_unix_perms2mode(apr_fileperms_t perms)
 {
     mode_t mode = 0;
 
-    if (perms & APR_FPROT_USETID)
+    if (perms & APR_USETID)
         mode |= S_ISUID;
-    if (perms & APR_FPROT_UREAD)
+    if (perms & APR_UREAD)
         mode |= S_IRUSR;
-    if (perms & APR_FPROT_UWRITE)
+    if (perms & APR_UWRITE)
         mode |= S_IWUSR;
-    if (perms & APR_FPROT_UEXECUTE)
+    if (perms & APR_UEXECUTE)
         mode |= S_IXUSR;
 
-    if (perms & APR_FPROT_GSETID)
+    if (perms & APR_GSETID)
         mode |= S_ISGID;
-    if (perms & APR_FPROT_GREAD)
+    if (perms & APR_GREAD)
         mode |= S_IRGRP;
-    if (perms & APR_FPROT_GWRITE)
+    if (perms & APR_GWRITE)
         mode |= S_IWGRP;
-    if (perms & APR_FPROT_GEXECUTE)
+    if (perms & APR_GEXECUTE)
         mode |= S_IXGRP;
 
 #ifdef S_ISVTX
-    if (perms & APR_FPROT_WSTICKY)
+    if (perms & APR_WSTICKY)
         mode |= S_ISVTX;
 #endif
-    if (perms & APR_FPROT_WREAD)
+    if (perms & APR_WREAD)
         mode |= S_IROTH;
-    if (perms & APR_FPROT_WWRITE)
+    if (perms & APR_WWRITE)
         mode |= S_IWOTH;
-    if (perms & APR_FPROT_WEXECUTE)
+    if (perms & APR_WEXECUTE)
         mode |= S_IXOTH;
 
     return mode;
@@ -73,33 +73,33 @@ apr_fileperms_t apr_unix_mode2perms(mode_t mode)
     apr_fileperms_t perms = 0;
 
     if (mode & S_ISUID)
-        perms |= APR_FPROT_USETID;
+        perms |= APR_USETID;
     if (mode & S_IRUSR)
-        perms |= APR_FPROT_UREAD;
+        perms |= APR_UREAD;
     if (mode & S_IWUSR)
-        perms |= APR_FPROT_UWRITE;
+        perms |= APR_UWRITE;
     if (mode & S_IXUSR)
-        perms |= APR_FPROT_UEXECUTE;
+        perms |= APR_UEXECUTE;
 
     if (mode & S_ISGID)
-        perms |= APR_FPROT_GSETID;
+        perms |= APR_GSETID;
     if (mode & S_IRGRP)
-        perms |= APR_FPROT_GREAD;
+        perms |= APR_GREAD;
     if (mode & S_IWGRP)
-        perms |= APR_FPROT_GWRITE;
+        perms |= APR_GWRITE;
     if (mode & S_IXGRP)
-        perms |= APR_FPROT_GEXECUTE;
+        perms |= APR_GEXECUTE;
 
 #ifdef S_ISVTX
     if (mode & S_ISVTX)
-        perms |= APR_FPROT_WSTICKY;
+        perms |= APR_WSTICKY;
 #endif
     if (mode & S_IROTH)
-        perms |= APR_FPROT_WREAD;
+        perms |= APR_WREAD;
     if (mode & S_IWOTH)
-        perms |= APR_FPROT_WWRITE;
+        perms |= APR_WWRITE;
     if (mode & S_IXOTH)
-        perms |= APR_FPROT_WEXECUTE;
+        perms |= APR_WEXECUTE;
 
     return perms;
 }

@@ -67,9 +67,6 @@ extern "C" {
 /** signal numbers typedef */
 typedef int               apr_signum_t;
 
-/* Type of I/O to wait for */
-typedef enum { APR_WAIT_READ, APR_WAIT_WRITE } apr_wait_type_t;
-
 /**
  * Finding offsets of elements within structures.
  * Taken from the X code... they've sweated portability of this stuff
@@ -162,16 +159,6 @@ int strncasecmp(const char *a, const char *b, size_t n);
 #if (!APR_HAVE_MEMCHR)
 void *memchr(const void *s, int c, size_t n);
 #endif
-
-/**
- * Macro to provide a way to turn an incomplete type into a complete
- * type containing common pointers for a provider.
- */
-#define APR_TYPEDEF_STRUCT(type, incompletion) \
-struct type { \
-   incompletion \
-   void *unk[]; \
-};
 
 /** @} */
 

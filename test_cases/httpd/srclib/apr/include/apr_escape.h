@@ -19,7 +19,7 @@
  */
 #ifndef APR_ESCAPE_H
 #define APR_ESCAPE_H
-#include "apu.h"
+#include "apr.h"
 #include "apr_general.h"
 #ifdef __cplusplus
 extern "C" {
@@ -32,19 +32,6 @@ extern "C" {
  */
 
 /* Simple escape/unescape functions.
- *
- * The design goal of these functions are:
- *
- * - Avoid unnecessary work.
- *
- * In most cases the strings passed in do not need to be escaped at all. In
- * these cases the original string will be returned.
- *
- * - Lowest possible memory footprint.
- *
- * The amount of memory allocated for a given encoding is calculated based
- * on the exact amount of memory needed, and not the theoretical worst case
- * scenario.
  *
  */
 

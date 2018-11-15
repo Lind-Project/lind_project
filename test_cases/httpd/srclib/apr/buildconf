@@ -112,10 +112,8 @@ ${AUTOCONF:-autoconf} $verbose
 # Remove autoconf 2.5x's cache directory
 rm -rf autom4te*.cache
 
-PYTHON=${PYTHON-`build/PrintPath python3 python2 python`}
-
 echo "buildconf: generating 'make' outputs ..."
-${PYTHON} build/gen-build.py $verbose make
+build/gen-build.py $verbose make
 
 # Create RPM Spec file
 if [ -f `which cut` ]; then
@@ -131,15 +129,6 @@ if [ -f `which cut` ]; then
     sed -e "s/APR_VERSION/$VERSION/" \
         -e "s/APR_RELEASE/$RELEASE/" \
     > apr.spec )
-fi
-
-# Verify the tree was clean, notify user if not (normal in development)
-#
-if [ -f "include/apr.h" -o -f "include/arch/unix/apr_private.h" -o \
-     -f "include/apu_want.h" -o -f "include/private/apu_select_dbm.h" ]; then
-    echo ""
-    echo "Generated include files already exist, the tree is not clean."
-    echo "The resulting build-outputs.mk file is incorrect"
 fi
 
 exit 0

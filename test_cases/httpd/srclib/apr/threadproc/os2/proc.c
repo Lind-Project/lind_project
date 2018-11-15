@@ -380,8 +380,7 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *proc, const char *progname
         strcpy(interpreter, "#!" SHELL_PATH);
         extra_arg = "/C";
     } else if (stricmp(extension, ".exe") != 0) {
-        status = apr_file_open(&progfile, progname,
-                               APR_FOPEN_READ|APR_FOPEN_BUFFERED, 0, pool);
+        status = apr_file_open(&progfile, progname, APR_READ|APR_BUFFERED, 0, pool);
 
         if (status != APR_SUCCESS && APR_STATUS_IS_ENOENT(status)) {
             progname = apr_pstrcat(pool, progname, ".exe", NULL);
@@ -620,7 +619,7 @@ APR_DECLARE(apr_status_t) apr_proc_wait_all_procs(apr_proc_t *proc,
         return APR_CHILD_NOTDONE;
     }
 
-    return APR_FROM_OS_ERROR(rc);
+    return APR_OS2_STATUS(rc);
 } 
 
 
@@ -641,7 +640,7 @@ APR_DECLARE(apr_status_t) apr_proc_wait(apr_proc_t *proc,
         return APR_CHILD_NOTDONE;
     }
 
-    return APR_FROM_OS_ERROR(rc);
+    return APR_OS2_STATUS(rc);
 } 
 
 

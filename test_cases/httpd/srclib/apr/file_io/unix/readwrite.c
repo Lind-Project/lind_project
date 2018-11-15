@@ -18,8 +18,6 @@
 #include "apr_strings.h"
 #include "apr_thread_mutex.h"
 #include "apr_support.h"
-#include "apr_time.h"
-#include "apr_file_info.h"
 
 /* The only case where we don't use wait_for_io_or_timeout is on
  * pre-BONE BeOS, so this check should be sufficient and simpler */
@@ -146,91 +144,9 @@ APR_DECLARE(apr_status_t) apr_file_read(apr_file_t *thefile, void *buf, apr_size
     }
 }
 
-static apr_status_t do_rotating_check(apr_file_t *thefile, apr_time_t now)
-{
-    apr_size_t rv = APR_SUCCESS;
-
-    if ((now - thefile->rotating->lastcheck) >= thefile->rotating->timeout) {
-        apr_finfo_t new_finfo;
-        apr_pool_t *tmp_pool;
-
-        apr_pool_create(&tmp_pool, thefile->pool);
-
-        rv = apr_stat(&new_finfo, thefile->fname,
-                      APR_FINFO_DEV|APR_FINFO_INODE, tmp_pool);
-
-        if (rv != APR_SUCCESS || 
-            new_finfo.inode != thefile->rotating->finfo.inode ||
-            new_finfo.device != thefile->rotating->finfo.device)  {
-
-            if (thefile->buffered) {
-                apr_file_flush(thefile);
-            }
-
-            close(thefile->filedes);
-            thefile->filedes = -1;
-
-            if (thefile->rotating->perm == APR_FPROT_OS_DEFAULT) {
-                thefile->filedes = open(thefile->fname,
-                                        thefile->rotating->oflags,
-                                        0666);
-            }
-            else {
-                thefile->filedes = open(thefile->fname,
-                                        thefile->rotating->oflags,
-                                        apr_unix_perms2mode(thefile->rotating->perm));
-            }
-
-            if (thefile->filedes < 0) {
-                rv = errno;
-            }
-            else {
-                rv = apr_file_info_get(&thefile->rotating->finfo,
-                                       APR_FINFO_DEV|APR_FINFO_INODE,
-                                       thefile);
-            }
-        }
-
-        apr_pool_destroy(tmp_pool);
-        thefile->rotating->lastcheck = now;
-    }
-    return rv;
-}
-
-static apr_status_t file_rotating_check(apr_file_t *thefile)
-{
-    if (thefile->rotating && thefile->rotating->manual == 0) {
-        apr_time_t now = apr_time_sec(apr_time_now());
-        return do_rotating_check(thefile, now);
-    }
-    return APR_SUCCESS;
-}
-
-APR_DECLARE(apr_status_t) apr_file_rotating_check(apr_file_t *thefile)
-{
-    if (thefile->rotating) {
-        apr_time_t now = apr_time_sec(apr_time_now());
-        return do_rotating_check(thefile, now);
-    }
-    return APR_SUCCESS;
-}
-
-APR_DECLARE(apr_status_t) apr_file_rotating_manual_check(apr_file_t *thefile, apr_time_t n)
-{
-    if (thefile->rotating) {
-        return do_rotating_check(thefile, n);
-    }
-    return APR_SUCCESS;
-}
-
 APR_DECLARE(apr_status_t) apr_file_write(apr_file_t *thefile, const void *buf, apr_size_t *nbytes)
 {
     apr_size_t rv;
-
-    rv = file_rotating_check(thefile);
-    if (rv != APR_SUCCESS) {
-        return rv;
-    }
 
     if (thefile->buffered) {
         char *pos = (char *)buf;
@@ -334,11 +250,6 @@ APR_DECLARE(apr_status_t) apr_file_writev(apr_file_t *thefile, const struct iove
         }
 
         file_unlock(thefile);
-    }
-
-    rv = file_rotating_check(thefile);
-    if (rv != APR_SUCCESS) {
-        return rv;
     }
 
     if ((bytes = writev(thefile->filedes, vec, nvec)) < 0) {
@@ -569,9 +480,49 @@ APR_DECLARE(apr_status_t) apr_file_gets(char *str, int len, apr_file_t *thefile)
     return rv;
 }
 
+struct apr_file_printf_data {
+    apr_vformatter_buff_t vbuff;
+    apr_file_t *fptr;
+    char *buf;
+};
 
-
-APR_DECLARE(apr_status_t) apr_file_pipe_wait(apr_file_t *thepipe, apr_wait_type_t direction)
+static int file_printf_flush(apr_vformatter_buff_t *buff)
 {
-    return apr_wait_for_io_or_timeout(thepipe, NULL, direction == APR_WAIT_READ);
+    struct apr_file_printf_data *data = (struct apr_file_printf_data *)buff;
+
+    if (apr_file_write_full(data->fptr, data->buf, 
+                            data->vbuff.curpos - data->buf, NULL)) {
+        return -1;
+    }
+
+    data->vbuff.curpos = data->buf;
+    return 0;
+}
+
+APR_DECLARE_NONSTD(int) apr_file_printf(apr_file_t *fptr, 
+                                        const char *format, ...)
+{
+    struct apr_file_printf_data data;
+    va_list ap;
+    int count;
+
+    /* don't really need a HUGE_STRING_LEN anymore */
+    data.buf = malloc(HUGE_STRING_LEN);
+    if (data.buf == NULL) {
+        return -1;
+    }
+    data.vbuff.curpos = data.buf;
+    data.vbuff.endpos = data.buf + HUGE_STRING_LEN;
+    data.fptr = fptr;
+    va_start(ap, format);
+    count = apr_vformatter(file_printf_flush,
+                           (apr_vformatter_buff_t *)&data, format, ap);
+    /* apr_vformatter does not call flush for the last bits */
+    if (count >= 0) file_printf_flush((apr_vformatter_buff_t *)&data);
+
+    va_end(ap);
+
+    free(data.buf);
+
+    return count;
 }
