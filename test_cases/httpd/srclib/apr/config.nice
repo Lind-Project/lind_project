@@ -3,12 +3,17 @@
 # Created by configure
 
 CC="x86_64-nacl-gcc"; export CC
-CFLAGS="-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie"; export CFLAGS
-LDFLAGS="-g -fno-pie"; export LDFLAGS
+CFLAGS="-DPTHREAD_MUTEX_RECURSIVE=1 -g -fPIC"; export CFLAGS
+LDFLAGS="-g -fPIC"; export LDFLAGS
 "/home/jp/lind_project/test_cases/httpd/srclib/apr/configure" \
 "--disable-option-checking" \
 "--with-included-apr" \
-"--with-expat=/lib" \
+"--with-libxml2=/home/jp/lind_project/lind/repy/repy/lib" \
+"--with-brotli=/home/jp/lind_project/lind/repy/repy" \
+"--with-pcre=/home/jp/lind_project/lind/repy/repy" \
+"--with-z=/home/jp/lind_project/lind/repy/repy" \
+"--enable-pie" \
+"--enable-modules=none" \
 "--host=x86_64-nacl" \
 "ac_cv_file__dev_zero=yes" \
 "ac_cv_func_setpgrp_void=yes" \
@@ -20,8 +25,8 @@ LDFLAGS="-g -fno-pie"; export LDFLAGS
 "apr_cv_mutex_recursive=yes" \
 "host_alias=x86_64-nacl" \
 "CC=x86_64-nacl-gcc" \
-"CFLAGS=-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie" \
-"LDFLAGS=-g -fno-pie" \
+"CFLAGS=-DPTHREAD_MUTEX_RECURSIVE=1 -g -fPIC" \
+"LDFLAGS=-g -fPIC" \
 "--cache-file=/dev/null" \
 "--srcdir=/home/jp/lind_project/test_cases/httpd/srclib/apr" \
 "--prefix=/home/jp/lind_project/lind/repy/repy" \

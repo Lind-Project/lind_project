@@ -17,6 +17,7 @@
 #include "apr_dbd.h"
 #include "apr_dbm.h"
 #include "apr_hooks.h"
+#include "apr_ldap.h"
 #include "apr_ldap_init.h"
 #include "apr_ldap_option.h"
 #include "apr_ldap_rebind.h"
@@ -39,8 +40,10 @@
 #include "apr_uuid.h"
 #include "apr_xlate.h"
 #include "apr_xml.h"
+#include "apu.h"
 #include "apu_errno.h"
 #include "apu_version.h"
+#include "apu_want.h"
 #include "expat.h"
 #include "expat_config.h"
 #include "expat_external.h"
@@ -48,7 +51,9 @@
 #include "apr_dbd_internal.h"
 #include "apr_dbd_odbc_v2.h"
 #include "apr_dbm_private.h"
+#include "apu_config.h"
 #include "apu_internal.h"
+#include "apu_select_dbm.h"
 
 const void *ap_ugly_hack = NULL;
 

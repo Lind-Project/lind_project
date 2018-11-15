@@ -28,8 +28,8 @@ libdir="${prefix}/lib"
 includedir="/home/jp/lind_project/lind/repy/repy/include"
 
 LIBS=""
-INCLUDES="-I/lib/include"
-LDFLAGS="-L/lib/lib"
+INCLUDES=""
+LDFLAGS=""
 LDAP_LIBS=""
 DBM_LIBS="  "
 

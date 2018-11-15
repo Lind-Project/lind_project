@@ -10,8 +10,8 @@ APRUTIL_DOTTED_VERSION=1.6.1
 srcdir = .
 
 
-INCLUDES = -I/home/jp/lind_project/test_cases/httpd/srclib/apr-util/include -I/home/jp/lind_project/test_cases/httpd/srclib/apr-util/include/private  -I/home/jp/lind_project/test_cases/httpd/srclib/apr/include  -I/lib/include
-APRUTIL_LDFLAGS = -L/lib/lib
+INCLUDES = -I/home/jp/lind_project/test_cases/httpd/srclib/apr-util/include -I/home/jp/lind_project/test_cases/httpd/srclib/apr-util/include/private  -I/home/jp/lind_project/test_cases/httpd/srclib/apr/include  
+APRUTIL_LDFLAGS = 
 APRUTIL_LIBS =  /home/jp/lind_project/test_cases/httpd/srclib/apr/libapr-1.la -lrt -lcrypt  -ldl
 
 TARGET_LIB = libaprutil-${APRUTIL_MAJOR_VERSION}.la

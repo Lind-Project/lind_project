@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+
+#include <apr_thread_mutex.h>
+#define APR_THREAD_MUTEX_DEFAULT  0x0
+
 /* Utility routines for Apache proxy */
 #include "mod_proxy.h"
 #include "ap_mpm.h"

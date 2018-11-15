@@ -24,6 +24,7 @@
 #include "apr_date.h"
 #include "util_md5.h"
 #include "mod_watchdog.h"
+#include <apr_thread_mutex.h>
 
 static const char *balancer_mutex_type = "proxy-balancer-shm";
 ap_slotmem_provider_t *storage = NULL;

@@ -34,10 +34,14 @@ nacl/
 !/test_cases/busybox
 !/test_cases/coreutils
 !/test_cases/dash
-!/test_cases/httpd
+!/test_cases/httpd*
 !/test_cases/nginx
 !/test_cases/lighttpd2
 !/test_cases/expat
+!/test_cases/libxml2
+!/test_cases/brotli
+!/test_cases/zlib
+!/test_cases/pcre
 /test_cases/dash/src/bltin/.deps/
 /test_cases/dash/src/bltin/.dirstamp
 !/test_cases/*.c

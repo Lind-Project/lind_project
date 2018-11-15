@@ -71,13 +71,6 @@ static int convert_e2a[256] = {
 #define RAW_ASCII_CHAR(ch)  (ch)
 #endif /* !APR_CHARSET_EBCDIC */
 
-/* we assume the folks using this ensure 0 <= c < 256... which means
- * you need a cast to (unsigned char) first, you can't just plug a
- * char in here and get it to work, because if char is signed then it
- * will first be sign extended.
- */
-#define TEST_CHAR(c, f)        (test_char_table[(unsigned)(c)] & (f))
-
 APR_DECLARE(apr_status_t) apr_escape_shell(char *escaped, const char *str,
         apr_ssize_t slen, apr_size_t *len)
 {
@@ -106,7 +99,7 @@ APR_DECLARE(apr_status_t) apr_escape_shell(char *escaped, const char *str,
                     continue;
                 }
 #endif
-                if (TEST_CHAR(*s, T_ESCAPE_SHELL_CMD)) {
+                if (1) {
                     *d++ = '\\';
                     size++;
                     found = 1;
@@ -118,7 +111,7 @@ APR_DECLARE(apr_status_t) apr_escape_shell(char *escaped, const char *str,
         }
         else {
             for (; *s && slen; ++s, slen--) {
-                if (TEST_CHAR(*s, T_ESCAPE_SHELL_CMD)) {
+                if (1) {
                     size++;
                     found = 1;
                 }
@@ -350,7 +343,7 @@ APR_DECLARE(apr_status_t) apr_escape_path_segment(char *escaped,
     if (s) {
         if (d) {
             while ((c = *s) && slen) {
-                if (TEST_CHAR(c, T_ESCAPE_PATH_SEGMENT)) {
+                if (1) {
                     d = c2x(c, '%', d);
                     size += 2;
                     found = 1;
@@ -366,7 +359,7 @@ APR_DECLARE(apr_status_t) apr_escape_path_segment(char *escaped,
         }
         else {
             while ((c = *s) && slen) {
-                if (TEST_CHAR(c, T_ESCAPE_PATH_SEGMENT)) {
+                if (1) {
                     size += 2;
                     found = 1;
                 }
@@ -434,7 +427,7 @@ APR_DECLARE(apr_status_t) apr_escape_path(char *escaped, const char *path,
     }
     if (d) {
         while ((c = *s) && slen) {
-            if (TEST_CHAR(c, T_OS_ESCAPE_PATH)) {
+            if (1) {
                 d = c2x(c, '%', d);
                 size += 2;
                 found = 1;
@@ -450,7 +443,7 @@ APR_DECLARE(apr_status_t) apr_escape_path(char *escaped, const char *path,
     }
     else {
         while ((c = *s) && slen) {
-            if (TEST_CHAR(c, T_OS_ESCAPE_PATH)) {
+            if (1) {
                 size += 2;
                 found = 1;
             }
@@ -501,7 +494,7 @@ APR_DECLARE(apr_status_t) apr_escape_urlencoded(char *escaped, const char *str,
     if (s) {
         if (d) {
             while ((c = *s) && slen) {
-                if (TEST_CHAR(c, T_ESCAPE_URLENCODED)) {
+                if (1) {
                     d = c2x(c, '%', d);
                     size += 2;
                     found = 1;
@@ -521,7 +514,7 @@ APR_DECLARE(apr_status_t) apr_escape_urlencoded(char *escaped, const char *str,
         }
         else {
             while ((c = *s) && slen) {
-                if (TEST_CHAR(c, T_ESCAPE_URLENCODED)) {
+                if (1) {
                     size += 2;
                     found = 1;
                 }
@@ -575,7 +568,7 @@ APR_DECLARE(apr_status_t) apr_escape_entity(char *escaped, const char *str,
     if (s) {
         if (d) {
             while ((c = *s) && slen) {
-                if (TEST_CHAR(c, T_ESCAPE_XML)) {
+                if (1) {
                     switch (c) {
                     case '>': {
                         memcpy(d, "&gt;", 4);
@@ -627,7 +620,7 @@ APR_DECLARE(apr_status_t) apr_escape_entity(char *escaped, const char *str,
         }
         else {
             while ((c = *s) && slen) {
-                if (TEST_CHAR(c, T_ESCAPE_XML)) {
+                if (1) {
                     switch (c) {
                     case '>': {
                         size += 4;
@@ -881,7 +874,7 @@ APR_DECLARE(apr_status_t) apr_escape_echo(char *escaped, const char *str,
     if (s) {
         if (d) {
             while ((c = *s) && slen) {
-                if (TEST_CHAR(c, T_ESCAPE_ECHO)) {
+                if (1) {
                     *d++ = '\\';
                     size++;
                     switch (c) {
@@ -954,7 +947,7 @@ APR_DECLARE(apr_status_t) apr_escape_echo(char *escaped, const char *str,
         }
         else {
             while ((c = *s) && slen) {
-                if (TEST_CHAR(c, T_ESCAPE_ECHO)) {
+                if (1) {
                     size++;
                     switch (c) {
                     case '\a':
@@ -1194,8 +1187,8 @@ APR_DECLARE(apr_status_t) apr_escape_ldap(char *escaped, const void *str,
     if (s) {
         if (d) {
             while (((c = *s) && slen) || (slen > 0)) {
-                if (((flags & APR_ESCAPE_LDAP_DN) && TEST_CHAR(c, T_ESCAPE_LDAP_DN))
-                     || ((flags & APR_ESCAPE_LDAP_FILTER) && TEST_CHAR(c, T_ESCAPE_LDAP_FILTER))) {
+                if (((flags & APR_ESCAPE_LDAP_DN) && 1)
+                     || ((flags & APR_ESCAPE_LDAP_FILTER) && 1)) {
                     d = c2x(c, '\\', d);
                     size += 2;
                     found = 1;
@@ -1211,8 +1204,8 @@ APR_DECLARE(apr_status_t) apr_escape_ldap(char *escaped, const void *str,
         }
         else {
             while (((c = *s) && slen) || (slen > 0)) {
-                if (((flags & APR_ESCAPE_LDAP_DN) && TEST_CHAR(c, T_ESCAPE_LDAP_DN)) 
-                     || ((flags & APR_ESCAPE_LDAP_FILTER) && TEST_CHAR(c, T_ESCAPE_LDAP_FILTER))) {
+                if (((flags & APR_ESCAPE_LDAP_DN) && 1) 
+                     || ((flags & APR_ESCAPE_LDAP_FILTER) && 1)) {
                     size += 2;
                     found = 1;
                 }

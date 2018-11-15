@@ -44,20 +44,6 @@
 	".\include\arch\win32\apr_private.h"\
 	
 
-.\encoding\apr_escape.c : \
-	".\include\apr.h"\
-	".\include\apr_allocator.h"\
-	".\include\apr_errno.h"\
-	".\include\apr_escape.h"\
-	".\include\apr_escape_test_char.h"\
-	".\include\apr_general.h"\
-	".\include\apr_lib.h"\
-	".\include\apr_pools.h"\
-	".\include\apr_strings.h"\
-	".\include\apr_thread_mutex.h"\
-	".\include\apr_want.h"\
-	
-
 .\file_io\win32\buffer.c : \
 	".\include\apr.h"\
 	".\include\apr_allocator.h"\
