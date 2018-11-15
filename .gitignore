@@ -37,6 +37,7 @@ nacl/
 !/test_cases/httpd
 !/test_cases/nginx
 !/test_cases/lighttpd2
+!/test_cases/expat
 /test_cases/dash/src/bltin/.deps/
 /test_cases/dash/src/bltin/.dirstamp
 !/test_cases/*.c
