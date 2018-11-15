@@ -49,7 +49,6 @@
 #include "apr_version.h"
 #include "apr_want.h"
 #include "expat.h"
-#include "expat_config.h"
 #include "expat_external.h"
 
 const void *ap_ugly_hack = NULL;

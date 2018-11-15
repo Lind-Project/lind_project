@@ -801,7 +801,7 @@ configure:16879: x86_64-nacl-gcc -std=gnu99 -o conftest -g -fPIC -fpie -Wall -Wm
 conftest.c:32: warning: function declaration isn't a prototype
 conftest.c: In function 'main':
 conftest.c:33: warning: implicit declaration of function 'arc4random_buf'
-/tmp/ccxGH7q8.o: In function `main':
+/tmp/ccTWdaBP.o: In function `main':
 /home/jp/lind_project/test_cases/expat/conftest.c:33: undefined reference to `arc4random_buf'
 collect2: ld returned 1 exit status
 configure:16879: $? = 1
@@ -848,7 +848,7 @@ configure:16908: x86_64-nacl-gcc -std=gnu99 -o conftest -g -fPIC -fpie -Wall -Wm
 conftest.c:33: warning: function declaration isn't a prototype
 conftest.c: In function 'main':
 conftest.c:34: warning: implicit declaration of function 'arc4random'
-/tmp/ccdyiyPa.o: In function `main':
+/tmp/cc7R7b6R.o: In function `main':
 /home/jp/lind_project/test_cases/expat/conftest.c:34: undefined reference to `arc4random'
 collect2: ld returned 1 exit status
 configure:16908: $? = 1

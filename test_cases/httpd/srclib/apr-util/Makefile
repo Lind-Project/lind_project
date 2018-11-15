@@ -65,8 +65,8 @@ EXTRACLEAN_TARGETS = configure aclocal.m4 include/private/apu_config.h.in \
 
 prefix=/home/jp/lind_project/lind/repy/repy
 exec_prefix=/home/jp/lind_project/lind/repy/repy
-bindir=${prefix}/bin
-libdir=${prefix}/lib
+bindir=/home/jp/lind_project/lind/repy/repy/bin
+libdir=/home/jp/lind_project/lind/repy/repy/lib
 includedir=/home/jp/lind_project/lind/repy/repy/include
 top_srcdir=/home/jp/lind_project/test_cases/httpd/srclib/apr-util
 top_blddir=/home/jp/lind_project/test_cases/httpd/srclib/apr-util

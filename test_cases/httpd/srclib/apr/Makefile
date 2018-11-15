@@ -58,8 +58,8 @@ EXTRACLEAN_TARGETS = configure aclocal.m4 include/arch/unix/apr_private.h.in \
 
 prefix=/home/jp/lind_project/lind/repy/repy
 exec_prefix=/home/jp/lind_project/lind/repy/repy
-bindir=${prefix}/bin
-libdir=${prefix}/lib
+bindir=/home/jp/lind_project/lind/repy/repy/bin
+libdir=/home/jp/lind_project/lind/repy/repy/lib
 includedir=/home/jp/lind_project/lind/repy/repy/include
 datadir=/home/jp/lind_project/lind/repy/repy
 installbuilddir=${prefix}/build
