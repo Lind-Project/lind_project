@@ -1,0 +1,14 @@
+#!/bin/bash
+
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS='-g -fno-pie'
+export CXXFLAGS='-g -fno-pie'
+export LDFLAGS='-g -fno-pie'
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+export PREFIX="${PREFIX:-$HOME/lind_project/lind/repy/repy}"
+
+make
+
+install xmlparse/libexpat.a "$PREFIX/lib/libexpat.a"
