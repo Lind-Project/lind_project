@@ -325,6 +325,14 @@ function build_repy() {
 	cd "$NACL_REPY"
 	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
+		# TODO: make branch names consistent across our repositories and
+		# avoid the need for the `|| true` here
+		#
+		# Some branches such as the lind branch in native_client don't have
+		# matching branches in the other submodules and the checkout fails
+		# if you tried to checkout, say, the lind branch of nacl_repy
+		#
+		# -jp
 		git checkout "$BRANCH" || true
 	fi
 	cp -fv ./seattlelib/xmlrpc* "$REPY_PATH_REPY/"
@@ -466,6 +474,14 @@ function build_nacl() {
 	cd "$NACL_BASE"
 	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
+		# TODO: make branch names consistent across our repositories and
+		# avoid the need for the `|| true` here
+		#
+		# Some branches such as the lind branch in native_client don't have
+		# matching branches in the other submodules and the checkout fails
+		# if you tried to checkout, say, the lind branch of nacl_repy
+		#
+		# -jp
 		git checkout "$BRANCH" || true
 	fi
 	# skip broken tests for now
@@ -518,6 +534,14 @@ function build_glibc() {
 	cd "$NACL_BASE"
 	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
+		# TODO: make branch names consistent across our repositories and
+		# avoid the need for the `|| true` here
+		#
+		# Some branches such as the lind branch in native_client don't have
+		# matching branches in the other submodules and the checkout fails
+		# if you tried to checkout, say, the lind branch of nacl_repy
+		#
+		# -jp
 		git checkout "$BRANCH" || true
 	fi
 	# turns out this works better if you do it from the nacl base dir
