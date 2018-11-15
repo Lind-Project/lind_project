@@ -1,0 +1,45 @@
+diff --git a/tools/libclang/CIndexer.cpp b/tools/libclang/CIndexer.cpp
+--- a/tools/libclang/CIndexer.cpp
++++ b/tools/libclang/CIndexer.cpp
+@@ -37,7 +37,7 @@
+ 
+ #ifdef LLVM_ON_WIN32
+ #include <windows.h>
+-#else
++#elif !defined(_NEWLIB_VERSION)
+ #include <dlfcn.h>
+ #endif
+ 
+@@ -69,6 +69,8 @@ const std::string &CIndexer::getClangResourcesPath() {
+ #endif
+ 
+   LibClangPath += llvm::sys::path::parent_path(path);
++#elif defined(_NEWLIB_VERSION)
++  LibClangPath += "";
+ #else
+   // This silly cast below avoids a C++ warning.
+   Dl_info info;
+diff --git a/unittests/Makefile b/unittests/Makefile
+--- a/unittests/Makefile
++++ b/unittests/Makefile
+@@ -10,6 +10,14 @@
+ # If CLANG_LEVEL is not set, then we are the top-level Makefile. Otherwise, we
+ # are being included from a subdirectory makefile.
+ 
++ifeq ($(HOST_OS),NativeClient)
++all:
++	echo skipping
++
++install:
++	echo skipping
++else
++
+ ifndef CLANG_LEVEL
+ 
+ IS_UNITTEST_LEVEL := 1
+@@ -33,3 +41,5 @@ MAKEFILE_UNITTEST_NO_INCLUDE_COMMON := 1
+ include $(LLVM_SRC_ROOT)/unittests/Makefile.unittest
+ 
+ endif  # IS_UNITTEST_LEVEL
++
++endif

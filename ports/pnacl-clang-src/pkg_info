@@ -1,0 +1,5 @@
+NAME=pnacl-clang-src
+VERSION=0.0.1
+ARCHIVE_ROOT=clang
+URL=https://chromium.googlesource.com/native_client/pnacl-clang.git@cf0dc7f
+LICENSE=BSD

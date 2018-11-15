@@ -1,0 +1,2 @@
+src/auto/config.h
+src/auto/config.mk

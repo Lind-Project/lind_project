@@ -1,0 +1,85 @@
+diff --git a/Lib/distutils/unixccompiler.py b/Lib/distutils/unixccompiler.py
+--- a/Lib/distutils/unixccompiler.py
++++ b/Lib/distutils/unixccompiler.py
+@@ -286,3 +286,42 @@ class UnixCCompiler(CCompiler):
+ 
+         # Oops, didn't find it in *any* of 'dirs'
+         return None
++
++# Thanks to the GPAW project for this function.
++def _link_shared_object (self,
++                     objects,
++                     output_filename,
++                     output_dir=None,
++                     libraries=None,
++                     library_dirs=None,
++                     runtime_library_dirs=None,
++                     export_symbols=None,
++                     debug=0,
++                     extra_preargs=None,
++                     extra_postargs=None,
++                     build_temp=None,
++                     target_lang=None):
++
++    if output_dir is None:
++        (output_dir, output_filename) = os.path.split(output_filename)
++    output_fullname = os.path.join(output_dir, output_filename)
++    output_fullname = os.path.abspath(output_fullname)
++    linkline = "%s %s" % (output_filename[:-2], output_fullname)
++    for l in library_dirs:
++        linkline += " -L" + l
++    for l in libraries:
++        linkline += " -l" + l
++    old_fmt = self.static_lib_format
++    self.static_lib_format = "%s%.0s"
++    self.create_static_lib(objects,
++                           output_filename,
++                           output_dir,
++                           debug,
++                           target_lang)
++
++    self.static_lib_format = old_fmt
++
++# Only override when the NACL_SDK_ROOT
++import os
++if os.environ.get("NACL_PORT_BUILD", None) in ["dest", "bootstrap"]:
++    UnixCCompiler.link_shared_object = _link_shared_object
+diff --git a/setup.py b/setup.py
+--- a/setup.py
++++ b/setup.py
+@@ -378,6 +378,8 @@ class PyBuildExt(build_ext):
+ 
+         if multiarch_path_component != '':
+             add_dir_to_list(self.compiler.library_dirs,
++                            '/lib/' + multiarch_path_component)
++            add_dir_to_list(self.compiler.library_dirs,
+                             '/usr/lib/' + multiarch_path_component)
+             add_dir_to_list(self.compiler.include_dirs,
+                             '/usr/include/' + multiarch_path_component)
+@@ -399,6 +401,8 @@ class PyBuildExt(build_ext):
+                 with open(tmpfile) as fp:
+                     multiarch_path_component = fp.readline().strip()
+                 add_dir_to_list(self.compiler.library_dirs,
++                                '/lib/' + multiarch_path_component)
++                add_dir_to_list(self.compiler.library_dirs,
+                                 '/usr/lib/' + multiarch_path_component)
+                 add_dir_to_list(self.compiler.include_dirs,
+                                 '/usr/include/' + multiarch_path_component)
+@@ -507,7 +511,7 @@ class PyBuildExt(build_ext):
+                 ):
+                 add_dir_to_list(inc_dirs, d)
+             for d in (
+-                '/lib64', '/usr/lib64',
++                '/lib32', '/usr/lib32',
+                 '/lib', '/usr/lib',
+                 ):
+                 add_dir_to_list(lib_dirs, d)
+@@ -1418,6 +1422,8 @@ class PyBuildExt(build_ext):
+                                            extra_link_args = zlib_extra_link_args))
+                     have_zlib = True
+                 else:
++                    print "zlib missing"
++                    sys.exit(1)
+                     missing.append('zlib')
+             else:
+                 missing.append('zlib')

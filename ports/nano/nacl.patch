@@ -1,0 +1,48 @@
+diff --git a/src/Makefile.in b/src/Makefile.in
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -286,7 +286,7 @@ clean-binPROGRAMS:
+ 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+ nano$(EXEEXT): $(nano_OBJECTS) $(nano_DEPENDENCIES) 
+ 	@rm -f nano$(EXEEXT)
+-	$(LINK) $(nano_OBJECTS) $(nano_LDADD) $(LIBS)
++	$(LINK) $(nano_OBJECTS) $(nano_LDADD) $(LIBS) $(EXTRA_LIBS)
+ 
+ mostlyclean-compile:
+ 	-rm -f *.$(OBJEXT)
+diff --git a/src/nano.c b/src/nano.c
+--- a/src/nano.c
++++ b/src/nano.c
+@@ -1279,6 +1279,14 @@ RETSIGTYPE handle_sigwinch(int signal)
+     LINES = win.ws_row;
+ #endif
+ 
++#ifndef __native_client__
++    // NaCl's signal hanlder currently runs on the main PPAPI thread
++    // but nano expects it to run on the nano thread and be able to
++    // redraw the script from within the handler, which is currently
++    // no supported.
++    return;
++#endif
++
+     /* If we've partitioned the filestruct, unpartition it now. */
+     if (filepart != NULL)
+ 	unpartition_filestruct(&filepart);
+@@ -2013,8 +2021,17 @@ void do_output(char *output, size_t output_len, bool allow_cntrls)
+ 	update_line(openfile->current, openfile->current_x);
+ }
+ 
++#ifdef __native_client__
++#include "nacl_main.h"
++#endif
++
+ int main(int argc, char **argv)
+ {
++#ifdef __native_client__
++    if (nacl_startup_untar(argv[0], "nano.tar", "/"))
++        return 1;
++#endif
++
+     int optchr;
+     ssize_t startline = 1;
+ 	/* Line to try and start at. */

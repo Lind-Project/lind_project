@@ -1,0 +1,6 @@
+NAME=gnutls
+VERSION=3.4.11
+URL=ftp://ftp.gnutls.org/gcrypt/gnutls/v3.4/gnutls-3.4.11.tar.xz
+DEPENDS=(glibc-compat nettle zlib)
+LICENSE=LGPL
+SHA1=55f73d1ea2b3335fea514fad6faa1e72006ae9f9

@@ -1,0 +1,15 @@
+{
+  "browser": true,
+  "indent": 2,
+  "vars": true,
+  "evil": true,
+  "bitwise": true,
+  "unparam": true,
+  "laxbreak": true,
+  "nomen": true,
+  "white": true,
+  "unused": true,
+  "plusplus": true,
+  "predef": "chrome,PipeServer,Blob,lib,NaClProcessManager,hterm,NaClTerm",
+  "todo": true
+}

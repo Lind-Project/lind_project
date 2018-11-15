@@ -1,0 +1,5 @@
+NAME=pnacl-llvm-src
+VERSION=0.0.1
+ARCHIVE_ROOT=llvm
+URL=https://chromium.googlesource.com/native_client/pnacl-llvm.git@1ac309a
+LICENSE=BSD

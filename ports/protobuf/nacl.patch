@@ -1,0 +1,200 @@
+diff --git a/configure b/configure
+--- a/configure
++++ b/configure
+@@ -7179,7 +7179,8 @@ irix5* | irix6* | nonstopux*)
+   ;;
+ 
+ # This must be glibc/ELF.
+-linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++# Patched by naclports using patch_configure.py
++linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | nacl*)
+   lt_cv_deplibs_check_method=pass_all
+   ;;
+ 
+@@ -12407,6 +12408,18 @@ uts4*)
+   shlibpath_var=LD_LIBRARY_PATH
+   ;;
+ 
++nacl)
++  # Patched by naclports using patch_configure.py
++  if libc_so=`$CC -print-file-name=libc.so` && [ "$libc_so" != libc.so ]; then
++    dynamic_linker="GNU/NaCl ld.so"
++    version_type=linux
++    library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}${major} ${libname}${shared_ext}'
++    soname_spec='${libname}${release}${shared_ext}$major'
++  else
++    dynamic_linker=no
++  fi
++  ;;
++
+ *)
+   dynamic_linker=no
+   ;;
+@@ -16239,6 +16252,18 @@ uts4*)
+   shlibpath_var=LD_LIBRARY_PATH
+   ;;
+ 
++nacl)
++  # Patched by naclports using patch_configure.py
++  if libc_so=`$CC -print-file-name=libc.so` && [ "$libc_so" != libc.so ]; then
++    dynamic_linker="GNU/NaCl ld.so"
++    version_type=linux
++    library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}${major} ${libname}${shared_ext}'
++    soname_spec='${libname}${release}${shared_ext}$major'
++  else
++    dynamic_linker=no
++  fi
++  ;;
++
+ *)
+   dynamic_linker=no
+   ;;
+@@ -17357,40 +17382,6 @@ $as_echo "$as_me: WARNING: Impossible to determine how to use pthreads with shar
+ 	   acx_pthread_ok=no
+ 	fi
+ 
+-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether what we have so far is sufficient with -nostdlib" >&5
+-$as_echo_n "checking whether what we have so far is sufficient with -nostdlib... " >&6; }
+-	CFLAGS="-nostdlib $CFLAGS"
+-	# we need c with nostdlib
+-	LIBS="$LIBS -lc"
+-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-#include <pthread.h>
+-int
+-main ()
+-{
+-pthread_t th; pthread_join(th, 0);
+-	       pthread_attr_init(0); pthread_cleanup_push(0, 0);
+-	       pthread_create(0,0,0,0); pthread_cleanup_pop(0);
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_link "$LINENO"; then :
+-  done=yes
+-else
+-  done=no
+-fi
+-rm -f core conftest.err conftest.$ac_objext \
+-    conftest$ac_exeext conftest.$ac_ext
+-
+-	if test "x$done" = xyes; then
+-	   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+-$as_echo "yes" >&6; }
+-	else
+-	   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+-$as_echo "no" >&6; }
+-	fi
+-
+ 	if test x"$done" = xno; then
+ 	   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -lpthread saves the day" >&5
+ $as_echo_n "checking whether -lpthread saves the day... " >&6; }
+diff --git a/src/google/protobuf/compiler/command_line_interface_unittest.cc b/src/google/protobuf/compiler/command_line_interface_unittest.cc
+--- a/src/google/protobuf/compiler/command_line_interface_unittest.cc
++++ b/src/google/protobuf/compiler/command_line_interface_unittest.cc
+@@ -67,6 +67,10 @@ namespace google {
+ namespace protobuf {
+ namespace compiler {
+ 
++// Disable this whole test when running on Native Client since it doesn't
++// support fork/spawning new processing.
++#if !defined(__native_client__)
++
+ // Disable the whole test when we use tcmalloc for "draconian" heap checks, in
+ // which case tcmalloc will print warnings that fail the plugin tests.
+ #if !GOOGLE_PROTOBUF_HEAP_CHECK_DRACONIAN
+@@ -1822,6 +1826,7 @@ TEST_F(EncodeDecodeTest, ProtoParseError) {
+ 
+ }  // anonymous namespace
+ 
++#endif  // !__native_client__
+ #endif  // !GOOGLE_PROTOBUF_HEAP_CHECK_DRACONIAN
+ 
+ }  // namespace compiler
+diff --git a/src/google/protobuf/compiler/ruby/ruby_generator_unittest.cc b/src/google/protobuf/compiler/ruby/ruby_generator_unittest.cc
+--- a/src/google/protobuf/compiler/ruby/ruby_generator_unittest.cc
++++ b/src/google/protobuf/compiler/ruby/ruby_generator_unittest.cc
+@@ -39,6 +39,10 @@
+ #include <gtest/gtest.h>
+ #include <google/protobuf/testing/file.h>
+ 
++// Don't try to run ruby tests.  The source distribution doesn't seem to
++// contain the ruby test data at all
++#if !defined(__native_client__)
++
+ namespace google {
+ namespace protobuf {
+ namespace compiler {
+@@ -121,3 +125,5 @@ TEST(RubyGeneratorTest, GeneratorTest) {
+ }  // namespace compiler
+ }  // namespace protobuf
+ }  // namespace google
++
++#endif  // __native_client__
+diff --git a/src/google/protobuf/io/zero_copy_stream_unittest.cc b/src/google/protobuf/io/zero_copy_stream_unittest.cc
+--- a/src/google/protobuf/io/zero_copy_stream_unittest.cc
++++ b/src/google/protobuf/io/zero_copy_stream_unittest.cc
+@@ -848,6 +848,9 @@ TEST_F(IoTest, FileWriteError) {
+   EXPECT_EQ(EBADF, input.GetErrno());
+ }
+ 
++// pipe() doesn't under sel_ldr.
++// TODO(sbc): Its possible we could make this work with nacl_io.
++#ifndef __native_client__
+ // Pipes are not seekable, so File{Input,Output}Stream ends up doing some
+ // different things to handle them.  We'll test by writing to a pipe and
+ // reading back from it.
+@@ -876,6 +879,7 @@ TEST_F(IoTest, PipeIo) {
+     }
+   }
+ }
++#endif
+ 
+ // Test using C++ iostreams.
+ TEST_F(IoTest, IostreamIo) {
+diff --git a/src/google/protobuf/message_unittest.cc b/src/google/protobuf/message_unittest.cc
+--- a/src/google/protobuf/message_unittest.cc
++++ b/src/google/protobuf/message_unittest.cc
+@@ -110,6 +110,7 @@ TEST(MessageTest, ParseFromFileDescriptor) {
+   string filename = TestSourceDir() +
+                     "/google/protobuf/testdata/golden_message";
+   int file = open(filename.c_str(), O_RDONLY | O_BINARY);
++  ASSERT_NE(file, -1);
+ 
+   unittest::TestAllTypes message;
+   EXPECT_TRUE(message.ParseFromFileDescriptor(file));
+@@ -123,6 +124,7 @@ TEST(MessageTest, ParsePackedFromFileDescriptor) {
+       TestSourceDir() +
+       "/google/protobuf/testdata/golden_packed_fields_message";
+   int file = open(filename.c_str(), O_RDONLY | O_BINARY);
++  ASSERT_NE(file, -1);
+ 
+   unittest::TestPackedTypes message;
+   EXPECT_TRUE(message.ParseFromFileDescriptor(file));
+diff --git a/src/google/protobuf/stubs/atomicops.h b/src/google/protobuf/stubs/atomicops.h
+--- a/src/google/protobuf/stubs/atomicops.h
++++ b/src/google/protobuf/stubs/atomicops.h
+@@ -212,7 +212,7 @@ Atomic64 Release_Load(volatile const Atomic64* ptr);
+ #include <google/protobuf/stubs/atomicops_internals_mips_gcc.h>
+ #elif defined(GOOGLE_PROTOBUF_ARCH_POWER)
+ #include <google/protobuf/stubs/atomicops_internals_power.h>
+-#elif defined(__native_client__)
++#elif defined(__pnacl__)
+ #include <google/protobuf/stubs/atomicops_internals_pnacl.h>
+ #elif (((__GNUC__ == 4) && (__GNUC_MINOR__ >= 7)) || (__GNUC__ > 4))
+ #include <google/protobuf/stubs/atomicops_internals_generic_gcc.h>
+diff --git a/src/google/protobuf/stubs/stringprintf_unittest.cc b/src/google/protobuf/stubs/stringprintf_unittest.cc
+--- a/src/google/protobuf/stubs/stringprintf_unittest.cc
++++ b/src/google/protobuf/stubs/stringprintf_unittest.cc
+@@ -54,8 +54,8 @@ TEST(StringPrintfTest, Empty) {
+ }
+ 
+ TEST(StringPrintfTest, Misc) {
+-// MSVC and mingw does not support $ format specifier.
+-#if !defined(_MSC_VER) && !defined(__MINGW32__)
++// MSVC, mingw and newlib don't not support $ format specifier.
++#if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(_NEWLIB_VERSION)
+   EXPECT_EQ("123hello w", StringPrintf("%3$d%2$s %1$c", 'w', "hello", 123));
+ #endif  // !_MSC_VER
+ }

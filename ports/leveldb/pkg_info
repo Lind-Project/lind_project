@@ -1,0 +1,6 @@
+NAME=leveldb
+VERSION=1.18
+URL=https://github.com/google/leveldb/archive/v1.18/leveldb-1.18.tar.gz
+LICENSE=BSD
+SHA1=18684a0ad7a07920d10f5295b171fbf5eeec7337
+DISABLED_TOOLCHAIN=(emscripten)

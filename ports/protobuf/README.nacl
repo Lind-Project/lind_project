@@ -1,0 +1,4 @@
+The patch file removes -nostdlib check from the configure script
+to work around a linker bug in the nacl-clang toolchain:
+
+https://bugs.chromium.org/p/nativeclient/issues/detail?id=4350

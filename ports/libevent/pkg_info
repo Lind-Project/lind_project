@@ -1,0 +1,7 @@
+NAME=libevent
+VERSION=2.0.22-stable
+URL=http://download.sf.net/project/levent/libevent/libevent-2.0/libevent-2.0.22-stable.tar.gz
+LICENSE="3-clause BSD license"
+SHA1=a586882bc93a208318c70fc7077ed8fca9862864
+DEPENDS=(nacl-spawn glibc-compat)
+DISABLED_TOOLCHAIN=(emscripten glibc)
