@@ -1,6 +1,6 @@
 prefix=/home/jp/lind_project/lind/repy/repy
 exec_prefix=/home/jp/lind_project/lind/repy/repy
-libdir=${prefix}/lib
+libdir=/home/jp/lind_project/lind/repy/repy/lib
 APRUTIL_MAJOR_VERSION=1
 includedir=/home/jp/lind_project/lind/repy/repy/include
 

@@ -23,8 +23,8 @@ APRUTIL_DOTTED_VERSION="1.6.1"
 
 prefix="/home/jp/lind_project/lind/repy/repy"
 exec_prefix="/home/jp/lind_project/lind/repy/repy"
-bindir="${prefix}/bin"
-libdir="${prefix}/lib"
+bindir="/home/jp/lind_project/lind/repy/repy/bin"
+libdir="/home/jp/lind_project/lind/repy/repy/lib"
 includedir="/home/jp/lind_project/lind/repy/repy/include"
 
 LIBS=""

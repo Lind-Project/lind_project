@@ -12,17 +12,19 @@ fi
 export CC=x86_64-nacl-gcc
 export CXX=x86_64-nacl-g++
 export LD=x86_64-nacl-ld
-export CFLAGS='-DPTHREAD_MUTEX_RECURSIVE=1 -g -fPIC'
-export CXXFLAGS='-DPTHREAD_MUTEX_RECURSIVE=1 -g -fPIC'
-export LDFLAGS='-g -fPIC'
+export CFLAGS='-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie'
+export CXXFLAGS='-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie'
+export LDFLAGS='-g -fno-pie'
 export PREFIX="${PREFIX:-$HOME/lind_project/lind/repy/repy}"
 export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 
 mkdir -pv -- apr
+make clean || true
 make distclean || true
 rm -fv -- ./configure
 for d in srclib/apr{,-util}; do
 	(cd "$d" \
+		&& (make clean || true) \
 		&& (make distclean || true) \
 		&& rm -fv -- ./configure \
 		&& ./bootstrap_nacl --prefix="${PREFIX:-$HOME/lind_project/lind/repy/repy}" \
@@ -36,10 +38,10 @@ cp -fv -- srclib/apr-util/include/{apr_{hooks,optional_hooks,buckets,uri,optiona
 	--with-brotli="$PREFIX" \
 	--with-pcre="$PREFIX" \
 	--with-z="$PREFIX" \
-	--enable-pie \
-	--enable-modules=none \
 	--host=x86_64-nacl \
+	--enable-mods-shared=most \
 	--prefix="${PREFIX:-$HOME/lind_project/lind/repy/repy}" \
+	--exec-prefix="${PREFIX:-$HOME/lind_project/lind/repy/repy}" \
 	"$@" \
 	ac_cv_file__dev_zero="yes" \
 	ac_cv_func_setpgrp_void="yes" \

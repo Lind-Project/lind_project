@@ -12,9 +12,9 @@ fi
 export CC=x86_64-nacl-gcc
 export CXX=x86_64-nacl-g++
 export LD=x86_64-nacl-ld
-export CFLAGS='-DPTHREAD_MUTEX_RECURSIVE=1 -g -fPIC'
-export CXXFLAGS='-DPTHREAD_MUTEX_RECURSIVE=1 -g -fPIC'
-export LDFLAGS='-g -fPIC'
+export CFLAGS='-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie'
+export CXXFLAGS='-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie'
+export LDFLAGS='-g -fno-pie'
 export PREFIX="${PREFIX:-$HOME/lind_project/lind/repy/repy}"
 export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 

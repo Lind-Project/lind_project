@@ -75,6 +75,8 @@ tags
 TAGS
 vgcore*
 typescript
+config.log
+config.status
 
 # Binaries
 *.out
