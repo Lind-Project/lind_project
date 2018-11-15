@@ -1,0 +1,64 @@
+diff --git a/evutil.c b/evutil.c
+--- a/evutil.c
++++ b/evutil.c
+@@ -183,9 +183,15 @@ int
+ evutil_socketpair(int family, int type, int protocol, evutil_socket_t fd[2])
+ {
+ #ifndef WIN32
+-	return socketpair(family, type, protocol, fd);
++  #ifdef __native_client__
++    // nacl.io lacks socketpair implementation.
++    // TODO(dt) remove this once socketpair is available on nacl.io
++    return evutil_ersatz_socketpair(family, type, protocol, fd);
++  #else
++    return socketpair(family, type, protocol, fd);
++  #endif
+ #else
+-	return evutil_ersatz_socketpair(family, type, protocol, fd);
++  return evutil_ersatz_socketpair(family, type, protocol, fd);
+ #endif
+ }
+ 
+@@ -2187,4 +2193,3 @@ evutil_load_windows_system_library(const TCHAR *library_name)
+   return LoadLibrary(path);
+ }
+ #endif
+-
+diff --git a/sample/hello-world.c b/sample/hello-world.c
+--- a/sample/hello-world.c
++++ b/sample/hello-world.c
+@@ -66,14 +66,19 @@ main(int argc, char **argv)
+ 	if (!listener) {
+ 		fprintf(stderr, "Could not create a listener!\n");
+ 		return 1;
+-	}
++	} else {
++    printf("\n listening on port %d\n",PORT);
++  }
+ 
++// nacl_io don't support signals
++#ifndef __native_client__
+ 	signal_event = evsignal_new(base, SIGINT, signal_cb, (void *)base);
+ 
+ 	if (!signal_event || event_add(signal_event, NULL)<0) {
+ 		fprintf(stderr, "Could not create/add a signal event!\n");
+ 		return 1;
+ 	}
++#endif
+ 
+ 	event_base_dispatch(base);
+ 
+@@ -129,6 +134,8 @@ conn_eventcb(struct bufferevent *bev, short events, void *user_data)
+ 	bufferevent_free(bev);
+ }
+ 
++// nacl_io don't support signals
++#ifndef __native_client__
+ static void
+ signal_cb(evutil_socket_t sig, short events, void *user_data)
+ {
+@@ -139,3 +146,4 @@ signal_cb(evutil_socket_t sig, short events, void *user_data)
+ 
+ 	event_base_loopexit(base, &delay);
+ }
++#endif

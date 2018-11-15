@@ -1,0 +1,396 @@
+diff --git a/Makefile.rules b/Makefile.rules
+--- a/Makefile.rules
++++ b/Makefile.rules
+@@ -1200,6 +1200,7 @@ ifdef EXPORTED_SYMBOL_FILE
+ $(LibName.SO): $(NativeExportsFile)
+ endif
+ 
++ifeq ($(ENABLE_SHARED),1)
+ ifdef LINK_LIBS_IN_SHARED
+ ifdef LOADABLE_MODULE
+ SharedLibKindMessage := "Loadable Module"
+@@ -1217,6 +1218,7 @@ $(LibName.SO): $(ObjectsO) $(SharedLibDir)/.dir
+ 	$(Echo) Linking $(BuildMode) Shared Library $(notdir $@)
+ 	$(Verb) $(Link) $(SharedLinkOptions) -o $@ $(ObjectsO)
+ endif
++endif
+ 
+ clean-local::
+ ifneq ($(strip $(LibName.SO)),)
+@@ -1239,6 +1241,7 @@ endif
+ DestSharedLib := $(DestSharedLibDir)/$(BaseLibName.SO)
+ DestSharedAlias := $(DestSharedLibDir)/$(BaseAliasName.SO)
+ 
++ifeq ($(ENABLE_SHARED),1)
+ install-local:: $(DestSharedLib)
+ 
+ $(DestSharedLib): $(LibName.SO) $(DestSharedLibDir)
+@@ -1257,6 +1260,7 @@ ifdef SHARED_ALIAS
+ endif
+ endif
+ endif
++endif
+ 
+ #---------------------------------------------------------
+ # Library Targets:
+@@ -1265,9 +1269,13 @@ endif
+ #---------------------------------------------------------
+ ifndef NO_BUILD_ARCHIVE
+ ifndef BUILD_ARCHIVE
++ifeq ($(ENABLE_SHARED),1)
+ ifndef LOADABLE_MODULE
+ BUILD_ARCHIVE = 1
+ endif
++else
++BUILD_ARCHIVE = 1
++endif
+ endif
+ endif
+ 
+diff --git a/include/llvm/Support/TargetRegistry.h b/include/llvm/Support/TargetRegistry.h
+--- a/include/llvm/Support/TargetRegistry.h
++++ b/include/llvm/Support/TargetRegistry.h
+@@ -814,7 +814,7 @@ namespace llvm {
+       // @LOCALMOD-BEGIN
+       // Prune out the .s printer for the sandboxed translator,
+       // by preventing an InstPrinter from being used at all.
+-      #if !defined(__native_client__)
++      #if !defined(PNACL_BROWSER_TRANSLATOR)
+       T.MCInstPrinterCtorFn = Fn;
+       #endif
+       // @LOCALMOD-END
+diff --git a/lib/ExecutionEngine/RuntimeDyld/RTDyldMemoryManager.cpp b/lib/ExecutionEngine/RuntimeDyld/RTDyldMemoryManager.cpp
+--- a/lib/ExecutionEngine/RuntimeDyld/RTDyldMemoryManager.cpp
++++ b/lib/ExecutionEngine/RuntimeDyld/RTDyldMemoryManager.cpp
+@@ -34,7 +34,8 @@ RTDyldMemoryManager::~RTDyldMemoryManager() {}
+ 
+ // Determine whether we can register EH tables.
+ #if (defined(__GNUC__) && !defined(__ARM_EABI__) && !defined(__ia64__) && \
+-     !defined(__SEH__) && !defined(__USING_SJLJ_EXCEPTIONS__))
++     !defined(__SEH__) && !defined(__USING_SJLJ_EXCEPTIONS__) && \
++     !defined(__pnacl__))
+ #define HAVE_EHTABLE_SUPPORT 1
+ #else
+ #define HAVE_EHTABLE_SUPPORT 0
+diff --git a/lib/Support/Host.cpp b/lib/Support/Host.cpp
+--- a/lib/Support/Host.cpp
++++ b/lib/Support/Host.cpp
+@@ -183,7 +183,7 @@ static bool GetX86CpuIDAndInfoEx(unsigned value, unsigned subleaf,
+ }
+ 
+ static bool GetX86XCR0(unsigned *rEAX, unsigned *rEDX) {
+-#if defined(__GNUC__)
++#if defined(__GNUC__) && !defined(__native_client__)
+   // Check xgetbv; this uses a .byte sequence instead of the instruction
+   // directly because older assemblers do not include support for xgetbv and
+   // there is no easy way to conditionally compile based on the assembler used.
+diff --git a/lib/Support/Unix/Path.inc b/lib/Support/Unix/Path.inc
+--- a/lib/Support/Unix/Path.inc
++++ b/lib/Support/Unix/Path.inc
+@@ -67,7 +67,8 @@ namespace sys  {
+ namespace fs {
+ #if defined(__FreeBSD__) || defined (__NetBSD__) || defined(__Bitrig__) || \
+     defined(__OpenBSD__) || defined(__minix) || defined(__FreeBSD_kernel__) || \
+-    defined(__linux__) || defined(__CYGWIN__) || defined(__DragonFly__)
++    defined(__linux__) || defined(__CYGWIN__) || defined(__DragonFly__) || \
++    defined(__native_client__)
+ static int
+ test_dir(char ret[PATH_MAX], const char *dir, const char *bin)
+ {  
+@@ -171,6 +172,11 @@ std::string getMainExecutable(const char *argv0, void *MainAddr) {
+   // @LOCALMOD-BEGIN
+ #elif defined(__native_client__)
+   // Nothing.
++#if !defined(PNACL_BROWSER_TRANSLATOR)
++  char exe_path[MAXPATHLEN];
++  if (getprogpath(exe_path, argv0) != NULL)
++      return exe_path;
++#endif
+   // @LOCALMOD-END
+ #else
+ #error GetMainExecutable is not implemented on this host yet.
+@@ -192,13 +198,13 @@ std::error_code current_path(SmallVectorImpl<char> &result) {
+   result.clear();
+   // @LOCALMOD-START NaCl doesn't have paths, and the translator returns an
+   //                 error for getcwd below. Return a dummy path instead.
+-#if defined(__native_client__)
++#if defined(PNACL_BROWSER_TRANSLATOR)
+   result.reserve(2);
+   result.set_size(2);
+   result[0] = '/';
+   result[1] = '\0';
+   return std::error_code();
+-#else // !defined(__native_client__)
++#else // !defined(PNACL_BROWSER_TRANSLATOR)
+   // @LOCALMOD-END
+   const char *pwd = ::getenv("PWD");
+   llvm::sys::fs::file_status PWDStatus, DotStatus;
+diff --git a/lib/Support/Unix/Program.inc b/lib/Support/Unix/Program.inc
+--- a/lib/Support/Unix/Program.inc
++++ b/lib/Support/Unix/Program.inc
+@@ -16,6 +16,11 @@
+ //===          is guaranteed to work on *all* UNIX variants.
+ //===----------------------------------------------------------------------===//
+ 
++// @LOCALMOD-BEGIN
++#if defined(__native_client__) && !defined(PNACL_BROWSER_TRANSLATOR)
++#include <spawn.h>
++#endif
++// @LOCALMOD-END
+ #include "Unix.h"
+ #include "llvm/ADT/StringExtras.h"
+ #include "llvm/Config/config.h"
+@@ -187,6 +192,15 @@ static bool Execute(ProcessInfo &PI, StringRef Program, const char **args,
+     return false;
+   }
+ 
++// @LOCALMOD-BEGIN
++#if defined(__native_client__) && !defined(PNACL_BROWSER_TRANSLATOR)
++  int child = spawnve(P_NOWAIT, Program.begin(), (char**) args, (char**) envp);
++  if (child < 0) {
++    MakeErrMsg(ErrMsg, "Couldn't spawn");
++    return false;
++  }
++#else
++// @LOCALMOD-END
+   // If this OS has posix_spawn and there is no memory limit being implied, use
+   // posix_spawn.  It is more efficient than fork/exec.
+ #ifdef HAVE_POSIX_SPAWN
+@@ -312,6 +326,7 @@ static bool Execute(ProcessInfo &PI, StringRef Program, const char **args,
+     default:
+       break;
+   }
++#endif
+ 
+   PI.Pid = child;
+ 
+@@ -324,8 +339,10 @@ ProcessInfo sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
+                       bool WaitUntilTerminates, std::string *ErrMsg) {
+   // @LOCALMOD-BEGIN
+ #if defined(HAVE_SYS_WAIT_H) && !defined(PNACL_BROWSER_TRANSLATOR)
+-  // @LOCALMOD-END
++#if !defined(__native_client__)
+   struct sigaction Act, Old;
++#endif
++  // @LOCALMOD-END
+   assert(PI.Pid && "invalid pid to wait on, process not started?");
+ 
+   int WaitPidOptions = 0;
+@@ -333,6 +350,9 @@ ProcessInfo sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
+   if (WaitUntilTerminates) {
+     SecondsToWait = 0;
+   } else if (SecondsToWait) {
++// @LOCALMOD-BEGIN
++#if !defined(__native_client__)
++// @LOCALMOD-END
+     // Install a timeout handler.  The handler itself does nothing, but the
+     // simple fact of having a handler at all causes the wait below to return
+     // with EINTR, unlike if we used SIG_IGN.
+@@ -341,6 +361,9 @@ ProcessInfo sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
+     sigemptyset(&Act.sa_mask);
+     sigaction(SIGALRM, &Act, &Old);
+     alarm(SecondsToWait);
++// @LOCALMOD-BEGIN
++#endif
++// @LOCALMOD-END
+   } else if (SecondsToWait == 0)
+     WaitPidOptions = WNOHANG;
+ 
+@@ -358,12 +381,18 @@ ProcessInfo sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
+       return WaitResult;
+     } else {
+       if (SecondsToWait && errno == EINTR) {
++// @LOCALMOD-BEGIN
++#if !defined(__native_client__)
++// @LOCALMOD-END
+         // Kill the child.
+         kill(PI.Pid, SIGKILL);
+ 
+         // Turn off the alarm and restore the signal handler
+         alarm(0);
+         sigaction(SIGALRM, &Old, nullptr);
++// @LOCALMOD-BEGIN
++#endif
++// @LOCALMOD-END
+ 
+         // Wait for child to die
+         if (wait(&status) != ChildPid)
+@@ -381,11 +410,17 @@ ProcessInfo sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
+     }
+   }
+ 
++// @LOCALMOD-BEGIN
++#if !defined(__native_client__)
++// @LOCALMOD-END
+   // We exited normally without timeout, so turn off the timer.
+   if (SecondsToWait && !WaitUntilTerminates) {
+     alarm(0);
+     sigaction(SIGALRM, &Old, nullptr);
+   }
++// @LOCALMOD-BEGIN
++#endif
++// @LOCALMOD-END
+ 
+   // Return the proper exit status. Detect error conditions
+   // so we can return -1 for them and set ErrMsg informatively.
+@@ -455,11 +490,13 @@ llvm::sys::writeFileWithEncoding(StringRef FileName, StringRef Contents,
+ }
+ 
+ bool llvm::sys::argumentsFitWithinSystemLimits(ArrayRef<const char*> Args) {
++// @LOCALMOD-BEGIN
+ #if defined(__native_client__)
+   static long ArgMax = -1;
+ #else // !__native_client__
+   static long ArgMax = sysconf(_SC_ARG_MAX);
+ #endif // __native_client__
++// @LOCALMOD-END
+ 
+   // System says no practical limit.
+   if (ArgMax == -1)
+diff --git a/lib/Support/Unix/Signals.inc b/lib/Support/Unix/Signals.inc
+--- a/lib/Support/Unix/Signals.inc
++++ b/lib/Support/Unix/Signals.inc
+@@ -50,7 +50,9 @@
+ 
+ using namespace llvm;
+ 
++#if !defined(__native_client__)
+ static RETSIGTYPE SignalHandler(int Sig);  // defined below.
++#endif
+ 
+ static ManagedStatic<SmartMutex<true> > SignalsMutex;
+ 
+@@ -121,15 +123,15 @@ static void RegisterHandlers() {
+   for (auto S : KillSigs) RegisterHandler(S);
+ }
+ 
+-static void UnregisterHandlers() {
+ #if !defined(__native_client__)
++static void UnregisterHandlers() {
+   // Restore all of the signal handlers to how they were before we showed up.
+   for (unsigned i = 0, e = NumRegisteredSignals; i != e; ++i)
+     sigaction(RegisteredSignalInfo[i].SigNo,
+               &RegisteredSignalInfo[i].SA, nullptr);
+   NumRegisteredSignals = 0;
+-#endif // (__native_client__)
+ }
++#endif // (__native_client__)
+ 
+ 
+ /// RemoveFilesToRemove - Process the FilesToRemove list. This function
+@@ -164,6 +166,7 @@ static void RemoveFilesToRemove() {
+   }
+ }
+ 
++#if !defined(__native_client__)
+ // SignalHandler - The signal handler that runs.
+ static RETSIGTYPE SignalHandler(int Sig) {
+   // Restore the signal behavior to default, so that the program actually
+@@ -172,12 +175,10 @@ static RETSIGTYPE SignalHandler(int Sig) {
+   // instead of recursing in the signal handler.
+   UnregisterHandlers();
+ 
+-#if !defined(__native_client__)
+   // Unmask all potentially blocked kill signals.
+   sigset_t SigMask;
+   sigfillset(&SigMask);
+   sigprocmask(SIG_UNBLOCK, &SigMask, nullptr);
+-#endif
+ 
+   {
+     unique_lock<SmartMutex<true>> Guard(*SignalsMutex);
+@@ -214,6 +215,7 @@ static RETSIGTYPE SignalHandler(int Sig) {
+     raise(Sig);
+ #endif
+ }
++#endif
+ 
+ void llvm::sys::RunInterruptHandlers() {
+   sys::SmartScopedLock<true> Guard(*SignalsMutex);
+diff --git a/tools/gold/gold-plugin.cpp b/tools/gold/gold-plugin.cpp
+--- a/tools/gold/gold-plugin.cpp
++++ b/tools/gold/gold-plugin.cpp
+@@ -154,14 +154,20 @@ static ld_plugin_status claim_file_hook(const ld_plugin_input_file *file,
+ static ld_plugin_status all_symbols_read_hook(void);
+ static ld_plugin_status cleanup_hook(void);
+ 
++// @LOCALMOD-BEGIN
++#if defined(__native_client__)
++extern "C" ld_plugin_status LLVMgold_onload(ld_plugin_tv *tv);
++ld_plugin_status LLVMgold_onload(ld_plugin_tv *tv) {
++#else
+ extern "C" ld_plugin_status onload(ld_plugin_tv *tv);
+ ld_plugin_status onload(ld_plugin_tv *tv) {
++#endif
++// @LOCALMOD-END
+   InitializeAllTargetInfos();
+   InitializeAllTargets();
+   InitializeAllTargetMCs();
+   InitializeAllAsmParsers();
+   InitializeAllAsmPrinters();
+-
+   // We're given a pointer to the first transfer vector. We read through them
+   // until we find one where tv_tag == LDPT_NULL. The REGISTER_* tagged values
+   // contain pointers to functions that we need to call to register our own
+diff --git a/tools/lli/lli.cpp b/tools/lli/lli.cpp
+--- a/tools/lli/lli.cpp
++++ b/tools/lli/lli.cpp
+@@ -386,7 +386,15 @@ static void addCygMingExtraModule(ExecutionEngine *EE,
+ //===----------------------------------------------------------------------===//
+ // main Driver function
+ //
++// @LOCALMOD-BEGIN
++#if defined(__native_client__)
++extern char **environ;
++int main(int argc, char **argv) {
++  char * const *envp = environ;
++#else
+ int main(int argc, char **argv, char * const *envp) {
++#endif
++// @LOCALMOD-END
+   sys::PrintStackTraceOnErrorSignal();
+   PrettyStackTraceProgram X(argc, argv);
+ 
+diff --git a/unittests/Bitcode/NaClMungeWriteErrorTests.cpp b/unittests/Bitcode/NaClMungeWriteErrorTests.cpp
+--- a/unittests/Bitcode/NaClMungeWriteErrorTests.cpp
++++ b/unittests/Bitcode/NaClMungeWriteErrorTests.cpp
+@@ -180,6 +180,7 @@ TEST(NaClMungeWriteErrorTests, CantWriteBadAbbrevIndex) {
+       ExpectedDumpedBitcode);
+ }
+ 
++#ifdef GTEST_HAS_DEATH_TEST
+ // Show that writing out an illegal abbreviation index, causes the
+ // parser to fail.
+ TEST(MyNaClMungerWriteErrorTests, DieOnWriteBadAbbreviationIndex) {
+@@ -199,6 +200,7 @@ TEST(MyNaClMungerWriteErrorTests, DieOnWriteBadAbbreviationIndex) {
+       "LLVM ERROR\\: Unable to continue"
+       ".*");
+ }
++#endif
+ 
+ // Show what happens when we use more local abbreviations than specified in the
+ // corresponding enclosing block.
+diff --git a/unittests/Makefile b/unittests/Makefile
+--- a/unittests/Makefile
++++ b/unittests/Makefile
+@@ -7,6 +7,14 @@
+ #
+ ##===----------------------------------------------------------------------===##
+ 
++ifeq ($(HOST_OS),NativeClient)
++all:
++	echo skipping
++
++install:
++	echo skipping
++else
++
+ LEVEL = ..
+ 
+ PARALLEL_DIRS = ADT Analysis Bitcode CodeGen DebugInfo ExecutionEngine IR \
+@@ -17,3 +25,5 @@ include $(LLVM_SRC_ROOT)/unittests/Makefile.unittest
+ 
+ clean::
+ 	$(Verb) $(RM) -f *Tests
++
++endif

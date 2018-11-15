@@ -1,0 +1,14 @@
+diff --git a/configure b/configure
+--- a/configure
++++ b/configure
+@@ -9102,7 +9102,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
+ fi
+ 
+ if test "x$GCC" = "xyes"; then
+-  CFLAGS="$CFLAGS -fexceptions"
++  if test "x$NACL_ARCH" != "xle32"; then
++    CFLAGS="$CFLAGS -fexceptions"
++  fi
+   touch local.exp
+ else
+   cat > local.exp <<EOF

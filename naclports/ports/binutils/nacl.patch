@@ -1,0 +1,36 @@
+diff --git a/bfd/elf32-i386.c b/bfd/elf32-i386.c
+--- a/bfd/elf32-i386.c
++++ b/bfd/elf32-i386.c
+@@ -3807,7 +3807,7 @@ elf_i386_relocate_section (bfd *output_bfd,
+ 	      if (ELF32_R_TYPE (rel->r_info) == R_386_TLS_GD)
+ 		{
+ 		  unsigned int type;
+-		  bfd_vma roff;
++		  bfd_vma roff = 0;
+ 
+ 		  /* GD->LE transition.  */
+ 		  type = bfd_get_8 (input_bfd, contents + rel->r_offset - 2);
+@@ -4163,7 +4163,7 @@ elf_i386_relocate_section (bfd *output_bfd,
+ 	  else if (ELF32_R_TYPE (rel->r_info) == R_386_TLS_GD)
+ 	    {
+ 	      unsigned int val, type;
+-	      bfd_vma roff;
++	      bfd_vma roff = 0;
+ 
+ 	      /* GD->IE transition.  */
+ 	      type = bfd_get_8 (input_bfd, contents + rel->r_offset - 2);
+diff --git a/ld/Makefile.in b/ld/Makefile.in
+--- a/ld/Makefile.in
++++ b/ld/Makefile.in
+@@ -1072,7 +1072,10 @@ deffilep.h: deffilep.c
+ 	else :; fi
+ ld-new$(EXEEXT): $(ld_new_OBJECTS) $(ld_new_DEPENDENCIES) 
+ 	@rm -f ld-new$(EXEEXT)
+-	$(LINK) $(ld_new_OBJECTS) $(ld_new_LDADD) $(LIBS)
++	# ./ldscripts/* will be read during this link and it messes up the
++	# link result because ./ldscripts contains the linker script for
++	# statically linked binaries. So, we temporary rename it.
++	mv ldscripts ldscripts.tmp && ($(LINK) $(ld_new_OBJECTS) $(ld_new_LDADD) $(LIBS) || (mv bar foo && false)) && mv ldscripts.tmp ldscripts
+ 
+ mostlyclean-compile:
+ 	-rm -f *.$(OBJEXT)

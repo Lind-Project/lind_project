@@ -1,0 +1,6 @@
+NAME=libvpx
+VERSION=1.4.0
+URL=https://storage.googleapis.com/downloads.webmproject.org/releases/webm/libvpx-1.4.0.tar.bz2
+LICENSE=BSD
+SHA1=d05f4e9a9878886282ac9c9246f8fac080c94c8f
+DISABLED_TOOLCHAIN=(emscripten)

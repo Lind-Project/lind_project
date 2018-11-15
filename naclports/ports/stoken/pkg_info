@@ -1,0 +1,6 @@
+NAME=stoken
+VERSION=0.90
+URL=http://downloads.sf.net/stoken/stoken-0.90.tar.gz
+LICENSE=LGPL2.1
+DEPENDS=(glibc-compat nacl-spawn libxml2 nettle)
+SHA1=15242a89d5a6025f465aba848348ac3a0a9ede88

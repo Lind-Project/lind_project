@@ -1,0 +1,49 @@
+Libevent for NaCl
+=================
+
+This is a port of libevent (an event notification library) to NaCl platform.
+For details visit : http://libevent.org .
+
+**The library is "functional" albeit with some issues, this documents lists and
+keep track of all those.**
+
+1. **Callbacks due to signals are NOT supported.**
+
+  **Reason:** nacl_io do not support POSIX signals.
+
+  **Details:** sigaction(...) and signal(...) are not(yet) implemented on
+     NaCl.io,thus the calls evsignal_add,evsignal_del,evsignal_pending should
+     be avoided,also event_add/event_del when passed with EV_SIGNAL will
+     also fail.
+
+  For details about these functions visit :
+  http://www.wangafu.net/~nickm/libevent-book/Ref4_event.html
+
+  See /samples/hello-world.c for more details.
+  To check if everything is working fine, run hello-world.nexe in nacl-devenv
+  extension and point your browser to localhost:9995 and you should see "hello
+  world".
+
+  To debug/see implementation
+  Look for /event.c, /signal.c and /evmap.c
+  In /signal.c see function _evsig_set_handler and _evsig_restore_handler
+
+  Typical function call
+  event_add > event_add_internal > (if signal) evmap_signal_add > evsig_add
+
+2. **Post build tests are skipped.**
+
+  **Reason:** setitimer and getitimer not available in newlib.
+
+3. **Build against glibc is not functional, ie either static linking fails or
+   sometimes ELF header error pops up.**
+
+   **Reason:** unknown (issue de-prioritized,toolchain disabled in pkg_info)
+
+**Notes**
+
+ - Code in /samples/ (except hello-world.c) is not yet tested (or not yet
+   modified to work on nacl platform)
+ - Libevent uses socketpair(...) extensively, however the same is not
+   implemented on nacl, thus custom implementation is used, to see details
+   look for evutil_ersatz_socketpair(...) in /evutil.c

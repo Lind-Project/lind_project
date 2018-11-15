@@ -1,0 +1,71 @@
+diff --git a/test/autogen.sh b/test/autogen.sh
+--- a/test/autogen.sh
++++ b/test/autogen.sh
+@@ -3,7 +3,7 @@
+ # Regenerate configuration files
+ cp acinclude.m4 aclocal.m4
+ found=false
+-for autoconf in autoconf autoconf259 autoconf-2.59
++for autoconf in autoconf2.64 autoconf autoconf259 autoconf-2.59
+ do if which $autoconf >/dev/null 2>&1; then $autoconf && found=true; break; fi
+ done
+ if test x$found = xfalse; then
+diff --git a/test/configure b/test/configure
+--- a/test/configure
++++ b/test/configure
+@@ -2980,6 +2980,22 @@ fi
+         MATHLIB=""
+         SYS_GL_LIBS="-lGLES_CM"
+         ;;
++    *-*-nacl*)
++        case "$CC" in
++            */pnacl-*)
++                EXE=".pexe"
++                ;;
++            */le32-nacl-*)
++                EXE=".pexe"
++                ;;
++            *)
++                EXE=".nexe"
++                ;;
++        esac
++        CFLAGS="$CFLAGS -std=gnu99"
++        MATHLIB="-lm"
++        SYS_GL_LIBS=""
++        ;;
+     *)
+                 ISUNIX="true"
+         EXE=""
+@@ -2988,6 +3004,8 @@ fi
+         ;;
+ esac
+ 
++echo "----------------> Using EXE=$EXE"
++
+ 
+ 
+ 
+diff --git a/test/configure.in b/test/configure.in
+--- a/test/configure.in
++++ b/test/configure.in
+@@ -67,7 +67,10 @@ case "$host" in
+         ;;
+     *-*-nacl*)
+         case "$CC" in
+-            *pnacl*)
++            */pnacl-*)
++                EXE=".pexe"
++                ;;
++            */le32-nacl-*)
+                 EXE=".pexe"
+                 ;;
+             *)
+@@ -86,6 +89,8 @@ case "$host" in
+         SYS_GL_LIBS="-lGL"
+         ;;
+ esac
++
++echo "----------------> Using EXE=$EXE"
+ AC_SUBST(EXE)
+ AC_SUBST(MATHLIB)
+ AC_SUBST(ISMACOSX)
