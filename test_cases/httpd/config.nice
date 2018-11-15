@@ -3,15 +3,23 @@
 # Created by configure
 
 CC="x86_64-nacl-gcc"; export CC
-CFLAGS="-Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3"; export CFLAGS
-LDFLAGS="-Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -Wl,-O2,-z,relro,-z,now,-z,noexecstack -Wl,--as-needed,--sort-common,--warn-common"; export LDFLAGS
+CFLAGS="-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie"; export CFLAGS
+LDFLAGS="-g -fno-pie"; export LDFLAGS
 "./configure" \
-"--host=x86_64-pc-nacl" \
 "--with-included-apr" \
-"--with-expat=builtin" \
+"--with-expat=/lib" \
+"--host=x86_64-nacl" \
 "--prefix=/home/jp/lind_project/lind/repy/repy" \
-"host_alias=x86_64-pc-nacl" \
+"ac_cv_file__dev_zero=yes" \
+"ac_cv_func_setpgrp_void=yes" \
+"apr_cv_tcp_nodelay_with_cork=yes" \
+"ap_cv_void_ptr_lt_long=no" \
+"ac_cv_sizeof_struct_iovec=8" \
+"apr_cv_process_shared_works=yes" \
+"apr_cv_mutex_robust_shared=no" \
+"apr_cv_mutex_recursive=yes" \
+"host_alias=x86_64-nacl" \
 "CC=x86_64-nacl-gcc" \
-"CFLAGS=-Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3" \
-"LDFLAGS=-Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -Wl,-O2,-z,relro,-z,now,-z,noexecstack -Wl,--as-needed,--sort-common,--warn-common" \
+"CFLAGS=-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie" \
+"LDFLAGS=-g -fno-pie" \
 "$@"

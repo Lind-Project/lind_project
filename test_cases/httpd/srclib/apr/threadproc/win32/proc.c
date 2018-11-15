@@ -28,7 +28,7 @@
 #include <signal.h>
 #endif
 #include <string.h>
-#ifdef HAVE_PROCESS_H
+#if APR_HAVE_PROCESS_H
 #include <process.h>
 #endif
 

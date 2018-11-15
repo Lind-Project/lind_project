@@ -32,7 +32,7 @@
 #define GENERIC_INADDR_ANY_LEN  16
 #endif
 
-/* big enough for IPv4, IPv6 and optionally sun_path */
+/* big enough for IPv4, IPv6 and optionaly sun_path */
 static char generic_inaddr_any[GENERIC_INADDR_ANY_LEN] = {0};
 
 static apr_status_t socket_cleanup(void *sock)
@@ -40,17 +40,17 @@ static apr_status_t socket_cleanup(void *sock)
     apr_socket_t *thesocket = sock;
     int sd = thesocket->socketdes;
 
-    /* Set socket descriptor to -1 before close(), so that there is no
-     * chance of returning an already closed FD from apr_os_sock_get().
-     */
-    thesocket->socketdes = -1;
-
 #if APR_HAVE_SOCKADDR_UN
     if (thesocket->bound && thesocket->local_addr->family == APR_UNIX) {
         /* XXX: Check for return values ? */
         unlink(thesocket->local_addr->hostname);
     }
 #endif        
+    /* Set socket descriptor to -1 before close(), so that there is no
+     * chance of returning an already closed FD from apr_os_sock_get().
+     */
+    thesocket->socketdes = -1;
+
     if (close(sd) == 0) {
         return APR_SUCCESS;
     }

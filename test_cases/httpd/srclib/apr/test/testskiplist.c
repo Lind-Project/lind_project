@@ -491,21 +491,21 @@ static void skiplist_test(abts_case *tc, void *data) {
     for (i = 0; i < 5; ++i){
         add_elem_to_skiplist(tc, list4, t2);
     }
-    ABTS_PTR_NOTNULL(tc, apr_skiplist_add(list4, &t2));
+    apr_skiplist_add(list4, &t2);
     for (i = 0; i < 5; ++i){
         add_elem_to_skiplist(tc, list4, t2);
     }
     for (i = 0; i < 5; ++i){
         add_elem_to_skiplist(tc, list4, t3);
     }
-    ABTS_PTR_NOTNULL(tc, apr_skiplist_add(list4, &t3));
+    apr_skiplist_add(list4, &t3);
     for (i = 0; i < 5; ++i){
         add_elem_to_skiplist(tc, list4, t3);
     }
     for (i = 0; i < 5; ++i){
         add_elem_to_skiplist(tc, list4, t4);
     }
-    ABTS_PTR_NOTNULL(tc, apr_skiplist_add(list4, &t4));
+    apr_skiplist_add(list4, &t4);
     for (i = 0; i < 5; ++i){
         add_elem_to_skiplist(tc, list4, t4);
     }

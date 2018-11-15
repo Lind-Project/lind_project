@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "apr.h"
 #include "apr_arch_networkio.h"
 #include "apr_network_io.h"
 #include "apr_support.h"
@@ -23,9 +22,7 @@
 
 #ifdef HAVE_GETIFADDRS
 #include <net/if.h>
-#if APR_HAVE_IFADDRS_H
 #include <ifaddrs.h>
-#endif
 #endif
 
 #ifdef HAVE_STRUCT_IPMREQ
@@ -47,7 +44,7 @@ static void fill_mip_v4(struct ip_mreq *mip, apr_sockaddr_t *mcast,
 static unsigned int find_if_index(const apr_sockaddr_t *iface)
 {
     unsigned int index = 0;
-#if defined(HAVE_GETIFADDRS) && APR_HAVE_IFADDRS_H && APR_HAVE_IPV6 
+#if defined(HAVE_GETIFADDRS) && APR_HAVE_IPV6 
     struct ifaddrs *ifp, *ifs;
 
     /**

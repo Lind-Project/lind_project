@@ -26,24 +26,10 @@ sinclude(build/ltoptions.m4)
 sinclude(build/ltversion.m4)
 sinclude(build/lt~obsolete.m4)
 
-sinclude(build/apu-conf.m4)
-sinclude(build/xml.m4)
-sinclude(build/apu-hints.m4)
-sinclude(build/crypto.m4)
-sinclude(build/dbm.m4)
-sinclude(build/dbd.m4)
-sinclude(build/dso.m4)
-sinclude(build/iconv.m4)
-
 dnl Hard-coded top of apr_private.h:
 AH_TOP([
 #ifndef APR_PRIVATE_H
 #define APR_PRIVATE_H
-
-/* Pick up publicly advertised headers and symbols before the
- * APR internal private headers and symbols
- */
-#include <apr.h>
 ])
 
 dnl Hard-coded inclusion at the tail end of apr_private.h:
@@ -109,6 +95,10 @@ AH_BOTTOM([
  
 #endif /* DARWIN_10 */
 
+/*
+ * Include common private declarations.
+ */
+#include "../apr_private_common.h"
 #endif /* APR_PRIVATE_H */
 ])
 
@@ -125,8 +115,8 @@ dnl
 APR_CONFIG_NICE(config.nice)
 
 AC_CANONICAL_SYSTEM
-AC_MSG_NOTICE([Configuring APR library])
-AC_MSG_NOTICE([Platform: $host])
+echo "Configuring APR library"
+echo "Platform: $host"
 
 dnl Some initial steps for configuration.  We setup the default directory
 dnl and which files are to be configured.
@@ -175,14 +165,11 @@ APR_DOTTED_VERSION="`$get_version all $version_hdr APR`"
 AC_SUBST(APR_DOTTED_VERSION)
 AC_SUBST(APR_MAJOR_VERSION)
 
-AC_MSG_NOTICE([APR Version: ${APR_DOTTED_VERSION}])
+echo "APR Version: ${APR_DOTTED_VERSION}"
 
 dnl Enable the layout handling code, then reparse the prefix-style
 dnl arguments due to autoconf being a PITA.
 APR_ENABLE_LAYOUT(apr)
-dnl This must be synchronized to the prefix of the apr layout, to make
-dnl configure --help print the correct default.
-AC_PREFIX_DEFAULT([/usr/local/apr])
 APR_PARSE_ARGUMENTS
 
 dnl Set optional CC hints here in case autoconf makes an inappropriate choice.
@@ -207,7 +194,7 @@ APR_PRELOAD
 
 dnl These added to allow default directories to be used...
 DEFAULT_OSDIR="unix"
-AC_MSG_NOTICE([(Default will be ${DEFAULT_OSDIR})])
+echo "(Default will be ${DEFAULT_OSDIR})"
 
 apr_modules="file_io network_io threadproc misc locks time mmap shmem user memory atomic poll support random"
 
@@ -219,8 +206,8 @@ AC_PROG_LN_S
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_CHECK_PROG(RM, rm, rm)
-AC_CHECK_TOOL(AS, as, as)
-AC_CHECK_TOOL(ASCPP, cpp, cpp)
+AC_CHECK_PROG(AS, as, as)
+AC_CHECK_PROG(ASCPP, cpp, cpp)
 AC_CHECK_TOOL(AR, ar, ar)
 
 dnl Various OS checks that apparently set required flags
@@ -240,7 +227,7 @@ AC_SUBST(APR_LIBNAME)
 
 dnl prep libtool
 dnl
-AC_MSG_NOTICE([performing libtool configuration...])
+echo "performing libtool configuration..."
 
 AC_ARG_ENABLE(experimental-libtool,[  --enable-experimental-libtool Use experimental custom libtool],
   [experimental_libtool=$enableval],[experimental_libtool=no])
@@ -253,10 +240,9 @@ fi
 case $host in
 *-os2*)
     # Use a custom-made libtool replacement
-    AC_MSG_NOTICE([using aplibtool])
-    LIBTOOL="$apr_builddir/build/aplibtool"
-    LIBTOOL_SRC="$apr_srcdir/build/aplibtool.c"
-    $CC $CFLAGS $CPPFLAGS -o $LIBTOOL.exe $LIBTOOL_SRC
+    echo "using aplibtool"
+    LIBTOOL="$srcdir/build/aplibtool"
+    gcc $CFLAGS $CPPFLAGS -o $LIBTOOL.exe $LIBTOOL.c
     ;;
 *)
     if test "x$LTFLAGS" = "x"; then
@@ -264,7 +250,7 @@ case $host in
     fi
     if test "$experimental_libtool" = "yes"; then
         # Use a custom-made libtool replacement
-        AC_MSG_NOTICE([using jlibtool])
+        echo "using jlibtool"
         LIBTOOL="$apr_builddir/libtool"
         LIBTOOL_SRC="$apr_srcdir/build/jlibtool.c"
         $CC $CFLAGS $CPPFLAGS -o $LIBTOOL $LIBTOOL_SRC
@@ -332,8 +318,7 @@ AC_SUBST(LT_VERSION)
 dnl ----------------------------- Checks for compiler flags
 nl='
 '
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Check for compiler flags...])
+echo "${nl}Check for compiler flags..."
 
 dnl AC_PROG_CC sets -g in CFLAGS (and -O2 for gcc) by default.
 dnl On OS/390 this causes the compiler to insert extra debugger
@@ -455,7 +440,6 @@ case "$host:$CC" in
 	APR_SETVAR(CC,mwcc)
 	APR_SETVAR(AR,ar)
 	;;
-
     dnl If building static APR, both the APR build and the app build
     dnl need -DAPR_DECLARE_STATIC to generate the right linkage from    
     dnl APR_DECLARE et al.
@@ -510,22 +494,6 @@ int main()
 
 if test "$ap_cv_atomic_builtins" = "yes"; then
     AC_DEFINE(HAVE_ATOMIC_BUILTINS, 1, [Define if compiler provides atomic builtins])
-fi
-
-AC_CACHE_CHECK([whether the compiler handles weak symbols], [ap_cv_weak_symbols],
-[AC_TRY_RUN([
-__attribute__ ((weak))
-int weak_noop(void)
-{
-    return 0;
-}
-int main()
-{
-    return weak_noop();
-}], [ap_cv_weak_symbols=yes], [ap_cv_weak_symbols=no], [ap_cv_weak_symbols=no])])
-
-if test "$ap_cv_weak_symbols" = "yes"; then
-    AC_DEFINE(HAVE_WEAK_SYMBOLS, 1, [Define if compiler handles weak symbols])
 fi
 
 case $host in
@@ -612,6 +580,11 @@ case $host in
        ;;
    *hpux10* ) 
        enable_threads="no"
+       OSDIR="unix"
+       eolstr="\\n"
+       ;;
+   *darwin* ) 
+       ac_cv_func_fdatasync="no" # Mac OS X wrongly reports it has fdatasync()
        OSDIR="unix"
        eolstr="\\n"
        ;;
@@ -737,8 +710,7 @@ case $host in
         ;;
 esac
 
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Checking for libraries...])
+echo "${nl}Checking for libraries..."
 
 dnl ----------------------------- Checks for Any required Libraries
 dnl Note: Autoconf will always append LIBS with an extra " " in AC_CHECK_LIB.
@@ -746,7 +718,7 @@ dnl It should check for LIBS being empty and set LIBS equal to the new value
 dnl without the extra " " in that case, but they didn't do that.  So, we
 dnl end up LIBS="-lm -lcrypt -lnsl  -ldl" which is an annoyance.
 case $host in
-   *-mingw*)
+   *mingw*)
       APR_ADDTO(LIBS,[-lshell32 -ladvapi32 -lws2_32 -lrpcrt4 -lmswsock])
       ac_cv_func_CreateFileMapping=yes
       ;;
@@ -761,7 +733,7 @@ case $host in
 esac
 
 dnl ----------------------------- Checking for Threads
-AC_MSG_NOTICE([${nl}Checking for Threads...])
+echo "${nl}Checking for Threads..."
 
 if test -z "$enable_threads"; then
 	AC_ARG_ENABLE(threads,
@@ -840,7 +812,7 @@ ac_cv_define_GETHOSTBYNAME_IS_THREAD_SAFE=no
 ac_cv_define_GETHOSTBYADDR_IS_THREAD_SAFE=no
 ac_cv_define_GETSERVBYNAME_IS_THREAD_SAFE=no
 if test "$threads" = "1"; then
-    AC_MSG_NOTICE([APR will use threads])
+    echo "APR will use threads"
     AC_CHECK_LIB(c_r, readdir,
         AC_DEFINE(READDIR_IS_THREAD_SAFE, 1, 
                   [Define if readdir is thread safe]))
@@ -867,7 +839,7 @@ if test "$threads" = "1"; then
     fi
     AC_CHECK_FUNCS(gethostbyname_r gethostbyaddr_r getservbyname_r)
 else
-    AC_MSG_NOTICE([APR will be non-threaded])
+    echo "APR will be non-threaded"
 fi
 
 dnl Electric Fence malloc checker.
@@ -953,25 +925,6 @@ if test "$apr_cv_epoll_create1" = "yes"; then
    AC_DEFINE([HAVE_EPOLL_CREATE1], 1, [Define if epoll_create1 function is supported])
 fi
 
-# Check for z/OS async i/o support.  
-AC_CACHE_CHECK([for asio -> message queue support], [apr_cv_aio_msgq],
-[AC_TRY_RUN([
-#define _AIO_OS390
-#include <aio.h>
-
-int main()
-{
-    struct aiocb a;
-
-    a.aio_notifytype = AIO_MSGQ;  /* use IPC message queue for notification */
-
-    return aio_cancel(2, NULL) == -1;
-}], [apr_cv_aio_msgq=yes], [apr_cv_aio_msgq=no], [apr_cv_aio_msgq=no])])
-
-if test "$apr_cv_aio_msgq" = "yes"; then
-   AC_DEFINE([HAVE_AIO_MSGQ], 1, [Define if async i/o supports message q's])
-fi
-
 # test for dup3
 AC_CACHE_CHECK([for dup3 support], [apr_cv_dup3],
 [AC_TRY_RUN([
@@ -1050,12 +1003,152 @@ fi
 dnl ----------------------------- Checking for fdatasync: OS X doesn't have it
 AC_CHECK_FUNCS(fdatasync)
 
+dnl ----------------------------- Checking for extended file descriptor handling
+# test for epoll_create1
+AC_CACHE_CHECK([for epoll_create1 support], [apr_cv_epoll_create1],
+[AC_TRY_RUN([
+#include <sys/epoll.h>
+#include <unistd.h>
+
+int main()
+{
+    return epoll_create1(0) == -1;
+}], [apr_cv_epoll_create1=yes], [apr_cv_epoll_create1=no], [apr_cv_epoll_create1=no])])
+
+if test "$apr_cv_epoll_create1" = "yes"; then
+   AC_DEFINE([HAVE_EPOLL_CREATE1], 1, [Define if epoll_create1 function is supported])
+fi
+
+# Check for z/OS async i/o support.  
+AC_CACHE_CHECK([for asio -> message queue support], [apr_cv_aio_msgq],
+[AC_TRY_RUN([
+#define _AIO_OS390
+#include <aio.h>
+
+int main()
+{
+    struct aiocb a;
+
+    a.aio_notifytype = AIO_MSGQ;  /* use IPC message queue for notification */
+
+    return aio_cancel(2, NULL) == -1;
+}], [apr_cv_aio_msgq=yes], [apr_cv_aio_msgq=no], [apr_cv_aio_msgq=no])])
+
+if test "$apr_cv_aio_msgq" = "yes"; then
+   AC_DEFINE([HAVE_AIO_MSGQ], 1, [Define if async i/o supports message q's])
+fi
+
+# test for dup3
+AC_CACHE_CHECK([for dup3 support], [apr_cv_dup3],
+[AC_TRY_RUN([
+#include <unistd.h>
+
+int main()
+{
+    return dup3(STDOUT_FILENO, STDERR_FILENO, 0) == -1;
+}], [apr_cv_dup3=yes], [apr_cv_dup3=no], [apr_cv_dup3=no])])
+
+if test "$apr_cv_dup3" = "yes"; then
+   AC_DEFINE([HAVE_DUP3], 1, [Define if dup3 function is supported])
+fi
+
+# test for accept4
+AC_CACHE_CHECK([for accept4 support], [apr_cv_accept4],
+[AC_TRY_RUN([
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <errno.h>
+
+#define A4_SOCK "./apr_accept4_test_socket"
+
+int main()
+{
+    pid_t pid;
+    int fd;
+    struct sockaddr_un loc, rem;
+    socklen_t rem_sz;
+
+    if ((pid = fork())) {
+        int status;
+
+        unlink(A4_SOCK);
+
+        if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
+            goto cleanup_failure2;
+
+        loc.sun_family = AF_UNIX;
+        strncpy(loc.sun_path, A4_SOCK, sizeof(loc.sun_path) - 1);
+
+        if (bind(fd, (struct sockaddr *) &loc,
+                 sizeof(struct sockaddr_un)) == -1)
+            goto cleanup_failure;
+
+        if (listen(fd, 5) == -1)
+            goto cleanup_failure;
+
+        rem_sz = sizeof(struct sockaddr_un);
+        if (accept4(fd, (struct sockaddr *) &rem, &rem_sz, 0) == -1) {
+            goto cleanup_failure;
+        }
+        else {
+            close(fd);
+            waitpid(pid, &status, 0);
+            unlink(A4_SOCK);
+            return 0;
+        }
+
+cleanup_failure:
+        close(fd);
+cleanup_failure2:
+        kill(pid, SIGKILL);
+        waitpid(pid, &status, 0);
+        unlink(A4_SOCK);
+        return 1;
+    }
+    else {
+        if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
+            return 1; /* this will be bad: we'll hang */
+
+        loc.sun_family = AF_UNIX;
+        strncpy(loc.sun_path, A4_SOCK, sizeof(loc.sun_path) - 1);
+
+        while(connect(fd, (struct sockaddr *) &loc,
+                      sizeof(struct sockaddr_un)) == -1 &&
+              (errno==ENOENT || errno==ECONNREFUSED))
+            ;
+
+        close(fd);
+        return 0;
+    }
+}], [apr_cv_accept4=yes], [apr_cv_accept4=no], [apr_cv_accept4=no])])
+
+if test "$apr_cv_accept4" = "yes"; then
+   AC_DEFINE([HAVE_ACCEPT4], 1, [Define if accept4 function is supported])
+fi
+
+AC_CACHE_CHECK([for SOCK_CLOEXEC support], [apr_cv_sock_cloexec],
+[AC_TRY_RUN([
+#include <sys/types.h>
+#include <sys/socket.h>
+
+int main()
+{
+    return socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0) == -1;
+}], [apr_cv_sock_cloexec=yes], [apr_cv_sock_cloexec=no], [apr_cv_sock_cloexec=no])])
+
+if test "$apr_cv_sock_cloexec" = "yes"; then
+   AC_DEFINE([HAVE_SOCK_CLOEXEC], 1, [Define if the SOCK_CLOEXEC flag is supported])
+fi
+
 dnl ----------------------------- Checking for missing POSIX thread functions
 AC_CHECK_FUNCS([getpwnam_r getpwuid_r getgrnam_r getgrgid_r])
 
 dnl ----------------------------- Checking for Shared Memory Support 
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Checking for Shared Memory Support...])
+echo "${nl}Checking for Shared Memory Support..."
 
 # The real-time POSIX extensions (e.g. shm_*, sem_*) may only
 # be available if linking against librt.
@@ -1338,7 +1431,7 @@ AC_ARG_WITH(sendfile, [  --with-sendfile         Override decision to use sendfi
             ;;
     esac       
     if test "$orig_sendfile" != "$sendfile"; then
-      AC_MSG_NOTICE([sendfile support disabled to avoid system problem])
+      echo "sendfile support disabled to avoid system problem"
     fi ] )
 AC_SUBST(sendfile)
 
@@ -1365,7 +1458,7 @@ case $host in
         dnl mkstemp is limited to 26 temporary files (a-z); use APR replacement
         ;;
     *)
-        AC_CHECK_FUNCS(mkstemp mkostemp)
+        AC_CHECK_FUNCS(mkstemp)
         ;;
 esac
 
@@ -1386,7 +1479,6 @@ dnl ----------------------------- Checks for Any required Headers
 AC_HEADER_STDC
 
 APR_FLAG_HEADERS(
-    aio.h               \
     ByteOrder.h		\
     conio.h		\
     crypt.h		\
@@ -1398,7 +1490,6 @@ APR_FLAG_HEADERS(
     errno.h		\
     fcntl.h		\
     grp.h		\
-    ifaddrs.h           \
     io.h		\
     limits.h		\
     mach-o/dyld.h	\
@@ -1427,7 +1518,6 @@ APR_FLAG_HEADERS(
     unix.h		\
     windows.h		\
     winsock2.h		\
-    ws2tcpip.h		\
     arpa/inet.h		\
     kernel/OS.h		\
     net/errno.h		\
@@ -1455,18 +1545,6 @@ APR_FLAG_HEADERS(
     sys/un.h		\
     sys/wait.h)
 
-# Windows' <mswsock.h> requires <windows.h> first
-AC_CACHE_CHECK([for mswsock.h], [apr_cv_hdr_mswsock_h],
-[AC_TRY_CPP(
-[#include <windows.h>
-#include <mswsock.h>
-], [apr_cv_hdr_mswsock_h=yes], [apr_cv_hdr_mswsock_h=no])])
-if test "$apr_cv_hdr_mswsock_h" = "yes"; then
-   mswsockh=1
-else
-   mswsockh=0
-fi
-
 # IRIX 6.5 has a problem in <netinet/tcp.h> which prevents it from
 # being included by itself.  Check for <netinet/tcp.h> manually,
 # including another header file first.
@@ -1484,7 +1562,6 @@ else
    netinet_tcph=0
 fi
 
-AC_SUBST(aioh)
 AC_SUBST(arpa_ineth)
 AC_SUBST(conioh)
 AC_SUBST(ctypeh)
@@ -1493,16 +1570,14 @@ AC_SUBST(errnoh)
 AC_SUBST(direnth)
 AC_SUBST(fcntlh)
 AC_SUBST(ioh)
-AC_SUBST(ifaddrsh)
 AC_SUBST(limitsh)
-AC_SUBST(mswsockh)
 AC_SUBST(netdbh)
+AC_SUBST(sys_syslimitsh)
 AC_SUBST(netinet_inh)
 AC_SUBST(netinet_sctph)
 AC_SUBST(netinet_sctp_uioh)
 AC_SUBST(netinet_tcph)
 AC_SUBST(stdargh)
-AC_SUBST(stddefh)
 AC_SUBST(stdioh)
 AC_SUBST(stdlibh)
 AC_SUBST(stringh)
@@ -1512,7 +1587,6 @@ AC_SUBST(sys_sendfileh)
 AC_SUBST(sys_signalh)
 AC_SUBST(sys_socketh)
 AC_SUBST(sys_sockioh)
-AC_SUBST(sys_syslimitsh)
 AC_SUBST(sys_typesh)
 AC_SUBST(sys_timeh)
 AC_SUBST(sys_uioh)
@@ -1526,7 +1600,6 @@ AC_SUBST(pthreadh)
 AC_SUBST(semaphoreh)
 AC_SUBST(windowsh)
 AC_SUBST(winsock2h)
-AC_SUBST(ws2tcpiph)
 
 # Checking for h_errno in <netdb.h>
 if test "$netdbh" = "1"; then
@@ -1542,8 +1615,8 @@ AC_ARG_ENABLE(allocator-uses-mmap,
         APR_IFALLYES(header:sys/mman.h func:mmap func:munmap define:MAP_ANON,
                      [AC_DEFINE(APR_ALLOCATOR_USES_MMAP, 1,
                                 [Define if apr_allocator should use mmap]) ],
-                     [AC_MSG_ERROR([mmap()/MAP_ANON not supported]) ]
-                   )
+		     [AC_MSG_ERROR([mmap()/MAP_ANON not supported]) ]
+		    )
     fi ]
 )
 
@@ -1762,7 +1835,7 @@ case $host in
         int64_value="__int64"
         long_value="__int64"
         int64_strfn="_strtoi64"
-        ;;
+        ;; 
 esac
 
 APR_CHECK_TYPES_COMPATIBLE(ssize_t, int, [ssize_t_fmt="d"])
@@ -1815,7 +1888,7 @@ if test "${ac_cv_sizeof_off_t}${apr_cv_use_lfs64}" = "4yes"; then
             dnl mkstemp64 is limited to 26 temporary files (a-z); use APR replacement
             ;;
         *)
-            AC_CHECK_FUNCS(mkstemp64 mkostemp64)
+            AC_CHECK_FUNCS(mkstemp64)
             ;;
     esac
 elif test "${ac_cv_sizeof_off_t}" != "${ac_cv_sizeof_size_t}"; then
@@ -1832,7 +1905,6 @@ if test "${ac_cv_sizeof_off_t}${apr_cv_use_lfs64}" = "4yes"; then
     off_t_fmt='#define APR_OFF_T_FMT APR_INT64_T_FMT'
     off_t_value='off64_t'
     off_t_strfn='apr_strtoi64'
-    off_t_size=8
 elif test "${ac_cv_sizeof_off_t}x${ac_cv_sizeof_long}" = "4x4"; then
     # Special case: off_t may change size with _FILE_OFFSET_BITS
     # on 32-bit systems with LFS support.  To avoid compatibility
@@ -1841,10 +1913,8 @@ elif test "${ac_cv_sizeof_off_t}x${ac_cv_sizeof_long}" = "4x4"; then
     off_t_value=long
     off_t_fmt='#define APR_OFF_T_FMT "ld"'
     off_t_strfn='strtol'
-    off_t_size="$ac_cv_sizeof_long"
 elif test "$ac_cv_type_off_t" = "yes"; then
     off_t_value=off_t
-    off_t_size="$ac_cv_sizeof_off_t"
     # off_t is more commonly a long than an int; prefer that case
     # where int and long are the same size.
     if test "$ac_cv_sizeof_off_t" = "$ac_cv_sizeof_long"; then
@@ -1865,18 +1935,15 @@ elif test "$ac_cv_type_off_t" = "yes"; then
         off_t_value=apr_int64_t
         off_t_fmt='#define APR_OFF_T_FMT "I64d"'
         off_t_strfn='_strtoi64'
-        off_t_size=8
         ;;
     esac
 else
-    # Fallback on int
-    off_t_value=int
-    off_t_fmt='#define APR_OFF_T_FMT "d"'
-    off_t_strfn='strtoi'
-    off_t_size=4
+   # Fallback on int
+   off_t_value=apr_int32_t
+   off_t_fmt=d
+   off_t_strfn='strtoi'
 fi
 AC_MSG_RESULT($off_t_value)
-
 
 # Regardless of whether _LARGEFILE64_SOURCE is used, on some
 # platforms _FILE_OFFSET_BITS will affect the size of ino_t and hence
@@ -1948,7 +2015,6 @@ AC_SUBST(bigendian)
 AC_SUBST(aprlfs)
 AC_SUBST(have_iovec)
 AC_SUBST(ino_t_value)
-AC_SUBST(off_t_size)
 
 dnl ----------------------------- Checking for string functions
 AC_CHECK_FUNCS(strnicmp, have_strnicmp="1", have_strnicmp="0")
@@ -1979,43 +2045,6 @@ AC_SUBST(have_strdup)
 AC_SUBST(have_strstr)
 AC_SUBST(have_memchr)
 
-AC_CACHE_CHECK([for memset_s support], [apr_cv_memset_s],
-[AC_TRY_RUN([
-#ifdef HAVE_STRING_H
-#define __STDC_WANT_LIB_EXT1__ 1
-#include <string.h>
-#endif
-
-int main(int argc, const char **argv)
-{
-    char buf[1] = {1};
-    return memset_s(buf, sizeof buf, 0, sizeof buf) != 0 || *buf != '\0';
-}], [apr_cv_memset_s=yes], [apr_cv_memset_s=no], [apr_cv_memset_s=no])])
-
-if test "$apr_cv_memset_s" = "yes"; then
-   AC_DEFINE([HAVE_MEMSET_S], 1, [Define if memset_s function is supported])
-fi
-
-AC_CACHE_CHECK([for explicit_bzero support], [apr_cv_explicit_bzero],
-[AC_TRY_RUN([
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif
-
-int main(int argc, const char **argv)
-{
-    char buf[1] = {1};
-    explicit_bzero(buf, sizeof buf);
-    return *buf != '\0';
-}], [apr_cv_explicit_bzero=yes], [apr_cv_explicit_bzero=no], [apr_cv_explicit_bzero=no])])
-
-if test "$apr_cv_explicit_bzero" = "yes"; then
-   AC_DEFINE([HAVE_EXPLICIT_BZERO], 1, [Define if explicit_bzero function is supported])
-fi
-
 if test "$off_t_strfn" = "apr_strtoi64" && test "$have_int64_strfn" = "1"; then
     off_t_strfn=$int64_strfn
 fi
@@ -2023,9 +2052,7 @@ AC_DEFINE_UNQUOTED(APR_OFF_T_STRFN, [$off_t_strfn],
           [Define as function used for conversion of strings to apr_off_t])
 
 dnl ----------------------------- Checking for DSO support
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Checking for DSO...])
-
+echo "${nl}Checking for DSO..."
 AC_ARG_ENABLE(dso,
   [  --disable-dso           Disable DSO support ],
   [if test "x$enableval" = "xyes"; then
@@ -2047,7 +2074,7 @@ if test "$dsotype" = "any"; then
           if test "$ac_cv_sizeof_voidp$have_shl" = "41"; then
             dsotype=shl; APR_ADDTO(LIBS,-ldld)
           fi;;
-        *-mingw*|*-os2*)
+        *mingw*|*-os2*)
           # several 'other's below probably belong up here.  If they always
           # use a platform implementation and shouldn't test the dlopen/dlfcn
           # features, then bring them up here.
@@ -2069,7 +2096,7 @@ if test "$dsotype" = "any"; then
           [AC_CHECK_LIB(dl, dlsym, 
              [APR_ADDTO(LIBS, -ldl)],
              [dsotype=any
-              AC_MSG_WARN([Weird: dlopen() was found but dlsym() was not found!])])])
+              echo "Weird: dlopen() was found but dlsym() was not found!"])])
     fi
     if test "$dsotype" = "any"; then
       # BeOS:
@@ -2108,8 +2135,7 @@ fi
 AC_SUBST(aprdso)
 
 dnl ----------------------------- Checking for Processes
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Checking for Processes...])
+echo "${nl}Checking for Processes..."
 
 AC_CHECK_FUNCS(waitpid)
 
@@ -2161,20 +2187,12 @@ test "x$ac_cv_struct_rlimit" = xyes && struct_rlimit=1
 AC_SUBST(struct_rlimit)
 
 dnl ----------------------------- Checking for Locking Characteristics 
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Checking for Locking...])
+echo "${nl}Checking for Locking..."
 
-AC_CHECK_FUNCS(semget semctl semop semtimedop flock)
-APR_IFALLYES(func:semtimedop, have_semtimedop="1", have_semtimedop="0")
-
-AC_CHECK_HEADERS(semaphore.h)
+AC_CHECK_FUNCS(semget semctl flock)
+AC_CHECK_HEADERS(semaphore.h OS.h)
 AC_SEARCH_LIBS(sem_open, rt)
-AC_CHECK_FUNCS(sem_close sem_unlink sem_post sem_wait sem_timedwait)
-APR_IFALLYES(func:sem_timedwait, have_sem_timedwait="1", have_sem_timedwait="0")
-
-AC_CHECK_HEADERS(OS.h)
-AC_CHECK_FUNCS(create_sem acquire_sem acquire_sem_etc)
-APR_IFALLYES(header:OS.h func:acquire_sem_etc, have_acquire_sem_etc="1", have_acquire_sem_etc="0")
+AC_CHECK_FUNCS(sem_close sem_unlink sem_post sem_wait create_sem)
 
 # Some systems return ENOSYS from sem_open.
 AC_CACHE_CHECK(for working sem_open,ac_cv_func_sem_open,[
@@ -2233,10 +2251,7 @@ APR_CHECK_DEFINE_FILES(POLLIN, poll.h sys/poll.h)
 
 if test "$threads" = "1"; then
     APR_CHECK_DEFINE(PTHREAD_PROCESS_SHARED, pthread.h)
-    AC_CHECK_FUNCS(pthread_mutex_timedlock pthread_mutexattr_setpshared)
-    APR_IFALLYES(header:pthread.h func:pthread_mutex_timedlock,
-                 have_pthread_mutex_timedlock="1", have_pthread_mutex_timedlock="0")
-    AC_SUBST(have_pthread_mutex_timedlock)
+    AC_CHECK_FUNCS(pthread_mutexattr_setpshared)
     # Some systems have setpshared and define PROCESS_SHARED, but don't 
     # really support PROCESS_SHARED locks.  So, we must validate that we 
     # can go through the steps without receiving some sort of system error.
@@ -2274,8 +2289,8 @@ fi
 APR_IFALLYES(header:semaphore.h func:sem_open func:sem_close dnl
              func:sem_unlink func:sem_post func:sem_wait,
              hasposixser="1", hasposixser="0")
-APR_IFALLYES(func:semget func:semctl func:semop define:SEM_UNDO,
-             hassysvser="1", hassysvser="0")
+APR_IFALLYES(func:semget func:semctl define:SEM_UNDO, hassysvser="1", 
+             hassysvser="0")
 APR_IFALLYES(func:flock define:LOCK_EX, hasflockser="1", hasflockser="0")
 APR_IFALLYES(header:fcntl.h define:F_SETLK, hasfcntlser="1", hasfcntlser="0")
 # note: the current APR use of shared mutex requires /dev/zero
@@ -2284,11 +2299,6 @@ APR_IFALLYES(header:pthread.h define:PTHREAD_PROCESS_SHARED dnl
              file:/dev/zero,
              hasprocpthreadser="1", hasprocpthreadser="0")
 APR_IFALLYES(header:OS.h func:create_sem, hasbeossem="1", hasbeossem="0")
-
-AC_CHECK_FUNCS(pthread_condattr_setpshared)
-APR_IFALLYES(header:pthread.h func:pthread_condattr_setpshared,
-             have_pthread_condattr_setpshared="1", have_pthread_condattr_setpshared="0")
-AC_SUBST(have_pthread_condattr_setpshared)
 
 # See which lock mechanism we'll select by default on this system.
 # The last APR_DECIDE to execute sets the default.
@@ -2305,9 +2315,9 @@ APR_IFALLYES(func:flock define:LOCK_EX,
             APR_DECIDE(USE_FLOCK_SERIALIZE, [4.2BSD-style flock()]))
 APR_IFALLYES(header:fcntl.h define:F_SETLK,
             APR_DECIDE(USE_FCNTL_SERIALIZE, [SVR4-style fcntl()]))
-APR_IFALLYES(func:semget func:semctl func:semop define:SEM_UNDO,
+APR_IFALLYES(func:semget func:semctl define:SEM_UNDO,
             APR_DECIDE(USE_SYSVSEM_SERIALIZE, [SysV IPC semget()]))
-APR_IFALLYES(header:OS.h func:create_sem func:acquire_sem func:acquire_sem_etc, 
+APR_IFALLYES(header:OS.h func:create_sem, 
             APR_DECIDE(USE_BEOSSEM, [BeOS Semaphores])) 
 if test "x$apr_lock_method" != "x"; then
     APR_DECISION_FORCE($apr_lock_method)
@@ -2468,15 +2478,6 @@ else
 fi
 
 dnl ----------------------------- Checking for /dev/random 
-AC_CHECK_HEADERS(sys/random.h)
-AC_CHECK_FUNCS(getrandom)
-
-AC_CHECK_HEADERS(sys/syscall.h)
-AC_CHECK_HEADERS(linux/random.h)
-AC_CHECK_DECLS([SYS_getrandom], [], [], [#include <sys/syscall.h>])
-
-AC_CHECK_FUNCS(arc4random_buf)
-
 AC_MSG_CHECKING(for entropy source)
 
 why_no_rand=""
@@ -2495,26 +2496,9 @@ AC_ARG_WITH(egd,
   ])
 
 if test "$rand" != "1"; then
-  if test "$ac_cv_func_getrandom" = yes; then
-    rand="getrandom"
-  elif test "$ac_cv_have_decl_SYS_getrandom" = yes; then
-    rand="SYS_getrandom"
-  elif test "$ac_cv_func_arc4random_buf" = yes; then
-    rand="arc4random"
-  fi
-fi
-
-if test "$rand" != "1"; then
   AC_ARG_WITH(devrandom,
     [  --with-devrandom[[=DEV]]  use /dev/random or compatible [[searches by default]]],
-    [ apr_devrandom="$withval" ], [ apr_devrandom="no" ])
-  if test "$apr_devrandom" = "no"; then
-    if test -z "$rand"; then
-      apr_devrandom="yes"
-    else
-      apr_devrandom="no"
-    fi
-  fi
+    [ apr_devrandom="$withval" ], [ apr_devrandom="yes" ])
 
   if test "$apr_devrandom" = "yes"; then
     # /dev/random on OpenBSD doesn't provide random data, so
@@ -2522,7 +2506,7 @@ if test "$rand" != "1"; then
     for f in /dev/arandom /dev/urandom /dev/random; do
       if test -r $f; then
         apr_devrandom=$f
-        rand="1"
+        rand=1
         break
       fi
     done
@@ -2548,10 +2532,6 @@ if test "$rand" != "1"; then
   if test "$rand" = "1"; then
     AC_DEFINE_UNQUOTED(DEV_RANDOM, ["$apr_devrandom"], [Define to path of random device])
     AC_MSG_RESULT([$apr_devrandom])
-  elif test -n "$rand"; then
-    AC_DEFINE_UNQUOTED(SYS_RANDOM, ["$rand"], [Define system call of random])
-    AC_MSG_RESULT([$rand])
-    rand="1"
   fi
 fi
 
@@ -2580,8 +2560,7 @@ fi
 AC_SUBST(rand)
 
 dnl ----------------------------- Checking for File Info Support 
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Checking for File Info Support...])
+echo "${nl}Checking for File Info Support..."
 AC_CHECK_MEMBERS([struct stat.st_blocks, struct stat.st_atimensec,
 struct stat.st_ctimensec, struct stat.st_mtimensec, struct stat.st_atim.tv_nsec,
 struct stat.st_ctim.tv_nsec, struct stat.st_mtim.tv_nsec,
@@ -2600,8 +2579,7 @@ APR_CHECK_DIRENT_INODE
 APR_CHECK_DIRENT_TYPE
 
 dnl ----------------------------- Checking for UUID Support 
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Checking for OS UUID Support...])
+echo "${nl}Checking for OS UUID Support..."
 
 AC_CHECK_HEADERS(uuid.h uuid/uuid.h sys/uuid.h, break)
 
@@ -2661,16 +2639,14 @@ AC_SUBST(osuuid)
 
 
 dnl ----------------------------- Checking for Time Support 
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Checking for Time Support...])
+echo "${nl}Checking for Time Support..."
 
 AC_CHECK_MEMBERS([struct tm.tm_gmtoff, struct tm.__tm_gmtoff],,,[
 #include <sys/types.h>
 #include <time.h>])
 
 dnl ----------------------------- Checking for Networking Support 
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Checking for Networking support...])
+echo "${nl}Checking for Networking support..."
 APR_TYPE_IN_ADDR
 if test "$ac_cv_type_in_addr" = "yes"; then
   have_in_addr="1"
@@ -2681,9 +2657,9 @@ fi
 AC_MSG_CHECKING([if fd == socket on this platform])
 if test "x$file_as_socket" != "x0" ; then
     file_as_socket="1";
-    AC_MSG_RESULT([yes])
+    echo "yes"
 else
-    AC_MSG_RESULT([no])
+    echo "no"
 fi
 
 AC_SUBST(have_in_addr)
@@ -2755,8 +2731,7 @@ AC_SUBST(have_sctp)
 
 AC_CHECK_FUNCS(set_h_errno)
 
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Checking for IPv6 Networking support...])
+echo "${nl}Checking for IPv6 Networking support..."
 dnl Start of checking for IPv6 support...
 
 AC_ARG_ENABLE(ipv6,
@@ -2774,7 +2749,7 @@ esac
 AC_SEARCH_LIBS(getaddrinfo, socket inet6)
 AC_SEARCH_LIBS(gai_strerror, socket inet6)
 AC_SEARCH_LIBS(getnameinfo, socket inet6)
-AC_CHECK_FUNCS(gai_strerror if_nametoindex if_indextoname)
+AC_CHECK_FUNCS(gai_strerror)
 APR_CHECK_WORKING_GETADDRINFO
 APR_CHECK_NEGATIVE_EAI
 APR_CHECK_WORKING_GETNAMEINFO
@@ -2842,81 +2817,9 @@ AC_SUBST(apr_thread_func)
 APR_SETIFNULL(apr_has_user, [1])
 AC_SUBST(apr_has_user)
 
-dnl ------------------------------ APR-util stuff 
-
-APU_PRELOAD
-
-dnl Find crypto libraries
-APU_CHECK_CRYPTO
-
-dnl Find DBM and DBD backends to use.
-APU_CHECK_DBM
-APU_CHECK_DBD
-APU_CHECK_DBD_MYSQL
-APU_CHECK_DBD_SQLITE3
-APU_CHECK_DBD_SQLITE2
-APU_CHECK_DBD_ORACLE
-APU_CHECK_DBD_ODBC
-
-dnl select an XML parser
-APU_FIND_XML
-
-dnl Find iconv implementations
-APU_FIND_ICONV
-
-dnl Enable DSO build; must be last:
-APR_MODULAR_DSO
-
-AC_SEARCH_LIBS(crypt, crypt ufc)
-AC_MSG_CHECKING(if system crypt() function is threadsafe)
-if test "x$apu_crypt_threadsafe" = "x1"; then
-  AC_DEFINE(APU_CRYPT_THREADSAFE, 1, [Define if the system crypt() function is threadsafe])
-  msg="yes"
-else
-  msg="no"
-fi
-AC_MSG_RESULT([$msg])
-
-AC_CHECK_FUNCS(crypt_r, [ crypt_r="1" ], [ crypt_r="0" ])
-if test "$crypt_r" = "1"; then
-  APU_CHECK_CRYPT_R_STYLE
-fi
-
-APRUTIL_LIBNAME="aprutil${libsuffix}"
-AC_SUBST(APRUTIL_LIBNAME)
-
-# Set up destination directory for DSOs.
-APR_DSO_LIBDIR="\${libdir}/apr-${APR_MAJOR_VERSION}"
-# Set APU_HAVE_MODULES appropriately for the Makefile
-if test -n "$APR_DSO_MODULES"; then 
-   APR_HAVE_MODULES=yes
-else
-   APR_HAVE_MODULES=no
-fi
-APR_EXPAND_VAR(abs_dso_libdir, $APR_DSO_LIBDIR)
-AC_DEFINE_UNQUOTED([APR_DSO_LIBDIR], ["$abs_dso_libdir"],
-                   [Define to be absolute path to DSO directory])
-AC_SUBST(APR_HAVE_MODULES)
-AC_SUBST(APR_DSO_LIBDIR)
-AC_SUBST(APR_DSO_MODULES)
-AC_SUBST(EXTRA_OBJECTS)
-
-dnl XXX FIXME; used for -lexpat, -liconv etc?
-AC_SUBST(APRUTIL_EXPORT_LIBS)
-
-dnl
-dnl Prep all the flags and stuff for compilation and export to other builds
-dnl
-APR_ADDTO(LIBS, [$APRUTIL_LIBS])
-
-AC_SUBST(LDFLAGS)
-
-
-
 dnl ----------------------------- Finalize the variables
 
-AC_MSG_NOTICE([])
-AC_MSG_NOTICE([Restore user-defined environment settings...])
+echo "${nl}Restore user-defined environment settings..."
 
 APR_RESTORE_THE_ENVIRONMENT(CPPFLAGS, EXTRA_)
 APR_RESTORE_THE_ENVIRONMENT(CFLAGS, EXTRA_)
@@ -2991,9 +2894,6 @@ AC_CONFIG_FILES([Makefile
 if test -d $srcdir/test; then
    AC_CONFIG_FILES([test/Makefile test/internal/Makefile])
 fi
-
-AC_CONFIG_FILES([include/private/apu_select_dbm.h
-                 include/apu_want.h])
 
 dir=include/arch/unix
 test -d $dir || $MKDIR $dir

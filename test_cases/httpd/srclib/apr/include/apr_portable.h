@@ -112,7 +112,7 @@ typedef void*                 apr_os_shm_t;
 typedef int                   apr_os_file_t;
 typedef DIR                   apr_os_dir_t;
 typedef int                   apr_os_sock_t;
-typedef NXMutex_t *           apr_os_proc_mutex_t;
+typedef NXMutex_t             apr_os_proc_mutex_t;
 typedef NXThreadId_t          apr_os_thread_t;
 typedef long                  apr_os_proc_t;
 typedef NXKey_t               apr_os_threadkey_t; 
@@ -135,6 +135,13 @@ struct apr_os_proc_mutex_t {
 #if APR_HAS_PROC_PTHREAD_SERIALIZE
     /** Value used for PTHREAD serialization */
     pthread_mutex_t *pthread_interproc;
+#endif
+#if APR_HAS_THREADS
+    /* If no threads, no need for thread locks */
+#if APR_USE_PTHREAD_SERIALIZE
+    /** This value is currently unused within APR and Apache */ 
+    pthread_mutex_t *intraproc;
+#endif
 #endif
 #if APR_HAS_POSIXSEM_SERIALIZE
     /** Value used for POSIX semaphores serialization */
@@ -395,7 +402,7 @@ APR_DECLARE(apr_status_t) apr_os_dir_put(apr_dir_t **dir,
 /**
  * Convert a socket from the os specific type to the APR type. If
  * sock points to NULL, a socket will be created from the pool
- * provided. If **sock does not point to NULL, the structure pointed 
+ * provided. If **sock does not point to NULL, the structure pointed
  * to by sock will be reused and updated with the given socket.
  * @param sock The pool to use.
  * @param thesock The socket to convert to.

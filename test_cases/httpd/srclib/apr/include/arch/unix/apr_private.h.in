@@ -4,11 +4,6 @@
 #ifndef APR_PRIVATE_H
 #define APR_PRIVATE_H
 
-/* Pick up publicly advertised headers and symbols before the
- * APR internal private headers and symbols
- */
-#include <apr.h>
-
 
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
@@ -18,12 +13,6 @@
 
 /* Define if apr_allocator should use mmap */
 #undef APR_ALLOCATOR_USES_MMAP
-
-/* Define to be absolute path to DSO directory */
-#undef APR_DSO_LIBDIR
-
-/* Define to 1 if modular components are built as DSOs */
-#undef APR_HAVE_MODULAR_DSO
 
 /* Define as function which can be used for conversion of strings to
    apr_int64_t */
@@ -35,25 +24,10 @@
 /* Define if pool functions should abort if concurrent usage is detected */
 #undef APR_POOL_CONCURRENCY_CHECK
 
-/* Define if the system crypt() function is threadsafe */
-#undef APU_CRYPT_THREADSAFE
-
-/* Define if the inbuf parm to iconv() is const char ** */
-#undef APU_ICONV_INBUF_CONST
-
 /* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
    systems. This function is required for `alloca.c' support on those systems.
    */
 #undef CRAY_STACKSEG_END
-
-/* Define that OpenSSL uses const buffers */
-#undef CRYPTO_OPENSSL_CONST_BUFFERS
-
-/* Define if crypt_r has uses CRYPTD */
-#undef CRYPT_R_CRYPTD
-
-/* Define if crypt_r uses struct crypt_data */
-#undef CRYPT_R_STRUCT_CRYPT_DATA
 
 /* Define to 1 if using `alloca.c'. */
 #undef C_ALLOCA
@@ -115,15 +89,6 @@
 /* Define if accept4 function is supported */
 #undef HAVE_ACCEPT4
 
-/* Define to 1 if you have the `acquire_sem' function. */
-#undef HAVE_ACQUIRE_SEM
-
-/* Define to 1 if you have the `acquire_sem_etc' function. */
-#undef HAVE_ACQUIRE_SEM_ETC
-
-/* Define to 1 if you have the <aio.h> header file. */
-#undef HAVE_AIO_H
-
 /* Define if async i/o supports message q's */
 #undef HAVE_AIO_MSGQ
 
@@ -133,9 +98,6 @@
 /* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix).
    */
 #undef HAVE_ALLOCA_H
-
-/* Define to 1 if you have the `arc4random_buf' function. */
-#undef HAVE_ARC4RANDOM_BUF
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
@@ -152,13 +114,6 @@
 /* Define to 1 if you have the `calloc' function. */
 #undef HAVE_CALLOC
 
-/* Define if CODESET is defined in langinfo.h */
-#undef HAVE_CODESET
-
-/* Define to 1 if you have the <CommonCrypto/CommonKeyDerivation.h> header
-   file. */
-#undef HAVE_COMMONCRYPTO_COMMONKEYDERIVATION_H
-
 /* Define to 1 if you have the <conio.h> header file. */
 #undef HAVE_CONIO_H
 
@@ -171,19 +126,8 @@
 /* Define to 1 if you have the <crypt.h> header file. */
 #undef HAVE_CRYPT_H
 
-/* Define to 1 if you have the `crypt_r' function. */
-#undef HAVE_CRYPT_R
-
 /* Define to 1 if you have the <ctype.h> header file. */
 #undef HAVE_CTYPE_H
-
-/* Define to 1 if you have the declaration of `EVP_PKEY_CTX_new', and to 0 if
-   you don't. */
-#undef HAVE_DECL_EVP_PKEY_CTX_NEW
-
-/* Define to 1 if you have the declaration of `SYS_getrandom', and to 0 if you
-   don't. */
-#undef HAVE_DECL_SYS_GETRANDOM
 
 /* Define to 1 if you have the declaration of `sys_siglist', and to 0 if you
    don't. */
@@ -215,12 +159,6 @@
 
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
-
-/* Define if expat.h is available */
-#undef HAVE_EXPAT_H
-
-/* Define if explicit_bzero function is supported */
-#undef HAVE_EXPLICIT_BZERO
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
@@ -279,9 +217,6 @@
 /* Define to 1 if you have the `getpwuid_r' function. */
 #undef HAVE_GETPWUID_R
 
-/* Define to 1 if you have the `getrandom' function. */
-#undef HAVE_GETRANDOM
-
 /* Define to 1 if you have the `getrlimit' function. */
 #undef HAVE_GETRLIMIT
 
@@ -296,18 +231,6 @@
 
 /* Define if hstrerror is present */
 #undef HAVE_HSTRERROR
-
-/* Define to 1 if you have the <iconv.h> header file. */
-#undef HAVE_ICONV_H
-
-/* Define to 1 if you have the <ifaddrs.h> header file. */
-#undef HAVE_IFADDRS_H
-
-/* Define to 1 if you have the `if_indextoname' function. */
-#undef HAVE_IF_INDEXTONAME
-
-/* Define to 1 if you have the `if_nametoindex' function. */
-#undef HAVE_IF_NAMETOINDEX
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
@@ -333,23 +256,14 @@
 /* Define to 1 if you have the `bsd' library (-lbsd). */
 #undef HAVE_LIBBSD
 
-/* Define to 1 if you have the <libpq-fe.h> header file. */
-#undef HAVE_LIBPQ_FE_H
-
 /* Define to 1 if you have the `sendfile' library (-lsendfile). */
 #undef HAVE_LIBSENDFILE
 
 /* Define to 1 if you have the `truerand' library (-ltruerand). */
 #undef HAVE_LIBTRUERAND
 
-/* libxml2 found */
-#undef HAVE_LIBXML2_H
-
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
-
-/* Define to 1 if you have the <linux/random.h> header file. */
-#undef HAVE_LINUX_RANDOM_H
 
 /* Define to 1 if you have the `localtime_r' function. */
 #undef HAVE_LOCALTIME_R
@@ -378,15 +292,6 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
-/* Define if memset_s function is supported */
-#undef HAVE_MEMSET_S
-
-/* Define to 1 if you have the `mkostemp' function. */
-#undef HAVE_MKOSTEMP
-
-/* Define to 1 if you have the `mkostemp64' function. */
-#undef HAVE_MKOSTEMP64
-
 /* Define to 1 if you have the `mkstemp' function. */
 #undef HAVE_MKSTEMP
 
@@ -404,24 +309,6 @@
 
 /* Define to 1 if you have the `munmap' function. */
 #undef HAVE_MUNMAP
-
-/* Define to 1 if you have the <mysql.h> header file. */
-#undef HAVE_MYSQL_H
-
-/* Define to 1 if you have the <mysql/mysql.h> header file. */
-#undef HAVE_MYSQL_MYSQL_H
-
-/* Define to 1 if you have the <mysql/my_global.h> header file. */
-#undef HAVE_MYSQL_MY_GLOBAL_H
-
-/* Define to 1 if you have the <mysql/my_sys.h> header file. */
-#undef HAVE_MYSQL_MY_SYS_H
-
-/* Define to 1 if you have the <my_global.h> header file. */
-#undef HAVE_MY_GLOBAL_H
-
-/* Define to 1 if you have the <my_sys.h> header file. */
-#undef HAVE_MY_SYS_H
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
@@ -447,24 +334,6 @@
 /* Define to 1 if you have the `nl_langinfo' function. */
 #undef HAVE_NL_LANGINFO
 
-/* Define to 1 if you have the <nss.h> header file. */
-#undef HAVE_NSS_H
-
-/* Define to 1 if you have the <nss/nss.h> header file. */
-#undef HAVE_NSS_NSS_H
-
-/* Define to 1 if you have the <nss/pk11pub.h> header file. */
-#undef HAVE_NSS_PK11PUB_H
-
-/* Define to 1 if you have the <oci.h> header file. */
-#undef HAVE_OCI_H
-
-/* Define to 1 if you have the <odbc/sql.h> header file. */
-#undef HAVE_ODBC_SQL_H
-
-/* Define to 1 if you have the <openssl/x509.h> header file. */
-#undef HAVE_OPENSSL_X509_H
-
 /* Define to 1 if you have the <os2.h> header file. */
 #undef HAVE_OS2_H
 
@@ -473,9 +342,6 @@
 
 /* Define to 1 if you have the <OS.h> header file. */
 #undef HAVE_OS_H
-
-/* Define to 1 if you have the <pk11pub.h> header file. */
-#undef HAVE_PK11PUB_H
 
 /* Define to 1 if you have the `poll' function. */
 #undef HAVE_POLL
@@ -489,20 +355,11 @@
 /* Define to 1 if you have the `port_create' function. */
 #undef HAVE_PORT_CREATE
 
-/* Define to 1 if you have the <postgresql/libpq-fe.h> header file. */
-#undef HAVE_POSTGRESQL_LIBPQ_FE_H
-
-/* Define to 1 if you have the <prerror.h> header file. */
-#undef HAVE_PRERROR_H
-
 /* Define to 1 if you have the <process.h> header file. */
 #undef HAVE_PROCESS_H
 
 /* Define to 1 if you have the `pthread_attr_setguardsize' function. */
 #undef HAVE_PTHREAD_ATTR_SETGUARDSIZE
-
-/* Define to 1 if you have the `pthread_condattr_setpshared' function. */
-#undef HAVE_PTHREAD_CONDATTR_SETPSHARED
 
 /* Define to 1 if you have the <pthread.h> header file. */
 #undef HAVE_PTHREAD_H
@@ -518,9 +375,6 @@
 
 /* Define if cross-process robust mutexes are available */
 #undef HAVE_PTHREAD_MUTEX_ROBUST
-
-/* Define to 1 if you have the `pthread_mutex_timedlock' function. */
-#undef HAVE_PTHREAD_MUTEX_TIMEDLOCK
 
 /* Define if PTHREAD_PROCESS_SHARED is defined in pthread.h */
 #undef HAVE_PTHREAD_PROCESS_SHARED
@@ -558,20 +412,11 @@
 /* Define to 1 if you have the `semget' function. */
 #undef HAVE_SEMGET
 
-/* Define to 1 if you have the `semop' function. */
-#undef HAVE_SEMOP
-
-/* Define to 1 if you have the `semtimedop' function. */
-#undef HAVE_SEMTIMEDOP
-
 /* Define to 1 if you have the `sem_close' function. */
 #undef HAVE_SEM_CLOSE
 
 /* Define to 1 if you have the `sem_post' function. */
 #undef HAVE_SEM_POST
-
-/* Define to 1 if you have the `sem_timedwait' function. */
-#undef HAVE_SEM_TIMEDWAIT
 
 /* Define if SEM_UNDO is defined in sys/sem.h */
 #undef HAVE_SEM_UNDO
@@ -647,15 +492,6 @@
 
 /* Define if SO_ACCEPTFILTER is defined in sys/socket.h */
 #undef HAVE_SO_ACCEPTFILTER
-
-/* Define to 1 if you have the <sqlite3.h> header file. */
-#undef HAVE_SQLITE3_H
-
-/* Define to 1 if you have the <sqlite.h> header file. */
-#undef HAVE_SQLITE_H
-
-/* Define to 1 if you have the <sql.h> header file. */
-#undef HAVE_SQL_H
 
 /* Define to 1 if you have the <stdarg.h> header file. */
 #undef HAVE_STDARG_H
@@ -765,9 +601,6 @@
 /* Define to 1 if you have the <sys/poll.h> header file. */
 #undef HAVE_SYS_POLL_H
 
-/* Define to 1 if you have the <sys/random.h> header file. */
-#undef HAVE_SYS_RANDOM_H
-
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #undef HAVE_SYS_RESOURCE_H
 
@@ -794,9 +627,6 @@
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
-
-/* Define to 1 if you have the <sys/syscall.h> header file. */
-#undef HAVE_SYS_SYSCALL_H
 
 /* Define to 1 if you have the <sys/sysctl.h> header file. */
 #undef HAVE_SYS_SYSCTL_H
@@ -885,9 +715,6 @@
 /* Define to 1 if you have the `waitpid' function. */
 #undef HAVE_WAITPID
 
-/* Define if compiler handles weak symbols */
-#undef HAVE_WEAK_SYMBOLS
-
 /* Define to 1 if you have the <windows.h> header file. */
 #undef HAVE_WINDOWS_H
 
@@ -896,18 +723,6 @@
 
 /* Define to 1 if you have the `writev' function. */
 #undef HAVE_WRITEV
-
-/* Define to 1 if you have the <ws2tcpip.h> header file. */
-#undef HAVE_WS2TCPIP_H
-
-/* Define if xmlparse/xmlparse.h is available */
-#undef HAVE_XMLPARSE_XMLPARSE_H
-
-/* Define if xmltok/xmlparse.h is available */
-#undef HAVE_XMLTOK_XMLPARSE_H
-
-/* Define if xml/xmlparse.h is available */
-#undef HAVE_XML_XMLPARSE_H
 
 /* Define for z/OS pthread API nuances */
 #undef HAVE_ZOS_PTHREADS
@@ -1009,9 +824,6 @@
 
 /* Define if SysV semaphores affect threads within the process */
 #undef SYSVSEM_IS_GLOBAL
-
-/* Define system call of random */
-#undef SYS_RANDOM
 
 /* Define if use of generic atomics is requested */
 #undef USE_ATOMICS_GENERIC
@@ -1200,5 +1012,9 @@
  
 #endif /* DARWIN_10 */
 
+/*
+ * Include common private declarations.
+ */
+#include "../apr_private_common.h"
 #endif /* APR_PRIVATE_H */
 

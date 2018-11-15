@@ -70,6 +70,8 @@
 extern "C" {
 #endif
 
+typedef struct apr_thread_mutex_t apr_thread_mutex_t;
+
 /* ----------------------------- config dir ------------------------------ */
 
 /** Define this to be the default server home dir. Most things later in this

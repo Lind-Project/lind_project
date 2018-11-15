@@ -139,12 +139,7 @@ APR_DECLARE(apr_status_t) apr_threadattr_guardsize_set(apr_threadattr_t *attr,
 static void *dummy_worker(void *opaque)
 {
     apr_thread_t *thread = (apr_thread_t*)opaque;
-    void *ret;
-
-    apr_pool_owner_set(thread->pool, 0);
-    ret = thread->func(thread, thread->data);
-    apr_pool_destroy(thread->pool);
-    return ret;
+    return thread->func(thread, thread->data);
 }
 
 APR_DECLARE(apr_status_t) apr_thread_create(apr_thread_t **new,

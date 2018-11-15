@@ -53,6 +53,7 @@ struct apr_other_child_rec_t {
     apr_proc_t *proc;
     void (*maintenance) (int, void *, int);
     void *data;
+    apr_os_file_t write_fd;
 };
 
 #define WSAHighByte 2
@@ -65,7 +66,7 @@ struct apr_other_child_rec_t {
  */
 extern int APR_DECLARE_DATA apr_app_init_complete;
 
-int apr_wastrtoastr(char const * const * *retarr, 
+int apr_wastrtoastr(char const * const * *retarr,
                     wchar_t const * const *arr, int args);
 
 /* Platform specific designation of run time os version.
@@ -73,40 +74,39 @@ int apr_wastrtoastr(char const * const * *retarr,
  * export new kernel or winsock functions or behavior.
  */
 typedef enum {
-        APR_WIN_UNK =       0,
-        APR_WIN_UNSUP =     1,
-        APR_WIN_95 =       10,
-        APR_WIN_95_B =     11,
-        APR_WIN_95_OSR2 =  12,
-        APR_WIN_98 =       14,
-        APR_WIN_98_SE =    16,
-        APR_WIN_ME =       18,
+    APR_WIN_UNK =       0,
+    APR_WIN_UNSUP =     1,
+    APR_WIN_95 =       10,
+    APR_WIN_95_B =     11,
+    APR_WIN_95_OSR2 =  12,
+    APR_WIN_98 =       14,
+    APR_WIN_98_SE =    16,
+    APR_WIN_ME =       18,
 
-	APR_WIN_UNICODE =  20, /* Prior versions support only narrow chars */
+    APR_WIN_UNICODE =  20, /* Prior versions support only narrow chars */
 
-        APR_WIN_CE_3 =     23, /* CE is an odd beast, not supporting */
-                               /* some pre-NT features, such as the    */
-        APR_WIN_NT =       30, /* narrow charset APIs (fooA fns), while  */
-        APR_WIN_NT_3_5 =   35, /* not supporting some NT-family features.  */
-        APR_WIN_NT_3_51 =  36,
+    APR_WIN_CE_3 =     23, /* CE is an odd beast, not supporting */
+                           /* some pre-NT features, such as the    */
+    APR_WIN_NT =       30, /* narrow charset APIs (fooA fns), while  */
+    APR_WIN_NT_3_5 =   35, /* not supporting some NT-family features.  */
+    APR_WIN_NT_3_51 =  36,
 
-        APR_WIN_NT_4 =     40,
-        APR_WIN_NT_4_SP2 = 42,
-        APR_WIN_NT_4_SP3 = 43,
-        APR_WIN_NT_4_SP4 = 44,
-        APR_WIN_NT_4_SP5 = 45,
-        APR_WIN_NT_4_SP6 = 46,
+    APR_WIN_NT_4 =     40,
+    APR_WIN_NT_4_SP2 = 42,
+    APR_WIN_NT_4_SP3 = 43,
+    APR_WIN_NT_4_SP4 = 44,
+    APR_WIN_NT_4_SP5 = 45,
+    APR_WIN_NT_4_SP6 = 46,
 
-        APR_WIN_2000 =     50,
-        APR_WIN_2000_SP1 = 51,
-        APR_WIN_2000_SP2 = 52,
-        APR_WIN_XP =       60,
-        APR_WIN_XP_SP1 =   61,
-        APR_WIN_XP_SP2 =   62,
-        APR_WIN_2003 =     70,
-        APR_WIN_VISTA =    80,
-        APR_WIN_7  =       90,
-        APR_WIN_8  =       100
+    APR_WIN_2000 =     50,
+    APR_WIN_2000_SP1 = 51,
+    APR_WIN_2000_SP2 = 52,
+    APR_WIN_XP =       60,
+    APR_WIN_XP_SP1 =   61,
+    APR_WIN_XP_SP2 =   62,
+    APR_WIN_2003 =     70,
+    APR_WIN_VISTA =    80,
+    APR_WIN_7 =        90
 } apr_oslevel_e;
 
 extern APR_DECLARE_DATA apr_oslevel_e apr_os_level;
@@ -123,7 +123,11 @@ apr_status_t apr_get_oslevel(apr_oslevel_e *);
  * the unicode eqivilant.
  */
 
+#if defined(_WIN32_WCE) || defined(WINNT)
 #define APR_HAS_ANSI_FS           0
+#else
+#define APR_HAS_ANSI_FS           1
+#endif
 
 /* IF_WIN_OS_IS_UNICODE / ELSE_WIN_OS_IS_ANSI help us keep the code trivial
  * where have runtime tests for unicode-ness, that aren't needed in any
@@ -135,7 +139,7 @@ apr_status_t apr_get_oslevel(apr_oslevel_e *);
 #else /* APR_HAS_UNICODE_FS */
 #define IF_WIN_OS_IS_UNICODE
 #define ELSE_WIN_OS_IS_ANSI
-#endif /* APR_HAS_ANSI_FS && APR_HAS_UNICODE_FS */
+#endif /* WINNT */
 
 #if defined(_MSC_VER) && !defined(_WIN32_WCE)
 #include "crtdbg.h"
@@ -219,6 +223,102 @@ FARPROC apr_load_dll_func(apr_dlltoken_e fnLib, char *fnName, int ordinal);
  * #undef/re#define the Ansi/Unicode generic name to abate confusion
  * In the case of non-text functions, simply #define the original name
  */
+
+#if !defined(_WIN32_WCE) && !defined(WINNT)
+/* This group is available to all versions of WINNT 4.0 SP6 and later */
+
+#ifdef GetFileAttributesExA
+#undef GetFileAttributesExA
+#endif
+APR_DECLARE_LATE_DLL_FUNC(DLL_WINBASEAPI, BOOL, WINAPI, GetFileAttributesExA, 0, (
+    IN LPCSTR lpFileName,
+    IN GET_FILEEX_INFO_LEVELS fInfoLevelId,
+    OUT LPVOID lpFileInformation),
+    (lpFileName, fInfoLevelId, lpFileInformation));
+#define GetFileAttributesExA apr_winapi_GetFileAttributesExA
+#undef GetFileAttributesEx
+#define GetFileAttributesEx apr_winapi_GetFileAttributesExA
+
+#ifdef GetFileAttributesExW
+#undef GetFileAttributesExW
+#endif
+APR_DECLARE_LATE_DLL_FUNC(DLL_WINBASEAPI, BOOL, WINAPI, GetFileAttributesExW, 0, (
+    IN LPCWSTR lpFileName,
+    IN GET_FILEEX_INFO_LEVELS fInfoLevelId,
+    OUT LPVOID lpFileInformation),
+    (lpFileName, fInfoLevelId, lpFileInformation));
+#define GetFileAttributesExW apr_winapi_GetFileAttributesExW
+
+APR_DECLARE_LATE_DLL_FUNC(DLL_WINBASEAPI, BOOL, WINAPI, CancelIo, 0, (
+    IN HANDLE hFile),
+    (hFile));
+#define CancelIo apr_winapi_CancelIo
+
+APR_DECLARE_LATE_DLL_FUNC(DLL_WINBASEAPI, BOOL, WINAPI, TryEnterCriticalSection, 0, (
+    LPCRITICAL_SECTION lpCriticalSection),
+    (lpCriticalSection));
+#define TryEnterCriticalSection apr_winapi_TryEnterCriticalSection
+
+APR_DECLARE_LATE_DLL_FUNC(DLL_WINBASEAPI, BOOL, WINAPI, SwitchToThread, 0, (
+    void),
+    ());
+#define SwitchToThread apr_winapi_SwitchToThread
+
+APR_DECLARE_LATE_DLL_FUNC(DLL_WINADVAPI, BOOL, WINAPI, GetEffectiveRightsFromAclW, 0, (
+    IN PACL pacl,
+    IN PTRUSTEE_W pTrustee,
+    OUT PACCESS_MASK pAccessRights),
+    (pacl, pTrustee, pAccessRights));
+#define GetEffectiveRightsFromAclW apr_winapi_GetEffectiveRightsFromAclW
+
+APR_DECLARE_LATE_DLL_FUNC(DLL_WINADVAPI, BOOL, WINAPI, GetNamedSecurityInfoW, 0, (
+    IN LPWSTR pObjectName,
+    IN SE_OBJECT_TYPE ObjectType,
+    IN SECURITY_INFORMATION SecurityInfo,
+    OUT PSID *ppsidOwner,
+    OUT PSID *ppsidGroup,
+    OUT PACL *ppDacl,
+    OUT PACL *ppSacl,
+    OUT PSECURITY_DESCRIPTOR *ppSecurityDescriptor),
+    (pObjectName, ObjectType, SecurityInfo, ppsidOwner, ppsidGroup,
+        ppDacl, ppSacl, ppSecurityDescriptor));
+#define GetNamedSecurityInfoW apr_winapi_GetNamedSecurityInfoW
+
+APR_DECLARE_LATE_DLL_FUNC(DLL_WINADVAPI, BOOL, WINAPI, GetNamedSecurityInfoA, 0, (
+    IN LPSTR pObjectName,
+    IN SE_OBJECT_TYPE ObjectType,
+    IN SECURITY_INFORMATION SecurityInfo,
+    OUT PSID *ppsidOwner,
+    OUT PSID *ppsidGroup,
+    OUT PACL *ppDacl,
+    OUT PACL *ppSacl,
+    OUT PSECURITY_DESCRIPTOR *ppSecurityDescriptor),
+    (pObjectName, ObjectType, SecurityInfo, ppsidOwner, ppsidGroup,
+        ppDacl, ppSacl, ppSecurityDescriptor));
+#define GetNamedSecurityInfoA apr_winapi_GetNamedSecurityInfoA
+#undef GetNamedSecurityInfo
+#define GetNamedSecurityInfo apr_winapi_GetNamedSecurityInfoA
+
+APR_DECLARE_LATE_DLL_FUNC(DLL_WINADVAPI, BOOL, WINAPI, GetSecurityInfo, 0, (
+    IN HANDLE handle,
+    IN SE_OBJECT_TYPE ObjectType,
+    IN SECURITY_INFORMATION SecurityInfo,
+    OUT PSID *ppsidOwner,
+    OUT PSID *ppsidGroup,
+    OUT PACL *ppDacl,
+    OUT PACL *ppSacl,
+    OUT PSECURITY_DESCRIPTOR *ppSecurityDescriptor),
+    (handle, ObjectType, SecurityInfo, ppsidOwner, ppsidGroup,
+        ppDacl, ppSacl, ppSecurityDescriptor));
+#define GetSecurityInfo apr_winapi_GetSecurityInfo
+
+APR_DECLARE_LATE_DLL_FUNC(DLL_SHSTDAPI, LPWSTR *, WINAPI, CommandLineToArgvW, 0, (
+    LPCWSTR lpCmdLine,
+    int *pNumArgs),
+    (lpCmdLine, pNumArgs));
+#define CommandLineToArgvW apr_winapi_CommandLineToArgvW
+
+#endif /* !defined(_WIN32_WCE) && !defined(WINNT) */
 
 #if !defined(_WIN32_WCE)
 /* This group is NOT available to all versions of WinNT,
@@ -384,3 +484,4 @@ APR_DECLARE_LATE_DLL_FUNC(DLL_WINBASEAPI, BOOL, WINAPI, SetDllDirectoryW, 0, (
 #endif /* !defined(_WIN32_WCE) */
 
 #endif  /* ! MISC_H */
+

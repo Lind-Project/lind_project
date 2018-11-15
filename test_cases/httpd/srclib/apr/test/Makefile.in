@@ -19,26 +19,17 @@ STDTEST_PORTABLE = \
 	testlockperf@EXEEXT@ \
 	testmutexscope@EXEEXT@ \
 	testall@EXEEXT@ \
-	dbd@EXEEXT@ \
-	sendfile@EXEEXT@ \
+	sendfile@EXEEXT@
 
-TESTS = testtime.lo teststr.lo testvsn.lo testipsub.lo testshm.lo	\
-	testmmap.lo testud.lo testtable.lo testsleep.lo testpools.lo	\
-	testfmt.lo testfile.lo testdir.lo testfileinfo.lo testrand.lo	\
-	testdso.lo testoc.lo testdup.lo testsockets.lo testproc.lo	\
-	testpoll.lo testlock.lo testsockopt.lo testpipe.lo		\
-	testthread.lo testhash.lo testargs.lo testnames.lo testuser.lo	\
-	testpath.lo testenv.lo testprocmutex.lo testfnmatch.lo		\
-	testatomic.lo testflock.lo testsock.lo testglobalmutex.lo	\
-	teststrnatcmp.lo testfilecopy.lo testtemp.lo testlfs.lo		\
-	testcond.lo testuri.lo testmemcache.lo testdate.lo		\
-	testxlate.lo testdbd.lo testrmm.lo testmd4.lo	\
-	teststrmatch.lo testpass.lo testcrypto.lo testqueue.lo		\
-	testbuckets.lo testxml.lo testdbm.lo testuuid.lo testmd5.lo	\
-	testreslist.lo testbase64.lo testhooks.lo testlfsabi.lo		\
-	testlfsabi32.lo testlfsabi64.lo testescape.lo testskiplist.lo	\
-	testsiphash.lo testredis.lo testencode.lo testjson.lo           \
-	testjose.lo
+TESTS = testtime.lo teststr.lo testvsn.lo testipsub.lo testshm.lo \
+	testmmap.lo testud.lo testtable.lo testsleep.lo testpools.lo \
+	testfmt.lo testfile.lo testdir.lo testfileinfo.lo testrand.lo \
+	testdso.lo testoc.lo testdup.lo testsockets.lo testproc.lo \
+	testpoll.lo testlock.lo testsockopt.lo testpipe.lo testthread.lo \
+	testhash.lo testargs.lo testnames.lo testuser.lo testpath.lo \
+	testenv.lo testprocmutex.lo testfnmatch.lo testatomic.lo testflock.lo \
+	testsock.lo testglobalmutex.lo teststrnatcmp.lo testfilecopy.lo \
+	testtemp.lo testlfs.lo testcond.lo testescape.lo testskiplist.lo
 
 OTHER_PROGRAMS = \
 	echod@EXEEXT@ \
@@ -167,29 +158,12 @@ OBJECTS_tryread = tryread.lo $(LOCAL_LIBS)
 tryread@EXEEXT@: $(OBJECTS_tryread)
 	$(LINK_PROG) $(OBJECTS_tryread) $(ALL_LIBS)
 
-OBJECTS_dbd = dbd.lo $(LOCAL_LIBS)
-dbd@EXEEXT@: $(OBJECTS_dbd)
-	$(LINK_PROG) $(OBJECTS_dbd) $(APRUTIL_LIBS)
-
 check: $(TESTALL_COMPONENTS) $(STDTEST_PORTABLE) $(STDTEST_NONPORTABLE)
 	teststatus=0; \
 	progfailed=""; \
 	for prog in $(STDTEST_PORTABLE) $(STDTEST_NONPORTABLE); do \
-	        if test "$$prog" = 'dbd@EXEEXT@'; then \
-			for driver in none @apu_dbd_tests@; do \
-				if test "$$driver" != 'none'; then \
-					@shlibpath_var@="`echo "../dbm/.libs:../dbd/.libs:$$@shlibpath_var@" | sed -e 's/::*$$//'`" \
-					./$$prog $$driver; \
-					status=$$?; \
-					if test $$status != 0; then \
-						teststatus=$$status; \
-						progfailed="$$progfailed '$$prog $$driver'"; \
-					fi; \
-				fi; \
-			done; \
-		elif test "$$prog" = 'sendfile@EXEEXT@'; then \
+		if test "$$prog" = 'sendfile@EXEEXT@'; then \
 			for mode in blocking nonblocking timeout; do \
-				@shlibpath_var@="`echo "../dbm/.libs:../dbd/.libs:$$@shlibpath_var@" | sed -e 's/::*$$//'`" \
 				./$$prog client $$mode startserver 127.0.0.1; \
 				status=$$?; \
 				if test $$status != 0; then \
@@ -198,7 +172,6 @@ check: $(TESTALL_COMPONENTS) $(STDTEST_PORTABLE) $(STDTEST_NONPORTABLE)
 				fi; \
 			done; \
 	        else \
-			@shlibpath_var@="`echo "../dbm/.libs:../dbd/.libs:$$@shlibpath_var@" | sed -e 's/::*$$//'`" \
 			./$$prog -v; \
 			status=$$?; \
 			if test $$status != 0; then \

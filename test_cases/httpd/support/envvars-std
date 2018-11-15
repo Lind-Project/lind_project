@@ -18,11 +18,11 @@
 #
 # This file is generated from envvars-std.in
 #
-if test "x$LD_LIBRARY_PATH" != "x" ; then
-  LD_LIBRARY_PATH="/home/jp/lind_project/lind/repy/repy/lib:$LD_LIBRARY_PATH"
+if test "x$REPLACE_WITH_YOUR_SHLIBPATH_VAR" != "x" ; then
+  REPLACE_WITH_YOUR_SHLIBPATH_VAR="/home/jp/lind_project/lind/repy/repy/lib:$REPLACE_WITH_YOUR_SHLIBPATH_VAR"
 else
-  LD_LIBRARY_PATH="/home/jp/lind_project/lind/repy/repy/lib"
+  REPLACE_WITH_YOUR_SHLIBPATH_VAR="/home/jp/lind_project/lind/repy/repy/lib"
 fi
-export LD_LIBRARY_PATH
+export REPLACE_WITH_YOUR_SHLIBPATH_VAR
 #
 

@@ -18,22 +18,19 @@
 
 #include <stdint.h>
 
-#ifdef __MWERKS__
+#ifndef __GNUC__
 #pragma precompile_target "precomp.mch"
 #endif
 
-#ifndef NETWARE
 #define NETWARE
-#endif
 
-#ifndef N_PLAT_NLM
 #define N_PLAT_NLM
-#endif
 
 #define FAR
 #define far
 
-/* no-op for Codewarrior C compiler; all functions are cdecl by default */
+/* no-op for Codewarrior C compiler; a functions are cdecl 
+   by default */
 #define cdecl
 
 /* if we have wchar_t enabled in C++, predefine this type to avoid

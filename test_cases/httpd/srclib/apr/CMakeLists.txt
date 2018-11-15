@@ -19,70 +19,20 @@ PROJECT(APR C)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-# Either Expat or LibXml2 is required; the others are optional
-FIND_PACKAGE(Expat)
-FIND_PACKAGE(LibXml2)
-FIND_PACKAGE(OpenSSL)
-
-IF(NOT EXPAT_FOUND AND NOT LIBXML2_FOUND)
-  MESSAGE(FATAL_ERROR "Either Expat or LibXml2 is required, but neither was found")
-ENDIF()
-
-IF(EXPAT_FOUND)
-  OPTION(APU_USE_EXPAT      "Use Expat"                    ON)
-  IF(LIBXML2_FOUND)
-    OPTION(APU_USE_LIBXML2  "Use LibXml2"                  OFF)
-  ENDIF()
-ELSE()
-  OPTION(APU_USE_LIBXML2    "Use LibXml2"                  ON)
-ENDIF()
-
 OPTION(APR_INSTALL_PRIVATE_H  "Install selected private .h files (for httpd)"  OFF)
-OPTION(APU_HAVE_CRYPTO      "Crypto support"               OFF)
-OPTION(APU_HAVE_ODBC        "Build ODBC DBD driver"        ON)
 OPTION(APR_HAVE_IPV6        "IPv6 support"                 ON)
 OPTION(INSTALL_PDB          "Install .pdb files (if generated)"  ON)
 OPTION(APR_BUILD_TESTAPR    "Build the test suite"         OFF)
 OPTION(TEST_STATIC_LIBS     "Test programs use APR static libraries instead of shared libraries?" OFF)
 SET(MIN_WINDOWS_VER             "Vista" 
     CACHE STRING "Minimum Windows version")
-SET(LIBXML2_ICONV_INCLUDE_DIR   ""
-    CACHE STRING "Directory with iconv include files for libxml2")
-SET(LIBXML2_ICONV_LIBRARIES     ""
-    CACHE STRING "iconv libraries to link with for libxml2")
-
-IF(NOT APU_USE_EXPAT AND NOT APU_USE_LIBXML2)
-  MESSAGE(FATAL_ERROR "Either Expat or LibXml2 must be selected")
-ENDIF()
-IF(APU_USE_EXPAT AND APU_USE_LIBXML2)
-  MESSAGE(FATAL_ERROR "Only one of Expat and LibXml2 can be selected")
-ENDIF()
-
-IF(APU_HAVE_CRYPTO)
-IF(NOT OPENSSL_FOUND)
-  MESSAGE(FATAL_ERROR "OpenSSL is the only supported crypto implementation, and it wasn't found!")
-ENDIF()
-ENDIF()
 
 # create 1-or-0 representation of feature tests for apr.h
 
 SET(apr_have_ipv6_10 0)
-SET(apu_have_crypto_10 0)
-SET(apu_use_libxml2_10 0)
-SET(apu_use_expat_10 0)
 
 IF(APR_HAVE_IPV6)
   SET(apr_have_ipv6_10 1)
-ENDIF()
-
-IF(APU_HAVE_CRYPTO)
-  SET(apu_have_crypto_10 1)
-ENDIF()
-
-IF(APU_USE_EXPAT)
-  SET(apu_use_expat_10 1)
-ELSE()
-  SET(apu_use_libxml2_10 1)
 ENDIF()
 
 IF("${MIN_WINDOWS_VER}" STREQUAL "")
@@ -97,13 +47,6 @@ ENDIF()
 
 CONFIGURE_FILE(include/apr.hwc
                ${PROJECT_BINARY_DIR}/apr.h)
-# "COPYONLY" just because anything else isn't implemented ;)
-CONFIGURE_FILE(include/private/apu_select_dbm.hw
-               ${PROJECT_BINARY_DIR}/apu_select_dbm.h
-               COPYONLY)
-CONFIGURE_FILE(include/apu_want.hw
-               ${PROJECT_BINARY_DIR}/apu_want.h
-               COPYONLY)
 
 ADD_EXECUTABLE(gen_test_char tools/gen_test_char.c)
 GET_TARGET_PROPERTY(GEN_TEST_CHAR_EXE gen_test_char LOCATION)
@@ -117,14 +60,6 @@ ADD_CUSTOM_TARGET(
   test_char_header ALL
   DEPENDS ${PROJECT_BINARY_DIR}/apr_escape_test_char.h
 )
-
-IF(APU_USE_EXPAT)
-  SET(XMLLIB_INCLUDE_DIR ${EXPAT_INCLUDE_DIRS})
-  SET(XMLLIB_LIBRARIES   ${EXPAT_LIBRARIES})
-ELSE()
-  SET(XMLLIB_INCLUDE_DIR "${LIBXML2_INCLUDE_DIR};${LIBXML2_ICONV_INCLUDE_DIR}")
-  SET(XMLLIB_LIBRARIES   "${LIBXML2_LIBRARIES};${LIBXML2_ICONV_LIBRARIES}")
-ENDIF()
 
 # Generated .h files are stored in PROJECT_BINARY_DIR, not the
 # source tree.
@@ -147,19 +82,12 @@ SET(APR_SYSTEM_LIBS
   rpcrt4
 )
 
-INCLUDE_DIRECTORIES(${APR_INCLUDE_DIRECTORIES} ${XMLLIB_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${APR_INCLUDE_DIRECTORIES})
 
 SET(APR_PUBLIC_HEADERS_STATIC
   include/apr_allocator.h
-  include/apr_anylock.h
   include/apr_atomic.h
-  include/apr_base64.h
-  include/apr_buckets.h
-  include/apr_crypto.h
   include/apr_cstr.h
-  include/apr_date.h
-  include/apr_dbd.h
-  include/apr_dbm.h
   include/apr_dso.h
   include/apr_env.h
   include/apr_errno.h
@@ -171,93 +99,39 @@ SET(APR_PUBLIC_HEADERS_STATIC
   include/apr_getopt.h
   include/apr_global_mutex.h
   include/apr_hash.h
-  include/apr_hooks.h
   include/apr_inherit.h
   include/apr_lib.h
-  include/apr_md4.h
-  include/apr_md5.h
-  include/apr_memcache.h
   include/apr_mmap.h
   include/apr_network_io.h
-  include/apr_optional.h
-  include/apr_optional_hooks.h
   include/apr_perms_set.h
   include/apr_poll.h
   include/apr_pools.h
   include/apr_portable.h
   include/apr_proc_mutex.h
-  include/apr_queue.h
   include/apr_random.h
-  include/apr_redis.h
-  include/apr_reslist.h
   include/apr_ring.h
-  include/apr_rmm.h
-  include/apr_sdbm.h
-  include/apr_sha1.h
   include/apr_shm.h
   include/apr_signal.h
-  include/apr_siphash.h
   include/apr_skiplist.h
   include/apr_strings.h
-  include/apr_strmatch.h
+  include/apr_support.h
   include/apr_tables.h
   include/apr_thread_cond.h
   include/apr_thread_mutex.h
-  include/apr_thread_pool.h
   include/apr_thread_proc.h
   include/apr_thread_rwlock.h
   include/apr_time.h
-  include/apr_uri.h
   include/apr_user.h
-  include/apr_uuid.h
   include/apr_version.h
   include/apr_want.h
-  include/apr_xlate.h
-  include/apr_xml.h
-  include/apu.h
-  include/apu_errno.h
-  include/apu_version.h
 )
 SET(APR_PUBLIC_HEADERS_GENERATED
   ${PROJECT_BINARY_DIR}/apr.h
-  ${PROJECT_BINARY_DIR}/apu_want.h
 )
 
 SET(APR_SOURCES
   atomic/win32/apr_atomic.c
-  buckets/apr_brigade.c
-  buckets/apr_buckets.c
-  buckets/apr_buckets_alloc.c
-  buckets/apr_buckets_eos.c
-  buckets/apr_buckets_file.c
-  buckets/apr_buckets_flush.c
-  buckets/apr_buckets_heap.c
-  buckets/apr_buckets_mmap.c
-  buckets/apr_buckets_pipe.c
-  buckets/apr_buckets_pool.c
-  buckets/apr_buckets_refcount.c
-  buckets/apr_buckets_simple.c
-  buckets/apr_buckets_socket.c
-  crypto/apr_crypto.c
-  crypto/apr_crypto_prng.c
-  crypto/apr_crypto_internal.c
-  crypto/apr_md4.c
-  crypto/apr_md5.c
-  crypto/apr_passwd.c
-  crypto/apr_sha1.c
-  crypto/apr_siphash.c
-  crypto/crypt_blowfish.c
-  crypto/getuuid.c
-  crypto/uuid.c
-  dbd/apr_dbd.c
-  dbm/apr_dbm.c
-  dbm/apr_dbm_sdbm.c
-  dbm/sdbm/sdbm.c
-  dbm/sdbm/sdbm_hash.c
-  dbm/sdbm/sdbm_lock.c
-  dbm/sdbm/sdbm_pair.c
   dso/win32/dso.c
-  encoding/apr_base64.c
   encoding/apr_escape.c
   file_io/unix/copy.c
   file_io/unix/fileacc.c
@@ -276,12 +150,10 @@ SET(APR_SOURCES
   file_io/win32/pipe.c
   file_io/win32/readwrite.c
   file_io/win32/seek.c
-  hooks/apr_hooks.c
   locks/win32/proc_mutex.c
   locks/win32/thread_cond.c
   locks/win32/thread_mutex.c
   locks/win32/thread_rwlock.c
-  memcache/apr_memcache.c
   memory/unix/apr_pools.c
   misc/unix/errorcodes.c
   misc/unix/getopt.c
@@ -313,7 +185,6 @@ SET(APR_SOURCES
   random/unix/apr_random.c
   random/unix/sha2.c
   random/unix/sha2_glue.c
-  redis/apr_redis.c
   shmem/win32/shm.c
   strings/apr_cpystrn.c
   strings/apr_cstr.c
@@ -322,7 +193,6 @@ SET(APR_SOURCES
   strings/apr_strings.c
   strings/apr_strnatcmp.c
   strings/apr_strtok.c
-  strmatch/apr_strmatch.c
   tables/apr_hash.c
   tables/apr_skiplist.c
   tables/apr_tables.c
@@ -332,32 +202,15 @@ SET(APR_SOURCES
   threadproc/win32/threadpriv.c
   time/win32/time.c
   time/win32/timestr.c
-  uri/apr_uri.c
   user/win32/groupinfo.c
   user/win32/userinfo.c
-  util-misc/apr_date.c
-  util-misc/apr_queue.c
-  util-misc/apr_reslist.c
-  util-misc/apr_rmm.c
-  util-misc/apr_thread_pool.c
-  util-misc/apu_dso.c
-  xlate/xlate.c
-  xml/apr_xml.c
-  xml/apr_xml_expat.c
-  xml/apr_xml_libxml2.c
 )
 
 SET(APR_TEST_SOURCES
   test/abts.c
   test/testargs.c
   test/testatomic.c
-  test/testbase64.c
-  test/testbuckets.c
   test/testcond.c
-  test/testcrypto.c
-  test/testdate.c
-  test/testdbd.c
-  test/testdbm.c
   test/testdir.c
   test/testdso.c
   test/testdup.c
@@ -371,106 +224,62 @@ SET(APR_TEST_SOURCES
   test/testfnmatch.c
   test/testglobalmutex.c
   test/testhash.c
-  test/testhooks.c
   test/testipsub.c
   test/testlfs.c
-  test/testlfsabi.c
-  test/testlfsabi32.c
-  test/testlfsabi64.c
-  test/testlfsabi_include.c
   test/testlock.c
-  test/testmd4.c
-  test/testmd5.c
-  test/testmemcache.c
   test/testmmap.c
   test/testnames.c
   test/testoc.c
-  test/testpass.c
   test/testpath.c
   test/testpipe.c
   test/testpoll.c
   test/testpools.c
   test/testproc.c
   test/testprocmutex.c
-  test/testqueue.c
   test/testrand.c
-  test/testredis.c
-  test/testreslist.c
-  test/testrmm.c
   test/testshm.c
-  test/testsiphash.c
   test/testskiplist.c
   test/testsleep.c
   test/testsock.c
   test/testsockets.c
   test/testsockopt.c
   test/teststr.c
-  test/teststrmatch.c
   test/teststrnatcmp.c
   test/testtable.c
   test/testtemp.c
   test/testthread.c
   test/testtime.c
   test/testud.c
-  test/testuri.c
   test/testuser.c
   test/testutil.c
-  test/testuuid.c
   test/testvsn.c
-  test/testxlate.c
-  test/testxml.c
 )
 
 SET(install_targets)
 SET(install_bin_pdb)
-SET(dbd_drivers)
 
-# libapr-2 is shared, apr-2 is static
-ADD_LIBRARY(libapr-2 SHARED ${APR_SOURCES} ${APR_PUBLIC_HEADERS_GENERATED} libapr.rc)
-SET(install_targets ${install_targets} libapr-2)
-SET(install_bin_pdb ${install_bin_pdb} ${PROJECT_BINARY_DIR}/libapr-2.pdb)
-TARGET_LINK_LIBRARIES(libapr-2 ${XMLLIB_LIBRARIES} ${APR_SYSTEM_LIBS})
-SET_TARGET_PROPERTIES(libapr-2 PROPERTIES COMPILE_DEFINITIONS "APR_DECLARE_EXPORT;APR_HAVE_MODULAR_DSO")
-ADD_DEPENDENCIES(libapr-2 test_char_header)
+# libapr-1 is shared, apr-1 is static
+ADD_LIBRARY(libapr-1 SHARED ${APR_SOURCES} ${APR_PUBLIC_HEADERS_GENERATED} libapr.rc)
+SET(install_targets ${install_targets} libapr-1)
+SET(install_bin_pdb ${install_bin_pdb} ${PROJECT_BINARY_DIR}/libapr-1.pdb)
+TARGET_LINK_LIBRARIES(libapr-1 ${APR_SYSTEM_LIBS})
+SET_TARGET_PROPERTIES(libapr-1 PROPERTIES COMPILE_DEFINITIONS "APR_DECLARE_EXPORT;WINNT")
+ADD_DEPENDENCIES(libapr-1 test_char_header)
 
-ADD_LIBRARY(apr-2 STATIC ${APR_SOURCES} ${APR_PUBLIC_HEADERS_GENERATED})
-SET(install_targets ${install_targets} apr-2)
-# no .pdb file generated for static libraries
-TARGET_LINK_LIBRARIES(apr-2 ${XMLLIB_LIBRARIES} ${APR_SYSTEM_LIBS})
-SET_TARGET_PROPERTIES(apr-2 PROPERTIES COMPILE_DEFINITIONS "APR_DECLARE_STATIC;APR_HAVE_MODULAR_DSO")
-ADD_DEPENDENCIES(apr-2 test_char_header)
+ADD_LIBRARY(apr-1 STATIC ${APR_SOURCES} ${APR_PUBLIC_HEADERS_GENERATED})
+SET(install_targets ${install_targets} apr-1)
+TARGET_LINK_LIBRARIES(apr-1 ${APR_SYSTEM_LIBS})
+SET_TARGET_PROPERTIES(apr-1 PROPERTIES COMPILE_DEFINITIONS "APR_DECLARE_STATIC;WINNT")
+ADD_DEPENDENCIES(apr-1 test_char_header)
 
-# libaprapp-2 and aprapp-2 are static
-ADD_LIBRARY(libaprapp-2 STATIC misc/win32/apr_app.c misc/win32/internal.c ${APR_PUBLIC_HEADERS_GENERATED})
-SET(install_targets ${install_targets} libaprapp-2)
-SET_TARGET_PROPERTIES(libaprapp-2 PROPERTIES COMPILE_DEFINITIONS APR_APP)
+# libaprapp-1 and aprapp-1 are static
+ADD_LIBRARY(libaprapp-1 STATIC misc/win32/apr_app.c misc/win32/internal.c ${APR_PUBLIC_HEADERS_GENERATED})
+SET(install_targets ${install_targets} libaprapp-1)
+SET_TARGET_PROPERTIES(libaprapp-1 PROPERTIES COMPILE_DEFINITIONS "APR_APP;WINNT")
 
-ADD_LIBRARY(aprapp-2 STATIC misc/win32/apr_app.c misc/win32/internal.c ${APR_PUBLIC_HEADERS_GENERATED})
-SET(install_targets ${install_targets} aprapp-2)
-SET_TARGET_PROPERTIES(aprapp-2 PROPERTIES COMPILE_DEFINITIONS "APR_DECLARE_STATIC;APR_APP")
-
-IF(APU_HAVE_CRYPTO)
-  IF(NOT OPENSSL_FOUND)
-    MESSAGE(FATAL_ERROR "Only OpenSSL-based crypto is currently implemented in the cmake build")
-  ENDIF()
-  ADD_LIBRARY(apr_crypto_openssl-2 SHARED crypto/apr_crypto_openssl.c libapr.rc)
-  SET(install_targets ${install_targets} apr_crypto_openssl-2)
-  SET(install_bin_pdb ${install_bin_pdb} ${PROJECT_BINARY_DIR}/apr_crypto_openssl-2.pdb)
-  SET_TARGET_PROPERTIES(apr_crypto_openssl-2 PROPERTIES INCLUDE_DIRECTORIES "${APR_INCLUDE_DIRECTORIES};${OPENSSL_INCLUDE_DIR}")
-  SET_TARGET_PROPERTIES(apr_crypto_openssl-2 PROPERTIES COMPILE_FLAGS "-DDLL_NAME=apr_crypto_openssl")
-  TARGET_LINK_LIBRARIES(apr_crypto_openssl-2 libapr-2 ${APR_SYSTEM_LIBS} ${OPENSSL_LIBRARIES})
-ENDIF()
-
-IF(APU_HAVE_ODBC)
-  ADD_LIBRARY(apr_dbd_odbc-2 SHARED dbd/apr_dbd_odbc.c libapr.rc)
-  SET(install_targets ${install_targets} apr_dbd_odbc-2)
-  SET(install_bin_pdb ${install_bin_pdb} ${PROJECT_BINARY_DIR}/apr_dbd_odbc-2.pdb)
-  SET(dbd_drivers ${dbd_drivers} odbc)
-  TARGET_LINK_LIBRARIES(apr_dbd_odbc-2 libapr-2 ${APR_SYSTEM_LIBS} odbc32 odbccp32)
-  SET_PROPERTY(TARGET apr_dbd_odbc-2 APPEND PROPERTY LINK_FLAGS /export:apr_dbd_odbc_driver)
-  SET_TARGET_PROPERTIES(apr_dbd_odbc-2 PROPERTIES COMPILE_DEFINITIONS "APU_HAVE_ODBC;HAVE_SQL_H;APR_DECLARE_EXPORT;APU_DSO_MODULE_BUILD")
-  SET_TARGET_PROPERTIES(apr_dbd_odbc-2 PROPERTIES COMPILE_FLAGS "-DDLL_NAME=apr_dbd_odbc")
-ENDIF()
+ADD_LIBRARY(aprapp-1 STATIC misc/win32/apr_app.c misc/win32/internal.c ${APR_PUBLIC_HEADERS_GENERATED})
+SET(install_targets ${install_targets} aprapp-1)
+SET_TARGET_PROPERTIES(aprapp-1 PROPERTIES COMPILE_DEFINITIONS "APR_DECLARE_STATIC;APR_APP;WINNT")
 
 IF(APR_BUILD_TESTAPR)
   ENABLE_TESTING()
@@ -481,9 +290,6 @@ IF(APR_BUILD_TESTAPR)
   EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E make_directory 
                   ${PROJECT_BINARY_DIR}/data)
   EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E copy_if_different 
-                  ${PROJECT_SOURCE_DIR}/test/data/billion-laughs.xml
-                  ${PROJECT_BINARY_DIR}/data/billion-laughs.xml)
-  EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E copy_if_different 
                   ${PROJECT_SOURCE_DIR}/test/data/file_datafile.txt
                   ${PROJECT_BINARY_DIR}/data/file_datafile.txt)
   EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -491,17 +297,17 @@ IF(APR_BUILD_TESTAPR)
                   ${PROJECT_BINARY_DIR}/data/mmap_datafile.txt)
 
   IF(TEST_STATIC_LIBS)
-    SET(whichapr    apr-2)
-    SET(whichaprapp aprapp-2)
+    SET(whichapr    apr-1)
+    SET(whichaprapp aprapp-1)
     SET(apiflag     -DAPR_DECLARE_STATIC)
   ELSE()
-    SET(whichapr    libapr-2)
-    SET(whichaprapp libaprapp-2)
+    SET(whichapr    libapr-1)
+    SET(whichaprapp libaprapp-1)
     SET(apiflag)
   ENDIF()
 
   ADD_EXECUTABLE(testapp test/testapp.c)
-  TARGET_LINK_LIBRARIES(testapp ${whichapr} ${whichaprapp} ${XMLLIB_LIBRARIES} ${APR_SYSTEM_LIBS})
+  TARGET_LINK_LIBRARIES(testapp ${whichapr} ${whichaprapp} ${APR_SYSTEM_LIBS})
   SET_TARGET_PROPERTIES(testapp PROPERTIES LINK_FLAGS /entry:wmainCRTStartup)
   IF(apiflag)
     SET_TARGET_PROPERTIES(testapp PROPERTIES COMPILE_FLAGS ${apiflag})
@@ -509,7 +315,7 @@ IF(APR_BUILD_TESTAPR)
   ADD_TEST(NAME testapp COMMAND testapp)
 
   ADD_EXECUTABLE(testall ${APR_TEST_SOURCES})
-  TARGET_LINK_LIBRARIES(testall ${whichapr} ${XMLLIB_LIBRARIES} ${APR_SYSTEM_LIBS})
+  TARGET_LINK_LIBRARIES(testall ${whichapr} ${APR_SYSTEM_LIBS})
   IF(apiflag)
     SET_TARGET_PROPERTIES(testall PROPERTIES COMPILE_FLAGS ${apiflag})
   ENDIF()
@@ -530,7 +336,6 @@ IF(APR_BUILD_TESTAPR)
   # Build all the single-source executable files with no special build
   # requirements.
   SET(single_source_programs
-    test/dbd.c
     test/echod.c
     test/sendfile.c
     test/sockperf.c
@@ -550,7 +355,7 @@ IF(APR_BUILD_TESTAPR)
   FOREACH(sourcefile ${single_source_programs})
     STRING(REGEX REPLACE ".*/([^\\]+)\\.c" "\\1" proggie ${sourcefile})
     ADD_EXECUTABLE(${proggie} ${sourcefile})
-    TARGET_LINK_LIBRARIES(${proggie} ${whichapr} ${XMLLIB_LIBRARIES} ${APR_SYSTEM_LIBS})
+    TARGET_LINK_LIBRARIES(${proggie} ${whichapr} ${APR_SYSTEM_LIBS})
     IF(apiflag)
       SET_TARGET_PROPERTIES(${proggie} PROPERTIES COMPILE_FLAGS ${apiflag})
     ENDIF()
@@ -569,11 +374,7 @@ IF(APR_BUILD_TESTAPR)
   # testlockperf takes forever on Windows with default counter limit
   ADD_TEST(NAME testlockperf COMMAND testlockperf -c 50000)
 
-  # dbd and sendfile are run multiple times with different parameters.
-  FOREACH(somedbd ${dbd_drivers})
-    ADD_TEST(NAME dbd-${somedbd} COMMAND dbd ${somedbd})
-  ENDFOREACH()
-
+  # sendfile runs multiple times with different parameters.
   FOREACH(sendfile_mode blocking nonblocking timeout)
     ADD_TEST(NAME sendfile-${sendfile_mode} COMMAND sendfile client ${sendfile_mode} startserver)
   ENDFOREACH()
@@ -606,6 +407,7 @@ IF(APR_INSTALL_PRIVATE_H)
     include/arch/win32/apr_private.h
     )
   INSTALL(FILES ${APR_PRIVATE_H_FOR_HTTPD} DESTINATION include/arch/win32)
+  INSTALL(FILES include/arch/apr_private_common.h DESTINATION include/arch)
 ENDIF()
 
 STRING(TOUPPER "${CMAKE_BUILD_TYPE}" buildtype)
@@ -619,11 +421,7 @@ MESSAGE(STATUS "  Install .pdb (if available)...... : ${INSTALL_PDB}")
 MESSAGE(STATUS "  Install prefix .................. : ${CMAKE_INSTALL_PREFIX}")
 MESSAGE(STATUS "  C compiler ...................... : ${CMAKE_C_COMPILER}")
 MESSAGE(STATUS "  IPv6 ............................ : ${APR_HAVE_IPV6}")
-MESSAGE(STATUS "  DBD ODBC driver ................. : ${APU_HAVE_ODBC}")
-MESSAGE(STATUS "  Use Expat ....................... : ${APU_USE_EXPAT}")
-MESSAGE(STATUS "  Use LibXml2 ..................... : ${APU_USE_LIBXML2}")
 MESSAGE(STATUS "  Minimum Windows version ......... : ${MIN_WINDOWS_VER}")
-MESSAGE(STATUS "  Library files for XML ........... : ${XMLLIB_LIBRARIES}")
 MESSAGE(STATUS "  Build test suite ................ : ${APR_BUILD_TESTAPR}")
 IF(TEST_STATIC_LIBS)
 MESSAGE(STATUS "    (testing static libraries)")

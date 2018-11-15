@@ -17,7 +17,7 @@ endif
 #
 XINCDIRS	+= \
 			$(APR)/include \
-			$(APR)/include/arch/netware \
+			$(APR)/include/arch/NetWare \
 			$(EOLIST)
 
 #
@@ -154,7 +154,7 @@ XDCDATA		=
 # If there is an NLM target, put it here
 #
 TARGET_nlm = \
-	$(OBJDIR)/$(NLM_NAME).nlm \
+	$(OBJDIR)/testatmc.nlm \
 	$(EOLIST)
 
 #
@@ -187,8 +187,8 @@ FILES_nlm_libs = \
 # These will be added as a module command in the link.opt file.
 #
 FILES_nlm_modules = \
-	aprlib \
-	libc \
+	Libc \
+	APRLIB \
 	$(EOLIST)
 
 #
@@ -210,8 +210,8 @@ FILE_nlm_copyright =
 # Any additional imports go here
 #
 FILES_nlm_Ximports = \
-	@$(APR)/aprlib.imp \
-	@$(NOVI)/libc.imp \
+	@libc.imp \
+	@aprlib.imp \
 	$(EOLIST)
  
 #   

@@ -68,7 +68,6 @@ static const char *mutexname(apr_lockmech_e mech)
     case APR_LOCK_PROC_PTHREAD: return "proc_pthread";
     case APR_LOCK_POSIXSEM: return "posixsem";
     case APR_LOCK_DEFAULT: return "default";
-    case APR_LOCK_DEFAULT_TIMED: return "default_timed";
     default: return "unknown";
     }
 }
@@ -84,11 +83,6 @@ static void test_exclusive(abts_case *tc, void *data)
     abts_log_message(mutexname(mech));
  
     rv = apr_global_mutex_create(&global_lock, LOCKNAME, mech, p);
-    if (rv == APR_ENOTIMPL) {
-        /* MacOS lacks TIMED implementation, so don't fail for ENOTIMPL */
-        ABTS_NOT_IMPL(tc, "global mutex TIMED not implemented");
-        return;
-    }
     APR_ASSERT_SUCCESS(tc, "Error creating mutex", rv);
 
     launch_child(tc, mech, &p1, p);
@@ -135,8 +129,6 @@ abts_suite *testglobalmutex(abts_suite *suite)
     mech = APR_LOCK_FLOCK;
     abts_run_test(suite, test_exclusive, &mech);
 #endif
-    mech = APR_LOCK_DEFAULT_TIMED;
-    abts_run_test(suite, test_exclusive, &mech);
 
     return suite;
 }

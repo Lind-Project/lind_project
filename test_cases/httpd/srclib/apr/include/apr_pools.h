@@ -171,6 +171,7 @@ APR_DECLARE(apr_status_t) apr_pool_initialize(void);
  */
 APR_DECLARE(void) apr_pool_terminate(void);
 
+
 /*
  * Pool creation/destruction
  */
@@ -197,6 +198,14 @@ APR_DECLARE(apr_status_t) apr_pool_create_ex(apr_pool_t **newpool,
                                              apr_abortfunc_t abort_fn,
                                              apr_allocator_t *allocator)
                           __attribute__((nonnull(1)));
+
+/**
+ * Create a new pool.
+ * @deprecated @see apr_pool_create_unmanaged_ex.
+ */
+APR_DECLARE(apr_status_t) apr_pool_create_core_ex(apr_pool_t **newpool,
+                                                  apr_abortfunc_t abort_fn,
+                                                  apr_allocator_t *allocator);
 
 /**
  * Create a new unmanaged pool.
@@ -248,7 +257,16 @@ APR_DECLARE(apr_status_t) apr_pool_create_ex_debug(apr_pool_t **newpool,
                              APR_POOL__FILE_LINE__)
 #endif
 
-  /**
+/**
+ * Debug version of apr_pool_create_core_ex.
+ * @deprecated @see apr_pool_create_unmanaged_ex_debug.
+ */
+APR_DECLARE(apr_status_t) apr_pool_create_core_ex_debug(apr_pool_t **newpool,
+                                                   apr_abortfunc_t abort_fn,
+                                                   apr_allocator_t *allocator,
+                                                   const char *file_line);
+
+/**
  * Debug version of apr_pool_create_unmanaged_ex.
  * @param newpool @see apr_pool_create_unmanaged.
  * @param abort_fn @see apr_pool_create_unmanaged.
@@ -260,8 +278,8 @@ APR_DECLARE(apr_status_t) apr_pool_create_ex_debug(apr_pool_t **newpool,
  *         calls in a wrapper function and wish to override
  *         the file_line argument to reflect the caller of
  *         your wrapper function.  If you do not have
- *         apr_pool_create_unmanaged_ex in a wrapper, trust the macro
- *         and don't call apr_pool_create_unmanaged_ex_debug directly.
+ *         apr_pool_create_core_ex in a wrapper, trust the macro
+ *         and don't call apr_pool_create_core_ex_debug directly.
  */
 APR_DECLARE(apr_status_t) apr_pool_create_unmanaged_ex_debug(apr_pool_t **newpool,
                                                    apr_abortfunc_t abort_fn,
@@ -270,6 +288,10 @@ APR_DECLARE(apr_status_t) apr_pool_create_unmanaged_ex_debug(apr_pool_t **newpoo
                           __attribute__((nonnull(1)));
 
 #if APR_POOL_DEBUG
+#define apr_pool_create_core_ex(newpool, abort_fn, allocator)  \
+    apr_pool_create_unmanaged_ex_debug(newpool, abort_fn, allocator, \
+                                  APR_POOL__FILE_LINE__)
+
 #define apr_pool_create_unmanaged_ex(newpool, abort_fn, allocator)  \
     apr_pool_create_unmanaged_ex_debug(newpool, abort_fn, allocator, \
                                   APR_POOL__FILE_LINE__)
@@ -307,13 +329,19 @@ APR_DECLARE(apr_status_t) apr_pool_create(apr_pool_t **newpool,
  * @param newpool The pool we have just created.
  */
 #if defined(DOXYGEN)
+APR_DECLARE(apr_status_t) apr_pool_create_core(apr_pool_t **newpool);
 APR_DECLARE(apr_status_t) apr_pool_create_unmanaged(apr_pool_t **newpool);
 #else
 #if APR_POOL_DEBUG
+#define apr_pool_create_core(newpool) \
+    apr_pool_create_unmanaged_ex_debug(newpool, NULL, NULL, \
+                                  APR_POOL__FILE_LINE__)
 #define apr_pool_create_unmanaged(newpool) \
     apr_pool_create_unmanaged_ex_debug(newpool, NULL, NULL, \
                                   APR_POOL__FILE_LINE__)
 #else
+#define apr_pool_create_core(newpool) \
+    apr_pool_create_unmanaged_ex(newpool, NULL, NULL)
 #define apr_pool_create_unmanaged(newpool) \
     apr_pool_create_unmanaged_ex(newpool, NULL, NULL)
 #endif
@@ -508,13 +536,6 @@ APR_DECLARE(int) apr_pool_is_ancestor(apr_pool_t *a, apr_pool_t *b);
 APR_DECLARE(void) apr_pool_tag(apr_pool_t *pool, const char *tag)
                   __attribute__((nonnull(1)));
 
-/**
- * Retrieve the tag name.
- * @param pool The pool
- * @return Tag name, or NULL if no name is set.
- */
-APR_DECLARE(const char *) apr_pool_get_tag(apr_pool_t *pool)
-                  __attribute__((nonnull(1)));
 
 /*
  * User data management
@@ -747,17 +768,6 @@ APR_DECLARE(void) apr_pool_join(apr_pool_t *p, apr_pool_t *sub)
                   __attribute__((nonnull(2)));
 
 /**
- * Guarantee that a pool is only used by the current thread.
- * This should be used when a pool is created by a different thread than
- * the thread it is using, or if there is some locking in use to ensure
- * that only one thread uses the pool at the same time.
- *
- * @param pool The pool
- * @param flags Flags, currently unused
- */
-APR_DECLARE(void) apr_pool_owner_set(apr_pool_t *pool, apr_uint32_t flags);
-
-/**
  * Find a pool from something allocated in it.
  * @param mem The thing allocated in the pool
  * @return The pool it is allocated in
@@ -788,11 +798,6 @@ APR_DECLARE(void) apr_pool_lock(apr_pool_t *pool, int flag);
 #undef apr_pool_join
 #endif
 #define apr_pool_join(a,b)
-
-#ifdef apr_pool_owner_set
-#undef apr_pool_owner_set
-#endif
-#define apr_pool_owner_set(a,b)
 
 #ifdef apr_pool_lock
 #undef apr_pool_lock

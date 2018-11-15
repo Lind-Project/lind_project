@@ -28,6 +28,14 @@
  * apr.hnw at the start of a NetWare build by the ./build/NWGNmakefile.
  */
 
+/**
+ * @file apr.h
+ * @brief APR Platform Definitions
+ * @remark This is a generated header generated from include/apr.h.in by
+ * ./configure, or copied from include/apr.hw or include/apr.hnw
+ * for Win32 or Netware by those build environments, respectively.
+ */
+
 #if defined(NETWARE) || defined(DOXYGEN)
 
 #undef  FD_SETSIZE
@@ -42,7 +50,6 @@
 #include <string.h>
 #include <limits.h>
 #include <netware.h>
-#include <library.h>
 #include <nks/thread.h>
 #include <nks/synch.h>
 #include <nks/time.h>
@@ -173,11 +180,7 @@ extern "C" {
 #else
 #define APR_HAVE_IPV6                   0
 #endif
-#ifdef USE_WINSOCK
 #define APR_HAVE_SOCKADDR_UN            0
-#else
-#define APR_HAVE_SOCKADDR_UN            1
-#endif
 #define APR_HAVE_MEMCHR                 1
 #define APR_HAVE_MEMMOVE                1
 #define APR_HAVE_SETRLIMIT              0
@@ -223,11 +226,11 @@ extern "C" {
 #define APR_CHARSET_EBCDIC              0
 
 /* Is the TCP_NODELAY socket option inherited from listening sockets?
- */
+*/
 #define APR_TCP_NODELAY_INHERITED       1
 
 /* Is the O_NONBLOCK flag inherited from listening sockets?
- */
+*/
 #define APR_O_NONBLOCK_INHERITED        1
 
 /* Typedefs that APR needs. */
@@ -259,25 +262,18 @@ typedef  apr_uint64_t      apr_ino_t;
 
 /* Are we big endian? */
 /* XXX: Fatal assumption on Alpha platforms */
-#define APR_IS_BIGENDIAN   0
+#define APR_IS_BIGENDIAN        0
 
 #ifdef UNKNOWN_NETWARE_64BIT_FLAG_NEEDED
 #define APR_SIZEOF_VOIDP   8
 #else
 #define APR_SIZEOF_VOIDP   4
 #endif
-#if APR_HAS_LARGE_FILES
-#define APR_SIZEOF_OFF_T   8
-#else
-#define APR_SIZEOF_OFF_T   4
-#endif
 
 #if APR_SIZEOF_VOIDP == 8
 typedef  apr_uint64_t            apr_uintptr_t;
-typedef  apr_int64_t             apr_intptr_t;
 #else
 typedef  apr_uint32_t            apr_uintptr_t;
-typedef  apr_int32_t             apr_intptr_t;
 #endif
 
 /* Mechanisms to properly type numeric literals */
@@ -341,7 +337,7 @@ typedef  apr_int32_t             apr_intptr_t;
 #define APR_SIZE_MAX    (~((apr_size_t)0))
 
 /* PROC mutex is a GLOBAL mutex on Netware */
-#define APR_PROC_MUTEX_IS_GLOBAL        1
+#define APR_PROC_MUTEX_IS_GLOBAL      1
 
 /* Definitions that APR programs need to work properly. */
 
@@ -411,27 +407,6 @@ typedef  apr_int32_t             apr_intptr_t;
  */
 #define APR_DECLARE_DATA
 
-#if !defined(WIN32) || defined(APU_MODULE_DECLARE_STATIC)
-/**
- * Declare a dso module's exported module structure as APR_MODULE_DECLARE_DATA.
- *
- * Unless APR_MODULE_DECLARE_STATIC is defined at compile time, symbols
- * declared with APR_MODULE_DECLARE_DATA are always exported.
- * @code
- * module APR_MODULE_DECLARE_DATA mod_tag
- * @endcode
- */
-#define APR_MODULE_DECLARE_DATA
-#else
-#define APR_MODULE_DECLARE_DATA           __declspec(dllexport)
-#endif
-
-/**
- * @deprecated
- * @see APR_MODULE_DECLARE_DATA
- */
-#define APU_MODULE_DECLARE_DATA           APR_MODULE_DECLARE_DATA
-
 #define APR_SSIZE_T_FMT          "d"
 
 #define APR_SIZE_T_FMT           "d"
@@ -457,44 +432,6 @@ typedef int apr_wait_t;
 #define APR_UINT64_T_FMT         "llu"
 #define APR_UINT64_T_HEX_FMT     "llx"
 #define APR_TIME_T_FMT APR_INT64_T_FMT
-
-/*
- * we always have SDBM (it's in our codebase)
- */
-#define APU_HAVE_SDBM           1
-
-#ifndef APU_DSO_MODULE_BUILD
-#define APU_HAVE_GDBM           0
-#define APU_HAVE_NDBM           0
-#define APU_HAVE_DB             0
-
-#if APU_HAVE_DB
-#define APU_HAVE_DB_VERSION     0
-#endif
-#endif
-
-/*
- * we always enable dynamic driver loads within apr_dbd
- */
-#ifndef APU_DSO_MODULE_BUILD
-#define APU_HAVE_PGSQL          0
-#define APU_HAVE_MYSQL          0
-#define APU_HAVE_SQLITE3        0
-#define APU_HAVE_SQLITE2        0
-#define APU_HAVE_ORACLE         0
-#define APU_HAVE_ODBC           0
-#endif
-
-#define APU_HAVE_CRYPTO         0
-
-#ifndef APU_DSO_MODULE_BUILD
-#define APU_HAVE_OPENSSL        0
-#define APU_HAVE_NSS            0
-#define APU_HAVE_COMMONCRYPTO   0
-#endif
-
-#define APU_HAVE_ICONV          1
-#define APR_HAS_XLATE           (APU_HAVE_ICONV)
 
 /** @} */
 

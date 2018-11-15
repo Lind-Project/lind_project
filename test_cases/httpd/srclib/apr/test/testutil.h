@@ -58,19 +58,13 @@ void apr_assert_success(abts_case* tc, const char *context,
 #define APR_ASSERT_SUCCESS(tc, ctxt, rv) \
              apr_assert_success(tc, ctxt, rv, __LINE__)
 
-void apr_assert_failure(abts_case* tc, const char *context,
-                        apr_status_t rv, int lineno);
-#define APR_ASSERT_FAILURE(tc, ctxt, rv) \
-             apr_assert_failure(tc, ctxt, rv, __LINE__)
-
-
 void initialize(void);
 
 abts_suite *testatomic(abts_suite *suite);
 abts_suite *testdir(abts_suite *suite);
 abts_suite *testdso(abts_suite *suite);
 abts_suite *testdup(abts_suite *suite);
-abts_suite *testencode(abts_suite *suite);
+abts_suite *testescape(abts_suite *suite);
 abts_suite *testenv(abts_suite *suite);
 abts_suite *testfile(abts_suite *suite);
 abts_suite *testfilecopy(abts_suite *suite);
@@ -81,7 +75,6 @@ abts_suite *testfnmatch(abts_suite *suite);
 abts_suite *testgetopt(abts_suite *suite);
 abts_suite *testglobalmutex(abts_suite *suite);
 abts_suite *testhash(abts_suite *suite);
-abts_suite *testhooks(abts_suite *suite);
 abts_suite *testipsub(abts_suite *suite);
 abts_suite *testlock(abts_suite *suite);
 abts_suite *testcond(abts_suite *suite);
@@ -110,31 +103,6 @@ abts_suite *testtime(abts_suite *suite);
 abts_suite *testud(abts_suite *suite);
 abts_suite *testuser(abts_suite *suite);
 abts_suite *testvsn(abts_suite *suite);
-
-abts_suite *testescape(abts_suite *suite);
-abts_suite *teststrmatch(abts_suite *suite);
-abts_suite *testuri(abts_suite *suite);
-abts_suite *testuuid(abts_suite *suite);
-abts_suite *testbuckets(abts_suite *suite);
-abts_suite *testpass(abts_suite *suite);
-abts_suite *testbase64(abts_suite *suite);
-abts_suite *testmd4(abts_suite *suite);
-abts_suite *testmd5(abts_suite *suite);
-abts_suite *testcrypto(abts_suite *suite);
-abts_suite *testdbd(abts_suite *suite);
-abts_suite *testdate(abts_suite *suite);
-abts_suite *testmemcache(abts_suite *suite);
-abts_suite *testredis(abts_suite *suite);
-abts_suite *testreslist(abts_suite *suite);
-abts_suite *testqueue(abts_suite *suite);
-abts_suite *testxml(abts_suite *suite);
-abts_suite *testxlate(abts_suite *suite);
-abts_suite *testrmm(abts_suite *suite);
-abts_suite *testdbm(abts_suite *suite);
-abts_suite *testlfsabi(abts_suite *suite);
 abts_suite *testskiplist(abts_suite *suite);
-abts_suite *testsiphash(abts_suite *suite);
-abts_suite *testjson(abts_suite *suite);
-abts_suite *testjose(abts_suite *suite);
 
 #endif /* APR_TEST_INCLUDES */

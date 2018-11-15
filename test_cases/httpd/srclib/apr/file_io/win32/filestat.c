@@ -80,11 +80,11 @@ static apr_fileperms_t convert_prot(ACCESS_MASK acc, prot_scope_e scope)
      */
     apr_fileperms_t prot = 0;
     if (acc & FILE_EXECUTE)
-        prot |= APR_FPROT_WEXECUTE;
+        prot |= APR_WEXECUTE;
     if (acc & FILE_WRITE_DATA)
-        prot |= APR_FPROT_WWRITE;
+        prot |= APR_WWRITE;
     if (acc & FILE_READ_DATA)
-        prot |= APR_FPROT_WREAD;
+        prot |= APR_WREAD;
     return (prot << scope);
 }
 
@@ -157,7 +157,7 @@ static apr_status_t resolve_ident(apr_finfo_t *finfo, const char *fname,
                           | ((wanted & APR_FINFO_LINK) ? APR_OPENLINK : 0)
                           | ((wanted & (APR_FINFO_PROT | APR_FINFO_OWNER))
                                 ? APR_READCONTROL : 0),
-                            APR_FPROT_OS_DEFAULT, pool)) == APR_SUCCESS) {
+                            APR_OS_DEFAULT, pool)) == APR_SUCCESS) {
         rv = apr_file_info_get(finfo, wanted, thefile);
         finfo->filehand = NULL;
         apr_file_close(thefile);
@@ -169,7 +169,7 @@ static apr_status_t resolve_ident(apr_finfo_t *finfo, const char *fname,
          */
         if ((rv = apr_file_open(&thefile, fname, APR_OPENINFO
                               | ((wanted & APR_FINFO_LINK) ? APR_OPENLINK : 0),
-                                APR_FPROT_OS_DEFAULT, pool)) == APR_SUCCESS) {
+                                APR_OS_DEFAULT, pool)) == APR_SUCCESS) {
             rv = apr_file_info_get(finfo, wanted & ~(APR_FINFO_PROT 
                                                  | APR_FINFO_OWNER),
                                  thefile);
@@ -197,10 +197,10 @@ static apr_status_t guess_protection_bits(apr_finfo_t *finfo,
      * The same holds on NT if a file doesn't have a DACL (e.g., on FAT)
      */
     if (finfo->protection & APR_FREADONLY) {
-        finfo->protection |= APR_FPROT_WREAD | APR_FPROT_WEXECUTE;
+        finfo->protection |= APR_WREAD | APR_WEXECUTE;
     }
     else {
-        finfo->protection |= APR_FPROT_WREAD | APR_FPROT_WEXECUTE | APR_FPROT_WWRITE;
+        finfo->protection |= APR_WREAD | APR_WEXECUTE | APR_WWRITE;
     }
     finfo->protection |= (finfo->protection << prot_scope_group)
                        | (finfo->protection << prot_scope_user);
@@ -585,7 +585,7 @@ APR_DECLARE(apr_status_t) apr_stat(apr_finfo_t *finfo, const char *fname,
 #if APR_HAS_ANSI_FS
     ELSE_WIN_OS_IS_ANSI
     {
-        const char *root = NULL;
+        char *root = NULL;
         const char *test = fname;
         rv = apr_filepath_root(&root, &test, APR_FILEPATH_NATIVE, pool);
         isroot = (root && *root && !(*test));
@@ -608,7 +608,7 @@ APR_DECLARE(apr_status_t) apr_stat(apr_finfo_t *finfo, const char *fname,
                 finfo->pool = pool;
                 finfo->filetype = 0;
                 finfo->mtime = apr_time_now();
-                finfo->protection |= APR_FPROT_WREAD | APR_FPROT_WEXECUTE | APR_FPROT_WWRITE;
+                finfo->protection |= APR_WREAD | APR_WEXECUTE | APR_WWRITE;
                 finfo->protection |= (finfo->protection << prot_scope_group) 
                                    | (finfo->protection << prot_scope_user);
                 finfo->valid |= APR_FINFO_TYPE | APR_FINFO_PROT 
@@ -800,7 +800,7 @@ APR_DECLARE(apr_status_t) apr_file_mtime_set(const char *fname,
 
     rv = apr_file_open(&thefile, fname,
                        APR_FOPEN_READ | APR_WRITEATTRS,
-                       APR_FPROT_OS_DEFAULT, pool);
+                       APR_OS_DEFAULT, pool);
     if (!rv)
     {
         FILETIME file_ctime;

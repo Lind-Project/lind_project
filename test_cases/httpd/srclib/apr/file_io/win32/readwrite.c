@@ -140,90 +140,6 @@ static apr_status_t read_with_timeout(apr_file_t *file, void *buf, apr_size_t le
     return rv;
 }
 
-static apr_status_t read_buffered(apr_file_t *thefile, void *buf, apr_size_t *len)
-{
-    apr_status_t rv;
-    char *pos = (char *)buf;
-    apr_size_t bytes_read;
-    apr_size_t size;
-    apr_size_t remaining = *len;
-
-    if (thefile->direction == 1) {
-        rv = apr_file_flush(thefile);
-        if (rv != APR_SUCCESS) {
-            return rv;
-        }
-        thefile->bufpos = 0;
-        thefile->direction = 0;
-        thefile->dataRead = 0;
-    }
-
-    /* Copy the data we have in the buffer. */
-    size = thefile->dataRead - thefile->bufpos;
-    if (size > remaining) {
-        size = remaining;
-    }
-    memcpy(pos, thefile->buffer + thefile->bufpos, size);
-    pos += size;
-    remaining -= size;
-    thefile->bufpos += size;
-
-    if (remaining == 0) {
-        /* Nothing to do more, keep *LEN unchanged and return. */
-        return APR_SUCCESS;
-    }
-    /* The buffer is empty, but the caller wants more.
-     * Decide on the most appropriate way to read from the file:
-     */
-    if (remaining > thefile->bufsize) {
-        /* If the remaining chunk won't fit into the buffer, read it into
-         * the destination buffer with a single syscall.
-         */
-        rv = read_with_timeout(thefile, pos, remaining, &bytes_read);
-        thefile->filePtr += bytes_read;
-        pos += bytes_read;
-        /* Also, copy the last BUFSIZE (or less in case of a short read) bytes
-         * from the chunk to our buffer so that seeking backwards and reading
-         * would work from the buffer.
-         */
-        size = thefile->bufsize;
-        if (size > bytes_read) {
-            size = bytes_read;
-        }
-        memcpy(thefile->buffer, pos - size, size);
-        thefile->bufpos = size;
-        thefile->dataRead = size;
-    }
-    else {
-        /* The remaining chunk fits into the buffer.  Read up to BUFSIZE bytes
-         * from the file to our internal buffer.
-         */
-        rv = read_with_timeout(thefile, thefile->buffer, thefile->bufsize, &bytes_read);
-        thefile->filePtr += bytes_read;
-        thefile->bufpos = 0;
-        thefile->dataRead = bytes_read;
-        /* Copy the required part to the caller. */
-        size = remaining;
-        if (size > bytes_read) {
-            size = bytes_read;
-        }
-        memcpy(pos, thefile->buffer, size);
-        pos += size;
-        thefile->bufpos += size;
-    }
-
-    if (bytes_read == 0 && rv == APR_EOF) {
-        thefile->eof_hit = TRUE;
-    }
-
-    *len = pos - (char *)buf;
-    if (*len) {
-        rv = APR_SUCCESS;
-    }
-
-    return rv;
-}
-
 APR_DECLARE(apr_status_t) apr_file_read(apr_file_t *thefile, void *buf, apr_size_t *len)
 {
     apr_status_t rv;
@@ -261,10 +177,57 @@ APR_DECLARE(apr_status_t) apr_file_read(apr_file_t *thefile, void *buf, apr_size
         }
     }
     if (thefile->buffered) {
+        char *pos = (char *)buf;
+        apr_size_t blocksize;
+        apr_size_t size = *len;
+
         if (thefile->flags & APR_FOPEN_XTHREAD) {
             apr_thread_mutex_lock(thefile->mutex);
         }
-        rv = read_buffered(thefile, buf, len);
+
+        if (thefile->direction == 1) {
+            rv = apr_file_flush(thefile);
+            if (rv != APR_SUCCESS) {
+                if (thefile->flags & APR_FOPEN_XTHREAD) {
+                    apr_thread_mutex_unlock(thefile->mutex);
+                }
+                return rv;
+            }
+            thefile->bufpos = 0;
+            thefile->direction = 0;
+            thefile->dataRead = 0;
+        }
+
+        rv = 0;
+        while (rv == 0 && size > 0) {
+            if (thefile->bufpos >= thefile->dataRead) {
+                apr_size_t read;
+                rv = read_with_timeout(thefile, thefile->buffer, 
+                                       thefile->bufsize, &read);
+                if (read == 0) {
+                    if (rv == APR_EOF)
+                        thefile->eof_hit = TRUE;
+                    break;
+                }
+                else {
+                    thefile->dataRead = read;
+                    thefile->filePtr += thefile->dataRead;
+                    thefile->bufpos = 0;
+                }
+            }
+
+            blocksize = size > thefile->dataRead - thefile->bufpos ? thefile->dataRead - thefile->bufpos : size;
+            memcpy(pos, thefile->buffer + thefile->bufpos, blocksize);
+            thefile->bufpos += blocksize;
+            pos += blocksize;
+            size -= blocksize;
+        }
+
+        *len = pos - (char *)buf;
+        if (*len) {
+            rv = APR_SUCCESS;
+        }
+
         if (thefile->flags & APR_FOPEN_XTHREAD) {
             apr_thread_mutex_unlock(thefile->mutex);
         }
@@ -278,102 +241,6 @@ APR_DECLARE(apr_status_t) apr_file_read(apr_file_t *thefile, void *buf, apr_size
     }
 
     return rv;
-}
-
-APR_DECLARE(apr_status_t) apr_file_rotating_check(apr_file_t *thefile)
-{
-    return APR_ENOTIMPL;
-}
-
-APR_DECLARE(apr_status_t) apr_file_rotating_manual_check(apr_file_t *thefile,
-                                                         apr_time_t n)
-{
-    return APR_ENOTIMPL;
-}
-
-/* Helper function that adapts WriteFile() to apr_size_t instead
- * of DWORD. */
-static apr_status_t write_helper(HANDLE filehand, const char *buf,
-                                 apr_size_t len, apr_size_t *pwritten)
-{
-    apr_size_t remaining = len;
-
-    *pwritten = 0;
-    do {
-        DWORD to_write;
-        DWORD written;
-
-        if (remaining > APR_DWORD_MAX) {
-            to_write = APR_DWORD_MAX;
-        }
-        else {
-            to_write = (DWORD)remaining;
-        }
-
-        if (!WriteFile(filehand, buf, to_write, &written, NULL)) {
-            *pwritten += written;
-            return apr_get_os_error();
-        }
-
-        *pwritten += written;
-        remaining -= written;
-        buf += written;
-    } while (remaining);
-
-    return APR_SUCCESS;
-}
-
-static apr_status_t write_buffered(apr_file_t *thefile, const char *buf,
-                                   apr_size_t len, apr_size_t *pwritten)
-{
-    apr_status_t rv;
-
-    if (thefile->direction == 0) {
-        /* Position file pointer for writing at the offset we are logically reading from */
-        apr_off_t offset = thefile->filePtr - thefile->dataRead + thefile->bufpos;
-        DWORD offlo = (DWORD)offset;
-        LONG offhi = (LONG)(offset >> 32);
-        if (offset != thefile->filePtr)
-            SetFilePointer(thefile->filehand, offlo, &offhi, FILE_BEGIN);
-        thefile->bufpos = thefile->dataRead = 0;
-        thefile->direction = 1;
-    }
-
-    *pwritten = 0;
-
-    while (len > 0) {
-        if (thefile->bufpos == thefile->bufsize) { /* write buffer is full */
-            rv = apr_file_flush(thefile);
-            if (rv) {
-                return rv;
-            }
-        }
-        /* If our buffer is empty, and we cannot fit the remaining chunk
-         * into it, write the chunk with a single syscall and return.
-         */
-        if (thefile->bufpos == 0 && len > thefile->bufsize) {
-            apr_size_t written;
-
-            rv = write_helper(thefile->filehand, buf, len, &written);
-            thefile->filePtr += written;
-            *pwritten += written;
-            return rv;
-        }
-        else {
-            apr_size_t blocksize = len;
-
-            if (blocksize > thefile->bufsize - thefile->bufpos) {
-                blocksize = thefile->bufsize - thefile->bufpos;
-            }
-            memcpy(thefile->buffer + thefile->bufpos, buf, blocksize);
-            thefile->bufpos += blocksize;
-            buf += blocksize;
-            len -= blocksize;
-            *pwritten += blocksize;
-        }
-    }
-
-    return APR_SUCCESS;
 }
 
 APR_DECLARE(apr_status_t) apr_file_write(apr_file_t *thefile, const void *buf, apr_size_t *nbytes)
@@ -396,76 +263,61 @@ APR_DECLARE(apr_status_t) apr_file_write(apr_file_t *thefile, const void *buf, a
     }
 
     if (thefile->buffered) {
+        char *pos = (char *)buf;
+        apr_size_t blocksize;
+        apr_size_t size = *nbytes;
+
         if (thefile->flags & APR_FOPEN_XTHREAD) {
             apr_thread_mutex_lock(thefile->mutex);
         }
-        rv = write_buffered(thefile, buf, *nbytes, nbytes);
+
+        if (thefile->direction == 0) {
+            /* Position file pointer for writing at the offset we are logically reading from */
+            apr_off_t offset = thefile->filePtr - thefile->dataRead + thefile->bufpos;
+            DWORD offlo = (DWORD)offset;
+            LONG  offhi = (LONG)(offset >> 32);
+            if (offset != thefile->filePtr)
+                SetFilePointer(thefile->filehand, offlo, &offhi, FILE_BEGIN);
+            thefile->bufpos = thefile->dataRead = 0;
+            thefile->direction = 1;
+        }
+
+        rv = 0;
+        while (rv == 0 && size > 0) {
+            if (thefile->bufpos == thefile->bufsize)   /* write buffer is full */
+                rv = apr_file_flush(thefile);
+
+            blocksize = size > thefile->bufsize - thefile->bufpos ? 
+                                     thefile->bufsize - thefile->bufpos : size;
+            memcpy(thefile->buffer + thefile->bufpos, pos, blocksize);
+            thefile->bufpos += blocksize;
+            pos += blocksize;
+            size -= blocksize;
+        }
+
         if (thefile->flags & APR_FOPEN_XTHREAD) {
             apr_thread_mutex_unlock(thefile->mutex);
         }
         return rv;
     } else {
-        if (thefile->pipe) {
-            rv = WriteFile(thefile->filehand, buf, (DWORD)*nbytes, &bwrote,
-                           thefile->pOverlapped);
-        }
-        else if (thefile->append && !thefile->pOverlapped) {
-            OVERLAPPED ov = {0};
-
-            /* If the file is opened for synchronous I/O, take advantage of the
-             * documented way to atomically append data by calling WriteFile()
-             * with both the OVERLAPPED.Offset and OffsetHigh members set to
-             * 0xFFFFFFFF.  This avoids calling LockFile() that is otherwise
-             * required to avoid a race condition between seeking to the end
-             * and writing data.  Not locking the file improves robustness of
-             * such appends and avoids a deadlock when appending to an already
-             * locked file, as described in PR50058.
-             *
-             * We use this approach only for files opened for synchronous I/O
-             * because in this case the I/O Manager maintains the current file
-             * position.  Otherwise, the file offset returned or changed by
-             * the SetFilePointer() API is not guaranteed to be valid and that
-             * could, for instance, break apr_file_seek() calls after appending
-             * data.  Sadly, if a file is opened for asynchronous I/O, this
-             * call doesn't update the OVERLAPPED.Offset member to reflect the
-             * actual offset used when appending the data (which we could then
-             * use to make seeking and other operations involving filePtr work).
-             * Therefore, when appending to files opened for asynchronous I/O,
-             * we still use the LockFile + SetFilePointer + WriteFile approach.
-             *
-             * References:
-             * https://bz.apache.org/bugzilla/show_bug.cgi?id=50058
-             * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365747
-             * https://msdn.microsoft.com/en-us/library/windows/hardware/ff567121
-             */
-            ov.Offset = MAXDWORD;
-            ov.OffsetHigh = MAXDWORD;
-            rv = WriteFile(thefile->filehand, buf, (DWORD)*nbytes, &bwrote, &ov);
-        }
-        else {
+        if (!thefile->pipe) {
             apr_off_t offset = 0;
             apr_status_t rc;
             if (thefile->append) {
-                if (thefile->flags & APR_FOPEN_XTHREAD) {
-                    /* apr_file_lock will mutex the file across processes.
-                     * The call to apr_thread_mutex_lock is added to avoid
-                     * a race condition between LockFile and WriteFile
-                     * that occasionally leads to deadlocked threads.
-                     */
-                    apr_thread_mutex_lock(thefile->mutex);
-                }
+                /* apr_file_lock will mutex the file across processes.
+                 * The call to apr_thread_mutex_lock is added to avoid
+                 * a race condition between LockFile and WriteFile 
+                 * that occasionally leads to deadlocked threads.
+                 */
+                apr_thread_mutex_lock(thefile->mutex);
                 rc = apr_file_lock(thefile, APR_FLOCK_EXCLUSIVE);
                 if (rc != APR_SUCCESS) {
-                    if (thefile->flags & APR_FOPEN_XTHREAD) {
-                        apr_thread_mutex_unlock(thefile->mutex);
-                    }
+                    apr_thread_mutex_unlock(thefile->mutex);
                     return rc;
                 }
                 rc = apr_file_seek(thefile, APR_END, &offset);
                 if (rc != APR_SUCCESS) {
-                    if (thefile->flags & APR_FOPEN_XTHREAD) {
-                        apr_thread_mutex_unlock(thefile->mutex);
-                    }
+                    apr_thread_mutex_unlock(thefile->mutex);
                     return rc;
                 }
             }
@@ -477,10 +329,12 @@ APR_DECLARE(apr_status_t) apr_file_write(apr_file_t *thefile, const void *buf, a
                            thefile->pOverlapped);
             if (thefile->append) {
                 apr_file_unlock(thefile);
-                if (thefile->flags & APR_FOPEN_XTHREAD) {
-                    apr_thread_mutex_unlock(thefile->mutex);
-                }
+                apr_thread_mutex_unlock(thefile->mutex);
             }
+        }
+        else {
+            rv = WriteFile(thefile->filehand, buf, (DWORD)*nbytes, &bwrote,
+                           thefile->pOverlapped);
         }
         if (rv) {
             *nbytes = bwrote;
@@ -601,121 +455,64 @@ APR_DECLARE(apr_status_t) apr_file_puts(const char *str, apr_file_t *thefile)
 
 APR_DECLARE(apr_status_t) apr_file_gets(char *str, int len, apr_file_t *thefile)
 {
+    apr_size_t readlen;
     apr_status_t rv = APR_SUCCESS;
-    apr_size_t nbytes;
-    const char *str_start = str;
-    char *final = str + len - 1;
+    int i;    
 
-    /* If the file is open for xthread support, allocate and
-     * initialize the overlapped and io completion event (hEvent).
-     * Threads should NOT share an apr_file_t or its hEvent.
-     */
-    if ((thefile->flags & APR_FOPEN_XTHREAD) && !thefile->pOverlapped) {
-        thefile->pOverlapped = (OVERLAPPED*) apr_pcalloc(thefile->pool,
-                                                         sizeof(OVERLAPPED));
-        thefile->pOverlapped->hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-        if (!thefile->pOverlapped->hEvent) {
-            rv = apr_get_os_error();
+    for (i = 0; i < len-1; i++) {
+        readlen = 1;
+        rv = apr_file_read(thefile, str+i, &readlen);
+
+        if (rv != APR_SUCCESS && rv != APR_EOF)
             return rv;
+
+        if (readlen == 0) {
+            /* If we have bytes, defer APR_EOF to the next call */
+            if (i > 0)
+                rv = APR_SUCCESS;
+            break;
+        }
+        
+        if (str[i] == '\n') {
+            i++; /* don't clobber this char below */
+            break;
         }
     }
-
-    /* Handle the ungetchar if there is one. */
-    if (thefile->ungetchar != -1 && str < final) {
-        *str = thefile->ungetchar;
-        thefile->ungetchar = -1;
-        if (*str == '\n') {
-            *(++str) = '\0';
-            return APR_SUCCESS;
-        }
-        ++str;
-    }
-
-    /* If we have an underlying buffer, we can be *much* more efficient
-     * and skip over the read_with_timeout() calls.
-     */
-    if (thefile->buffered) {
-        if (thefile->flags & APR_FOPEN_XTHREAD) {
-            apr_thread_mutex_lock(thefile->mutex);
-        }
-
-        if (thefile->direction == 1) {
-            rv = apr_file_flush(thefile);
-            if (rv) {
-                if (thefile->flags & APR_FOPEN_XTHREAD) {
-                    apr_thread_mutex_unlock(thefile->mutex);
-                }
-                return rv;
-            }
-
-            thefile->direction = 0;
-            thefile->bufpos = 0;
-            thefile->dataRead = 0;
-        }
-
-        while (str < final) { /* leave room for trailing '\0' */
-            if (thefile->bufpos < thefile->dataRead) {
-                *str = thefile->buffer[thefile->bufpos++];
-            }
-            else {
-                nbytes = 1;
-                rv = read_buffered(thefile, str, &nbytes);
-                if (rv != APR_SUCCESS) {
-                    break;
-                }
-            }
-            if (*str == '\n') {
-                ++str;
-                break;
-            }
-            ++str;
-        }
-        if (thefile->flags & APR_FOPEN_XTHREAD) {
-            apr_thread_mutex_unlock(thefile->mutex);
-        }
-    }
-    else {
-        while (str < final) { /* leave room for trailing '\0' */
-            nbytes = 1;
-            rv = read_with_timeout(thefile, str, nbytes, &nbytes);
-            if (rv == APR_EOF)
-                thefile->eof_hit = TRUE;
-
-            if (rv != APR_SUCCESS) {
-                break;
-            }
-            if (*str == '\n') {
-                ++str;
-                break;
-            }
-            ++str;
-        }
-    }
-
-    /* We must store a terminating '\0' if we've stored any chars. We can
-     * get away with storing it if we hit an error first.
-     */
-    *str = '\0';
-    if (str > str_start) {
-        /* We stored chars; don't report EOF or any other errors;
-         * the app will find out about that on the next call.
-         */
-        return APR_SUCCESS;
-    }
+    str[i] = 0;
     return rv;
 }
 
 APR_DECLARE(apr_status_t) apr_file_flush(apr_file_t *thefile)
 {
     if (thefile->buffered) {
+        DWORD numbytes, written = 0;
         apr_status_t rc = 0;
+        char *buffer;
+        apr_size_t bytesleft;
 
         if (thefile->direction == 1 && thefile->bufpos) {
-            apr_size_t written;
+            buffer = thefile->buffer;
+            bytesleft = thefile->bufpos;           
 
-            rc = write_helper(thefile->filehand, thefile->buffer,
-                              thefile->bufpos, &written);
-            thefile->filePtr += written;
+            do {
+                if (bytesleft > APR_DWORD_MAX) {
+                    numbytes = APR_DWORD_MAX;
+                }
+                else {
+                    numbytes = (DWORD)bytesleft;
+                }
+
+                if (!WriteFile(thefile->filehand, buffer, numbytes, &written, NULL)) {
+                    rc = apr_get_os_error();
+                    thefile->filePtr += written;
+                    break;
+                }
+
+                thefile->filePtr += written;
+                bytesleft -= written;
+                buffer += written;
+
+            } while (bytesleft > 0);
 
             if (rc == 0)
                 thefile->bufpos = 0;
@@ -793,10 +590,3 @@ APR_DECLARE_NONSTD(int) apr_file_printf(apr_file_t *fptr,
     free(data.buf);
     return count;
 }
-
-APR_DECLARE(apr_status_t) apr_file_pipe_wait(apr_file_t *thepipe,
-                                             apr_wait_type_t direction)
-{
-    return APR_ENOTIMPL;
-}
-

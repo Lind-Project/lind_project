@@ -63,10 +63,10 @@
 /* #undef HAVE_BSTRING_H */
 
 /* Define if curl is available */
-#define HAVE_CURL 1
+/* #undef HAVE_CURL */
 
 /* Define to 1 if you have the <curl/curl.h> header file. */
-#define HAVE_CURL_CURL_H 1
+/* #undef HAVE_CURL_CURL_H */
 
 /* Define if distcache support is enabled */
 /* #undef HAVE_DISTCACHE */
@@ -75,16 +75,16 @@
 /* #undef HAVE_DISTCACHE_DC_CLIENT_H */
 
 /* Define to 1 if you have the `ENGINE_init' function. */
-#define HAVE_ENGINE_INIT 1
+/* #undef HAVE_ENGINE_INIT */
 
 /* Define to 1 if you have the `ENGINE_load_builtin_engines' function. */
-#define HAVE_ENGINE_LOAD_BUILTIN_ENGINES 1
+/* #undef HAVE_ENGINE_LOAD_BUILTIN_ENGINES */
 
 /* Define to 1 if you have the `epoll_create' function. */
 #define HAVE_EPOLL_CREATE 1
 
 /* Define to 1 if you have the `fopen64' function. */
-#define HAVE_FOPEN64 1
+/* #undef HAVE_FOPEN64 */
 
 /* Define to 1 if you have the `getgrnam' function. */
 #define HAVE_GETGRNAM 1
@@ -99,7 +99,7 @@
 #define HAVE_GETPWNAM 1
 
 /* Define if you have gettid() */
-#define HAVE_GETTID 1
+/* #undef HAVE_GETTID */
 
 /* Define if struct tm has a tm_gmtoff field */
 #define HAVE_GMTOFF 1
@@ -114,7 +114,7 @@
 #define HAVE_INTTYPES_H 1
 
 /* Define if jansson is available */
-#define HAVE_JANSSON 1
+/* #undef HAVE_JANSSON */
 
 /* Define to 1 if you have the `killpg' function. */
 #define HAVE_KILLPG 1
@@ -129,34 +129,34 @@
 #define HAVE_MEMORY_H 1
 
 /* Define if nghttp2 is available */
-#define HAVE_NGHTTP2 1
+/* #undef HAVE_NGHTTP2 */
 
 /* Define to 1 if you have the <nghttp2/nghttp2.h> header file. */
-#define HAVE_NGHTTP2_NGHTTP2_H 1
+/* #undef HAVE_NGHTTP2_NGHTTP2_H */
 
 /* Define to 1 if you have the
    `nghttp2_session_callbacks_set_on_invalid_header_callback' function. */
-#define HAVE_NGHTTP2_SESSION_CALLBACKS_SET_ON_INVALID_HEADER_CALLBACK 1
+/* #undef HAVE_NGHTTP2_SESSION_CALLBACKS_SET_ON_INVALID_HEADER_CALLBACK */
 
 /* Define to 1 if you have the `nghttp2_session_change_stream_priority'
    function. */
-#define HAVE_NGHTTP2_SESSION_CHANGE_STREAM_PRIORITY 1
+/* #undef HAVE_NGHTTP2_SESSION_CHANGE_STREAM_PRIORITY */
 
 /* Define to 1 if you have the `nghttp2_session_get_stream_local_window_size'
    function. */
-#define HAVE_NGHTTP2_SESSION_GET_STREAM_LOCAL_WINDOW_SIZE 1
+/* #undef HAVE_NGHTTP2_SESSION_GET_STREAM_LOCAL_WINDOW_SIZE */
 
 /* Define to 1 if you have the `nghttp2_session_server_new2' function. */
-#define HAVE_NGHTTP2_SESSION_SERVER_NEW2 1
+/* #undef HAVE_NGHTTP2_SESSION_SERVER_NEW2 */
 
 /* Define to 1 if you have the `nghttp2_stream_get_weight' function. */
-#define HAVE_NGHTTP2_STREAM_GET_WEIGHT 1
+/* #undef HAVE_NGHTTP2_STREAM_GET_WEIGHT */
 
 /* Define if OpenSSL is available */
-#define HAVE_OPENSSL 1
+/* #undef HAVE_OPENSSL */
 
 /* Define to 1 if you have the <openssl/engine.h> header file. */
-#define HAVE_OPENSSL_ENGINE_H 1
+/* #undef HAVE_OPENSSL_ENGINE_H */
 
 /* Define to 1 if you have the `port_create' function. */
 /* #undef HAVE_PORT_CREATE */
@@ -168,7 +168,7 @@
 /* #undef HAVE_PRIV_H */
 
 /* Define to 1 if you have the `pthread_kill' function. */
-#define HAVE_PTHREAD_KILL 1
+/* #undef HAVE_PTHREAD_KILL */
 
 /* Define to 1 if you have the <pwd.h> header file. */
 #define HAVE_PWD_H 1
@@ -180,7 +180,7 @@
 #define HAVE_SETSID 1
 
 /* Define to 1 if you have the `SSL_CTX_new' function. */
-#define HAVE_SSL_CTX_NEW 1
+/* #undef HAVE_SSL_CTX_NEW */
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1
@@ -273,7 +273,7 @@
 #define SERVER_CONFIG_FILE "conf/httpd.conf"
 
 /* This platform doesn't suffer from the thundering herd problem */
-#define SINGLE_LISTEN_UNSERIALIZED_ACCEPT 1
+/* #undef SINGLE_LISTEN_UNSERIALIZED_ACCEPT */
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1

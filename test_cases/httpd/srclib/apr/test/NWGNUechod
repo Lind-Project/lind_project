@@ -17,7 +17,7 @@ endif
 #
 XINCDIRS	+= \
 			$(APR)/include \
-			$(APR)/include/arch/netware \
+			$(APR)/include/arch/NetWare \
 			$(EOLIST)
 
 #
@@ -187,7 +187,7 @@ FILES_nlm_libs = \
 #
 FILES_nlm_modules = \
 	aprlib \
-	libc \
+	Libc \
 	$(EOLIST)
 
 #
@@ -209,8 +209,8 @@ FILE_nlm_copyright =
 # Any additional imports go here
 #
 FILES_nlm_Ximports = \
-	@$(APR)/aprlib.imp \
-	@$(NOVI)/libc.imp \
+	@aprlib.imp \
+	@libc.imp \
 	$(EOLIST)
  
 #   
@@ -249,5 +249,5 @@ install :: nlms FORCE
 # in this makefile
 #
 
-include $(APRBUILD)/NWGNUtail.inc
+include $(APR_WORK)/build/NWGNUtail.inc
 

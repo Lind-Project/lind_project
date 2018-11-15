@@ -16,22 +16,24 @@
 
 /*
  * Note: 
- * This is the win32-specific autoconf-like config file
- * which unix creates at ./configure time.
+ * This is the windows specific autoconf-like config file
+ * which unix would create at build time.
  */
+
+#ifdef WIN32
 
 #ifndef APR_PRIVATE_H
 #define APR_PRIVATE_H
 
-/* Pick up publicly advertised headers and symbols before the
- * APR internal private headers and symbols
+/* Include the public APR symbols, include our idea of the 'right'
+ * subset of the Windows.h header.  This saves us repetition.
  */
-#include <apr.h>
+#include "apr.h"
 
 /* 
  * Add a _very_few_ declarations missing from the restricted set of headers
- * (If this list becomes extensive, re-enable the required headers in apr.hw!)
- * ACL headers were excluded by default, so include them now.
+ * (If this list becomes extensive, re-enable the required headers above!)
+ * winsock headers were excluded by WIN32_LEAN_AND_MEAN, so include them now
  */
 #ifndef SW_HIDE
 #define SW_HIDE             0
@@ -54,14 +56,24 @@
 #define HAVE_ACLAPI 0
 #endif
 
+#if APR_HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if APR_HAVE_STDDEF_H
+#include <stddef.h>
+#endif
+#include <stdio.h>
+#if APR_HAVE_TIME_H
+#include <time.h>
+#endif
+
 /* Use this section to define all of the HAVE_FOO_H
  * that are required to build properly.
  */
 #define HAVE_LIMITS_H 1
 #define HAVE_MALLOC_H 1
-#define HAVE_PROCESS_H APR_NOT_IN_WCE
 #define HAVE_SIGNAL_H 1
-#define HAVE_STDDEF_H APR_NOT_IN_WCE
+/* #define HAVE_STDDEF_H 1 why not? */
 #define HAVE_STDLIB_H 1
 
 #define HAVE_STRICMP  1
@@ -70,7 +82,6 @@
 #define HAVE_STRSTR   1
 #define HAVE_MEMCHR   1
 
-#ifndef __WATCOMC__
 #define SIGHUP     1
 /* 2 is used for SIGINT on windows */
 #define SIGQUIT    3
@@ -83,7 +94,6 @@
 #define SIGUSR1    10
 /* 11 is used for SIGSEGV on windows */
 #define SIGUSR2    12
-#endif
 #define SIGPIPE    13
 #define SIGALRM    14
 /* 15 is used for SIGTERM on windows */
@@ -112,10 +122,6 @@
 typedef void (Sigfunc)(int);
 
 #define sleep(t)                 Sleep((t) * 1000)
-/* For now workaround for Watcom'S lack of _commit() */
-#ifdef __WATCOMC__
-#define _commit                  fsync
-#endif
 
 #define SIZEOF_SHORT           2
 #define SIZEOF_INT             4
@@ -134,8 +140,6 @@ APR_DECLARE_DATA int errno;
 #if APR_HAVE_IPV6
 #define HAVE_GETADDRINFO 1
 #define HAVE_GETNAMEINFO 1
-#define HAVE_IF_INDEXTONAME 1
-#define HAVE_IF_NAMETOINDEX 1
 #endif
 
 /* MSVC 7.0 introduced _strtoi64 */
@@ -160,39 +164,10 @@ APR_DECLARE_DATA int errno;
 /* used to check for DWORD overflow in 64bit compiles */
 #define APR_DWORD_MAX 0xFFFFFFFFUL
 
-/* Compile win32 with DSO support for .dll builds
- * Pair the static xml build for static apr-2.lib
- */
-#ifdef APR_DECLARE_STATIC
-#define APU_DSO_BUILD           0
-#define XML_STATIC              1
-#else
-#define APU_DSO_BUILD           1
-#endif
-
-/* Presume a standard, modern (5.x) mysql sdk */
-#define HAVE_MY_GLOBAL_H        1
-
-/* my_sys.h is broken on VC/Win32, and apparently not required */
-/* #undef HAVE_MY_SYS_H           0 */
-
-/* Windows ODBC sql.h is always present */
-#define HAVE_SQL_H              1
-
-#define HAVE_ICONV_H 1
-
 /*
- * Windows does not have GDBM, and we always use the bundled (new) Expat
+ * Include common private declarations.
  */
-
-/* Define if you have the gdbm library (-lgdbm).  */
-/* #undef HAVE_LIBGDBM */
-
-/* define if Expat 1.0 or 1.1 was found */
-/* #undef APR_HAVE_OLD_EXPAT */
-
-#ifdef HAVE_PROCESS_H
-#include <process.h>
-#endif
+#include "../apr_private_common.h"
 
 #endif  /*APR_PRIVATE_H*/
+#endif  /*WIN32*/

@@ -10,7 +10,7 @@
 extern module core_module;
 extern module so_module;
 extern module http_module;
-extern module mpm_event_module;
+extern module mpm_prefork_module;
 
 /*
  *  Modules which implicitly form the
@@ -23,7 +23,7 @@ module *ap_prelinked_modules[] = {
   &core_module,
   &so_module,
   &http_module,
-  &mpm_event_module,
+  &mpm_prefork_module,
   NULL
 };
 
@@ -35,7 +35,7 @@ ap_module_symbol_t ap_prelinked_module_symbols[] = {
   {"core_module", &core_module},
   {"so_module", &so_module},
   {"http_module", &http_module},
-  {"mpm_event_module", &mpm_event_module},
+  {"mpm_prefork_module", &mpm_prefork_module},
   {NULL, NULL}
 };
 
@@ -50,7 +50,7 @@ module *ap_preloaded_modules[] = {
   &core_module,
   &so_module,
   &http_module,
-  &mpm_event_module,
+  &mpm_prefork_module,
   NULL
 };
 

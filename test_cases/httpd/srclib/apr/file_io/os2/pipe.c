@@ -82,47 +82,32 @@ static apr_status_t file_pipe_create(apr_file_t **in, apr_file_t **out,
     (*in)->fname = apr_pstrdup(pool_in, pipename);
     (*in)->isopen = TRUE;
     (*in)->buffered = FALSE;
-    (*in)->flags = APR_FOPEN_READ;
+    (*in)->flags = 0;
     (*in)->pipe = 1;
     (*in)->timeout = -1;
     (*in)->blocking = BLK_ON;
-    (*in)->ungetchar = -1;
     apr_pool_cleanup_register(pool_in, *in, apr_file_cleanup,
             apr_pool_cleanup_null);
 
     (*out) = (apr_file_t *)apr_palloc(pool_out, sizeof(apr_file_t));
-    rc = DosCreateEventSem(NULL, &(*out)->pipeSem, DC_SEM_SHARED, FALSE);
-
-    if (rc) {
-        DosClose(filedes[0]);
-        DosClose(filedes[1]);
-        DosCloseEventSem((*in)->pipeSem);
-        return APR_FROM_OS_ERROR(rc);
-    }
-
-    rc = DosSetNPipeSem(filedes[1], (HSEM)(*out)->pipeSem, 1);
-
-    if (rc) {
-        DosClose(filedes[0]);
-        DosClose(filedes[1]);
-        DosCloseEventSem((*in)->pipeSem);
-        DosCloseEventSem((*out)->pipeSem);
-        return APR_FROM_OS_ERROR(rc);
-    }
-
     (*out)->pool = pool_out;
     (*out)->filedes = filedes[1];
     (*out)->fname = apr_pstrdup(pool_out, pipename);
     (*out)->isopen = TRUE;
     (*out)->buffered = FALSE;
-    (*out)->flags = APR_FOPEN_WRITE;
+    (*out)->flags = 0;
     (*out)->pipe = 1;
     (*out)->timeout = -1;
     (*out)->blocking = BLK_ON;
-    (*out)->ungetchar = -1;
     apr_pool_cleanup_register(pool_out, *out, apr_file_cleanup,
             apr_pool_cleanup_null);
 
+    return APR_SUCCESS;
+}
+
+static void file_pipe_block(apr_file_t **in, apr_file_t **out,
+        apr_int32_t blocking)
+{
     switch (blocking) {
     case APR_FULL_BLOCK:
         break;
@@ -137,15 +122,13 @@ static apr_status_t file_pipe_create(apr_file_t **in, apr_file_t **out,
         apr_file_pipe_timeout_set(*in, 0);
         break;
     }
-    return APR_SUCCESS;
 }
 
 APR_DECLARE(apr_status_t) apr_file_pipe_create(apr_file_t **in,
                                                apr_file_t **out,
                                                apr_pool_t *pool)
 {
-    /* Default is full blocking pipes. */
-    return file_pipe_create(in, out, APR_FULL_BLOCK, pool, pool);
+    return file_pipe_create(in, out, pool, pool);
 }
 
 APR_DECLARE(apr_status_t) apr_file_pipe_create_ex(apr_file_t **in, 
@@ -153,7 +136,14 @@ APR_DECLARE(apr_status_t) apr_file_pipe_create_ex(apr_file_t **in,
                                                   apr_int32_t blocking,
                                                   apr_pool_t *pool)
 {
-    return file_pipe_create(in, out, blocking, pool, pool);
+    apr_status_t status;
+
+    if ((status = file_pipe_create(in, out, pool, pool)) != APR_SUCCESS)
+        return status;
+
+    file_pipe_block(in, out, blocking);
+
+    return APR_SUCCESS;
 }
 
 APR_DECLARE(apr_status_t) apr_file_pipe_create_pools(apr_file_t **in,
@@ -162,7 +152,14 @@ APR_DECLARE(apr_status_t) apr_file_pipe_create_pools(apr_file_t **in,
                                                      apr_pool_t *pool_in,
                                                      apr_pool_t *pool_out)
 {
-    return file_pipe_create(in, out, blocking, pool_in, pool_out);
+    apr_status_t status;
+
+    if ((status = file_pipe_create(in, out, pool_in, pool_out)) != APR_SUCCESS)
+        return status;
+
+    file_pipe_block(in, out, blocking);
+
+    return APR_SUCCESS;
 }
     
     
@@ -176,8 +173,6 @@ APR_DECLARE(apr_status_t) apr_file_namedpipe_create(const char *filename, apr_fi
 
 APR_DECLARE(apr_status_t) apr_file_pipe_timeout_set(apr_file_t *thepipe, apr_interval_time_t timeout)
 {
-    apr_status_t rv = APR_SUCCESS;
-
     if (thepipe->pipe == 1) {
         thepipe->timeout = timeout;
 
@@ -194,11 +189,7 @@ APR_DECLARE(apr_status_t) apr_file_pipe_timeout_set(apr_file_t *thepipe, apr_int
             }
         }
     }
-    else {
-        rv = APR_EINVAL;
-    }
-
-    return rv;
+    return APR_EINVAL;
 }
 
 
@@ -225,7 +216,6 @@ APR_DECLARE(apr_status_t) apr_os_pipe_put_ex(apr_file_t **file,
     (*file)->pipe = 1;
     (*file)->blocking = BLK_UNKNOWN; /* app needs to make a timeout call */
     (*file)->timeout = -1;
-    (*file)->ungetchar = -1;
     (*file)->filedes = *thefile;
 
     if (register_cleanup) {

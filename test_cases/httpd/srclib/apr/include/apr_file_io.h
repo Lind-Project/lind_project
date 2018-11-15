@@ -80,21 +80,14 @@ extern "C" {
                                              file should support
                                              apr_socket_sendfile operation */
 #define APR_FOPEN_LARGEFILE   0x04000 /**< Platform dependent flag to enable
-                                       * large file support, see WARNING below 
+                                       * large file support, see WARNING below
                                        */
-
 #define APR_FOPEN_SPARSE      0x08000 /**< Platform dependent flag to enable
                                        * sparse file support, see WARNING below
                                        */
-
-#define APR_FOPEN_ROTATING  0x10000 /**< Do file file rotation checking */
- 
-#define APR_FOPEN_MANUAL_ROTATE  0x20000 /**< Enable Manual rotation */
-
 #define APR_FOPEN_NONBLOCK    0x40000 /**< Platform dependent flag to enable
                                        * non blocking file io */
 
- 
 
 /* backcompat */
 #define APR_READ             APR_FOPEN_READ       /**< @deprecated @see APR_FOPEN_READ */
@@ -244,8 +237,6 @@ typedef struct apr_file_t         apr_file_t;
  *                               support, see WARNING below 
  * @li #APR_FOPEN_SPARSE         Platform dependent flag to enable sparse file
  *                               support, see WARNING below
- * @li #APR_FOPEN_ROTATING       Do file file rotation checking
- * @li #APR_FOPEN_MANUAL_ROTATE  Enable Manual rotation
  * @li #APR_FOPEN_NONBLOCK       Platform dependent flag to enable
  *                               non blocking file io
  * @param perm Access permissions for file.
@@ -604,16 +595,6 @@ APR_DECLARE(apr_status_t) apr_file_gets(char *str, int len,
  * @param thefile The file descriptor to write to
  */
 APR_DECLARE(apr_status_t) apr_file_puts(const char *str, apr_file_t *thefile);
-
-/**
- * Wait for a pipe to be ready for input or output
- * @param thepipe the pipe to wait on
- * @param direction whether to wait for reading or writing to be ready
- *        Can be either #APR_WAIT_READ or #APR_WAIT_WRITE
- * @remark Will time out if thepipe has a time out set for it
- */
-APR_DECLARE(apr_status_t) apr_file_pipe_wait(apr_file_t *thepipe,
-                                             apr_wait_type_t direction);
 
 /**
  * Flush the file's buffer.
@@ -1015,12 +996,7 @@ APR_DECLARE(apr_status_t) apr_file_mktemp(apr_file_t **fp, char *templ,
 APR_DECLARE(apr_status_t) apr_temp_dir_get(const char **temp_dir, 
                                            apr_pool_t *p);
 
-
-APR_DECLARE(apr_status_t) apr_file_rotating_check(apr_file_t *thefile);
-APR_DECLARE(apr_status_t) apr_file_rotating_manual_check(apr_file_t *thefile, apr_time_t time);
-
 /** @} */
-
 
 #ifdef __cplusplus
 }

@@ -31,6 +31,7 @@ static void FS3_to_finfo(apr_finfo_t *finfo, FILESTATUS3 *fstatus)
         finfo->filetype = APR_DIR;
     else
         finfo->filetype = APR_REG;
+    /* XXX: No other possible types from FS3? */
 
     finfo->user = 0;
     finfo->group = 0;
@@ -72,7 +73,8 @@ static apr_status_t handle_type(apr_filetype_e *ftype, HFILE file)
             break;
 
         default:
-            /* Values greater than 2 are reserved, this should never happen */
+            /* Brian, is this correct???
+             */
             *ftype = APR_UNKFILE;
             break;
         }
@@ -92,6 +94,7 @@ APR_DECLARE(apr_status_t) apr_file_info_get(apr_finfo_t *finfo, apr_int32_t want
 
     if (thefile->isopen) {
         if (thefile->buffered) {
+            /* XXX: flush here is not mutex protected */
             apr_status_t rv = apr_file_flush(thefile);
 
             if (rv != APR_SUCCESS) {

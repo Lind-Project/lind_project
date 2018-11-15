@@ -297,8 +297,7 @@ APR_DECLARE(int) apr_cstr_casecmp(const char *s1, const char *s2)
     }
 }
 
-APR_DECLARE(int) apr_cstr_casecmpn(const char *s1, const char *s2,
-                                   apr_size_t n)
+APR_DECLARE(int) apr_cstr_casecmpn(const char *s1, const char *s2, apr_size_t n)
 {
     const unsigned char *str1 = (const unsigned char *)s1;
     const unsigned char *str2 = (const unsigned char *)s2;
@@ -316,11 +315,9 @@ APR_DECLARE(int) apr_cstr_casecmpn(const char *s1, const char *s2,
     return 0;
 }
 
-APR_DECLARE(apr_status_t) apr_cstr_strtoui64(apr_uint64_t *n,
-                                             const char *str,
-                                             apr_uint64_t minval,
-                                             apr_uint64_t maxval,
-                                             int base)
+APR_DECLARE(apr_status_t) apr_cstr_strtoui64(apr_uint64_t *n, const char *str,
+                                apr_uint64_t minval, apr_uint64_t maxval,
+                                int base)
 {
   apr_int64_t val;
   char *endptr;
@@ -354,11 +351,9 @@ APR_DECLARE(apr_status_t) apr_cstr_atoui(unsigned int *n, const char *str)
   return rv;
 }
 
-APR_DECLARE(apr_status_t) apr_cstr_strtoi64(apr_int64_t *n,
-                                            const char *str,
-                                            apr_int64_t minval,
-                                            apr_int64_t maxval,
-                                            int base)
+APR_DECLARE(apr_status_t) apr_cstr_strtoi64(apr_int64_t *n, const char *str,
+                               apr_int64_t minval, apr_int64_t maxval,
+                               int base)
 {
   apr_int64_t val;
   char *endptr;
@@ -392,8 +387,8 @@ APR_DECLARE(apr_status_t) apr_cstr_atoi(int *n, const char *str)
   return rv;
 }
 
-APR_DECLARE(const char *)
-apr_cstr_skip_prefix(const char *str, const char *prefix)
+APR_DECLARE(const char *) apr_cstr_skip_prefix(const char *str, 
+                                               const char *prefix)
 {
   apr_size_t len = strlen(prefix);
 
