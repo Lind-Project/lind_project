@@ -29,11 +29,11 @@ debugging with applications that use ptrace() such as gdb.
 If you decide to instead build Lind on your host system, the following
 dependencies are required:
 
-* python 2
-* virtualenv2 and virtualenvwrapper
-        - install using `pip2 install --user virtualenv`
 * gcc
 * clang
+* python2
+* python2-virtualenv
+        - You can install using `pip2 install --user virtualenv` or through your distribution's package manager.
 
 The following dependencies can be compiled from the source distributions
 found in `docker/pkgs.tar.xz`
