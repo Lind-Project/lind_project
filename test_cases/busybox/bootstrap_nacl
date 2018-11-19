@@ -14,9 +14,9 @@ export CROSS_COMPILE=x86_64-nacl-
 export CC=x86_64-nacl-gcc
 export CXX=x86_64-nacl-g++
 export LD=x86_64-nacl-ld
-export CFLAGS="-g3 -fno-pie $defines"
-export CXXFLAGS="-g3 -fno-pie $defines"
-export LDFLAGS="-g3 -fno-pie $defines"
+export CFLAGS="-g3 -fPIC $defines"
+export CXXFLAGS="-g3 -fPIC $defines"
+export LDFLAGS="-g3 -fPIC $defines"
 export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 
 mkdir -pv "$prefix"
