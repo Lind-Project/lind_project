@@ -3,8 +3,8 @@
 # Created by configure
 
 CC="x86_64-nacl-gcc"; export CC
-CFLAGS="-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie"; export CFLAGS
-LDFLAGS="-g -fno-pie"; export LDFLAGS
+CFLAGS="-DPTHREAD_MUTEX_RECURSIVE=1 -g3 -fPIC"; export CFLAGS
+LDFLAGS="-g3 -fPIC"; export LDFLAGS
 "/home/jp/lind_project/test_cases/httpd/srclib/apr/configure" \
 "--disable-option-checking" \
 "--with-included-apr" \
@@ -24,8 +24,8 @@ LDFLAGS="-g -fno-pie"; export LDFLAGS
 "apr_cv_mutex_recursive=yes" \
 "host_alias=x86_64-nacl" \
 "CC=x86_64-nacl-gcc" \
-"CFLAGS=-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie" \
-"LDFLAGS=-g -fno-pie" \
+"CFLAGS=-DPTHREAD_MUTEX_RECURSIVE=1 -g3 -fPIC" \
+"LDFLAGS=-g3 -fPIC" \
 "--cache-file=/dev/null" \
 "--srcdir=/home/jp/lind_project/test_cases/httpd/srclib/apr" \
 "--prefix=/home/jp/lind_project/lind/repy/repy" \
