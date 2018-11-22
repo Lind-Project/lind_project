@@ -42,6 +42,9 @@ nacl/
 !/test_cases/brotli
 !/test_cases/zlib
 !/test_cases/pcre
+!/test_cases/mysql
+!/test_cases/mariadb
+!/test_cases/php
 /test_cases/dash/src/bltin/.deps/
 /test_cases/dash/src/bltin/.dirstamp
 !/test_cases/*.c
