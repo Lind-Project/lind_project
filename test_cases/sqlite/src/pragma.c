@@ -816,7 +816,7 @@ void sqlite3Pragma(
       if( sqlite3GetBoolean(zRight, size!=0) ){
         db->flags |= SQLITE_CacheSpill;
       }else{
-        db->flags &= ~(u64)SQLITE_CacheSpill;
+        db->flags &= ~SQLITE_CacheSpill;
       }
       setAllPagerFlags(db);
     }

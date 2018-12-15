@@ -976,9 +976,6 @@ $(TEST_EXTENSION): $(TOP)/src/test_loadext.c
 extensiontest: testfixture$(EXE) $(TEST_EXTENSION)
 	./testfixture$(EXE) $(TOP)/test/loadext.test
 
-dbtotxt$(EXE):	$(TOP)/tool/dbtotxt.c
-	$(TCC) -o dbtotxt$(EXE) $(TOP)/tool/dbtotxt.c
-
 showdb$(EXE):	$(TOP)/tool/showdb.c sqlite3.o
 	$(TCC) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -o showdb$(EXE) \
 		$(TOP)/tool/showdb.c sqlite3.o $(THREADLIB)
@@ -997,10 +994,6 @@ showwal$(EXE):	$(TOP)/tool/showwal.c sqlite3.o
 
 showshm$(EXE):	$(TOP)/tool/showshm.c
 	$(TCC) -o showshm$(EXE) $(TOP)/tool/showshm.c
-
-index_usage$(EXE): $(TOP)/tool/index_usage.c sqlite3.o
-	$(TCC) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_DEPRECATED -o index_usage$(EXE) \
-		$(TOP)/tool/index_usage.c sqlite3.o $(THREADLIB)
 
 changeset$(EXE):	$(TOP)/ext/session/changeset.c sqlite3.o
 	$(TCC) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -o changeset$(EXE) \

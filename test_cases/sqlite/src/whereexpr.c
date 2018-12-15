@@ -777,7 +777,6 @@ static void exprAnalyzeOrTerm(
     ** and column is found but leave okToChngToIN false if not found.
     */
     for(j=0; j<2 && !okToChngToIN; j++){
-      Expr *pLeft = 0;
       pOrTerm = pOrWc->a;
       for(i=pOrWc->nTerm-1; i>=0; i--, pOrTerm++){
         assert( pOrTerm->eOperator & WO_EQ );
@@ -801,7 +800,6 @@ static void exprAnalyzeOrTerm(
         }
         iColumn = pOrTerm->u.leftColumn;
         iCursor = pOrTerm->leftCursor;
-        pLeft = pOrTerm->pExpr->pLeft;
         break;
       }
       if( i<0 ){
@@ -821,9 +819,7 @@ static void exprAnalyzeOrTerm(
         assert( pOrTerm->eOperator & WO_EQ );
         if( pOrTerm->leftCursor!=iCursor ){
           pOrTerm->wtFlags &= ~TERM_OR_OK;
-        }else if( pOrTerm->u.leftColumn!=iColumn || (iColumn==XN_EXPR 
-               && sqlite3ExprCompare(pParse, pOrTerm->pExpr->pLeft, pLeft, -1)
-        )){
+        }else if( pOrTerm->u.leftColumn!=iColumn ){
           okToChngToIN = 0;
         }else{
           int affLeft, affRight;

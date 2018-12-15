@@ -64,44 +64,14 @@ void sqlite3VdbeSetSql(Vdbe *p, const char *z, int n, u8 prepFlags){
   }
   assert( p->zSql==0 );
   p->zSql = sqlite3DbStrNDup(p->db, z, n);
-}
-
 #ifdef SQLITE_ENABLE_NORMALIZE
-/*
-** Add a new element to the Vdbe->pDblStr list.
-*/
-void sqlite3VdbeAddDblquoteStr(sqlite3 *db, Vdbe *p, const char *z){
-  if( p ){
-    int n = sqlite3Strlen30(z);
-    DblquoteStr *pStr = sqlite3DbMallocRawNN(db,
-                            sizeof(*pStr)+n+1-sizeof(pStr->z));
-    if( pStr ){
-      pStr->pNextStr = p->pDblStr;
-      p->pDblStr = pStr;
-      memcpy(pStr->z, z, n+1);
-    }
+  assert( p->zNormSql==0 );
+  if( p->zSql && (prepFlags & SQLITE_PREPARE_NORMALIZE)!=0 ){
+    sqlite3Normalize(p, p->zSql, n, prepFlags);
+    assert( p->zNormSql!=0 || p->db->mallocFailed );
   }
-}
 #endif
-
-#ifdef SQLITE_ENABLE_NORMALIZE
-/*
-** zId of length nId is a double-quoted identifier.  Check to see if
-** that identifier is really used as a string literal.
-*/
-int sqlite3VdbeUsesDoubleQuotedString(
-  Vdbe *pVdbe,            /* The prepared statement */
-  const char *zId         /* The double-quoted identifier, already dequoted */
-){
-  DblquoteStr *pStr;
-  assert( zId!=0 );
-  if( pVdbe->pDblStr==0 ) return 0;
-  for(pStr=pVdbe->pDblStr; pStr; pStr=pStr->pNextStr){
-    if( strcmp(zId, pStr->z)==0 ) return 1;
-  }
-  return 0;
 }
-#endif
 
 /*
 ** Swap all content between two VDBE structures.
@@ -122,7 +92,7 @@ void sqlite3VdbeSwap(Vdbe *pA, Vdbe *pB){
   zTmp = pA->zSql;
   pA->zSql = pB->zSql;
   pB->zSql = zTmp;
-#if 0
+#ifdef SQLITE_ENABLE_NORMALIZE
   zTmp = pA->zNormSql;
   pA->zNormSql = pB->zNormSql;
   pB->zNormSql = zTmp;
@@ -2885,7 +2855,7 @@ int sqlite3VdbeHalt(Vdbe *p){
         }else{
           db->nDeferredCons = 0;
           db->nDeferredImmCons = 0;
-          db->flags &= ~(u64)SQLITE_DeferFKs;
+          db->flags &= ~SQLITE_DeferFKs;
           sqlite3CommitInternalChanges(db);
         }
       }else{
@@ -3200,13 +3170,6 @@ void sqlite3VdbeClearObject(sqlite3 *db, Vdbe *p){
   sqlite3DbFree(db, p->zSql);
 #ifdef SQLITE_ENABLE_NORMALIZE
   sqlite3DbFree(db, p->zNormSql);
-  {
-    DblquoteStr *pThis, *pNext;
-    for(pThis=p->pDblStr; pThis; pThis=pNext){
-      pNext = pThis->pNextStr;
-      sqlite3DbFree(db, pThis);
-    }
-  }
 #endif
 #ifdef SQLITE_ENABLE_STMT_SCANSTATUS
   {

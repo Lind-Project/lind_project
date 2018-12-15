@@ -686,15 +686,13 @@ static void yy_shift(
   yyTraceShift(yypParser, yyNewState, "Shift");
 }
 
-/* For rule J, yyRuleInfoLhs[J] contains the symbol on the left-hand side
-** of that rule */
-static const YYCODETYPE yyRuleInfoLhs[] = {
-%%
-};
-
-/* For rule J, yyRuleInfoNRhs[J] contains the negative of the number
-** of symbols on the right-hand side of that rule. */
-static const signed char yyRuleInfoNRhs[] = {
+/* The following table contains information about every rule that
+** is used during the reduce.
+*/
+static const struct {
+  YYCODETYPE lhs;       /* Symbol on the left-hand side of the rule */
+  signed char nrhs;     /* Negative of the number of RHS symbols in the rule */
+} yyRuleInfo[] = {
 %%
 };
 
@@ -727,7 +725,7 @@ static YYACTIONTYPE yy_reduce(
   yymsp = yypParser->yytos;
 #ifndef NDEBUG
   if( yyTraceFILE && yyruleno<(int)(sizeof(yyRuleName)/sizeof(yyRuleName[0])) ){
-    yysize = yyRuleInfoNRhs[yyruleno];
+    yysize = yyRuleInfo[yyruleno].nrhs;
     if( yysize ){
       fprintf(yyTraceFILE, "%sReduce %d [%s], go to state %d.\n",
         yyTracePrompt,
@@ -742,7 +740,7 @@ static YYACTIONTYPE yy_reduce(
   /* Check that the stack is large enough to grow by a single entry
   ** if the RHS of the rule is empty.  This ensures that there is room
   ** enough on the stack to push the LHS value */
-  if( yyRuleInfoNRhs[yyruleno]==0 ){
+  if( yyRuleInfo[yyruleno].nrhs==0 ){
 #ifdef YYTRACKMAXSTACKDEPTH
     if( (int)(yypParser->yytos - yypParser->yystack)>yypParser->yyhwm ){
       yypParser->yyhwm++;
@@ -784,9 +782,9 @@ static YYACTIONTYPE yy_reduce(
 %%
 /********** End reduce actions ************************************************/
   };
-  assert( yyruleno<sizeof(yyRuleInfoLhs)/sizeof(yyRuleInfoLhs[0]) );
-  yygoto = yyRuleInfoLhs[yyruleno];
-  yysize = yyRuleInfoNRhs[yyruleno];
+  assert( yyruleno<sizeof(yyRuleInfo)/sizeof(yyRuleInfo[0]) );
+  yygoto = yyRuleInfo[yyruleno].lhs;
+  yysize = yyRuleInfo[yyruleno].nrhs;
   yyact = yy_find_reduce_action(yymsp[yysize].stateno,(YYCODETYPE)yygoto);
 
   /* There are no SHIFTREDUCE actions on nonterminals because the table
