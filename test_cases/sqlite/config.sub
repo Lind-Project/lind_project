@@ -1271,7 +1271,7 @@ case $os in
 	-linux-dietlibc)
 		os=-linux-dietlibc
 		;;
-	-linux*)
+	-linux*|-nacl)
 		os=`echo $os | sed -e 's|linux|linux-gnu|'`
 		;;
 	-sunos5*)

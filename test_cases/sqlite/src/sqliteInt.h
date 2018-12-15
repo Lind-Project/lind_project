@@ -1356,13 +1356,10 @@ void sqlite3CryptFunc(sqlite3_context*,int,sqlite3_value**);
 /* This is an extra SQLITE_TRACE macro that indicates "legacy" tracing
 ** in the style of sqlite3_trace()
 */
-#define SQLITE_TRACE_LEGACY          0x40     /* Use the legacy xTrace */
-#define SQLITE_TRACE_XPROFILE        0x80     /* Use the legacy xProfile */
+#define SQLITE_TRACE_LEGACY  0x80
 #else
-#define SQLITE_TRACE_LEGACY          0
-#define SQLITE_TRACE_XPROFILE        0
+#define SQLITE_TRACE_LEGACY  0
 #endif /* SQLITE_OMIT_DEPRECATED */
-#define SQLITE_TRACE_NONLEGACY_MASK  0x0f     /* Normal flags */
 
 
 /*
@@ -1421,10 +1418,8 @@ struct sqlite3 {
   void **aExtension;            /* Array of shared library handles */
   int (*xTrace)(u32,void*,void*,void*);     /* Trace function */
   void *pTraceArg;                          /* Argument to the trace function */
-#ifndef SQLITE_OMIT_DEPRECATED
   void (*xProfile)(void*,const char*,u64);  /* Profiling function */
   void *pProfileArg;                        /* Argument to profile function */
-#endif
   void *pCommitArg;                 /* Argument to xCommitCallback() */
   int (*xCommitCallback)(void*);    /* Invoked at every commit. */
   void *pRollbackArg;               /* Argument to xRollbackCallback() */
@@ -1957,6 +1952,9 @@ struct VTable {
 struct Table {
   char *zName;         /* Name of the table or view */
   Column *aCol;        /* Information about each column */
+#ifdef SQLITE_ENABLE_NORMALIZE
+  Hash *pColHash;      /* All columns indexed by name */
+#endif
   Index *pIndex;       /* List of SQL indexes on this table. */
   Select *pSelect;     /* NULL for tables.  Points to definition if a view. */
   FKey *pFKey;         /* Linked list of all foreign keys in this table */
@@ -3985,8 +3983,8 @@ Table *sqlite3LocateTableItem(Parse*,u32 flags,struct SrcList_item *);
 Index *sqlite3FindIndex(sqlite3*,const char*, const char*);
 void sqlite3UnlinkAndDeleteTable(sqlite3*,int,const char*);
 void sqlite3UnlinkAndDeleteIndex(sqlite3*,int,const char*);
-void sqlite3Vacuum(Parse*,Token*,Expr*);
-int sqlite3RunVacuum(char**, sqlite3*, int, sqlite3_value*);
+void sqlite3Vacuum(Parse*,Token*);
+int sqlite3RunVacuum(char**, sqlite3*, int);
 char *sqlite3NameFromToken(sqlite3*, Token*);
 int sqlite3ExprCompare(Parse*,Expr*, Expr*, int);
 int sqlite3ExprCompareSkip(Expr*, Expr*, int);
@@ -4024,6 +4022,9 @@ int sqlite3ExprIsInteger(Expr*, int*);
 int sqlite3ExprCanBeNull(const Expr*);
 int sqlite3ExprNeedsNoAffinityChange(const Expr*, char);
 int sqlite3IsRowid(const char*);
+#ifdef SQLITE_ENABLE_NORMALIZE
+int sqlite3IsRowidN(const char*, int);
+#endif
 void sqlite3GenerateRowDelete(
     Parse*,Table*,Trigger*,int,int,int,i16,u8,u8,u8,int);
 void sqlite3GenerateRowIndexDelete(Parse*, Table*, int, int, int*, int);
@@ -4050,7 +4051,9 @@ ExprList *sqlite3ExprListDup(sqlite3*,ExprList*,int);
 SrcList *sqlite3SrcListDup(sqlite3*,SrcList*,int);
 IdList *sqlite3IdListDup(sqlite3*,IdList*);
 Select *sqlite3SelectDup(sqlite3*,Select*,int);
-FuncDef *sqlite3FunctionSearch(int,const char*);
+#ifdef SQLITE_ENABLE_NORMALIZE
+FuncDef *sqlite3FunctionSearchN(int,const char*,int);
+#endif
 void sqlite3InsertBuiltinFuncs(FuncDef*,int);
 FuncDef *sqlite3FindFunction(sqlite3*,const char*,int,u8,u8);
 void sqlite3RegisterBuiltinFunctions(void);
@@ -4255,6 +4258,9 @@ void sqlite3AlterFunctions(void);
 void sqlite3AlterRenameTable(Parse*, SrcList*, Token*);
 void sqlite3AlterRenameColumn(Parse*, SrcList*, Token*, Token*);
 int sqlite3GetToken(const unsigned char *, int *);
+#ifdef SQLITE_ENABLE_NORMALIZE
+int sqlite3GetTokenNormalized(const unsigned char *, int *, int *);
+#endif
 void sqlite3NestedParse(Parse*, const char*, ...);
 void sqlite3ExpirePreparedStatements(sqlite3*, int);
 int sqlite3CodeSubselect(Parse*, Expr *, int, int);
@@ -4413,7 +4419,7 @@ int sqlite3VdbeParameterIndex(Vdbe*, const char*, int);
 int sqlite3TransferBindings(sqlite3_stmt *, sqlite3_stmt *);
 void sqlite3ParserReset(Parse*);
 #ifdef SQLITE_ENABLE_NORMALIZE
-char *sqlite3Normalize(Vdbe*, const char*);
+void sqlite3Normalize(Vdbe*, const char*, int, u8);
 #endif
 int sqlite3Reprepare(Vdbe*);
 void sqlite3ExprListCheckLength(Parse*, ExprList*, const char*);

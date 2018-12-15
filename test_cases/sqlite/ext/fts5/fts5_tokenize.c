@@ -234,17 +234,12 @@ struct Unicode61Tokenizer {
   unsigned char aTokenChar[128];  /* ASCII range token characters */
   char *aFold;                    /* Buffer to fold text into */
   int nFold;                      /* Size of aFold[] in bytes */
-  int eRemoveDiacritic;           /* True if remove_diacritics=1 is set */
+  int bRemoveDiacritic;           /* True if remove_diacritics=1 is set */
   int nException;
   int *aiException;
 
   unsigned char aCategory[32];    /* True for token char categories */
 };
-
-/* Values for eRemoveDiacritic (must match internals of fts5_unicode2.c) */
-#define FTS5_REMOVE_DIACRITICS_NONE    0
-#define FTS5_REMOVE_DIACRITICS_SIMPLE  1
-#define FTS5_REMOVE_DIACRITICS_COMPLEX 2
 
 static int fts5UnicodeAddExceptions(
   Unicode61Tokenizer *p,          /* Tokenizer object */
@@ -366,7 +361,7 @@ static int fts5UnicodeCreate(
       int i;
       memset(p, 0, sizeof(Unicode61Tokenizer));
 
-      p->eRemoveDiacritic = FTS5_REMOVE_DIACRITICS_SIMPLE;
+      p->bRemoveDiacritic = 1;
       p->nFold = 64;
       p->aFold = sqlite3_malloc(p->nFold * sizeof(char));
       if( p->aFold==0 ){
@@ -387,15 +382,10 @@ static int fts5UnicodeCreate(
       for(i=0; rc==SQLITE_OK && i<nArg; i+=2){
         const char *zArg = azArg[i+1];
         if( 0==sqlite3_stricmp(azArg[i], "remove_diacritics") ){
-          if( (zArg[0]!='0' && zArg[0]!='1' && zArg[0]!='2') || zArg[1] ){
+          if( (zArg[0]!='0' && zArg[0]!='1') || zArg[1] ){
             rc = SQLITE_ERROR;
-          }else{
-            p->eRemoveDiacritic = (zArg[0] - '0');
-            assert( p->eRemoveDiacritic==FTS5_REMOVE_DIACRITICS_NONE
-                 || p->eRemoveDiacritic==FTS5_REMOVE_DIACRITICS_SIMPLE
-                 || p->eRemoveDiacritic==FTS5_REMOVE_DIACRITICS_COMPLEX
-            );
           }
+          p->bRemoveDiacritic = (zArg[0]=='1');
         }else
         if( 0==sqlite3_stricmp(azArg[i], "tokenchars") ){
           rc = fts5UnicodeAddExceptions(p, zArg, 1);
@@ -509,7 +499,7 @@ static int fts5UnicodeTokenize(
         READ_UTF8(zCsr, zTerm, iCode);
         if( fts5UnicodeIsAlnum(p,iCode)||sqlite3Fts5UnicodeIsdiacritic(iCode) ){
  non_ascii_tokenchar:
-          iCode = sqlite3Fts5UnicodeFold(iCode, p->eRemoveDiacritic);
+          iCode = sqlite3Fts5UnicodeFold(iCode, p->bRemoveDiacritic);
           if( iCode ) WRITE_UTF8(zOut, iCode);
         }else{
           break;
