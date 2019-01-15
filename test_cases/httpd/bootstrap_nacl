@@ -9,6 +9,11 @@ if [[ "$*" =~ (^|[[:blank:]])(-h|--help)([[:blank:]]|$) ]]; then
 	exit 1
 fi
 
+# clean compiler environment
+unset CARCH CCACHE_DISABLE CFLAGS CCFLAGS
+unset CHOST C_INCLUDE_PATH CPATH CPPFLAGS
+unset CXXFLAGS LDFLAGS LIBRARY_PATH
+
 export CC=x86_64-nacl-gcc
 export CXX=x86_64-nacl-g++
 export LD=x86_64-nacl-ld
@@ -31,6 +36,7 @@ for d in srclib/apr{,-util}; do
 		&& make install)
 done
 cp -fv -- srclib/apr-util/include/{apr_{hooks,optional_hooks,buckets,uri,optional},apu}.h include/
+find . -type f -name '*build-outputs.mk' -delete
 ./buildconf
 ./configure \
 	--with-included-apr \
