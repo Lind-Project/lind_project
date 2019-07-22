@@ -1,8 +1,0 @@
-#!/bin/bash
-
-if ((!$#)); then
-	exec vim
-fi
-session="$1"
-shift
-exec vim -c "OpenSession $session" "$@"

@@ -1,9 +1,6 @@
 [submodule "reference_monitor"]
 	path = reference_monitor
 	url = https://github.com/Lind-Project/reference_monitor.git
-[submodule "caging"]
-	path = caging
-	url = https://github.com/detectivelyw/caging.git
 [submodule "lind_glibc"]
 	path = lind_glibc
 	url = https://github.com/Lind-Project/Lind-GlibC.git
