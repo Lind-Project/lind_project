@@ -1,1 +1,0 @@
---replicate-do-table=test.t1 --log_error=$MYSQLTEST_VARDIR/tmp/slave.err

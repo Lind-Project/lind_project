@@ -1,2 +1,0 @@
---source include/resource_group_init.inc
---source include/resource_group_binlog.inc

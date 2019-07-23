@@ -1,1 +1,0 @@
---skip-log-bin --log-slave-updates --slave-preserve-commit-order --slave-parallel-workers=4 --slave-parallel-type=LOGICAL_CLOCK

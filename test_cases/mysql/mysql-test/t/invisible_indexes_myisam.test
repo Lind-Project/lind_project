@@ -1,4 +1,0 @@
---source include/force_myisam_default.inc
-
---source include/invisible_indexes.inc
-

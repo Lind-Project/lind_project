@@ -1,3 +1,0 @@
-lib/af_alg.o: lib/af_alg.c lib/config.h
-
-lib/config.h:

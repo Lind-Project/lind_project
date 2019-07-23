@@ -1,3 +1,0 @@
---source include/have_debug.inc
---source include/have_not_thread_prio.inc
---source include/resource_group_common_debug.inc

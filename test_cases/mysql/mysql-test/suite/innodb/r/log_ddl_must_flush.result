@@ -1,4 +1,0 @@
-SET DEBUG_SYNC='trx_flush_log_if_needed SIGNAL hit';
-CREATE PROCEDURE t () BEGIN END;
-SET DEBUG_SYNC='now WAIT_FOR hit';
-DROP PROCEDURE t;

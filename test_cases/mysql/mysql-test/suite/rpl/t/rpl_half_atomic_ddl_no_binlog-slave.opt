@@ -1,1 +1,0 @@
---skip-log-bin --relay_log_info_repository=TABLE --skip-log-slave-updates

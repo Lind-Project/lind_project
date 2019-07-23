@@ -1,2 +1,0 @@
-let $engine= InnoDB;
---source suite/parts/inc/partition-dml-1-2.inc

@@ -1,2 +1,0 @@
---replace_result $MYSQLTEST_VARDIR MYSQLTEST_VARDIR
---query_vertical SHOW VARIABLES LIKE 'relay_log%'

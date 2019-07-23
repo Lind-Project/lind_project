@@ -1,5 +1,0 @@
-@node lgetfilecon
-@subsection @code{lgetfilecon}
-@findex lgetfilecon
-
-@getfileconDesc{lgetfilecon}

@@ -1,3 +1,0 @@
-let $engine= heap;
-let $is_heap= 1;
---source include/ctype_utf8mb4.inc

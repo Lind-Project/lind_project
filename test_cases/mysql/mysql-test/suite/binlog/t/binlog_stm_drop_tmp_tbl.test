@@ -1,3 +1,0 @@
-
--- source include/have_binlog_format_statement.inc
--- source extra/binlog_tests/drop_temp_table.test
