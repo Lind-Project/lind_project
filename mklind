@@ -156,7 +156,7 @@ readonly MODE="dbg-$OS_SUBDIR"
 readonly LIND_BASE="$LIND_BASE"
 readonly LIND_SRC="$LIND_SRC"
 readonly EXPERIMENTS_DIR="$LIND_BASE/lind_experiments"
-readonly MISC_DIR="$LIND_BASE/lind-misc"
+readonly MISC_DIR="$LIND_BASE/scripts"
 readonly NACL_SRC="$LIND_SRC/nacl_src"
 readonly NACL_BASE="$NACL_SRC/native_client"
 readonly NACL_TOOLCHAIN_BASE="$NACL_BASE/tools"
@@ -364,7 +364,7 @@ function test_apps() {
 
 	set +o errexit
 
-	cd "$MISC_DIR/tests" && ./test.sh
+	cd "~/lind/tests" && ./test.sh
 }
 
 # run glibc test suites.
