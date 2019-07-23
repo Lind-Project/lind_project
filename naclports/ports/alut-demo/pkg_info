@@ -1,4 +1,0 @@
-NAME=alut-demo
-VERSION=0.1
-DEPENDS=(freealut nacl-spawn)
-DISABLED_TOOLCHAIN=(emscripten)

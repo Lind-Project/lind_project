@@ -1,6 +1,0 @@
-NAME=cfitsio
-VERSION=3260
-URL=ftp://heasarc.gsfc.nasa.gov/software/fitsio/c/cfitsio3260.tar.gz
-ARCHIVE_ROOT=cfitsio
-LICENSE=LGPL
-SHA1=42b199dafae359473cf733f1197ad303053e072b

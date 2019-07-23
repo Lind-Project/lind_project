@@ -1,8 +1,0 @@
-NAME=eigen3
-VERSION=3.2.7
-URL=http://bitbucket.org/eigen/eigen/get/3.2.7.tar.bz2
-URL_FILENAME=eigen-3.2.7.tar.bz2
-LICENSE=MPL2
-SHA1=6e22013ada087bc8ac07bcc0805c3dbb55f8e544
-ARCHIVE_ROOT=eigen-eigen-b30b87236a1b
-DISABLED_TOOLCHAIN=(emscripten)
