@@ -1,3 +1,0 @@
-src/uname-uname.o: src/uname-uname.c src/uname.h
-
-src/uname.h:

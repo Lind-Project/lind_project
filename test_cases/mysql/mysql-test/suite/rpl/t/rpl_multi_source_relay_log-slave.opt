@@ -1,2 +1,0 @@
---replicate-do-db=global_db
---replicate-wild-do-table=global_db.t1%

@@ -1,3 +1,0 @@
-src/ls-dir.o: src/ls-dir.c src/ls.h
-
-src/ls.h:

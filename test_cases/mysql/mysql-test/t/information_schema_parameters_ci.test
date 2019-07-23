@@ -1,3 +1,0 @@
---source include/have_case_insensitive_file_system.inc
---let $require_case_insensitive_file_system = 1
---source information_schema_parameters.test

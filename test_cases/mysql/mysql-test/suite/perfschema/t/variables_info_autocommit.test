@@ -1,5 +1,0 @@
-
-select @@autocommit, @@big_tables;
-
-select * from performance_schema.variables_info
-  where VARIABLE_NAME in ("autocommit", "big_tables");

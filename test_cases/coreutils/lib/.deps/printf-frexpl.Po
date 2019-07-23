@@ -1,8 +1,0 @@
-lib/printf-frexpl.o: lib/printf-frexpl.c lib/config.h lib/printf-frexpl.h \
- lib/printf-frexp.h
-
-lib/config.h:
-
-lib/printf-frexpl.h:
-
-lib/printf-frexp.h:

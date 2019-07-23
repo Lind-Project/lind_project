@@ -1,4 +1,0 @@
-!include suite/ndb/my.cnf
-
-[cluster_config]
-StopOnError=0

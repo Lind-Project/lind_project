@@ -1,3 +1,0 @@
-SELECT sys_version FROM sys.version;
-sys_version
-2.0.0

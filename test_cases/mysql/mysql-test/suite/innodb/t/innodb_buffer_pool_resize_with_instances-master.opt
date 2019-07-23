@@ -1,3 +1,0 @@
---innodb_sync_debug=1
---innodb_buffer_pool_debug=1
---innodb_buffer_pool_instances=2
