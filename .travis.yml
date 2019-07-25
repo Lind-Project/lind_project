@@ -20,15 +20,17 @@ matrix:
             - g++-multilib
 
 script:
-    # special case pull requests so they build the source and not the target branch
-    - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then cur_branch="$TRAVIS_BRANCH"; else cur_branch="$TRAVIS_PULL_REQUEST_BRANCH"; fi
-    # skip building the master and lind branches as those don't exist in all subrepositories
-    #
-    # TODO: make subrepository branch names consistent and remove special casing of master and lind -jp
-    - if [[ "$cur_branch" == master || "$cur_branch" == lind ]]; then cur_branch="develop"; fi
-    # run a test of the loader after building
-    - cd ./docker/naclruntime
-    - docker build --build-arg=BRANCH="$cur_branch" -t alyptik/lind .
-    - docker run --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind lind /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched; exec /fork"'
+  # special case pull requests so they build the source and not the target branch
+  - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then cur_branch="$TRAVIS_BRANCH"; else cur_branch="$TRAVIS_PULL_REQUEST_BRANCH"; fi
+  # skip building the master and lind branches as those don't exist in all subrepositories
+  #
+  # TODO: make subrepository branch names consistent and remove special casing of master and lind -jp
+  - if [[ "$cur_branch" == master || "$cur_branch" == lind ]]; then cur_branch="develop"; fi
+  # run a test of the loader after building
+  - cd ./docker/naclruntime
+  # travis_wait needed due to build log exceeding Travis CI's maximum length
+  - travis_wait 60 bash -c "docker build --build-arg=BRANCH=$cur_branch -t alyptik/lind . >/dev/null 2>&1"
+  # run a test of the loader after building
+  - docker run --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind lind /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched; exec /fork"'
 
 # vi:ft=yaml:
