@@ -21,10 +21,6 @@
 	path = nacl-binutils
 	url = https://github.com/Lind-Project/nacl-binutils.git
 	branch = develop
-[submodule "lss"]
-	path = lss
-	url = https://github.com/Lind-Project/linux-syscall-support.git
-	branch = develop
 [submodule "lind-misc"]
 	path = lind-misc
 	url = https://github.com/Lind-Project/Lind-misc.git
