@@ -96,7 +96,7 @@ shift "$((OPTIND - 1))"
 if ((default_env)); then
 	export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
 	export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
-	export LIND_SRC="${LIND_SRC:-$LIND_BASE/lind}"
+	export LIND_SRC="${LIND_SRC:-$LIND_BASE/build}"
 	export LIND_MONITOR="${LIND_MONITOR:-$LIND_BASE/reference_monitor}"
 	export REPY_PATH="${REPY_PATH:-$LIND_SRC/repy}"
 	export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$REPY_PATH/sdk}"
@@ -233,26 +233,26 @@ function download_src() {
 			print "LIND_BASE already an initialized git directory" >&2
 			false
 		fi
-		git fetch --all
+		#git fetch --all
 		git checkout master
 	fi
 
 	# symlink submodules
-	git submodule update --init --recursive --remote .
-	for dir in "${!git_deps[@]}"; do
-		[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
-		rm -rf -- "${LIND_SRC:?}/$dir"
-		ln -Trsfv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
-		(cd "$LIND_SRC/$dir" && git checkout develop)
-	done
+	#git submodule update --init --recursive --remote .
+	#for dir in "${!git_deps[@]}"; do
+		#[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
+		#rm -rf -- "${LIND_SRC:?}/$dir"
+		#ln -Trsfv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
+		#(cd "$LIND_SRC/$dir" && git checkout develop)
+	#done
 
 	# initialize native client toolchain
 	ln -Trsfv "$LIND_BASE/native_client" "$NACL_BASE"
 	cd "$LIND_BASE"
 	# default to develop branch if not building inside travis
 	nacl_rev="${NATIVE_CLIENT_URL}@${BRANCH:-develop}"
-	gclient config --name=native_client --git-deps "$nacl_rev"
-	gclient sync
+	#gclient config --name=native_client --git-deps "$nacl_rev"
+	#gclient sync
 
 	# symlink toolchain dependencies
 	cd "$NACL_TOOLCHAIN_BASE"
@@ -548,7 +548,6 @@ function build_glibc() {
 	cd "$NACL_TOOLCHAIN_BASE"
 	rm -rf -- BUILD out
 	make clean
-
 	PATH="$LIND_BASE:$PATH" make -j"$JOBS" build-with-glibc
 
 	print "Done building toolchain"
