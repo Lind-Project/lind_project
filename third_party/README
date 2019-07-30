@@ -1,3 +1,0 @@
-The third_party software placed in this directory is for the exclusive use
-of standalone native client builds.  Do not place code needed for the
-integrated chromium build in this directory.

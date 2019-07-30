@@ -1,0 +1,57 @@
+diff --git a/libiberty/physmem.c b/libiberty/physmem.c
+index 09fbf3f8c83ec179a4..870437c8fbe4b83b79 100644
+--- a/libiberty/physmem.c
++++ b/libiberty/physmem.c
+@@ -25,10 +25,6 @@
+ # include <unistd.h>
+ #endif
+ 
+-#if HAVE_SYS_PSTAT_H
+-# include <sys/pstat.h>
+-#endif
+-
+ #if HAVE_SYS_SYSMP_H
+ # include <sys/sysmp.h>
+ #endif
+@@ -91,19 +87,6 @@ physmem_total (void)
+   }
+ #endif
+ 
+-#if HAVE_PSTAT_GETSTATIC
+-  { /* This works on hpux11.  */
+-    struct pst_static pss;
+-    if (0 <= pstat_getstatic (&pss, sizeof pss, 1, 0))
+-      {
+-	double pages = pss.physical_memory;
+-	double pagesize = pss.page_size;
+-	if (0 <= pages && 0 <= pagesize)
+-	  return pages * pagesize;
+-      }
+-  }
+-#endif
+-
+ #if HAVE_SYSMP && defined MP_SAGET && defined MPSA_RMINFO && defined _SC_PAGESIZE
+   { /* This works on irix6. */
+     struct rminfo realmem;
+@@ -195,21 +178,6 @@ physmem_available (void)
+   }
+ #endif
+ 
+-#if HAVE_PSTAT_GETSTATIC && HAVE_PSTAT_GETDYNAMIC
+-  { /* This works on hpux11.  */
+-    struct pst_static pss;
+-    struct pst_dynamic psd;
+-    if (0 <= pstat_getstatic (&pss, sizeof pss, 1, 0)
+-	&& 0 <= pstat_getdynamic (&psd, sizeof psd, 1, 0))
+-      {
+-	double pages = psd.psd_free;
+-	double pagesize = pss.page_size;
+-	if (0 <= pages && 0 <= pagesize)
+-	  return pages * pagesize;
+-      }
+-  }
+-#endif
+-
+ #if HAVE_SYSMP && defined MP_SAGET && defined MPSA_RMINFO && defined _SC_PAGESIZE
+   { /* This works on irix6. */
+     struct rminfo realmem;
