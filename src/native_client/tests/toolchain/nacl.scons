@@ -1,0 +1,463 @@
+# -*- python2 -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# force inclusion of entire library, so that we can validate it
+# NOTE: This approach does not work for -lc because of tons of
+#       undefined symbols which would have to be stubbed out
+DEP_LIBS = ['nacl', 'srpc', 'imc_syscalls', 'platform', 'gio', 'pthread', 'm']
+
+# -lgcc is not exposed to the bitcode in PNaCl
+if env.Bit('bitcode'):
+  LIBGCC = []
+else:
+  LIBGCC = ['-lgcc']
+
+DEP_LINKFLAGS = (['-Wl,--whole-archive'] + LIBGCC +
+                   ['-l' + name for name in DEP_LIBS] +
+                   ['-Wl,--no-whole-archive'])
+
+# TODO(robertm): get rid of -allow-asm once we can distinguish
+#                real asms from the redirect ones used here
+if env.Bit('bitcode'):
+  env.Append(CCFLAGS=['-allow-asm'])
+
+cpp11_env = env.Clone()
+cpp11_env.Append(CCFLAGS=['-std=c++11'])
+
+# All the libraries were already included via -l switches in LINKFLAGS.
+# But we use them again in LIBS so scons knows about the dependencies.
+# _LIBFLAGS is the internal variable that puts the expansion of LIBS
+# into the command line; so by clearing that, we prevent scons from
+# adding repeated -l switches at the end of the link.
+nexe = env.ComponentProgram('dummy', 'dummy.c',
+                            EXTRA_LINKFLAGS=DEP_LINKFLAGS,
+                            LIBS=DEP_LIBS,
+                            _LIBFLAGS='')
+node = env.CommandValidatorTestNacl('whole_archive_test.out',
+                                    image=nexe)
+env.AddNodeToTestSuite(node,
+                       ['toolchain_tests', 'small_tests'],
+                       'run_whole_archive_test')
+
+
+def AddIntrinsicTest(test_env, src, exit_status,
+                     golden_file=None, test_suffix='', is_broken=False):
+  name = src.split('.')[0]
+  name += test_suffix
+
+  obj = test_env.ComponentObject(name, src)
+  nexe = test_env.ComponentProgram(name, obj, EXTRA_LIBS=['${NONIRT_LIBS}'])
+  node = test_env.CommandSelLdrTestNacl(name + '.out',
+                                        nexe,
+                                        exit_status=exit_status,
+                                        stdout_golden=golden_file)
+  test_env.AddNodeToTestSuite(node,
+                              ['toolchain_tests','small_tests'],
+                              'run_' + name + '_test',
+                              is_broken=is_broken)
+
+
+# Test various intrinsics.
+AddIntrinsicTest(env, 'setlongjmp.c', '55')
+AddIntrinsicTest(env, 'intrinsics.cc', '55'),
+AddIntrinsicTest(env, 'float2.c', '0', golden_file=env.File('float2.stdout'))
+AddIntrinsicTest(env, 'memcpy_move_set.c', '0',
+                 golden_file=env.File('memcpy_move_set.stdout'))
+AddIntrinsicTest(env, 'synchronization_sync.c', '0',
+                 # TODO(jfb) Blocked on bugs 3579 and 2981.
+                 is_broken=env.Bit('target_x86_32'))
+AddIntrinsicTest(env, 'synchronization_volatile.c', '0')
+if env.Bit('bitcode'):
+  # The following tests were only made to work on LLVM for
+  # PNaCl. Command-line flags and libraries need to be updated for GCC
+  # support.
+  AddIntrinsicTest(cpp11_env, 'condition_variable_cpp11.cc', '0')
+  AddIntrinsicTest(cpp11_env, 'future_cpp11.cc', '0')
+  AddIntrinsicTest(cpp11_env, 'mutex_cpp11.cc', '0')
+  AddIntrinsicTest(cpp11_env, 'synchronization_cpp11.cc', '0')
+  AddIntrinsicTest(cpp11_env, 'thread_cpp11.cc', '0')
+
+# This test redirects C function calls to llvm instrinsic functions,
+# so they only work w/ PNaCl.
+if env.Bit('bitcode'):
+  AddIntrinsicTest(env, 'llvm_bitmanip_intrinsics.c', '0',
+                   golden_file=env.File('llvm_bitmanip_intrinsics.stdout'))
+  AddIntrinsicTest(env, 'llvm_math_intrinsics.c', '0',
+                   golden_file=env.File('llvm_math_intrinsics.stdout'))
+  # Also test the math functions with -ffast-math, so we are a tiny bit more
+  # confident that sin() or __builtin_sin() doesn't get turned into
+  # something like llvm.sin.f64.
+  fastmath_env = env.Clone()
+  fastmath_env.Append(CCFLAGS=['-ffast-math'])
+  AddIntrinsicTest(fastmath_env, 'llvm_math_intrinsics.c', '0',
+                   golden_file=env.File('llvm_math_intrinsics.stdout'),
+                   test_suffix='_fast_math')
+
+# Some of the intrinsic tests cover intrinsics that we do not want to
+# support. For example, llvm.frameaddress. If that is the case, we will
+# use the nonstable_env as our test_env in AddIntrinsicTest.
+nonstable_env = env.Clone()
+if env.Bit('bitcode'):
+  nonstable_env.Append(LINKFLAGS=['--pnacl-disable-abi-check'])
+if nonstable_env.AllowNonStableBitcode():
+  # Consider llvm.frameaddress and llvm.returnaddress non-stable,
+  # since we may want to hide return and stack addresses in the future.
+  AddIntrinsicTest(nonstable_env, 'frame_addresses.c', '0'),
+  AddIntrinsicTest(nonstable_env, 'return_address.c', '55')
+
+
+# initfini test
+initfini_obj = env.ComponentObject('initfini.c')
+
+def AddInitFiniTest(env, name, extra_libs):
+  nexe = env.ComponentProgram(name,
+                              [initfini_obj],
+                              EXTRA_LIBS=extra_libs + ['${NONIRT_LIBS}'])
+  golden_file = env.File(name + '.stdout')
+  node = env.CommandSelLdrTestNacl(name + '.out',
+                                   nexe,
+                                   stdout_golden=golden_file)
+  # This test checks the ".init_array" and ".fini_array" sections,
+  # which are an internal detail of how the toolchain works.  We do
+  # not support these sections in PNaCl's static linking ABI, because
+  # PNaCl connects up initializers at bitcode linking time.  PNaCl
+  # does support __attribute__((constructor)) and
+  # __attribute__((destructor)) which are tested via
+  # run_initfini_attributes_test below.
+  is_broken = env.Bit('bitcode') and env.Bit('nacl_static_link')
+  env.AddNodeToTestSuite(node,
+                         ['toolchain_tests', 'small_tests'],
+                         'run_' + name + '_test',
+                         is_broken=is_broken)
+
+AddInitFiniTest(env, 'initfini_static', [])
+if env.Bit('nacl_glibc') and not env.Bit('nacl_disable_shared'):
+  # Additional case: Add initfini_shared.c as a shared object.
+  # For a shared object, the init/fini arrays are executed by
+  # the dynamic loader. This exercises a different code path.
+  env.NaClSdkLibrary('initfini_s', 'initfini_shared.c')
+  AddInitFiniTest(env, 'initfini_shared', ['initfini_s'])
+
+
+nexe = env.ComponentProgram(
+    'initfini_attributes', ['initfini_attributes.c'],
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl(
+    'initfini_attributes.out', nexe,
+    stdout_golden=env.File('initfini_attributes.stdout'))
+env.AddNodeToTestSuite(
+    node, ['toolchain_tests', 'small_tests'],
+    'run_initfini_attributes_test',
+    # __attribute__((destructor)) is broken in nacl-glibc on x86-64.
+    # See http://code.google.com/p/nativeclient/issues/detail?id=3056
+    # TODO(mseaborn): Enable this test there when this is fixed.
+    is_broken=env.Bit('nacl_glibc') and env.Bit('target_x86_64'))
+
+
+bias_env = env.Clone()
+# PNaCl bias is needed until __jmp_buf (defined in bits/setjmp.h) has
+# the same size on X86-32 and X86-64.
+# BUG= http://code.google.com/p/nativeclient/issues/detail?id=2490
+if env.Bit('bitcode'):
+  bias_env.AddBiasForPNaCl()
+nexe = bias_env.ComponentProgram('pthread_cleanup', 'pthread_cleanup.c',
+                                 EXTRA_LIBS=['${PTHREAD_LIBS}',
+                                             '${NONIRT_LIBS}'])
+node = bias_env.CommandSelLdrTestNacl('pthread_cleanup.out', nexe)
+bias_env.AddNodeToTestSuite(node, ['toolchain_tests', 'small_tests'],
+                            'run_pthread_cleanup_test')
+
+
+# NOTE: the tests below break easily under valgrid and since
+#       they do not exercise malloc/free we exclude
+if env.IsRunningUnderValgrind():
+  Return()
+
+
+# NOTE: we assume that the incoming env contains '-O2', '-fomit-frame-pointer'
+def MakeEnv(use_opts, use_frames):
+  new_env = env.Clone()
+  # AddBiasForPNaCl() is only needed for stack_frame.cc and eh_return.c.
+  if new_env.Bit('bitcode'):
+    new_env.AddBiasForPNaCl()
+  new_env.FilterOut(CFLAGS=['-pedantic'])
+  new_env.FilterOut(CCFLAGS=['-pedantic'])
+  if use_frames:
+    new_env.FilterOut(CFLAGS=['-fomit-frame-pointer'])
+    new_env.FilterOut(CCFLAGS=['-fomit-frame-pointer'])
+  else:
+    new_env.Append(CFLAGS=['-fomit-frame-pointer'])
+    new_env.Append(CCFLAGS=['-fomit-frame-pointer'])
+  if use_opts:
+    new_env.Append(CFLAGS=['-O2'])
+    new_env.Append(CCFLAGS=['-O2'])
+  else:
+    new_env.FilterOut(CFLAGS=['-O2'])
+    new_env.FilterOut(CCFLAGS=['-O2'])
+    new_env.FilterOut(LINKFLAGS=['-O3'])
+  return new_env
+
+ENVIRONMENTS_TO_TRY = [ ('noopt_frame', MakeEnv(False, True)),
+                        ('noopt_noframe', MakeEnv(False, False)),
+                        ('opt_frame', MakeEnv(True, True)),
+                        ('opt_noframe', MakeEnv(True, False)),
+                        ]
+
+for tag, env_to_try in ENVIRONMENTS_TO_TRY:
+  for src in ['unwind_trace.cc',
+              'stack_frame.cc',
+              'eh_return.c',
+              'eh_virtual_dtor.cc',
+              'eh_loop_single.cc',
+              'eh_loop_many.cc',
+              'eh_catch_many.cc',
+              'eh_loop_break.cc',
+              ]:
+
+    if not env.Bit('bitcode') and src in ['eh_return.c']:
+      # for some reason gcc does not allow us to use
+      #  __builtin_eh_return
+      continue
+
+    is_broken = False
+    if (env.Bit('bitcode') and
+        env.Bit('pnacl_generate_pexe') and
+        src in ['stack_frame.cc', 'eh_return.c']):
+      # stack_frame.cc and eh_return.c have bias see above
+      is_broken = True
+
+    if not env.Bit('bitcode') and src in ['stack_frame.cc']:
+      # This test makes pnacl specific assumptions which
+      # may not hold for the nacl-gcc TC
+      is_broken = True
+
+    # BUG=http://code.google.com/p/nativeclient/issues/detail?id=2665
+    # CFA is not always 0 mod 8 for x86-32 with glibc (could be 4):
+    if (env.Bit('bitcode') and
+        env.Bit('target_x86_32') and
+        env.Bit('nacl_glibc') and
+        src in ['stack_frame.cc']):
+      is_broken = True
+
+    # BUG=http://code.google.com/p/nativeclient/issues/detail?id=2644
+    # Broken on x86-64 with glibc.
+    if (env.Bit('bitcode') and
+        env.Bit('target_x86_64') and
+        env.Bit('nacl_glibc') and
+        src in ['eh_return.c']):
+      is_broken = True
+
+    exc_env = env_to_try.Clone()
+    # C++ exceptions are not currently supported in PNaCl's ABI.
+    if exc_env.Bit('bitcode'):
+      exc_env.Append(LINKFLAGS=['--pnacl-allow-exceptions'])
+      exc_env.Append(TRANSLATEFLAGS=['--pnacl-allow-exceptions'])
+    if not exc_env.AllowNonStableBitcode():
+      continue
+    name = src.split('.')[0] + '_' + tag
+    nobj = exc_env.ComponentObject(name + '.o', src)
+    nexe = exc_env.ComponentProgram(name, nobj, EXTRA_LIBS=['${NONIRT_LIBS}'])
+    node = exc_env.CommandSelLdrTestNacl(name + '.out',
+                                         nexe,
+                                         exit_status='55')
+    exc_env.AddNodeToTestSuite(node, ['toolchain_tests', 'small_tests'],
+                               'run_' + name  +'_test', is_broken=is_broken)
+
+
+abi_types_nexe = env.ComponentProgram('abi_types',
+                                      'abi_types.cc',
+                                      EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('abi_types_test.out',
+                                 abi_types_nexe)
+env.AddNodeToTestSuite(node,
+                       ['toolchain_tests', 'small_tests'],
+                       'run_abi_types_test')
+
+strtoll_nexe = env.ComponentProgram('strtoll', 'strtoll.c',
+                                    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('strtoll.out', strtoll_nexe)
+env.AddNodeToTestSuite(node,
+                       ['toolchain_tests', 'small_tests'],
+                       'run_strtoll_test')
+
+strtoull_nexe = env.ComponentProgram('strtoull', 'strtoull.c',
+                                    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('strtoull.out', strtoull_nexe)
+env.AddNodeToTestSuite(node,
+                       ['toolchain_tests', 'small_tests'],
+                       'run_strtoull_test')
+
+wcstoll_nexe = env.ComponentProgram('wcstoll', 'wcstoll.c',
+                                    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('wcstoll.out', wcstoll_nexe)
+env.AddNodeToTestSuite(node,
+                       ['toolchain_tests', 'small_tests'],
+                       'run_wcstoll_test',
+                       is_broken=env.Bit('nacl_glibc'))
+
+
+if not env.Bit('nacl_glibc'):
+  memalign_env = env.Clone()
+  memalign_env.Append(CPPDEFINES=['NEWLIB=1'])
+else:
+  memalign_env = env
+posix_memalign_nexe = memalign_env.ComponentProgram(
+    'posix_memalign',
+    'posix_memalign.c',
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('posix_memalign.out', posix_memalign_nexe)
+env.AddNodeToTestSuite(node,
+                       ['toolchain_tests', 'small_tests'],
+                       'run_posix_memalign_test')
+
+getpagesize_test_nexe = env.ComponentProgram(
+    'getpagesize_test', 'getpagesize_test.c',
+    EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('getpagesize_test.out', getpagesize_test_nexe)
+env.AddNodeToTestSuite(node, ['toolchain_tests', 'small_tests'],
+                       'run_getpagesize_test')
+
+
+# Test that local variable dwarf info is preserved with linking and LTO.
+# Force '-g' on in case it was not turned on for some reason, and lower
+# optimization settings to prevent some optimizations that would convert
+# locals from llvm allocas to registers.
+# We may be able to remove this test once LLVM has an upstream regression test.
+debug_env = env.Clone()
+debug_env.Append(CFLAGS=['-g3', '-O0'])
+debug_env.Append(CCFLAGS=['-g3', '-O0'])
+debug_env.Append(LINKFLAGS=['-O0'])
+# This requires preserving nonstable bitcode debug metadata.
+if debug_env.AllowNonStableBitcode():
+  dwarf_local_var_nexe = debug_env.ComponentProgram(
+      'dwarf_local_var',
+      ['dwarf_local_var.c',
+       'dwarf_local_var_dummy.c'],
+      EXTRA_LIBS=['${NONIRT_LIBS}'])
+  # Sanity-check -- make sure it runs.
+  node = debug_env.CommandSelLdrTestNacl('dwarf_local_var_run.out',
+                                         dwarf_local_var_nexe,
+                                         exit_status=55)
+  debug_env.AddNodeToTestSuite(node,
+                               ['toolchain_tests', 'small_tests'],
+                               'run_dwarf_local_var_run_test')
+  node = debug_env.CommandTestFileDumpCheck('dwarf_local_var_objdump.out',
+                                            dwarf_local_var_nexe,
+                                            debug_env.File('dwarf_local_var.c'),
+                                            '-W')
+  debug_env.AddNodeToTestSuite(node,
+                               ['small_tests', 'toolchain_tests'],
+                               'run_dwarf_local_var_objdump_test')
+
+if env.Bit('nacl_glibc'):
+  nexe = env.ComponentProgram('byteswap64', 'byteswap64.c',
+                              EXTRA_LIBS=['${NONIRT_LIBS}'])
+  node = env.CommandSelLdrTestNacl('byteswap64.out', nexe)
+  env.AddNodeToTestSuite(node,
+                         ['toolchain_tests', 'small_tests'],
+                         'run_byteswap64_test')
+
+# Test that using link-time optimization does not convert calls to
+# library functions that were never linked in.
+if env.Bit('bitcode'):
+  unopt_env = env.Clone()
+  unopt_env.Append(CFLAGS=['-O0'])
+  unopt_env.Append(CCFLAGS=['-O0'])
+  opt_env = env.Clone()
+  opt_env.Append(CFLAGS=['-O3'])
+  opt_env.Append(CCFLAGS=['-O3'])
+  opt_env.Append(LINKFLAGS=['-O3'])
+  obj = unopt_env.ComponentObject('printf_to_puts.c')
+  nexe = opt_env.ComponentProgram('printf_to_puts',
+                                  obj,
+                                  EXTRA_LIBS=['${NONIRT_LIBS}'])
+  node = env.CommandSelLdrTestNacl('printf_to_puts.out', nexe)
+  env.AddNodeToTestSuite(node,
+                         ['toolchain_tests', 'small_tests'],
+                         'run_printf_to_puts_test')
+
+if env.Bit('nacl_glibc'):
+  def AddAlignedCodeTest(name, object_file):
+    node = env.CommandTest(name + '.out',
+                           ['${PYTHON}', env.File('aligned_code.py'),
+                            '${OBJDUMP}', nexe],
+                           # don't run ${PYTHON} under the emulator.
+                           direct_emulation=False)
+    env.AddNodeToTestSuite(node,
+                           ['toolchain_tests', 'small_tests'],
+                           'run_' + name + '_test')
+  AddAlignedCodeTest('aligned_code',
+                     env.ComponentProgram('aligned_code', ['aligned_code.c'],
+                                          EXTRA_LIBS=['${NONIRT_LIBS}']))
+  if not env.Bit('nacl_disable_shared'):
+    AddAlignedCodeTest('aligned_code_lib',
+                       env.NaClSharedLibrary('aligned_code_lib',
+                                             ['aligned_code_lib.c']))
+
+nexe = env.ComponentProgram('method_pointer_repr', 'method_pointer_repr.cc',
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('method_pointer_repr.out', nexe)
+env.AddNodeToTestSuite(node, ['toolchain_tests', 'small_tests'],
+                       'run_method_pointer_repr_test')
+
+c99_env = env.Clone()
+c99_env.Append(CFLAGS=['-std=c99'])
+# VLA test is broken on nacl-gcc x86-64 (segfaults in test_two_recursion()).
+# http://code.google.com/p/nativeclient/issues/detail?id=3527
+vla_is_broken = not env.Bit('bitcode') and env.Bit('target_x86_64')
+nexe = c99_env.ComponentProgram('vla', 'vla.c',
+                                EXTRA_LIBS=['${NONIRT_LIBS}'])
+node = env.CommandSelLdrTestNacl('vla.out', nexe,
+                                 stdout_golden=env.File('vla.stdout'))
+env.AddNodeToTestSuite(node, ['toolchain_tests', 'small_tests'],
+                       'run_vla_test',
+                       is_broken=vla_is_broken)
+
+if not env.Bit('pnacl_generate_pexe'):
+  asm_env = env.Clone()
+  if env.Bit('bitcode'):
+    asm_env.PNaClForceNative()
+    asm_env.AddBiasForPNaCl()
+
+  def FarCallObjects(env, suffix=''):
+    return [env.ComponentObject(file[:-2] + suffix + '.o', file)
+            for file in ['far_caller.c', 'far_padding.S', 'far_callee.c']]
+  nexe = asm_env.ComponentProgram('far_call', FarCallObjects(asm_env),
+                                  EXTRA_LIBS=['${NONIRT_LIBS}'])
+  node = asm_env.CommandSelLdrTestNacl('far_call.out', nexe)
+  # TODO(mcgrathr): Broken for bitcode pending fixes to gold; see
+  # https://code.google.com/p/nativeclient/issues/detail?id=3568
+  asm_env.AddNodeToTestSuite(node, ['toolchain_tests', 'small_tests'],
+                             'run_far_call_test',
+                             is_broken=env.Bit('bitcode'))
+
+  # TODO(mcgrathr): Disabled for bitcode because pnacl-ld doesn't grok
+  # --pic-veneer.  Another tack to test this would be to generate a shared
+  # object and validate it, but -shared is not really supported either.
+  # Since PNaCl has no reason to generate PIC at all until there is some
+  # form of ELF shared object support (if that ever happens at all),
+  # perhaps we'll never really need to test this.
+  if not env.Bit('bitcode'):
+    pic_env = asm_env.Clone()
+    pic_env.Append(CFLAGS=['-fPIC'])
+    if pic_env.Bit('target_arm'):
+      pic_env.Append(LINKFLAGS=['-Wl,--pic-veneer'])
+    nexe = pic_env.ComponentProgram('far_call_pic',
+                                    FarCallObjects(pic_env, '_pic'),
+                                    EXTRA_LIBS=['${NONIRT_LIBS}'])
+    node = pic_env.CommandSelLdrTestNacl('far_call_pic.out', nexe)
+    pic_env.AddNodeToTestSuite(node, ['toolchain_tests', 'small_tests'],
+                               'run_far_call_pic_test')
+
+if not env.Bit('nacl_disable_shared'):
+  env.NaClSharedLibrary('pic_constant_lib', ['pic_constant_lib.c'])
+  nexe = env.ComponentProgram('pic_constant', ['pic_constant.c'],
+                              EXTRA_LIBS=['pic_constant_lib', '${NONIRT_LIBS}'])
+  node = env.CommandSelLdrTestNacl('pic_constant.out', nexe)
+  env.AddNodeToTestSuite(node, ['toolchain_tests', 'small_tests'],
+                         'run_pic_constant_test')

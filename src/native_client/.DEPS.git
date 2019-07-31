@@ -1,0 +1,88 @@
+# DO NOT EDIT EXCEPT FOR LOCAL TESTING.
+# THIS IS A GENERATED FILE.
+# ALL MANUAL CHANGES WILL BE OVERWRITTEN.
+# SEE http://code.google.com/p/chromium/wiki/UsingNewGit
+# FOR HOW TO ROLL DEPS
+vars = {
+    'webkit_url':
+         'https://chromium.googlesource.com/chromium/blink.git',
+    'git_url':
+         'https://chromium.googlesource.com'
+}
+
+deps = {
+    'breakpad/src':
+        Var('git_url') + '/external/google-breakpad/src.git@8a0ab39d350a166b918852f8879570c139febfed',
+    'native_client/tools/perf_expectations':
+        Var('git_url') + '/chromium/src/tools/perf_expectations.git@d02c259f12a81a5fb58632dd2749958a715e63ad',
+    'testing/gtest':
+        Var('git_url') + '/external/googletest.git@a6772271f71672e889776bfe49ec4efd9da036df',
+    'third_party':
+        Var('git_url') + '/native_client/src/third_party.git@51f94e3470cddedb3e171c46cff17f59060aee2f',
+    'third_party/asan':
+        Var('git_url') + '/chromium/deps/asan.git@712c6329f0a76ba4d6aa45c4060009e3abb068c1',
+    'third_party/lcov':
+        Var('git_url') + '/chromium/src/third_party/lcov.git@b37daf5968200da8ff520ce65c4e5bce4047dd15',
+    'third_party/lss':
+        Var('git_url') + '/external/linux-syscall-support/lss.git@cdda43427c6f46c07dd281cdec03f2eea7c21bca',
+    'tools/clang':
+        Var('git_url') + '/chromium/src/tools/clang.git@00678da2cd17ce512ececcd16cb549a47cf05351',
+    'tools/gyp':
+        Var('git_url') + '/external/gyp.git@b91ac3c024ca836327c66428877fe9dc67ed59e8',
+    'tools/valgrind':
+        Var('git_url') + '/chromium/src/tools/valgrind.git@0015f7b90b197438fb83e88ecb0c93866536160f',
+    'validator_snapshots':
+        Var('git_url') + '/native_client/src/validator_snapshots.git@4c1ea6b6ebe020993b0a091fd4e38a6487704b60',
+}
+
+deps_os = {
+    'unix':
+    {
+        'third_party/ragel':
+            Var('git_url') + '/native_client/deps/third_party/ragel.git@da42bb33f1b67c2d70b38ec1d2edf5263271b635',
+    },
+    'win':
+    {
+        'third_party/NSIS':
+            Var('git_url') + '/native_client/deps/third_party/NSIS.git@21b6ad22daa7bfc04b9f1c1805a34622e2607a93',
+        'third_party/gnu_binutils':
+            Var('git_url') + '/native_client/deps/third_party/gnu_binutils.git@f4003433b61b25666565690caf3d7a7a1a4ec436',
+        'third_party/mingw-w64/mingw/bin':
+            Var('git_url') + '/native_client/deps/third_party/mingw-w64/mingw/bin.git@3cc8b140b883a9fe4986d12cfd46c16a093d3527',
+        'third_party/python_26':
+            Var('git_url') + '/chromium/deps/python_26.git@0f769a0323d9a5a301bb9c50e48f43166939a923',
+    },
+}
+
+include_rules = [
+    '+native_client/src/include',
+    '+gtest'
+]
+
+skip_child_includes = [
+    
+]
+
+hooks = [
+    {
+    'action':
+         [
+    'python',
+    'native_client/build/download_toolchains.py',
+    '--keep',
+    '--arm-untrusted',
+    'native_client/TOOL_REVISIONS'
+],
+    'pattern':
+         '.'
+},
+    {
+    'action':
+         [
+    'python',
+    'native_client/build/gyp_nacl'
+],
+    'pattern':
+         '.'
+}
+]

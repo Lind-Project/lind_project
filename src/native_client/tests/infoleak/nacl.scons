@@ -1,0 +1,41 @@
+# -*- python2 -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+if env.Bit('bitcode') and not env.Bit('pnacl_generate_pexe'):
+  env.AddBiasForPNaCl()
+  env.PNaClForceNative()
+
+infoleak_sources = ['test_infoleak.c']
+if env.Bit('target_arm') and not env.Bit('pnacl_generate_pexe'):
+  infoleak_sources.append('test_infoleak_arm.S')
+
+nexe = env.ComponentProgram('test_infoleak', infoleak_sources,
+                            EXTRA_LIBS=['${NONIRT_LIBS}'])
+
+node = env.CommandSelLdrTestNacl('test_infoleak.out', nexe)
+env.AddNodeToTestSuite(node,
+                       ['small_tests', 'sel_ldr_tests'],
+                       'run_infoleak_test',
+                       # Valgrind apparently doesn't implement
+                       # stmxcsr/ldmxcsr correctly.  stmxcsr seems to do
+                       # nothing, and ldmxcsr always reads back the
+                       # hardware's power-up default value of 0x1f80.
+                       is_broken=env.IsRunningUnderValgrind())
+
+if not env.Bit('pnacl_generate_pexe'):
+  fpu_cw_sources = ['test_fpu_control_word.c']
+  if env.Bit('target_arm'):
+    fpu_cw_sources.append('test_fpu_control_word_arm.S')
+  nexe = env.ComponentProgram('test_fpu_control_word', fpu_cw_sources,
+                              EXTRA_LIBS=['${NONIRT_LIBS}'])
+  node = env.CommandSelLdrTestNacl('test_fpu_control_word.out', nexe)
+  env.AddNodeToTestSuite(node,
+                         ['small_tests', 'sel_ldr_tests'],
+                         'run_fpu_control_word_test',
+                         # Valgrind apparenty doesn't implement
+                         # fnstcw;fldcw correctly.
+                         is_broken=env.IsRunningUnderValgrind())

@@ -260,7 +260,6 @@ function download_src() {
 	make sync-pinned
 	for dir in "${!toolchain_deps[@]}"; do
 		rm -rf -- "SRC/$dir"
-        echo "${toolchain_deps[$dir]}"
 		ln -Trsfv "${toolchain_deps[$dir]}" "SRC/$dir"
 		(cd "SRC/$dir" && git checkout develop)
 	done

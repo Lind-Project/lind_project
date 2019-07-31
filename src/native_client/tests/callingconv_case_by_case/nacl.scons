@@ -1,0 +1,152 @@
+# -*- python2 -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# This test does not make any sense for pure pnacl
+if env.Bit('bitcode') and env.Bit('pnacl_generate_pexe'):
+  Return()
+
+# This test is disabled for MIPS because we do not have a MIPS-enabled nacl-gcc
+# to test PNaCl against.
+if env.Bit('target_mips32'):
+  Return()
+
+if env.Bit('bitcode'):
+  # Disabling the PNaCl ABI checker is necessary for the
+  # PNaCl-calling-PNaCl case below because the test uses the __m128
+  # type, which the checker rejects.
+  env.Append(LINKFLAGS=['--pnacl-disable-abi-check'])
+
+# Case-by-case calling Convention Test for PNaCl and nacl-gcc compatibility.
+
+# We make 4 modules.
+# CC1 emits MODULE0 and CC2 MODULE1, CC2 emits MODULE2 and CC1 MODULE3
+# For the call test:
+# MODULE0(cc1) -> MODULE0(cc1) -> MODULE1(cc2) -> MODULE2(cc2) -> MODULE3(cc1).
+# For the return test, the dataflow is reversed.
+
+# For x86-64, there is a compatibility flag and calling conv attribute.
+# We use the same framework to test those as well.
+
+
+# List of (4 envs for the modules, link_env, test_name_suffix)
+# to apply to each source. The 4 envs may have different flags.
+test_configurations = []
+
+def AddCommonFlags(envlist):
+  for (i, e) in enumerate(envlist):
+    # Add -Wno-long-long because we use c99 long long constants in C++ code.
+    e.Append(CCFLAGS=['-DMODULE' + str(i), '-Wno-long-long'])
+
+def MakeSelfTestEnv(base_env, extra_flags):
+  """ Make a list of four (nearly identical) envs which use the same CC
+  for compiling the four modules to test self-consistency.  """
+  base_env = base_env.Clone()
+  base_env.Append(CCFLAGS=extra_flags)
+  # Same CC for all, but assign different module defines later.
+  envlist = [base_env.Clone() for dummy_count in xrange(4)]
+  AddCommonFlags(envlist)
+  link_env = base_env
+  return (envlist, link_env)
+
+def MakeCrossEnvs(base_env, extra_flags1, extra_flags2,
+                  both_clang=False):
+  """ Make a list of four (nearly identical) envs, some of which use gcc
+  and some use pnacl, for compiling the four modules to test consistency.
+  if both_clang is true, both environments will use the clang compiler;
+  otherwise one environment will use gcc (extra_flags1) and the other
+  will use clang (extra_flags2)"""
+  envlist = []
+  # For module0
+  cc1_env = base_env.Clone()
+  cc1_env.PNaClForceNative()
+  cc1_env.Append(CCFLAGS=extra_flags2)
+  envlist.append(cc1_env)
+  # For module1
+  if both_clang:
+    cc2_env = base_env.Clone()
+    cc2_env.PNaClForceNative()
+  else:
+    cc2_env = base_env.PNaClGetNNaClEnv()
+  cc2_env.Append(CCFLAGS=extra_flags1)
+  envlist.append(cc2_env)
+
+  envlist.append(cc2_env.Clone()) # For module2
+  envlist.append(cc1_env.Clone()) # For module3
+  link_env = cc1_env # To allow linking native objects (from ForceNative).
+  AddCommonFlags(envlist)
+  return (envlist, link_env)
+
+
+if not env.Bit('bitcode'):
+  # For gcc, only do a self-consistency test.
+  if env.Bit('target_x86'):
+    # Assume for nacl-gcc the bots have at least SSE2.
+    extra_flags = ['-msse2']
+  else:
+    extra_flags = []
+  envlist, link_env = MakeSelfTestEnv(env, extra_flags)
+  test_configurations.append((envlist, link_env, ''))
+else:
+  envlist, link_env = MakeSelfTestEnv(env, [])
+  test_configurations.append((envlist, link_env, '_self'))
+  if env.Bit('target_arm'):
+    envlist, link_env = MakeCrossEnvs(env, [],
+        ['--pnacl-frontend-triple=armv7a-unknown-nacl-gnueabi',
+         '-mfloat-abi=hard'])
+    test_configurations.append((envlist, link_env, ''))
+  elif env.Bit('target_x86_32'):
+    # For x86-32 there is gcc, but no compatibility flags.
+    envlist, link_env = MakeCrossEnvs(env, ['-msse2'], [])
+    test_configurations.append((envlist, link_env, ''))
+  elif env.Bit('target_x86_64'):
+    # For x86-64 PNaCl we have more things to test.
+    # First test the command line flag.
+    envlist, link_env = MakeCrossEnvs(env,
+                                      ['-msse2', '-mpnacl-cconv'], [])
+    test_configurations.append((envlist, link_env, ''))
+    envlist, link_env = MakeCrossEnvs(env,
+                                      ['-msse2', '-DTEST_ATTRIBUTE_VIA_DECL'],
+                                      [])
+    test_configurations.append((envlist, link_env, '_decl'))
+    envlist, link_env = MakeCrossEnvs(env,
+                                      ['-msse2', '-DTEST_ATTRIBUTE_VIA_FP'],
+                                      [])
+    test_configurations.append((envlist, link_env, '_fp'))
+    envlist, link_env = MakeCrossEnvs(env, ['-msse2'],
+        ['--pnacl-frontend-triple=x86_64-unknown-nacl'])
+    test_configurations.append((envlist, link_env, '_sysvabi'))
+    envlist, link_env = MakeCrossEnvs(env,
+        ['--pnacl-frontend-triple=x86_64-unknown-nacl',
+         '-DTEST_ATTRIBUTE_VIA_DECL'], [], both_clang=True)
+    test_configurations.append((envlist, link_env, '_clangdecl'))
+    envlist, link_env = MakeCrossEnvs(env,
+        ['--pnacl-frontend-triple=x86_64-unknown-nacl',
+         '-DTEST_ATTRIBUTE_VIA_FP'], [], both_clang=True)
+    test_configurations.append((envlist, link_env, '_clangfp'))
+  else:
+    raise "Unknown target architecture!"
+
+######################################################################
+
+for test_source in ['return_structs.cc',
+                    'call_structs.cc']:
+  test_name = test_source.split('.')[0]
+  for (envlist, link_env, test_suffix) in test_configurations:
+    objfiles = []
+    test_full_name = test_name + test_suffix
+    for (i, e) in enumerate(envlist):
+      obj = e.ComponentObject(test_full_name + '.' + str(i),
+                              test_source)
+      objfiles.append(obj)
+    prog = link_env.ComponentProgram(test_full_name,
+                                     objfiles,
+                                     EXTRA_LIBS=['${NONIRT_LIBS}'])
+    node = env.CommandSelLdrTestNacl(test_full_name + '.out',
+                                     prog)
+    env.AddNodeToTestSuite(node, ['small_tests', 'toolchain_tests',
+                                  'nonpexe_tests'],
+                           'run_' + test_full_name + '_test')
