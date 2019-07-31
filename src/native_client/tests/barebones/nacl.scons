@@ -1,0 +1,89 @@
+# -*- python2 -*-
+# Copyright (c) 2012 The Native Client Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Import('env')
+
+# Use of "-nostdlib" means these tests produce statically-linked
+# executables.  This does not work with the test runner for
+# nacl-glibc, which always runs the executables via ld.so.  However,
+# we want to keep building the tests.
+# TODO(mseaborn): To fix this, either switch these tests to
+# dynamically link against libc, or make use of ld.so optional.
+is_glibc = env.Bit('nacl_glibc')
+
+env.Replace(LIBS=[],
+            EXTRA_LIBS=[],
+            LINKFLAGS=['-nostdlib'],
+            TRANSLATEFLAGS=['-nostdlib'])
+
+# This setting will affect the barebones_regs.c test
+if env.Bit('build_arm'):
+  env.Append(CPPDEFINES='SMALL_REGS_TEST')
+
+# The barebones_reloc test need symbols preserved, since it provides
+# a stub function for something that normally comes from the system libraries.
+# TODO(jvoung): That can be fixed by removing -nostdlib from TRANSLATEFLAGS.
+# Then the translator will get the required functions from system libs.
+# However, removing -nostdlib from TRANSLATEFLAGS will break due to:
+# https://code.google.com/p/nativeclient/issues/detail?id=3069
+if not env.AllowNonStableBitcode():
+  Return()
+
+# NOTE: the x86 linker wants _start() to be the very first function
+FAKE_STARTUP = env.ComponentObject('fake_startup', 'fake_startup.c')
+
+barebones_tests = ['addr_modes',
+                   'exit',
+                   'fib',
+                   'hello_world',
+                   'negindex',
+                   'only_bss',
+                   'regs',
+                   'reloc',
+                   'switch',
+                   'vtable',
+                   'vaarg',
+                   ]
+
+for basename in barebones_tests:
+  # TODO(kcc): the barebones tests confuse the current nacl-ified valgrind.
+  if env.IsRunningUnderValgrind(): continue
+  is_broken = is_glibc
+  # This is generating a (probably invalid) relocation on PNaCl GlibC X86-64
+  # which cannot be handled by the TLS rewrite in binutils.
+  if basename == 'reloc' and is_glibc and env.Bit('build_x86_64'):
+    continue
+
+  src = 'barebones_' + basename + '.c'
+  nexe_name = 'barebones_' + basename
+  out = 'barebones_' + basename + '.out'
+  test = 'run_barebones_' + basename + '_test'
+  test = 'run_barebones_' + basename + '_test'
+  nexe = env.ComponentProgram(nexe_name, [FAKE_STARTUP, src])
+
+  # NOTE: we avoid using zero as the "good" exit status and just
+  #       arbitrarily picked 55. All tests are coded to follow this model.
+  node = env.CommandSelLdrTestNacl(out, nexe, exit_status='55')
+
+  env.AddNodeToTestSuite(node,
+                         ['small_tests', 'sel_ldr_tests', 'barebones_tests'],
+                         test,
+                         is_broken=is_broken)
+
+# The top_of_sandbox test does not apply to x86-32 because the bug
+# it tests for cannot happen in a segment-based sandbox, only with
+# a sandbox where some kind of address-masking is done.
+if not env.Bit('pnacl_generate_pexe') and not env.Bit('build_x86_32'):
+  native_env = env.Clone()
+  if native_env.Bit('bitcode'):
+    native_env.AddBiasForPNaCl()
+    native_env.PNaClForceNative()
+
+    nexe = native_env.ComponentProgram('top_of_sandbox', ['top_of_sandbox.c'])
+    node = native_env.CommandSelLdrTestNacl('top_of_sandbox.out', nexe)
+    native_env.AddNodeToTestSuite(
+        node, ['small_tests', 'sel_ldr_tests', 'barebones_tests'],
+        'run_top_of_sandbox_test',
+        is_broken=is_glibc)
