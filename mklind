@@ -234,7 +234,7 @@ function download_src() {
 			false
 		fi
 		#git fetch --all
-		git checkout master
+		#git checkout master
 	fi
 
 	# symlink submodules
