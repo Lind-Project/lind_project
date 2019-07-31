@@ -17,10 +17,6 @@
 	path = nacl-gcc
 	url = https://github.com/Lind-Project/nacl-gcc.git
 	branch = develop
-[submodule "nacl-binutils"]
-	path = nacl-binutils
-	url = https://github.com/Lind-Project/nacl-binutils.git
-	branch = develop
 [submodule "lind-misc"]
 	path = lind-misc
 	url = https://github.com/Lind-Project/Lind-misc.git
@@ -29,3 +25,6 @@
 	path = native_client
 	url = https://github.com/Lind-Project/native_client.git
 	branch = develop
+[submodule "src/lind_glibc"]
+	path = src/lind_glibc
+	url = https://github.com/Lind-Project/Lind-GlibC
