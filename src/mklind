@@ -6,6 +6,7 @@
 # Updated by Joey Pabalinas <joeypabalinas@gmail.com>
 
 # version and usage strings
+cd ..
 readonly version=1.0.0-rc4
 usage+=$'\n'"Lind $version NaCl Toolchain Build Script"$'\n'
 usage+=$'\n'
