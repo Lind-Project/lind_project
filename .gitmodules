@@ -1,32 +1,36 @@
-[submodule "reference_monitor"]
+[submodule "src/reference_monitor"]
 	path = tests/reference_monitor
 	url = https://github.com/Lind-Project/reference_monitor.git
-[submodule "nacl_repy"]
+    branch = master
+[submodule "src/nacl_repy"]
 	path = src/nacl_repy
 	url = https://github.com/Lind-Project/nacl_repy.git
 	branch = develop
-[submodule "lind_experiments"]
+[submodule "src/lind_experiments"]
 	path = tests/lind_experiments
 	url = https://github.com/Lind-Project/lind_experiments.git
 	branch = develop
-[submodule "nacl-gcc"]
+[submodule "src/nacl-gcc"]
 	path = src/nacl-gcc
 	url = https://github.com/Lind-Project/nacl-gcc.git
-	branch = develop
-[submodule "lind-misc"]
+	branch = reorg
+[submodule "src/lind-misc"]
 	path = src/lind-misc
 	url = https://github.com/Lind-Project/Lind-misc.git
 	branch = develop
-[submodule "native_client"]
+[submodule "src/native_client"]
 	path = src/native_client
 	url = https://github.com/Lind-Project/native_client.git
-	branch = develop
+	branch = reorg
 [submodule "src/lind_glibc"]
 	path = src/lind_glibc
 	url = https://github.com/Lind-Project/Lind-GlibC
+    branch = develop
 [submodule "src/nacl-binutils"]
 	path = src/nacl-binutils
 	url = https://github.com/Lind-Project/nacl-binutils
+    branch = develop
 [submodule "src/nacl_repy"]
 	path = src/nacl_repy
 	url = https://github.com/Lind-Project/nacl_repy
+    branch = develop
