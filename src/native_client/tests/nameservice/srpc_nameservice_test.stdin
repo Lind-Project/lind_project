@@ -1,2 +1,0 @@
-rpc namedump * s("")
-rpc manifest_test * s("")
