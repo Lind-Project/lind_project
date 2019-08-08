@@ -14,6 +14,7 @@ import sys
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 scons_dir = os.path.join(root, 'third_party', 'scons-2.0.1', 'engine')
+print scons_dir
 sys.path.insert(0, scons_dir)
 
 if __name__ == "__main__":
