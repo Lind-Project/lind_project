@@ -1,3 +1,0 @@
-include_rules = [
-  "+native_client/src/trusted/service_runtime/include/machine/_types.h",
-]
