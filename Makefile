@@ -5,18 +5,18 @@
 
 # default target shows `select` menu
 all lind:
-	@./mklind
+	@./src/mklind
 
 .PHONY: Makefile all lind run shell list show
 .PHONY: latest naclruntime prebuiltsdk base
 .PHONY: stack deploy pull clean prune
 
-# targets like `make nacl` and `make lind/nacl` run their respective `./mklind -e nacl` command
+# targets like `make nacl` and `make lind/nacl` run their respective `./ src/mklind -e nacl` command
 %:
 	@$(MAKE) "lind/$(basename $(notdir $*))"
 
 lind/%:
-	@./mklind $*
+	@./src/mklind $*
 
 # run a clean, temporary containter with target tag
 docker/%:

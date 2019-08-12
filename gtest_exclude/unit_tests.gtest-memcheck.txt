@@ -1,3 +1,0 @@
-# Takes too long and may cause bots to time out. http://crbug.com/134400
-# This test alone takes 10-15 minutes.
-Convolver.SIMDVerification
