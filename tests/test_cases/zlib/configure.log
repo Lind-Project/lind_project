@@ -1,0 +1,1455 @@
+--------------------
+./configure --help
+Thu Nov 15 11:02:44 HST 2018
+usage:
+  configure [--const] [--zprefix] [--prefix=PREFIX]  [--eprefix=EXPREFIX]
+    [--static] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]
+    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]
+--------------------
+./configure --help
+Thu Nov 15 11:03:27 HST 2018
+usage:
+  configure [--const] [--zprefix] [--prefix=PREFIX]  [--eprefix=EXPREFIX]
+    [--static] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]
+    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]
+--------------------
+./configure --prefix=/home/jp/lind_project/lind/repy/repy --archs=-arch x86_64-nacl
+Thu Nov 15 11:04:21 HST 2018
+=== ztest25874.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest25874.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest25874.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64-nacl ztest25874.c
+x86_64-nacl-gcc: x86_64-nacl: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --prefix=/home/jp/lind_project/lind/repy/repy --archs=-arch x86_64-nacl
+Thu Nov 15 11:04:26 HST 2018
+=== ztest26249.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest26249.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest26249.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64-nacl ztest26249.c
+x86_64-nacl-gcc: x86_64-nacl: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --prefix=/home/jp/lind_project/lind/repy/repy --archs=-arch x86_64-nacl
+Thu Nov 15 11:04:36 HST 2018
+=== ztest27217.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest27217.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest27217.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64-nacl ztest27217.c
+x86_64-nacl-gcc: x86_64-nacl: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --prefix=/home/jp/lind_project/lind/repy/repy --archs=-arch x86_64-nacl
+Thu Nov 15 11:04:46 HST 2018
+=== ztest27918.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest27918.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest27918.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64-nacl ztest27918.c
+x86_64-nacl-gcc: x86_64-nacl: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --prefix=/home/jp/lind_project/lind/repy/repy --archs=-arch x86_64-nacl
+Thu Nov 15 11:04:53 HST 2018
+=== ztest28599.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest28599.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest28599.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64-nacl ztest28599.c
+x86_64-nacl-gcc: x86_64-nacl: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --help
+Thu Nov 15 11:05:11 HST 2018
+usage:
+  configure [--const] [--zprefix] [--prefix=PREFIX]  [--eprefix=EXPREFIX]
+    [--static] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]
+    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]
+--------------------
+./configure --prefix=/home/jp/lind_project/lind/repy/repy --archs=-arch x86_64
+Thu Nov 15 11:05:28 HST 2018
+=== ztest30549.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest30549.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest30549.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest30549.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --prefix=/home/jp/lind_project/lind/repy/repy --archs=-arch x86_64-nacl
+Thu Nov 15 11:05:43 HST 2018
+=== ztest31703.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest31703.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest31703.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64-nacl ztest31703.c
+x86_64-nacl-gcc: x86_64-nacl: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --prefix=/home/jp/lind_project/lind/repy/repy --archs=-arch x86_64
+Thu Nov 15 11:05:48 HST 2018
+=== ztest32355.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest32355.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest32355.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest32355.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure
+Thu Nov 15 11:05:51 HST 2018
+Checking for gcc...
+=== ztest32702.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+gcc -c ztest32702.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest32702.c ===
+int foo() { return 0; }
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 ztest32702.c
+
+Checking for shared library support...
+=== ztest32702.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+gcc -w -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -fPIC ztest32702.c
+gcc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -fPIC -o ztest32702.so ztest32702.o
+Building shared library libz.so.1.2.11 with gcc.
+
+=== ztest32702.c ===
+#include <stdio.h>
+#include <stdlib.h>
+size_t dummy = 0;
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 ztest32702.c
+Checking for size_t... Yes.
+
+
+=== ztest32702.c ===
+#include <sys/types.h>
+off64_t dummy = 0;
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest32702.c
+Checking for off64_t... Yes.
+Checking for fseeko... Yes.
+
+=== ztest32702.c ===
+#include <string.h>
+#include <errno.h>
+int main() { return strlen(strerror(errno)); }
+===
+gcc -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 -o ztest32702 ztest32702.c
+Checking for strerror... Yes.
+
+=== ztest32702.c ===
+#include <unistd.h>
+int main() { return 0; }
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest32702.c
+Checking for unistd.h... Yes.
+
+=== ztest32702.c ===
+#include <stdarg.h>
+int main() { return 0; }
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest32702.c
+Checking for stdarg.h... Yes.
+
+=== ztest32702.c ===
+#include <stdio.h>
+#include <stdarg.h>
+#include "zconf.h"
+int main()
+{
+#ifndef STDC
+  choke me
+#endif
+  return 0;
+}
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest32702.c
+Checking whether to use vs[n]printf() or s[n]printf()... using vs[n]printf().
+
+=== ztest32702.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return 0;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+gcc -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 -o ztest32702 ztest32702.c
+Checking for vsnprintf() in stdio.h... Yes.
+
+=== ztest32702.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  int n;
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  n = vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return n;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest32702.c
+Checking for return value of vsnprintf()... Yes.
+
+=== ztest32702.c ===
+#define ZLIB_INTERNAL __attribute__((visibility ("hidden")))
+int ZLIB_INTERNAL foo;
+int main()
+{
+  return 0;
+}
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest32702.c
+Checking for attribute(visibility) support... Yes.
+
+ALL = static shared all64
+AR = ar
+ARFLAGS = rc
+CC = gcc
+CFLAGS = -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN
+CPP = gcc -E
+EXE =
+LDCONFIG = ldconfig
+LDFLAGS = -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -Wl,-O2,-z,relro,-z,now,-z,noexecstack -Wl,--as-needed,--sort-common,--warn-common
+LDSHARED = gcc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map
+LDSHAREDLIBC = -lc
+OBJC = $(OBJZ) $(OBJG)
+PIC_OBJC = $(PIC_OBJZ) $(PIC_OBJG)
+RANLIB = ranlib
+SFLAGS = -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN
+SHAREDLIB = libz.so
+SHAREDLIBM = libz.so.1
+SHAREDLIBV = libz.so.1.2.11
+STATICLIB = libz.a
+TEST = all teststatic testshared test64
+VER = 1.2.11
+Z_U4 =
+SRCDIR =
+exec_prefix = ${prefix}
+includedir = ${prefix}/include
+libdir = ${exec_prefix}/lib
+mandir = ${prefix}/share/man
+prefix = /usr/local
+sharedlibdir = ${libdir}
+uname = Linux
+--------------------
+
+
+--------------------
+./configure --archs=-arch x86_64
+Thu Nov 15 11:05:59 HST 2018
+=== ztest1143.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest1143.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest1143.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest1143.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --help
+Thu Nov 15 11:06:05 HST 2018
+usage:
+  configure [--const] [--zprefix] [--prefix=PREFIX]  [--eprefix=EXPREFIX]
+    [--static] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]
+    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]
+--------------------
+./configure --archs=-arch x86_64 --prefix=/home/jp/lind_project/lind/repy/repy
+Thu Nov 15 11:06:14 HST 2018
+=== ztest2552.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest2552.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest2552.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest2552.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --prefix=/home/jp/lind_project/lind/repy/repy --archs=-arch x86_64
+Thu Nov 15 11:06:27 HST 2018
+=== ztest3415.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest3415.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest3415.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest3415.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --archs=-arch x86_64 --prefix=/home/jp/lind_project/lind/repy/repy
+Thu Nov 15 11:06:38 HST 2018
+=== ztest4208.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest4208.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest4208.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest4208.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --archs=-arch x86_64
+Thu Nov 15 11:06:41 HST 2018
+=== ztest4558.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest4558.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest4558.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest4558.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --archs=-arch x86_64
+Thu Nov 15 11:06:44 HST 2018
+=== ztest4887.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest4887.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest4887.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest4887.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --archs=-arch x86_64
+Thu Nov 15 11:06:49 HST 2018
+=== ztest5558.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest5558.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest5558.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest5558.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --archs=-arch x86_64
+Thu Nov 15 11:06:52 HST 2018
+=== ztest6156.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest6156.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest6156.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest6156.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --archs=-arch x86_64 --prefix=/home/jp/lind_project/lind/repy/repy
+Thu Nov 15 11:07:05 HST 2018
+=== ztest7574.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest7574.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest7574.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest7574.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --archs=-arch x86_64 --prefix=/home/jp/lind_project/lind/repy/repy
+Thu Nov 15 11:07:07 HST 2018
+=== ztest8202.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest8202.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest8202.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest8202.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --help
+Thu Nov 15 11:07:16 HST 2018
+usage:
+  configure [--const] [--zprefix] [--prefix=PREFIX]  [--eprefix=EXPREFIX]
+    [--static] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]
+    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]
+--------------------
+./configure --static --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64 --prefix=/home/jp/lind_project/lind/repy/repy
+Thu Nov 15 11:07:54 HST 2018
+=== ztest11479.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest11479.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest11479.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest11479.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --help
+Thu Nov 15 11:08:00 HST 2018
+usage:
+  configure [--const] [--zprefix] [--prefix=PREFIX]  [--eprefix=EXPREFIX]
+    [--static] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]
+    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]
+--------------------
+./configure --help
+Thu Nov 15 11:08:25 HST 2018
+usage:
+  configure [--const] [--zprefix] [--prefix=PREFIX]  [--eprefix=EXPREFIX]
+    [--static] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]
+    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]
+--------------------
+./configure --static --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64 --prefix=/home/jp/lind_project/lind/repy/repy
+Thu Nov 15 11:08:30 HST 2018
+=== ztest13697.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest13697.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest13697.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest13697.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64 --prefix=/home/jp/lind_project/lind/repy/repy
+Thu Nov 15 11:09:26 HST 2018
+=== ztest17375.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest17375.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest17375.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest17375.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64 --prefix=/home/jp/lind_project/lind/repy/repy
+Thu Nov 15 11:10:02 HST 2018
+=== ztest19195.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest19195.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest19195.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest19195.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64 --prefix=/home/jp/lind_project/lind/repy/repy
+Thu Nov 15 11:10:36 HST 2018
+=== ztest21249.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest21249.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest21249.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest21249.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64 --prefix=/home/jp/lind_project/lind/repy/repy
+Thu Nov 15 11:10:48 HST 2018
+=== ztest22693.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest22693.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest22693.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest22693.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64
+Thu Nov 15 11:10:52 HST 2018
+=== ztest23059.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest23059.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest23059.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest23059.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure
+Thu Nov 15 11:10:58 HST 2018
+Checking for gcc...
+=== ztest23693.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+gcc -c ztest23693.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest23693.c ===
+int foo() { return 0; }
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 ztest23693.c
+
+Checking for shared library support...
+=== ztest23693.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+gcc -w -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -fPIC ztest23693.c
+gcc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -fPIC -o ztest23693.so ztest23693.o
+Building shared library libz.so.1.2.11 with gcc.
+
+=== ztest23693.c ===
+#include <stdio.h>
+#include <stdlib.h>
+size_t dummy = 0;
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 ztest23693.c
+Checking for size_t... Yes.
+
+
+=== ztest23693.c ===
+#include <sys/types.h>
+off64_t dummy = 0;
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest23693.c
+Checking for off64_t... Yes.
+Checking for fseeko... Yes.
+
+=== ztest23693.c ===
+#include <string.h>
+#include <errno.h>
+int main() { return strlen(strerror(errno)); }
+===
+gcc -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 -o ztest23693 ztest23693.c
+Checking for strerror... Yes.
+
+=== ztest23693.c ===
+#include <unistd.h>
+int main() { return 0; }
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest23693.c
+Checking for unistd.h... Yes.
+
+=== ztest23693.c ===
+#include <stdarg.h>
+int main() { return 0; }
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest23693.c
+Checking for stdarg.h... Yes.
+
+=== ztest23693.c ===
+#include <stdio.h>
+#include <stdarg.h>
+#include "zconf.h"
+int main()
+{
+#ifndef STDC
+  choke me
+#endif
+  return 0;
+}
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest23693.c
+Checking whether to use vs[n]printf() or s[n]printf()... using vs[n]printf().
+
+=== ztest23693.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return 0;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+gcc -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 -o ztest23693 ztest23693.c
+Checking for vsnprintf() in stdio.h... Yes.
+
+=== ztest23693.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  int n;
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  n = vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return n;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest23693.c
+Checking for return value of vsnprintf()... Yes.
+
+=== ztest23693.c ===
+#define ZLIB_INTERNAL __attribute__((visibility ("hidden")))
+int ZLIB_INTERNAL foo;
+int main()
+{
+  return 0;
+}
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest23693.c
+Checking for attribute(visibility) support... Yes.
+
+ALL = static shared all64
+AR = ar
+ARFLAGS = rc
+CC = gcc
+CFLAGS = -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN
+CPP = gcc -E
+EXE =
+LDCONFIG = ldconfig
+LDFLAGS = -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -Wl,-O2,-z,relro,-z,now,-z,noexecstack -Wl,--as-needed,--sort-common,--warn-common
+LDSHARED = gcc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map
+LDSHAREDLIBC = -lc
+OBJC = $(OBJZ) $(OBJG)
+PIC_OBJC = $(PIC_OBJZ) $(PIC_OBJG)
+RANLIB = ranlib
+SFLAGS = -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN
+SHAREDLIB = libz.so
+SHAREDLIBM = libz.so.1
+SHAREDLIBV = libz.so.1.2.11
+STATICLIB = libz.a
+TEST = all teststatic testshared test64
+VER = 1.2.11
+Z_U4 =
+SRCDIR =
+exec_prefix = ${prefix}
+includedir = ${prefix}/include
+libdir = ${exec_prefix}/lib
+mandir = ${prefix}/share/man
+prefix = /usr/local
+sharedlibdir = ${libdir}
+uname = Linux
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64
+Thu Nov 15 11:11:02 HST 2018
+=== ztest24150.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest24150.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest24150.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest24150.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64
+Thu Nov 15 11:12:02 HST 2018
+=== ztest27276.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest27276.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest27276.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest27276.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64
+Thu Nov 15 11:24:03 HST 2018
+=== ztest18791.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest18791.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest18791.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest18791.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64
+Thu Nov 15 11:24:47 HST 2018
+=== ztest20693.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest20693.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest20693.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest20693.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64
+Thu Nov 15 11:24:59 HST 2018
+=== ztest22058.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest22058.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest22058.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest22058.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure
+Thu Nov 15 11:25:03 HST 2018
+Checking for gcc...
+=== ztest22426.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+gcc -c ztest22426.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest22426.c ===
+int foo() { return 0; }
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 ztest22426.c
+
+Checking for shared library support...
+=== ztest22426.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+gcc -w -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -fPIC ztest22426.c
+gcc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -fPIC -o ztest22426.so ztest22426.o
+Building shared library libz.so.1.2.11 with gcc.
+
+=== ztest22426.c ===
+#include <stdio.h>
+#include <stdlib.h>
+size_t dummy = 0;
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 ztest22426.c
+Checking for size_t... Yes.
+
+
+=== ztest22426.c ===
+#include <sys/types.h>
+off64_t dummy = 0;
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest22426.c
+Checking for off64_t... Yes.
+Checking for fseeko... Yes.
+
+=== ztest22426.c ===
+#include <string.h>
+#include <errno.h>
+int main() { return strlen(strerror(errno)); }
+===
+gcc -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 -o ztest22426 ztest22426.c
+Checking for strerror... Yes.
+
+=== ztest22426.c ===
+#include <unistd.h>
+int main() { return 0; }
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest22426.c
+Checking for unistd.h... Yes.
+
+=== ztest22426.c ===
+#include <stdarg.h>
+int main() { return 0; }
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest22426.c
+Checking for stdarg.h... Yes.
+
+=== ztest22426.c ===
+#include <stdio.h>
+#include <stdarg.h>
+#include "zconf.h"
+int main()
+{
+#ifndef STDC
+  choke me
+#endif
+  return 0;
+}
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest22426.c
+Checking whether to use vs[n]printf() or s[n]printf()... using vs[n]printf().
+
+=== ztest22426.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return 0;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+gcc -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 -o ztest22426 ztest22426.c
+Checking for vsnprintf() in stdio.h... Yes.
+
+=== ztest22426.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  int n;
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  n = vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return n;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest22426.c
+Checking for return value of vsnprintf()... Yes.
+
+=== ztest22426.c ===
+#define ZLIB_INTERNAL __attribute__((visibility ("hidden")))
+int ZLIB_INTERNAL foo;
+int main()
+{
+  return 0;
+}
+===
+gcc -c -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 ztest22426.c
+Checking for attribute(visibility) support... Yes.
+
+ALL = static shared all64
+AR = ar
+ARFLAGS = rc
+CC = gcc
+CFLAGS = -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN
+CPP = gcc -E
+EXE =
+LDCONFIG = ldconfig
+LDFLAGS = -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -Wl,-O2,-z,relro,-z,now,-z,noexecstack -Wl,--as-needed,--sort-common,--warn-common
+LDSHARED = gcc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map
+LDSHAREDLIBC = -lc
+OBJC = $(OBJZ) $(OBJG)
+PIC_OBJC = $(PIC_OBJZ) $(PIC_OBJG)
+RANLIB = ranlib
+SFLAGS = -Wno-error -Wno-implicit-fallthrough -fno-strict-aliasing -fno-plt -fPIC -fuse-ld=gold -fuse-linker-plugin -pipe -march=x86-64 -mtune=generic -g -O3 -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN
+SHAREDLIB = libz.so
+SHAREDLIBM = libz.so.1
+SHAREDLIBV = libz.so.1.2.11
+STATICLIB = libz.a
+TEST = all teststatic testshared test64
+VER = 1.2.11
+Z_U4 =
+SRCDIR =
+exec_prefix = ${prefix}
+includedir = ${prefix}/include
+libdir = ${exec_prefix}/lib
+mandir = ${prefix}/share/man
+prefix = /usr/local
+sharedlibdir = ${libdir}
+uname = Linux
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64
+Thu Nov 15 11:25:05 HST 2018
+=== ztest22893.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest22893.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest22893.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest22893.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+
+--------------------
+./configure
+Thu Nov 15 11:25:55 HST 2018
+=== ztest24652.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest24652.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest24652.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie ztest24652.c
+
+Checking for shared library support...
+=== ztest24652.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -w -c -g -fno-pie -fPIC ztest24652.c
+x86_64-nacl-gcc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map -g -fno-pie -fPIC -o ztest24652.so ztest24652.o
+Building shared library libz.so.1.2.11 with x86_64-nacl-gcc.
+
+=== ztest24652.c ===
+#include <stdio.h>
+#include <stdlib.h>
+size_t dummy = 0;
+===
+x86_64-nacl-gcc -c -g -fno-pie ztest24652.c
+Checking for size_t... Yes.
+
+
+=== ztest24652.c ===
+#include <sys/types.h>
+off64_t dummy = 0;
+===
+x86_64-nacl-gcc -c -g -fno-pie -D_LARGEFILE64_SOURCE=1 ztest24652.c
+ztest24652.c:2: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘dummy’
+(exit code 1)
+Checking for off64_t... No.
+
+=== ztest24652.c ===
+#include <stdio.h>
+int main(void) {
+  fseeko(NULL, 0, 0);
+  return 0;
+}
+===
+x86_64-nacl-gcc -g -fno-pie -o ztest24652 ztest24652.c
+Checking for fseeko... Yes.
+
+=== ztest24652.c ===
+#include <string.h>
+#include <errno.h>
+int main() { return strlen(strerror(errno)); }
+===
+x86_64-nacl-gcc -g -fno-pie -o ztest24652 ztest24652.c
+Checking for strerror... Yes.
+
+=== ztest24652.c ===
+#include <unistd.h>
+int main() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie ztest24652.c
+Checking for unistd.h... Yes.
+
+=== ztest24652.c ===
+#include <stdarg.h>
+int main() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie ztest24652.c
+Checking for stdarg.h... Yes.
+
+=== ztest24652.c ===
+#include <stdio.h>
+#include <stdarg.h>
+#include "zconf.h"
+int main()
+{
+#ifndef STDC
+  choke me
+#endif
+  return 0;
+}
+===
+x86_64-nacl-gcc -c -g -fno-pie ztest24652.c
+Checking whether to use vs[n]printf() or s[n]printf()... using vs[n]printf().
+
+=== ztest24652.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return 0;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+x86_64-nacl-gcc -g -fno-pie -o ztest24652 ztest24652.c
+Checking for vsnprintf() in stdio.h... Yes.
+
+=== ztest24652.c ===
+#include <stdio.h>
+#include <stdarg.h>
+int mytest(const char *fmt, ...)
+{
+  int n;
+  char buf[20];
+  va_list ap;
+  va_start(ap, fmt);
+  n = vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  return n;
+}
+int main()
+{
+  return (mytest("Hello%d\n", 1));
+}
+===
+x86_64-nacl-gcc -c -g -fno-pie ztest24652.c
+Checking for return value of vsnprintf()... Yes.
+
+=== ztest24652.c ===
+#define ZLIB_INTERNAL __attribute__((visibility ("hidden")))
+int ZLIB_INTERNAL foo;
+int main()
+{
+  return 0;
+}
+===
+x86_64-nacl-gcc -c -g -fno-pie ztest24652.c
+Checking for attribute(visibility) support... Yes.
+
+ALL = static shared
+AR = x86_64-nacl-ar
+ARFLAGS = rc
+CC = x86_64-nacl-gcc
+CFLAGS = -g -fno-pie -DHAVE_HIDDEN
+CPP = x86_64-nacl-gcc -E
+EXE =
+LDCONFIG = ldconfig
+LDFLAGS = -g -fno-pie
+LDSHARED = x86_64-nacl-gcc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map
+LDSHAREDLIBC = -lc
+OBJC = $(OBJZ) $(OBJG)
+PIC_OBJC = $(PIC_OBJZ) $(PIC_OBJG)
+RANLIB = ranlib
+SFLAGS = -g -fno-pie -fPIC -DHAVE_HIDDEN
+SHAREDLIB = libz.so
+SHAREDLIBM = libz.so.1
+SHAREDLIBV = libz.so.1.2.11
+STATICLIB = libz.a
+TEST = all teststatic testshared
+VER = 1.2.11
+Z_U4 =
+SRCDIR =
+exec_prefix = ${prefix}
+includedir = ${prefix}/include
+libdir = ${exec_prefix}/lib
+mandir = ${prefix}/share/man
+prefix = /usr/local
+sharedlibdir = ${libdir}
+uname = Linux
+--------------------
+
+
+--------------------
+./configure --static --zprefix --prefix=/home/jp/lind_project/lind/repy/repy --eprefix=/home/jp/lind_project/lind/repy/repy --libdir=/home/jp/lind_project/lind/repy/repy/lib --sharedlibdir=/home/jp/lind_project/lind/repy/repy/lib --archs=-arch x86_64
+Thu Nov 15 11:25:56 HST 2018
+=== ztest24785.c ===
+extern int getchar();
+int hello() {return getchar();}
+===
+x86_64-nacl-gcc -c ztest24785.c
+... using gcc
+
+Checking for obsessive-compulsive compiler options...
+=== ztest24785.c ===
+int foo() { return 0; }
+===
+x86_64-nacl-gcc -c -g -fno-pie -arch x86_64 ztest24785.c
+x86_64-nacl-gcc: x86_64: No such file or directory
+cc1: error: unrecognized command line option "-arch"
+(exit code 1)
+Compiler error reporting is too harsh for ./configure (perhaps remove -Werror).
+** ./configure aborting.
+--------------------
+
+

@@ -1,0 +1,14 @@
+prefix=/home/jp/lind_project/lind/repy/repy
+exec_prefix=${prefix}
+libdir=/home/jp/lind_project/lind/repy/repy/lib/lighttpd
+includedir=${prefix}/include
+version=2.0.0
+
+INSTALL_MOD=/home/jp/lind_project/lind/repy/repy/lib/lighttpd/lighttpd-2.0.0
+
+Name: lighttpd2
+Description: modules for lighttpd2
+Version: ${version}
+Requires: glib-2.0
+Libs: -module -export-dynamic -avoid-version -no-undefined -L${libdir} -llighttpd2-common-${version} -llighttpd2-shared-${version} -lev
+Cflags: -I${includedir}
