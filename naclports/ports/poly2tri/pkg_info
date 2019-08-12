@@ -1,9 +1,0 @@
-NAME=poly2tri
-VERSION=26242d0aa7b8
-URL=https://poly2tri.googlecode.com/archive/26242d0aa7b8.tar.gz
-ARCHIVE_ROOT=poly2tri-26242d0aa7b8
-LICENSE="New BSD License"
-SHA1=588f08f77671b231aeb1ae7dcc77ba43dbf86a07
-# The cmake version seems to fails when using with emcc
-# https://bugs.chromium.org/p/webports/issues/detail?id=243
-DISABLED_TOOLCHAIN=(emscripten)
