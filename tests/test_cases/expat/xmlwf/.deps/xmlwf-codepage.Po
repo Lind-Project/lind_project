@@ -1,0 +1,5 @@
+xmlwf-codepage.o: codepage.c codepage.h ../lib/internal.h
+
+codepage.h:
+
+../lib/internal.h:

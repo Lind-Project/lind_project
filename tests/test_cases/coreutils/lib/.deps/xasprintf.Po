@@ -1,0 +1,8 @@
+lib/xasprintf.o: lib/xasprintf.c lib/config.h lib/xvasprintf.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/include/stdarg.h
+
+lib/config.h:
+
+lib/xvasprintf.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/include/stdarg.h:
