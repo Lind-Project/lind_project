@@ -27,7 +27,7 @@ script:
   # TODO: make subrepository branch names consistent and remove special casing of master and lind -jp
   - if [[ "$cur_branch" == master || "$cur_branch" == lind ]]; then cur_branch="develop"; fi
   # run a test of the loader after building
-  - cd ./docker/naclruntime
+  - cd ./src/docker/naclruntime
   # travis_wait needed due to build log exceeding Travis CI's maximum length
   - travis_wait 60 bash -c "docker build --build-arg=BRANCH=$cur_branch -t alyptik/lind . >/dev/null 2>&1"
   # run a test of the loader after building

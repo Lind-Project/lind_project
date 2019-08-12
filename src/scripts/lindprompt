@@ -1,0 +1,71 @@
+#!/bin/bash
+LIND_ROOT=/home/lind/lind_project
+
+if [[ $1 == --help ]]; then 
+  echo "List of commands";
+  echo "[help/h]: show this help message"
+  echo "[cd/chdir]: Change working directory of the lind prompt"
+  echo "[ls/list]: List contents of working directory of the lind prompt"
+  echo "[compile/cc/gcc]: Compile lind/nexe file"
+  echo "[cp/copy]: Copy file from posix file system into lind file system"
+  echo "[r/run/exec/execute]: Execute nexe file within lind file system"
+  echo "[exit/quit]: leave lind prompt"
+fi;
+
+while true; do 
+  read -r -p "[$PWD] lind> " command
+  myarr=( $command )
+  case "${myarr[0]}" in
+    "help"|[hH])
+      [[ ${myarr[1]} == cp ]] && echo "syntax: \"cp basedir filepath\" copies filepath (or recursively copies all children of filepath if filepath is a directory) into the lind file system with their filename being their path relative to basedir. Filepath must be relative to basedir." && continue;
+      echo "List of commands";
+      echo "[help/h]: show this help message"
+      echo "[cd/chdir]: Change working directory of the lind prompt"
+      echo "[ls/list]: List contents of working directory of the lind prompt"
+      echo "[compile/cc/gcc]: Compile lind/nexe file"
+      echo "[cp/copy]: Copy file from posix file system into lind file system for information on the syntax of this command, type \"help cp\""
+      echo "[r/run/exec/execute]: Execute nexe file within lind file system"
+      echo "[exit/quit]: leave lind prompt"
+      ;;
+    "cd"|"chdir")
+      cd "${myarr[@]:1}"
+      ;;
+    "ls"|"list")
+      ls "${myarr[@]:1}";
+      ;;
+    "compile"|"cc"|"gcc")
+      $LIND_ROOT/src/native_client/toolchain/linux_x86/x86_64-nacl/bin/gcc "${myarr[@]:1}";
+      ;;
+    "cp"|"copy")
+      pushd . &> /dev/null
+      cd $LIND_ROOT/lind/repy/repy &> /dev/null
+      python2 lind_fs_utils.py cp "${myarr[@]:1}";
+      popd &> /dev/null
+      ;;
+    "r"|"run"|"exec"|"execute")
+      echo "asdf"
+      if [[ "" == ${myarr[1]} ]];
+          then echo "Specify a file in the lind file system to execute";
+          exit;
+      fi
+      if [[ ${myarr[1]} != *.nexe ]];
+          then read -r -p "File is not an nexe file. Try to run anyway? [y/N]" response
+          case "$response" in
+              [yY][eE][sS]|[yY])
+                  $LIND_ROOT/lind/repy/bin/lind ${myarr[1]};
+                  continue;
+                  ;;
+              *)
+                  continue;
+                  ;;
+          esac;
+      fi
+      $LIND_ROOT/lind/repy/bin/lind ${myarr[1]};
+      ;;
+    exit|quit)
+      exit
+      ;;
+    *)
+      echo "Command not found. Try help for information about commands";
+  esac;
+done;

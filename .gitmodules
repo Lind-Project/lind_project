@@ -1,38 +1,33 @@
-[submodule "reference_monitor"]
-	path = reference_monitor
-	url = https://github.com/Lind-Project/reference_monitor.git
-[submodule "caging"]
-	path = caging
-	url = https://github.com/detectivelyw/caging.git
-[submodule "lind_glibc"]
-	path = lind_glibc
-	url = https://github.com/Lind-Project/Lind-GlibC.git
-	branch = develop
-[submodule "nacl_repy"]
-	path = nacl_repy
+[submodule "src/nacl_repy"]
+	path = src/nacl_repy
 	url = https://github.com/Lind-Project/nacl_repy.git
 	branch = develop
-[submodule "lind_experiments"]
-	path = lind_experiments
-	url = https://github.com/Lind-Project/lind_experiments.git
-	branch = develop
-[submodule "nacl-gcc"]
-	path = nacl-gcc
+[submodule "src/nacl-gcc"]
+	path = src/nacl-gcc
 	url = https://github.com/Lind-Project/nacl-gcc.git
-	branch = develop
-[submodule "nacl-binutils"]
-	path = nacl-binutils
-	url = https://github.com/Lind-Project/nacl-binutils.git
-	branch = develop
-[submodule "lss"]
-	path = lss
-	url = https://github.com/Lind-Project/linux-syscall-support.git
-	branch = develop
-[submodule "lind-misc"]
-	path = lind-misc
+	branch = reorg
+[submodule "src/lind-misc"]
+	path = src/lind-misc
 	url = https://github.com/Lind-Project/Lind-misc.git
 	branch = develop
-[submodule "native_client"]
-	path = native_client
-	url = https://github.com/Lind-Project/native_client.git
-	branch = develop
+[submodule "src/lind_glibc"]
+	path = src/lind_glibc
+	url = https://github.com/Lind-Project/Lind-GlibC
+    branch = develop
+[submodule "src/nacl-binutils"]
+	path = src/nacl-binutils
+	url = https://github.com/Lind-Project/nacl-binutils
+    branch = develop
+[submodule "src/nacl_repy"]
+	path = src/nacl_repy
+	url = https://github.com/Lind-Project/nacl_repy
+    branch = develop
+[submodule "tests/reference_monitor"]
+	path = tests/reference_monitor
+	url = https://github.com/Lind-Project/reference_monitor.git
+[submodule "tests/lind_experiments"]
+	path = tests/lind_experiments
+	url = https://github.com/Lind-Project/lind_experiments.git
+[submodule "src/native_client"]
+	path = src/native_client
+	url = /home/lind/lind_project/src/native_client

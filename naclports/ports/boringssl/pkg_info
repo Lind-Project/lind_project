@@ -1,9 +1,0 @@
-NAME=boringssl
-VERSION=git
-URL=https://boringssl.googlesource.com/boringssl.git@e8fe07f
-DEPENDS=(glibc-compat)
-# Disabled for now as it requires a recent cmake version.
-DISABLED=1
-CONFLICTS=(openssl)
-# x86 glibc toolchain doesn't support C++11 which is required by boringssl
-DISABLED_TOOLCHAIN=(emscripten glibc/i686 glibc/x86_64)
