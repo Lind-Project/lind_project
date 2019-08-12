@@ -18,10 +18,6 @@
 	path = src/lind-misc
 	url = https://github.com/Lind-Project/Lind-misc.git
 	branch = develop
-[submodule "src/native_client"]
-	path = src/native_client
-	url = https://github.com/Lind-Project/native_client.git
-	branch = reorg
 [submodule "src/lind_glibc"]
 	path = src/lind_glibc
 	url = https://github.com/Lind-Project/Lind-GlibC
