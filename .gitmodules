@@ -30,4 +30,4 @@
 	url = https://github.com/Lind-Project/lind_experiments.git
 [submodule "src/native_client"]
 	path = src/native_client
-	url = /home/lind/lind_project/src/native_client
+	url = https://github.com/Lind-Project/native_client.git
