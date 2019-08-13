@@ -82,6 +82,9 @@
 #define LIND_safe_fs_wrtiev             64
 #define LIND_safe_net_epoll_create1      65
 
+#define LIND_safe_sys_pipe              66
+#define LIND_safe_sys_pipe2             67
+
 #define LIND_comp_cia                   105
 #define LIND_comp_call                  106
 #define LIND_comp_accept                107
@@ -151,6 +154,8 @@ ssize_t lind_pwrite(int fd, const void *buf, int count, off_t offset);
 ssize_t lind_readv(int fd, void* buf, int count);
 ssize_t lind_writev(int fd, const void *buf, int count);
 int lind_epoll_create1(int flags);
+int lind_pipe(int* pipefds);
+int lind_pipe2(int* pipefds, int flags);
 
 void add_mapping(int src, int dest);
 int get_mapping(int fd);
