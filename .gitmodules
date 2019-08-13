@@ -5,7 +5,7 @@
 [submodule "src/nacl-gcc"]
 	path = src/nacl-gcc
 	url = https://github.com/Lind-Project/nacl-gcc.git
-	branch = reorg
+	branch = develop
 [submodule "src/lind-misc"]
 	path = src/lind-misc
 	url = https://github.com/Lind-Project/Lind-misc.git
@@ -31,3 +31,4 @@
 [submodule "src/native_client"]
 	path = src/native_client
 	url = https://github.com/Lind-Project/native_client.git
+	branch = develop
