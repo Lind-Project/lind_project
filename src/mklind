@@ -241,9 +241,9 @@ function download_src() {
 	# symlink submodules
 	git submodule update --init --recursive --remote .
 	for dir in "${!git_deps[@]}"; do
-		[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
-		rm -rf -- "${LIND_SRC:?}/$dir"
-		ln -Trsfv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
+		#[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "src/$dir"
+		#rm -rf -- "${LIND_SRC:?}/$dir"
+		ln -Trsfv "$LIND_BASE/src/$dir" "$LIND_SRC/$dir"
 		#(cd "$LIND_SRC/$dir" && git checkout develop)
     done
 
