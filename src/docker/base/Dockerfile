@@ -49,7 +49,6 @@ RUN git config --global core.excludesFile "/home/lind/.cvsignore"
 RUN git clone --progress -j8 https://github.com/Lind-Project/lind_project.git
 WORKDIR /home/lind/build/
 RUN lesskey
-RUN tic screen-256color-italic.terminfo
 
 USER root
 
@@ -60,22 +59,13 @@ RUN git config --global core.excludesFile "/root/.cvsignore"
 RUN ln -rsv "/home/lind/lind_project" "./"
 WORKDIR /root/build/
 RUN lesskey
-RUN tic screen-256color-italic.terminfo
 
 USER lind
 
-WORKDIR /home/lind/build/cower/
-RUN makepkg --noconfirm --skipchecksums --skippgpcheck -fsir
 WORKDIR /home/lind/build/make-3.82/
-RUN makepkg --noconfirm --skipchecksums --skippgpcheck -fsir
+RUN makepkg --noconfirm -sci
 WORKDIR /home/lind/build/texinfo-4.13/
 RUN ./configure --prefix="/home/lind/.local" && make install
-WORKDIR /home/lind/build/
-RUN cower -fdd cepl-git terminfo-italics
-WORKDIR /home/lind/build/cepl-git/
-RUN makepkg --noconfirm --skipchecksums --skippgpcheck -fsir
-WORKDIR /home/lind/build/terminfo-italics/
-RUN makepkg --noconfirm --skipchecksums --skippgpcheck -fsir
 
 USER root
 
@@ -85,7 +75,7 @@ RUN chown -Rc lind:lind .
 
 USER lind
 
-WORKDIR /home/lind/lind_project/
-RUN ./mklind -q download
+WORKDIR /home/lind/lind_project
+RUN ./src/mklind -q download
 
 CMD bash
