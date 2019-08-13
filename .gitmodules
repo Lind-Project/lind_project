@@ -13,15 +13,15 @@
 [submodule "src/lind_glibc"]
 	path = src/lind_glibc
 	url = https://github.com/Lind-Project/Lind-GlibC
-    branch = develop
+    	branch = develop
 [submodule "src/nacl-binutils"]
 	path = src/nacl-binutils
 	url = https://github.com/Lind-Project/nacl-binutils
-    branch = develop
+    	branch = develop
 [submodule "src/nacl_repy"]
 	path = src/nacl_repy
 	url = https://github.com/Lind-Project/nacl_repy
-    branch = develop
+    	branch = develop
 [submodule "tests/reference_monitor"]
 	path = tests/reference_monitor
 	url = https://github.com/Lind-Project/reference_monitor.git
