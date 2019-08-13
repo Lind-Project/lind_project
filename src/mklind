@@ -251,7 +251,7 @@ function download_src() {
 	ln -Trsfv "$LIND_BASE/src/native_client" "$NACL_BASE"
 	cd "$LIND_BASE/src"
 	# default to develop branch if not building inside travis
-	nacl_rev="${NATIVE_CLIENT_URL}@${BRANCH:-reorg}"
+	nacl_rev="${NATIVE_CLIENT_URL}@${BRANCH:-develop}"
 	gclient config --name=native_client --git-deps "$nacl_rev"
 	gclient sync
 
