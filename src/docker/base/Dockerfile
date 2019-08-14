@@ -14,6 +14,7 @@ ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 ENV PATH "/home/lind/lind_project:$PATH"
 ENV PATH "/home/lind/lind_project/lind/repy/bin:$PATH"
 ENV PATH "/home/lind/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
+ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
 
 USER root
 
@@ -37,7 +38,7 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 	tmux screen bash-completion mlocate shadow ncdu \
 	bind-tools cowsay filesystem linux-headers \
 	grml-zsh-config linux-docs man-pages man-db \
-	util-linux help2man
+	util-linux help2man rlwrap
 RUN pkgfile --update
 
 USER lind
