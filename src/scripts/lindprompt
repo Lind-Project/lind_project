@@ -34,7 +34,7 @@ while true; do
       ls "${myarr[@]:1}";
       ;;
     "compile"|"cc"|"gcc")
-      $LIND_ROOT/src/native_client/toolchain/linux_x86/x86_64-nacl/bin/gcc "${myarr[@]:1}";
+      $LIND_ROOT/lind/repy/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc "${myarr[@]:1}";
       ;;
     "cp"|"copy")
       pushd . &> /dev/null
