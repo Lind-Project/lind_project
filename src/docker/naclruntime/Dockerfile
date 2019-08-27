@@ -1,4 +1,4 @@
-FROM alyptik/lind:prebuiltsdk
+FROM securesystemslab/lind:prebuiltsdk
 LABEL lind "v1.0-rc5"
 LABEL description "Lind NaCl Runtime (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
