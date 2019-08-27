@@ -1,7 +1,7 @@
 FROM securesystemslab/lind:prebuiltsdk
 LABEL lind "v1.0-rc5"
 LABEL description "Lind NaCl Runtime (Pre-built)"
-MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
+MAINTAINER Nicholas Renner <nrenner@nyu.edu>
 
 ARG BRANCH
 
@@ -15,9 +15,9 @@ USER lind
 
 WORKDIR /home/lind/lind_project/
 RUN git pull -t -j8
-RUN for t in nacl repy install; do ./mklind -q "$t"; done
-RUN x86_64-nacl-gcc "test_cases/fork.c" -o "lind/repy/repy/fork"
-RUN x86_64-nacl-gcc "test_cases/hello.c" -o "lind/repy/repy/hello"
+RUN for t in nacl repy install; do ./src/mklind -q "$t"; done
+RUN x86_64-nacl-gcc "tests/test_cases/fork.c" -o "lind/repy/repy/fork"
+RUN x86_64-nacl-gcc "tests/test_cases/hello.c" -o "lind/repy/repy/hello"
 WORKDIR /home/lind/lind_project/test_cases/bash/
 RUN ./bootstrap_nacl --prefix="/home/lind/lind_project/lind/repy/repy"
 RUN make install
