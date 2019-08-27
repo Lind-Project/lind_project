@@ -14,6 +14,6 @@ ENV PATH "/home/lind/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$P
 USER lind
 
 WORKDIR /home/lind/lind_project/
-RUN ./mklind -q glibc
+RUN ./src/mklind -q glibc
 
 CMD bash
