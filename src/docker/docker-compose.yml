@@ -3,7 +3,7 @@ version: "3.6"
 services:
 
   base:
-    image: alyptik/lind:base
+    image: securesystemslab/lind:base
     build:
       context: base
       dockerfile: Dockerfile
@@ -11,7 +11,7 @@ services:
       - ./lind_project:/usr/lind_project
 
   prebuiltsdk:
-    image: alyptik/lind:prebuiltsdk
+    image: securesystemslab/lind:prebuiltsdk
     build:
       context: prebuiltsdk
       dockerfile: Dockerfile
@@ -19,11 +19,11 @@ services:
       - ./lind_project:/usr/lind_project
 
   latest:
-    image: alyptik/lind:latest
+    image: securesystemslab/lind:latest
     volumes:
       - ./lind_project:/usr/lind_project
     build:
       context: prebuiltsdk
       dockerfile: Dockerfile
       cache_from:
-        - alyptik/lind:prebuiltsdk
+        - securesystemslab/lind:prebuiltsdk

@@ -1,4 +1,4 @@
-FROM alyptik/lind:base
+FROM securesystemslab/lind:base
 LABEL lind "v1.0-rc5"
 LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
 MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
@@ -14,6 +14,6 @@ ENV PATH "/home/lind/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$P
 USER lind
 
 WORKDIR /home/lind/lind_project/
-RUN ./mklind -q glibc
+RUN ./src/mklind -q glibc
 
 CMD bash
