@@ -29,8 +29,8 @@ script:
   # run a test of the loader after building
   - cd ./src/docker/naclruntime
   # travis_wait needed due to build log exceeding Travis CI's maximum length
-  - travis_wait 60 bash -c "docker build --build-arg=BRANCH=$cur_branch -t alyptik/lind . >/dev/null 2>&1"
+  - travis_wait 60 bash -c "docker build --build-arg=BRANCH=$cur_branch -t securesystemslab/lind . >/dev/null 2>&1"
   # run a test of the loader after building
-  - docker run --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind lind /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched; exec /fork"'
+  - docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched; exec /fork"'
 
 # vi:ft=yaml:
