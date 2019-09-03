@@ -59,7 +59,7 @@ po/POTFILES
 
 support/bash.pc
 support/man2html
-support/bashbug.sh
+
 
 lsignames.h
 pathnames.h

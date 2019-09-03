@@ -20,11 +20,11 @@ lind/%:
 
 # run a clean, temporary containter with target tag
 docker/%:
-	docker run --rm --label=lind --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind:$*
+	docker run --rm --label=lind --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind:$*
 
 # the `--ipc=host` flag is needed to mount /dev/shm with PROT_EXEC
 run shell: | pull
-	docker create --name=lind --label=lind --ipc=host --cap-add=SYS_PTRACE -it alyptik/lind
+	docker create --name=lind --label=lind --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind
 	docker start lind
 	docker exec -it lind
 
@@ -34,22 +34,22 @@ list show:
 	docker container list -f label=lind -a
 
 latest: | naclruntime
-	docker build -cache-from=alyptik/lind:$| -t alyptik/lind:$@ ./docker/$|
+	docker build -cache-from=securesystemslab/lind:$| -t securesystemslab/lind:$@ ./src/docker/$|
 
 naclruntime: | prebuiltsdk
-	docker build -t alyptik/lind:$@ ./docker/$@
+	docker build -t securesystemslab/lind:$@ ./src/docker/$@
 
 prebuiltsdk: | base
-	docker build -t alyptik/lind:$@ ./docker/$@
+	docker build -t securesystemslab/lind:$@ ./src/docker/$@
 
 base:
-	docker build -t alyptik/lind:$@ ./docker/$@
+	docker build -t securesystemslab/lind:$@ ./src/docker/$@
 
 stack deploy:
-	docker stack deploy -c ./docker/docker-compose.yml lindstack
+	docker stack deploy -c ./src/docker/docker-compose.yml lindstack
 
 pull:
-	docker pull alyptik/lind
+	docker pull securesystemslab/lind
 
 clean:
 	@$(MAKE) cleanall
