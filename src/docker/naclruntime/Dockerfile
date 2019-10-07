@@ -11,19 +11,29 @@ ENV PATH "/home/lind/lind_project:$PATH"
 ENV PATH "/home/lind/lind_project/lind/repy/bin:$PATH"
 ENV PATH "/home/lind/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
 
+ENV TEST_CASES "cpuid dup2 dup exec fgets fork fork_simple getpid hello mprotec pipe read read_input segfault stat sysconf template write"
+
 USER lind
 
 WORKDIR /home/lind/lind_project/
 RUN git pull -t -j8
 RUN for t in nacl repy install; do ./src/mklind -q "$t"; done
-RUN for c in cpuid dup2 dup exec fgets fork fork_simple getpid hello mprotec pipe read read_input segfault stat sysconf template write; do x86_64-nacl-gcc -std=c99 "tests/test_cases/$c.c" -o "lind/repy/repy/$c"; done
+RUN mkdir -p lind/repy/repy/tests
+RUN for c in $TEST_CASES; do x86_64-nacl-gcc -std=c99 "tests/test_cases/$c.c" -o "lind/repy/repy/tests/$c"; done
 WORKDIR /home/lind/lind_project/tests/test_cases/bash/
 RUN ./bootstrap_nacl --prefix="/home/lind/lind_project/lind/repy/repy"
 RUN make install
 
+# Set up the sandbox and copy bash
 WORKDIR /home/lind/lind_project/lind/repy/repy/
-RUN for f in ./bin/ ./lib/ ./share/ ./cpuid ./dup2 ./dup ./exec ./fgets ./fork ./fork_simple ./getpid ./hello ./mprotec ./pipe ./read ./read_input ./segfault ./stat ./sysconf ./template ./write ./.bashrc ./.bash_logout ./.bash_profile; do lindfs cp "$f"; done
-RUN for a in /cpuid /dup2 /dup /fgets /fork /fork_simple /getpid /hello /mprotec /read_input /segfault /sysconf /template /write "/bin/bash --version"; do script -qfc "$(printf '%q ' lind $a)" /dev/null; done
+RUN for f in ./bin/ ./lib/ ./share/ ./.bashrc ./.bash_logout ./.bash_profile; do lindfs cp "$f"; done
+
+# Copy and run the single-file tests
+RUN for f in $TEST_CASES; do lindfs cp "./tests/$f"; done
+RUN for a in $TEST_CASES; do script -qfc "$(printf '%q ' lind /tests/$a)" /dev/null; done
+
+# Run the bash test
+RUN script -qfc "$(printf '%q ' lind /bin/bash --version)" /dev/null
 
 # default to running test cases then a shell if no arguments are passed to `docker run`
-CMD bash -c 'lind /cpuid; lind /dup2; lind /dup; lind /exec; lind /fgets; lind /fork; lind /fork_simple; lind /getpid; lind /hello; lind /mprotec; lind /pipe; lind /read; lind /read_input; lind /segfault; lind /stat; lind /sysconf; lind /template; lind /write; lind /bin/bash --version; exec bash'
+CMD bash -c 'for f in $TEST_CASES; do lind /tests/$f; done; lind /bin/bash --version; exec bash'
