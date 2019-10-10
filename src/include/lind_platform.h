@@ -82,8 +82,8 @@
 #define LIND_safe_fs_wrtiev             64
 #define LIND_safe_net_epoll_create1      65
 
-#define LIND_safe_sys_pipe              66
-#define LIND_safe_sys_pipe2             67
+#define LIND_safe_fs_pipe              66
+#define LIND_safe_fs_pipe2             67
 #define LIND_safe_fs_fork               68
 
 #define LIND_comp_cia                   105
