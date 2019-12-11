@@ -77,6 +77,7 @@ RUN chown -Rc lind:lind .
 USER lind
 
 WORKDIR /home/lind/lind_project
+RUN git checkout develop
 RUN ./src/mklind -q download
 
 CMD bash
