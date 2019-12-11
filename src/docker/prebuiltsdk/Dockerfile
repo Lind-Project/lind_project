@@ -10,6 +10,7 @@ ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 ENV PATH "/home/lind/lind_project:$PATH"
 ENV PATH "/home/lind/lind_project/lind/repy/bin:$PATH"
 ENV PATH "/home/lind/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
+ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
 
 USER lind
 
