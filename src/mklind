@@ -104,6 +104,7 @@ if ((default_env)); then
 	export PYTHON="${PYTHON:-python2}"
 	export PNACLPYTHON="${PNACLPYTHON:-python2}"
 	export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
+	export PATH="${PATH}:-$LIND_PREFIX/lind_project/src/scripts"
 
 	print
 	print '======================================================'
@@ -120,6 +121,7 @@ if ((default_env)); then
 		export PYTHON="$PYTHON"
 		export PNACLPYTHON="$PNACLPYTHON"
 		export LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+		export PATH="$PATH"
 	EOF
 	print
 	print '======================================================'
