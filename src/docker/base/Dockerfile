@@ -16,6 +16,16 @@ ENV PATH "/home/lind/lind_project/lind/repy/bin:$PATH"
 ENV PATH "/home/lind/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
 ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
 
+ENV LIND_PREFIX "/home/lind"
+ENV LIND_BASE "$LIND_PREFIX/lind_project"
+ENV LIND_SRC "$LIND_BASE/lind"
+ENV LIND_MONITOR "$LIND_BASE/reference_monitor"
+ENV REPY_PATH "$LIND_SRC/repy"
+ENV NACL_SDK_ROOT "$REPY_PATH/sdk"
+ENV PYTHON "python2"
+ENV PNACLPYTHON "python2"
+ENV LD_LIBRARY_PATH "/lib/glibc"
+
 USER root
 
 WORKDIR /
