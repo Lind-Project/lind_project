@@ -104,6 +104,7 @@ if ((default_env)); then
 	export PYTHON="${PYTHON:-python2}"
 	export PNACLPYTHON="${PNACLPYTHON:-python2}"
 	export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
+	export PATH="${PATH}:-$LIND_PREFIX/lind_project/src/scripts"
 
 	print
 	print '======================================================'
@@ -120,6 +121,7 @@ if ((default_env)); then
 		export PYTHON="$PYTHON"
 		export PNACLPYTHON="$PNACLPYTHON"
 		export LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+		export PATH="$PATH"
 	EOF
 	print
 	print '======================================================'
@@ -241,11 +243,11 @@ function download_src() {
 	# symlink submodules
 	git submodule update --init --recursive --remote .
 	for dir in "${!git_deps[@]}"; do
-		#[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "src/$dir"
-		#rm -rf -- "${LIND_SRC:?}/$dir"
+		[[ ! -e "src/$dir" ]] && git clone "${git_deps[$dir]}" "src/$dir"
+		rm -rf -- "${LIND_SRC:?}/$dir"
 		ln -Trsfv "$LIND_BASE/src/$dir" "$LIND_SRC/$dir"
-		#(cd "$LIND_SRC/$dir" && git checkout develop)
-    done
+		(cd "$LIND_SRC/$dir" && git checkout develop)
+        done
 
 	# initialize native client toolchain
 	ln -Trsfv "$LIND_BASE/src/native_client" "$NACL_BASE"
