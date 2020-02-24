@@ -242,6 +242,7 @@ function download_src() {
 
 	# symlink submodules
 	git submodule update --init --recursive --remote .
+	# iterate through all subdirectories, fetch from remote, restructure lind directory, and checkout to develop
 	for dir in "${!git_deps[@]}"; do
 		[[ ! -e "src/$dir" ]] && git clone "${git_deps[$dir]}" "src/$dir"
 		rm -rf -- "${LIND_SRC:?}/$dir"
