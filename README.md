@@ -10,7 +10,7 @@ limits the damage of bugs or security flaws in the application.
 
 ## Building with Docker
 Base and pre-built docker images for the SDK toolchain can be fetched from
-the Docker Hub Lind repository at [securesystemslab/lind](https://hub.docker.com/r/alyptik/lind)
+the Docker Hub Lind repository at [securesystemslab/lind](https://hub.docker.com/r/securesystemslab/lind)
 with ` docker pull securesystemslab/lind`.
 
 You can either `make run` or start the container yourself using:
