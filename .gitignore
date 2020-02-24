@@ -138,3 +138,7 @@ docker/root/
 pkgs/
 
 # vi:ft=cfg:
+
+#Scons pyc files
+src/third_party/scons-2.0.1/engine/SCons/*/*.pyc
+src/third_party/scons-2.0.1/engine/SCons/*.pyc

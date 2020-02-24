@@ -27,14 +27,8 @@ while true; do
       echo "[r/run/exec/execute]: Execute nexe file within lind file system"
       echo "[exit/quit]: leave lind prompt"
       ;;
-    "cd"|"chdir")
-      cd "${myarr[@]:1}"
-      ;;
-    "ls"|"list")
-      ls "${myarr[@]:1}";
-      ;;
     "compile"|"cc"|"gcc")
-      $LIND_ROOT/src/native_client/toolchain/linux_x86/x86_64-nacl/bin/gcc "${myarr[@]:1}";
+      $LIND_ROOT/lind/repy/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc "${myarr[@]:1}";
       ;;
     "cp"|"copy")
       pushd . &> /dev/null
@@ -43,7 +37,6 @@ while true; do
       popd &> /dev/null
       ;;
     "r"|"run"|"exec"|"execute")
-      echo "asdf"
       if [[ "" == ${myarr[1]} ]];
           then echo "Specify a file in the lind file system to execute";
           exit;
@@ -66,6 +59,11 @@ while true; do
       exit
       ;;
     *)
-      echo "Command not found. Try help for information about commands";
+      if result=$(${myarr[@]}); then
+        printf "$result\n"
+      else
+        echo "Command not found. Try help for information about commands"
+        continue
+      fi
   esac;
 done;

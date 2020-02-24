@@ -1,29 +1,45 @@
-#undef _GNU_SOURCE
-#define _GNU_SOURCE
+#include<stdlib.h> 
+#include<unistd.h> 
+#include<stdio.h> 
+#include<fcntl.h> 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#define BUFSIZE 32
 
-int main(void)
-{
-	int fd = -2;
-	char dupstr[] = "write to dup2() fd succeeded\n";
-	char oldstr[] = "write to old fd succeeded\n";
+int main() 
+{ 
+    char buf[BUFSIZE] = {0};
+    
+    printf("Testing dup2\n");
+    fflush(stdout);
 
-	fd = dup(STDOUT_FILENO);
-	printf("dup2() return = %d\n", dup2(STDOUT_FILENO, fd));
-	printf("\nduped fd: %d\n", fd);
-	if (fd < 0) {
-		perror("dup2() failed");
-		abort();
-	}
-	puts("attempting to write to dup2() fd\n");
-	fflush(0);
-	write(fd, dupstr, sizeof dupstr - 1);
-	fflush(0);
-	write(STDOUT_FILENO, oldstr, sizeof oldstr - 1);
-	fflush(0);
+    int fd = open("dup2test.txt",O_WRONLY | O_APPEND); 
+    
 
-	return 0;
-}
+    // here the newfd is the file descriptor of stdout (i.e. 1) 
+    int stdout_backup = dup(STDOUT_FILENO);
+
+    dup2(fd, STDOUT_FILENO) ;  
+          
+    // All the printf statements will be written in the file 
+    // "dup2test.txt" 
+    printf("I will be printed in the file dup2test.txt\n"); 
+    fflush(stdout);
+
+    dup2(stdout_backup, STDOUT_FILENO);
+    close(stdout_backup);
+
+
+    printf("I should be printed before the file contents!\n");
+    fflush(stdout);
+    
+    fd = open("dup2test.txt", O_RDONLY);
+    read(fd, buf, BUFSIZE);
+
+    printf(buf);
+    fflush(stdout);
+    close(fd);
+
+
+      
+return 0; 
+} 
