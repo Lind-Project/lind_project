@@ -14,6 +14,19 @@ ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 ENV PATH "/home/lind/lind_project:$PATH"
 ENV PATH "/home/lind/lind_project/lind/repy/bin:$PATH"
 ENV PATH "/home/lind/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
+# This is needed for lindsh and others
+ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
+
+# Environment variables for the make toolchain
+ENV LIND_PREFIX "/home/lind"
+ENV LIND_BASE "$LIND_PREFIX/lind_project"
+ENV LIND_SRC "$LIND_BASE/lind"
+ENV LIND_MONITOR "$LIND_BASE/reference_monitor"
+ENV REPY_PATH "$LIND_SRC/repy"
+ENV NACL_SDK_ROOT "$REPY_PATH/sdk"
+ENV PYTHON "python2"
+ENV PNACLPYTHON "python2"
+ENV LD_LIBRARY_PATH "/lib/glibc"
 
 USER root
 
@@ -37,7 +50,7 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 	tmux screen bash-completion mlocate shadow ncdu \
 	bind-tools cowsay filesystem linux-headers \
 	grml-zsh-config linux-docs man-pages man-db \
-	util-linux help2man
+	util-linux help2man rlwrap
 RUN pkgfile --update
 
 USER lind
@@ -76,6 +89,7 @@ RUN chown -Rc lind:lind .
 USER lind
 
 WORKDIR /home/lind/lind_project
+RUN git checkout develop
 RUN ./src/mklind -q download
 
 CMD bash
