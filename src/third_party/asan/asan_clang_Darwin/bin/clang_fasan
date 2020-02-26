@@ -1,5 +1,0 @@
-#!/bin/bash
-# We need this wrapper because xcodebuild doesn't allow to pass arguments to the compiler via env.
-
-DIRNAME=`dirname $0`
-$DIRNAME/clang "$@" -mllvm -asan-blacklist=$DIRNAME/../../ignore.txt

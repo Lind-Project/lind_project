@@ -1,1 +1,0 @@
-fun:*v8*internal*StackTracer*Trace*
