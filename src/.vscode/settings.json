@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "portability_process.h": "c",
+        "dyn_array.h": "c",
+        "nacl_desc_io.h": "c",
+        "nacl_assert.h": "c",
+        "nacl_clock.h": "c",
+        "lind_util.h": "c"
+    }
+}
