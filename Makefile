@@ -34,7 +34,7 @@ list show:
 	docker container list -f label=lind -a
 
 latest: | naclruntime
-	docker build -cache-from=securesystemslab/lind:$| -t securesystemslab/lind:$@ ./src/docker/$|
+	docker build --cache-from=securesystemslab/lind:$| -t securesystemslab/lind:$@ ./src/docker/$|
 
 naclruntime: | prebuiltsdk
 	docker build -t securesystemslab/lind:$@ ./src/docker/$@

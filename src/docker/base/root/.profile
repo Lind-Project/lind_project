@@ -199,10 +199,9 @@ export npm_config_prefix="$HOME/.node_modules"
 # export PAGER=vimpager
 export PAGER=less
 # default PATH
-PATH="/bin:/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+PATH="/bin:/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:$PATH"
 PATH="/usr/bin/core_perl:/usr/bin/site_perl:/usr/bin/vendor_perl:$PATH"
 PATH="/usr/lib/surfraw:/usr/lib/jvm/default/bin:$PATH"
-# PATH="/usr/lib/distcc/bin:$PATH"
 PATH="/usr/lib/ccache/bin:$PATH"
 PATH="/opt/android-sdk/platform-tool:$PATH"
 PATH="/opt/TIS-100:/opt/cuda/bin:$PATH"
@@ -213,8 +212,6 @@ PATH="$HOME/perl5/bin:$PATH"
 PATH="$rubies:$PATH"
 PATH="$LINUX/scripts:$PATH"
 PATH="$HOME/.local/bin:$HOME/bin:$PATH"
-PATH="$HOME/lind_project/lind/repy/bin:$PATH"
-PATH="$HOME/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
 # shellcheck disable=SC2039
 # elide empty PATH components
 PATH="${PATH//::/:}"
