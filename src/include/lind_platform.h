@@ -160,7 +160,8 @@ ssize_t lind_writev(int fd, const void *buf, int count);
 int lind_epoll_create1(int flags);
 int lind_pipe(int* pipefds);
 int lind_pipe2(int* pipefds, int flags);
-int lind_fork(int newcageid);
+int lind_fork(int newcageid, int cageid);
+int lind_exec(int newcageid, int cageid);
 
 void add_mapping(int src, int dest);
 int get_mapping(int fd);
