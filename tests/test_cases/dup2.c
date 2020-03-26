@@ -13,6 +13,7 @@ int main()
     fflush(stdout);
 
     int fd = open("dup2test.txt",O_WRONLY | O_TRUNC | O_CREAT); 
+
     
 
     // here the newfd is the file descriptor of stdout (i.e. 1) 
