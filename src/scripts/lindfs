@@ -8,7 +8,6 @@ trap 'cd "$cwd"; exit "$ret"' EXIT
 export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
 export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
 export LIND_SRC="${LIND_SRC:-$LIND_BASE/lind}"
-export LIND_MONITOR="${LIND_MONITOR:-$LIND_BASE/reference_monitor}"
 export REPY_PATH="${REPY_PATH:-$LIND_SRC/repy}"
 export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$REPY_PATH/sdk}"
 export PYTHON="${PYTHON:-python2}"
