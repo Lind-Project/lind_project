@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "nacl_app_thread.h": "c",
+        "nacl_desc_dir.h": "c"
+    }
+}

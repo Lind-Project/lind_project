@@ -1,7 +1,7 @@
 FROM securesystemslab/lind:prebuiltsdk
 LABEL lind "v1.0-rc5"
 LABEL description "Lind NaCl Runtime (Pre-built)"
-MAINTAINER Nicholas Renner <nrenner@nyu.edu>
+LABEL author "Nicholas Renner nrenner@nyu.edu"
 
 ARG BRANCH
 
@@ -15,7 +15,6 @@ ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
 ENV LIND_SRC "$LIND_BASE/lind"
-ENV LIND_MONITOR "$LIND_BASE/reference_monitor"
 ENV REPY_PATH "$LIND_SRC/repy"
 ENV NACL_SDK_ROOT "$REPY_PATH/sdk"
 ENV PYTHON "python2"
@@ -31,7 +30,7 @@ RUN git pull -t -j8
 RUN for t in nacl repy install; do ./src/mklind -q "$t"; done
 RUN mkdir -p lind/repy/repy/tests
 RUN for c in $TEST_CASES; do x86_64-nacl-gcc -std=c99 "tests/test_cases/$c.c" -o "lind/repy/repy/tests/$c"; done
-WORKDIR /home/lind/lind_project/tests/test_cases/bash/
+WORKDIR /home/lind/lind_project/tests/applications/bash/
 RUN ./bootstrap_nacl --prefix="/home/lind/lind_project/lind/repy/repy"
 RUN make install
 
