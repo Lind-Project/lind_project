@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if [[ "$*" =~ (^|[[:blank:]])(-h|--help)([[:blank:]]|$) ]]; then
+	if [[ ! -f ./configure ]]; then
+		./autogen.sh --host=x86_64-nacl --prefix="${PREFIX:-$HOME/lind_project/lind/repy/repy}"
+	fi
+	./configure --help
+	exit 1
+fi
+
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS='-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie'
+export CXXFLAGS='-DPTHREAD_MUTEX_RECURSIVE=1 -g -fno-pie'
+export LDFLAGS='-g -fno-pie'
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+
+rm -fv -- ./configure
+./autogen.sh \
+	--host=x86_64-nacl \
+	--prefix="${PREFIX:-$HOME/lind_project/lind/repy/repy}" \
+	--without-python \
+	--without-lzma \
+	--without-zlib \
+	"$@"
+./configure \
+	--host=x86_64-nacl \
+	--prefix="${PREFIX:-$HOME/lind_project/lind/repy/repy}" \
+	--without-python \
+	--without-lzma \
+	--without-zlib \
+	"$@" \
+	ac_cv_file__dev_zero="yes" \
+	ac_cv_func_setpgrp_void="yes" \
+	apr_cv_tcp_nodelay_with_cork="yes" \
+	ap_cv_void_ptr_lt_long="no" \
+	ac_cv_sizeof_struct_iovec="8" \
+	apr_cv_process_shared_works="yes" \
+	apr_cv_mutex_robust_shared="no" \
+	apr_cv_mutex_recursive="yes"
+
+make

@@ -1,0 +1,201 @@
+c/enc/brotli_bit_stream.lo: c/enc/brotli_bit_stream.c \
+ c/enc/./brotli_bit_stream.h c/enc/./../common/context.h \
+ c/include/brotli/types.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/include/stddef.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/stdint.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/features.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/sys/cdefs.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/wordsize.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/gnu/stubs.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/gnu/stubs-64.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/wchar.h \
+ c/enc/./../common/platform.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/string.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/stdlib.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/sys/types.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/types.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/typesizes.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/time.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/endian.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/endian.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/byteswap.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/sys/select.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/select.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/sigset.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/time.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/sys/sysmacros.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/pthreadtypes.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/alloca.h \
+ c/include/brotli/port.h c/enc/././command.h \
+ c/enc/././../common/constants.h c/enc/././../common/platform.h \
+ c/enc/./././fast_log.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/math.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/huge_val.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/mathdef.h \
+ /home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/mathcalls.h \
+ c/enc/./././../common/platform.h c/enc/./././params.h \
+ c/include/brotli/encode.h c/enc/././././encoder_dict.h \
+ c/enc/././././../common/dictionary.h c/enc/././././../common/platform.h \
+ c/enc/./././././static_dict_lut.h c/enc/./././prefix.h \
+ c/enc/./././../common/constants.h c/enc/././././fast_log.h \
+ c/enc/././entropy_encode.h c/enc/././memory.h c/enc/././metablock.h \
+ c/enc/././../common/context.h c/enc/./././block_splitter.h \
+ c/enc/././././command.h c/enc/././././memory.h c/enc/././././quality.h \
+ c/enc/./././././params.h c/enc/./././command.h c/enc/./././histogram.h \
+ c/enc/./././../common/context.h c/enc/././././block_splitter.h \
+ c/enc/././././histogram_inc.h c/enc/./././memory.h c/enc/./././quality.h \
+ c/enc/../common/constants.h c/enc/../common/context.h \
+ c/enc/../common/platform.h c/enc/./entropy_encode.h \
+ c/enc/./entropy_encode_static.h c/enc/./../common/constants.h \
+ c/enc/././write_bits.h c/enc/./fast_log.h c/enc/./histogram.h \
+ c/enc/./memory.h c/enc/./write_bits.h c/enc/./block_encoder_inc.h
+
+c/enc/./brotli_bit_stream.h:
+
+c/enc/./../common/context.h:
+
+c/include/brotli/types.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/include/stddef.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/stdint.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/features.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/sys/cdefs.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/wordsize.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/gnu/stubs.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/gnu/stubs-64.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/wchar.h:
+
+c/enc/./../common/platform.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/string.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/stdlib.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/sys/types.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/types.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/typesizes.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/time.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/endian.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/endian.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/byteswap.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/sys/select.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/select.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/sigset.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/time.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/sys/sysmacros.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/pthreadtypes.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/alloca.h:
+
+c/include/brotli/port.h:
+
+c/enc/././command.h:
+
+c/enc/././../common/constants.h:
+
+c/enc/././../common/platform.h:
+
+c/enc/./././fast_log.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/math.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/huge_val.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/mathdef.h:
+
+/home/jp/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin/../lib/gcc/x86_64-nacl/4.4.3/../../../../x86_64-nacl/sys-include/bits/mathcalls.h:
+
+c/enc/./././../common/platform.h:
+
+c/enc/./././params.h:
+
+c/include/brotli/encode.h:
+
+c/enc/././././encoder_dict.h:
+
+c/enc/././././../common/dictionary.h:
+
+c/enc/././././../common/platform.h:
+
+c/enc/./././././static_dict_lut.h:
+
+c/enc/./././prefix.h:
+
+c/enc/./././../common/constants.h:
+
+c/enc/././././fast_log.h:
+
+c/enc/././entropy_encode.h:
+
+c/enc/././memory.h:
+
+c/enc/././metablock.h:
+
+c/enc/././../common/context.h:
+
+c/enc/./././block_splitter.h:
+
+c/enc/././././command.h:
+
+c/enc/././././memory.h:
+
+c/enc/././././quality.h:
+
+c/enc/./././././params.h:
+
+c/enc/./././command.h:
+
+c/enc/./././histogram.h:
+
+c/enc/./././../common/context.h:
+
+c/enc/././././block_splitter.h:
+
+c/enc/././././histogram_inc.h:
+
+c/enc/./././memory.h:
+
+c/enc/./././quality.h:
+
+c/enc/../common/constants.h:
+
+c/enc/../common/context.h:
+
+c/enc/../common/platform.h:
+
+c/enc/./entropy_encode.h:
+
+c/enc/./entropy_encode_static.h:
+
+c/enc/./../common/constants.h:
+
+c/enc/././write_bits.h:
+
+c/enc/./fast_log.h:
+
+c/enc/./histogram.h:
+
+c/enc/./memory.h:
+
+c/enc/./write_bits.h:
+
+c/enc/./block_encoder_inc.h:

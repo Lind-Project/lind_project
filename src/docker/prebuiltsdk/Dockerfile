@@ -1,7 +1,7 @@
 FROM securesystemslab/lind:base
 LABEL lind "v1.0-rc5"
 LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
-MAINTAINER Joey Pabalinas <joeypabalinas@gmail.com>
+LABEL author "Nicholas Renner nrenner@nyu.edu"
 
 ARG BRANCH
 
@@ -15,7 +15,6 @@ ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
 ENV LIND_SRC "$LIND_BASE/lind"
-ENV LIND_MONITOR "$LIND_BASE/reference_monitor"
 ENV REPY_PATH "$LIND_SRC/repy"
 ENV NACL_SDK_ROOT "$REPY_PATH/sdk"
 ENV PYTHON "python2"

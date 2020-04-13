@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [[ "$*" =~ (^|[[:blank:]])(-h|--help)([[:blank:]]|$) ]]; then
+	./configure --help
+	exit 1
+fi
+
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS='-g -fno-pie'
+export CXXFLAGS='-g -fno-pie'
+export LDFLAGS='-g -fno-pie'
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+
+if [[ ! -e ./configure ]]; then
+	./autogen.sh
+fi
+
+./configure --enable-cond-command --enable-cond-regexp --enable-dparen-arithmetic --enable-process-substitution --host=x86_64-nacl "$@"
+sed -i '/extern int gethostname/ s!int))!size_t))!' ./externs.h
+sed -i '/gethostname (name, namelen)/,+2 s!int namelen!size_t namelen!' ./lib/sh/oslib.c
+
+make
