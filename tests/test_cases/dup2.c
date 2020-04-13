@@ -3,7 +3,7 @@
 #include<stdio.h> 
 #include<fcntl.h> 
 
-#define BUFSIZE 32
+#define BUFSIZE 64
 
 int main() 
 { 
@@ -12,7 +12,8 @@ int main()
     printf("Testing dup2\n");
     fflush(stdout);
 
-    int fd = open("dup2test.txt",O_WRONLY | O_APPEND); 
+    int fd = open("dup2test.txt",O_WRONLY | O_TRUNC | O_CREAT); 
+
     
 
     // here the newfd is the file descriptor of stdout (i.e. 1) 
