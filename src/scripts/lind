@@ -6,7 +6,7 @@ ldr_cmd=('sel_ldr')
 ldr_args=()
 gdb_arg_str=('')
 print_arg_str=''
-usage="usage: ${0##*/} -[fghsvx] [-a <sel_ldr extra args>] [-l <blob library>] -- [nacl_file] [args]"
+usage="usage: ${0##*/} -[fghstvx] [-a <sel_ldr extra args>] [-l <blob library>] -- [nacl_file] [args]"
 
 # check for xtrace flag
 while getopts :a:l:dfghsvx opt; do
@@ -32,6 +32,9 @@ while getopts :a:l:dfghsvx opt; do
 	# increase verbosity
 	v)
 		extra_args+=('-v');;
+	# add timing
+	t)
+		extra_args+=('-t');;
 	# use xtrace
 	x)
 		set -o xtrace;;
