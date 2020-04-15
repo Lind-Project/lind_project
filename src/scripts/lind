@@ -9,7 +9,7 @@ print_arg_str=''
 usage="usage: ${0##*/} -[fghstvx] [-a <sel_ldr extra args>] [-l <blob library>] -- [nacl_file] [args]"
 
 # check for xtrace flag
-while getopts :a:l:dfghsvx opt; do
+while getopts :a:l:dfghstvx opt; do
 	case "$opt" in
 	# append custom args
 	a)
