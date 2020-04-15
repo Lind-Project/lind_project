@@ -34,7 +34,7 @@ while getopts :a:l:dfghsvx opt; do
 		extra_args+=('-v');;
 	# add timing
 	t)
-		extra_args+=('-t');;
+		[[ "${extra_args[*]}" != *-S* ]] && extra_args+=('-t');;
 	# use xtrace
 	x)
 		set -o xtrace;;
