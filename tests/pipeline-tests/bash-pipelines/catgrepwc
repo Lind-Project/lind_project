@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cat cast | grep "Lebowski" | wc
