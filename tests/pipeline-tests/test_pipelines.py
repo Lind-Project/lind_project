@@ -40,8 +40,9 @@ def run_native():
 
     results = []
     files = os.listdir(TEST_FOLDER)
+    print(files)
     for filename in files:
-        testsub = subprocess.Popen(["/bin/bash", "time", TESTFOLDER + filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        testsub = subprocess.Popen(["/bin/bash", "time", TEST_FOLDER + filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         test_result = testsub.stdout.read().decode().strip().split('\n')
         print(test_result)
         parsed_time = parse_native(test_result)
