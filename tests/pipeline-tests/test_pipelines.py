@@ -32,8 +32,7 @@ TEST_FOLDER = "bash-pipelines"
 def setup():
     return
 
-def parse_native(test_result)
-
+def parse_native(test_result):
     return parsed_time
 
 def run_native():
@@ -48,8 +47,7 @@ def run_native():
 
     return results
 
-def parse_lind(test_result)
-
+def parse_lind(test_result):
     return parsed_time
 
 def run_lind():
