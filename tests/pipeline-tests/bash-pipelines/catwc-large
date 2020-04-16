@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cat ../test-content/wordlist | wc
+cat test-content/wordlist | wc
