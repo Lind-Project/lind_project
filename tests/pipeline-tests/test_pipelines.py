@@ -64,7 +64,7 @@ def run_lind():
     results = []
 
     for filename in os.listdir(TEST_FOLDER):
-        testsub = subprocess.Popen(["lind -t /bin/bash", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        testsub = subprocess.Popen(["/home/lind/lind_project/src/scripts/lind", "-t", "/bin/bash", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         test_result = testsub.stdout.read().decode().strip().split('\n')
 
         print(test_result)
