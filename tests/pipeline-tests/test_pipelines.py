@@ -23,7 +23,7 @@
 
 import os
 import sys
-import subprocess32 as subprocess
+import subprocess
 
 
 TEST_FOLDER = "bash-pipelines"
