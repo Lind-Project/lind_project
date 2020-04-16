@@ -41,7 +41,7 @@ def run_native():
 
     for filename in os.listdir(TEST_FOLDER):
         test_result = subprocess.Popen(["time /bin/bash", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print (test_result)
+        print(test_result)
         parsed_time = parse_native(test_result)
         results.append((filename, parsed_time))
 
@@ -56,7 +56,7 @@ def run_lind():
 
     for filename in os.listdir(TEST_FOLDER):
         test_result = subprocess.Popen(["lind -t /bin/bash", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print test_result
+        print(test_result)
         parsed_time = parse_native(test_result)
         results.append((filename, parsed_time))
 
