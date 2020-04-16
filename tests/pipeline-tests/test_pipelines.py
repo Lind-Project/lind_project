@@ -46,7 +46,7 @@ def run_native():
         usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
         test_sub = subprocess.Popen(["/bin/bash", TEST_FOLDER + filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
-        test_result = testsub.stdout.read().decode().strip().split('\n')
+        test_result = test_sub.stdout.read().decode().strip().split('\n')
         cpu_time = usage_end.ru_utime - usage_start.ru_utime
         print(test_result)
         print(cpu_time)
