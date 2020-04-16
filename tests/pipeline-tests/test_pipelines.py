@@ -34,31 +34,33 @@ def setup():
 
 def parse_native(test_result)
 
-    return time_result
+    return parsed_time
 
 def run_native():
 
     results = []
 
     for filename in os.listdir(TEST_FOLDER):
-        test_result =subprocess.Popen(["time /bin/bash", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time_result = parse_native(test_result)
-        results.append((filename,time))
+        test_result = subprocess.Popen(["time /bin/bash", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print (test_result)
+        parsed_time = parse_native(test_result)
+        results.append((filename, parsed_time))
 
     return results
 
 def parse_lind(test_result)
 
-    return time_result
+    return parsed_time
 
 def run_lind():
     
     results = []
 
     for filename in os.listdir(TEST_FOLDER):
-        test_result =subprocess.Popen(["lind -t /bin/bash", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time_result = parse_native(test_result)
-        results.append((filename,time))
+        test_result = subprocess.Popen(["lind -t /bin/bash", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print test_result
+        parsed_time = parse_native(test_result)
+        results.append((filename, parsed_time))
 
     return results
 
