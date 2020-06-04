@@ -22,7 +22,7 @@ int main(void)
 	if ((fd = open("/dev/zero",  O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1)
 		perror("open()");
 
-	getchar();
+	//getchar();
 	puts("open()");
 
 	if ((p = mmap(0, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED)
@@ -30,7 +30,7 @@ int main(void)
 
 	memcpy(p, str, sizeof str);
 	puts(p);
-	getchar();
+	//getchar();
 	puts("mmap()");
 
 	if (mprotect(p, 4096, PROT_READ|PROT_EXEC))
@@ -38,19 +38,19 @@ int main(void)
 
 	puts(p);
 	puts("mprotect()");
-	getchar();
+	//getchar();
 
 	if (munmap(p, 4096))
 		perror("munmap()");
 
 	puts("munmap()");
-	getchar();
+	//getchar();
 
 	if (close(fd) == -1)
 		perror("close()");
 
 	puts("close()");
-	getchar();
+	//getchar();
 
 	return 0;
 }
