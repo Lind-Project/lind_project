@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <errno.h>
+#include <time.h>
 
 #if defined (HAVE_UNISTD_H)
 #  include <unistd.h>
@@ -1925,7 +1926,7 @@ pid_t timed_fork(){
   clock_t difference = clock() - before;
   int msec = difference * 1000 / CLOCKS_PER_SEC;
 
-  fprintf(stderr, "fork msec: %d ms\n", msec);
+  prinf("fork msec: %d ms\n", msec);
 
   return pid;
 
