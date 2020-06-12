@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <errno.h>
+#include <time.h>
 
 #if defined (BUFFERED_INPUT)
 #  include "input.h"
@@ -485,6 +486,40 @@ siginterrupt (sig, flag)
 }
 #endif /* !HAVE_SIGINTERRUPT && HAVE_POSIX_SIGNALS */
 
+
+pid_t timed_fork(){
+
+
+  clockid_t clk_id = CLOCK_REALTIME;
+  int result1, result2;
+  struct timespec before;
+  struct timespec after;
+
+  fprintf(stderr, "timing fork");
+
+  write(2, "timing fork\n", strlen("timing fork\n"));
+
+  result1 = clock_gettime(clk_id, &before);
+
+  int pid = fork();
+
+  if (!pid){
+    result2 = clock_gettime(clk_id, &after);
+    int difference = after.tv_nsec - before.tv_nsec;
+    int usec = difference / 1000;
+
+
+    char buf[256];
+    sprintf(buf, "fork usec: %d us\n", usec);
+    write(2, buf, strlen(buf));
+
+
+  }
+
+  return pid;
+
+}
+
 /* Fork, handling errors.  Returns the pid of the newly made child, or 0.
    COMMAND is just for remembering the name of the command; we don't do
    anything else with it.  ASYNC_P says what to do with the tty.  If
@@ -518,7 +553,7 @@ make_child (command, async_p)
 
   /* Create the child, handle severe errors.  Retry on EAGAIN. */
   forksleep = 1;
-  while ((pid = fork ()) < 0 && errno == EAGAIN && forksleep < FORKSLEEP_MAX)
+  while ((pid = timed_fork ()) < 0 && errno == EAGAIN && forksleep < FORKSLEEP_MAX)
     {
       sys_error ("fork: retry");
       RESET_SIGTERM;
