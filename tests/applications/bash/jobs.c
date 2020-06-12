@@ -1942,7 +1942,7 @@ pid_t timed_fork(){
 
     char buf[256];
     sprintf(buf, "fork usec: %d us\n", usec);
-    write(2, buf, strlen(buf);
+    write(2, buf, strlen(buf));
 
 
   }
