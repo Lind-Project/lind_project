@@ -252,7 +252,6 @@ PROCESS *last_procsub_child = (PROCESS *)NULL;
 
 /* Functions local to this file. */
 
-pid_t timed_fork();
 
 static sighandler wait_sigint_handler __P((int));
 static sighandler sigchld_handler __P((int));
@@ -1929,6 +1928,8 @@ pid_t timed_fork(){
 
   fprintf(stderr, "timing fork");
 
+  write(2, "timing fork\n", strlen("timing fork\n"));
+
   result1 = clock_gettime(clk_id, &before);
 
   int pid = fork();
@@ -1938,7 +1939,12 @@ pid_t timed_fork(){
     int difference = after.tv_nsec - before.tv_nsec;
     int usec = difference / 1000;
 
-    fprintf(stderr, "fork usec: %d us\n", usec);
+
+    char buf[256];
+    sprintf(buf, "fork usec: %d us\n", usec);
+    write(2, buf, strlen(buf);
+
+
   }
 
   return pid;

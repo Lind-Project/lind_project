@@ -51,6 +51,9 @@
 #define PS_STOPPED	2
 #define PS_RECYCLED	4
 
+pid_t timed_fork();
+
+
 /* Each child of the shell is remembered in a STRUCT PROCESS.  A circular
    chain of such structures is a pipeline. */
 typedef struct process {
