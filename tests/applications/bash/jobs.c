@@ -1938,7 +1938,7 @@ pid_t timed_fork(){
     int difference = after.tv_nsec - before.tv_nsec;
     int usec = difference / 1000;
 
-    printf("fork usec: %d ms\n", usec);
+    printf("fork usec: %d us\n", usec);
   }
 
   return pid;
