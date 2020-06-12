@@ -1927,10 +1927,12 @@ pid_t timed_fork(){
 
   int pid = fork();
 
-  clock_t difference = clock() - before;
-  int msec = difference * 1000 / CLOCKS_PER_SEC;
+  if (!pid){
+    clock_t difference = clock() - before;
+    int msec = difference * 1000 / CLOCKS_PER_SEC;
 
-  printf("fork msec: %d ms\n", msec);
+    printf("fork msec: %d ms\n", msec);
+  }
 
   return pid;
 
