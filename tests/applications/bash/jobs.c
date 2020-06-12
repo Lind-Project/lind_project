@@ -1921,15 +1921,22 @@ list_all_jobs (format)
 
 pid_t timed_fork(){
 
+
+  clockid_t clk_id = CLOCK_MONOTONIC;
+  int result1, result2;
+  struct timespec before;
+  struct timespec after;
+
   printf("timing fork");
 
-  clock_t before = clock();
+  int result1 = clock_gettime(clk_id, &before);
 
   int pid = fork();
 
   if (!pid){
-    clock_t difference = clock() - before;
-    int msec = difference * 1000 / CLOCKS_PER_SEC;
+    int result2 = clock_gettime(clk_id, &after);
+    int difference = after - before;
+    int msec = difference * 1000000;
 
     printf("fork msec: %d ms\n", msec);
   }
