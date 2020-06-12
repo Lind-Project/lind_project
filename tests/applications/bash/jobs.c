@@ -1989,7 +1989,6 @@ make_child (command, async_p)
   RESET_SIGTERM;
 
   fprintf(stderr, "about to fork");
-  abort();
 
   /* Create the child, handle severe errors.  Retry on EAGAIN. */
   while ((pid = timed_fork ()) < 0 && errno == EAGAIN && forksleep < FORKSLEEP_MAX)

@@ -489,29 +489,19 @@ siginterrupt (sig, flag)
 
 pid_t timed_fork(){
 
-
-  clockid_t clk_id = CLOCK_REALTIME;
-  int result1, result2;
-  struct timespec before;
-  struct timespec after;
-
   fprintf(stderr, "timing fork");
 
-  write(2, "timing fork\n", strlen("timing fork\n"));
+  clock_t before = clock();
 
-  result1 = clock_gettime(clk_id, &before);
 
   int pid = fork();
 
   if (!pid){
-    result2 = clock_gettime(clk_id, &after);
-    int difference = after.tv_nsec - before.tv_nsec;
-    int usec = difference / 1000;
+    
+    clock_t difference = clock() - before;
+    int msec = difference * 1000 / CLOCKS_PER_SEC;
 
-
-    char buf[256];
-    sprintf(buf, "fork usec: %d us\n", usec);
-    write(2, buf, strlen(buf));
+    fprintf(stderr, "write msec: %d ms\n", msec);
 
 
   }
