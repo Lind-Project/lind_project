@@ -252,6 +252,8 @@ PROCESS *last_procsub_child = (PROCESS *)NULL;
 
 /* Functions local to this file. */
 
+pid_t timed_fork();
+
 static sighandler wait_sigint_handler __P((int));
 static sighandler sigchld_handler __P((int));
 static sighandler sigcont_sighandler __P((int));
@@ -1919,6 +1921,8 @@ list_all_jobs (format)
 
 pid_t timed_fork(){
 
+  printf("timing fork");
+
   clock_t before = clock();
 
   int pid = fork();
@@ -1926,7 +1930,7 @@ pid_t timed_fork(){
   clock_t difference = clock() - before;
   int msec = difference * 1000 / CLOCKS_PER_SEC;
 
-  prinf("fork msec: %d ms\n", msec);
+  printf("fork msec: %d ms\n", msec);
 
   return pid;
 
