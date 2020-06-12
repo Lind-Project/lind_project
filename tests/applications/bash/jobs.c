@@ -1927,7 +1927,7 @@ pid_t timed_fork(){
   struct timespec before;
   struct timespec after;
 
-  printf("timing fork");
+  fprintf(stderr, "timing fork");
 
   result1 = clock_gettime(clk_id, &before);
 
@@ -1938,7 +1938,7 @@ pid_t timed_fork(){
     int difference = after.tv_nsec - before.tv_nsec;
     int usec = difference / 1000;
 
-    printf("fork usec: %d us\n", usec);
+    fprintf(stderr, "fork usec: %d us\n", usec);
   }
 
   return pid;
@@ -1982,7 +1982,7 @@ make_child (command, async_p)
 
   RESET_SIGTERM;
 
-  printf("about to fork");
+  fprintf(stderr, "about to fork");
 
   /* Create the child, handle severe errors.  Retry on EAGAIN. */
   while ((pid = timed_fork ()) < 0 && errno == EAGAIN && forksleep < FORKSLEEP_MAX)
