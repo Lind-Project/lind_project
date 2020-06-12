@@ -1915,6 +1915,22 @@ list_all_jobs (format)
   map_over_jobs (print_job, format, -1);
 }
 
+
+pid_t timed_fork(){
+
+  clock_t before = clock();
+
+  int pid = fork();
+
+  clock_t difference = clock() - before;
+  int msec = difference * 1000 / CLOCKS_PER_SEC;
+
+  fprintf(stderr, "fork msec: %d ms\n", msec);
+
+  return pid;
+
+}
+
 /* Fork, handling errors.  Returns the pid of the newly made child, or 0.
    COMMAND is just for remembering the name of the command; we don't do
    anything else with it.  ASYNC_P says what to do with the tty.  If
@@ -1953,7 +1969,7 @@ make_child (command, async_p)
   RESET_SIGTERM;
 
   /* Create the child, handle severe errors.  Retry on EAGAIN. */
-  while ((pid = fork ()) < 0 && errno == EAGAIN && forksleep < FORKSLEEP_MAX)
+  while ((pid = timed_fork ()) < 0 && errno == EAGAIN && forksleep < FORKSLEEP_MAX)
     {
       /* bash-4.2 */
       sigprocmask (SIG_SETMASK, &oset, (sigset_t *)NULL);
