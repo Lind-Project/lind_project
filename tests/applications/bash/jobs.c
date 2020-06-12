@@ -1922,7 +1922,7 @@ list_all_jobs (format)
 pid_t timed_fork(){
 
 
-  clockid_t clk_id = CLOCK_MONOTONIC;
+  clockid_t clk_id = CLOCK_REALTIME;
   int result1, result2;
   struct timespec before;
   struct timespec after;
@@ -1936,7 +1936,7 @@ pid_t timed_fork(){
   if (!pid){
     result2 = clock_gettime(clk_id, &after);
     int difference = after.tv_nsec - before.tv_nsec;
-    int msec = difference * 1000000;
+    int msec = difference / 1000000;
 
     printf("fork msec: %d ms\n", msec);
   }
