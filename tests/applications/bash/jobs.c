@@ -1929,12 +1929,12 @@ pid_t timed_fork(){
 
   printf("timing fork");
 
-  int result1 = clock_gettime(clk_id, &before);
+  result1 = clock_gettime(clk_id, &before);
 
   int pid = fork();
 
   if (!pid){
-    int result2 = clock_gettime(clk_id, &after);
+    result2 = clock_gettime(clk_id, &after);
     int difference = after - before;
     int msec = difference * 1000000;
 
