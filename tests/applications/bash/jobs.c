@@ -1936,9 +1936,9 @@ pid_t timed_fork(){
   if (!pid){
     result2 = clock_gettime(clk_id, &after);
     int difference = after.tv_nsec - before.tv_nsec;
-    int msec = difference / 1000;
+    int usec = difference / 1000;
 
-    printf("fork msec: %d ms\n", usec);
+    printf("fork usec: %d ms\n", usec);
   }
 
   return pid;
