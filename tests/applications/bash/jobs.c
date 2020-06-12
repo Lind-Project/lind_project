@@ -1935,7 +1935,7 @@ pid_t timed_fork(){
 
   if (!pid){
     result2 = clock_gettime(clk_id, &after);
-    int difference = after - before;
+    int difference = after.tv_nsec - before.tv_nsec;
     int msec = difference * 1000000;
 
     printf("fork msec: %d ms\n", msec);
