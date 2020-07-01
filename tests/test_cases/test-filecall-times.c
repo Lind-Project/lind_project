@@ -14,14 +14,17 @@ int main()
 
     for (int i = 0; i < WRITE_BUFFER_SIZE; i++) buffer[i] = 'A';
 
-    clock_t before;
-    clock_t difference;
-    int usec;
+    clock_t before = 0;
+    long long difference = 0;
+    clock_t after = 0;
+    int usec = 0;
     char readbuffer[WRITE_BUFFER_SIZE];
 
     before = clock();
     int test_fd = open("filetimes.txt", O_RDWR | O_CREAT | O_TRUNC);
-    difference = clock() - before;
+    after = clock();
+    fprintf(stderr, "before: %ld after: %ld\n", before, after);
+    difference = after - before;
     usec = difference * 1000000 / CLOCKS_PER_SEC;
     fprintf(stderr, "open usec: %d us\n", usec);
 
@@ -49,7 +52,7 @@ int main()
     usec = difference * 1000000 / CLOCKS_PER_SEC;
     fprintf(stderr, "close usec: %d us\n", usec);
 
-    printf("%s", readbuffer);
+    printf("%s\n", readbuffer);
 
 
     

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cat test-content/bible.txt | wc
