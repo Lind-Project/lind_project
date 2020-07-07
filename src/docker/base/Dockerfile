@@ -73,6 +73,12 @@ WORKDIR /root/build/
 RUN lesskey
 
 USER lind
+WORKDIR /home/lind/build/downgrade/
+RUN makepkg --noconfirm -sci
+USER root
+RUN pacman -U *.pkg.tar.xz --noconfirm
+
+USER lind
 
 WORKDIR /home/lind/build/make-3.82/
 RUN makepkg --noconfirm -sci
