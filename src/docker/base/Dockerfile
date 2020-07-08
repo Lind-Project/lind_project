@@ -72,11 +72,12 @@ RUN ln -rsv "/home/lind/lind_project" "./"
 WORKDIR /root/build/
 RUN lesskey
 
-USER root
+USER lind
 WORKDIR /home/lind/build/
 RUN git clone https://aur.archlinux.org/downgrade.git downgrade
 WORKDIR /home/lind/build/downgrade
 RUN makepkg --noconfirm -sci
+USER root
 RUN pacman -U *.pkg.tar.xz --noconfirm
 
 USER lind
@@ -91,6 +92,8 @@ USER root
 WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/" "/var/cache/pacman/pkg/"
 RUN chown -Rc lind:lind .
+
+RUN yes | downgrade gcc=9.3.0 gcc-libs=9.3.0
 
 USER lind
 
