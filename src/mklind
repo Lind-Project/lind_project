@@ -530,6 +530,11 @@ function build_glibc() {
 	fortune 2>/dev/null || print "Fortune Not Found. Skipping." >&2
 	print "" "Copying component.h header to glibc: "
 
+	print "Downgrading GCC to 9.3"
+
+	downgrade gcc=9.3.0
+	downgrade gcc-libs=9.3.0
+
 	print "Building glibc"
 
 	# checkout the correct revision if building inside travis
@@ -620,8 +625,8 @@ if [[ -z "$VIRTUAL_ENV" ]]; then
 		print "Need python2 version of pip in order to build Lind" >&2
 		false
 	fi
-	# install virtualenv modules - need to pin at 20.0.17 for now
-	if ! "$pip_bin" install -U --user virtualenv==20.0.17; then
+	# install virtualenv modules - need to pin at 20.0.23 for now
+	if ! "$pip_bin" install -U --user virtualenv==20.0.23; then
 		print "Need python virtualenv/virtualenv2 in order to build Lind" >&2
 		false
 	fi
