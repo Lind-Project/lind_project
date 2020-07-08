@@ -530,11 +530,6 @@ function build_glibc() {
 	fortune 2>/dev/null || print "Fortune Not Found. Skipping." >&2
 	print "" "Copying component.h header to glibc: "
 
-	print "Downgrading GCC to 9.3"
-
-	downgrade gcc=9.3.0
-	downgrade gcc-libs=9.3.0
-
 	print "Building glibc"
 
 	# checkout the correct revision if building inside travis
