@@ -53,6 +53,7 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 RUN pkgfile --update
 
 USER lind
+RUN pip2 install -U --user virtualenv==20.0.23
 
 WORKDIR /home/lind/
 RUN git config --global user.name "lind"

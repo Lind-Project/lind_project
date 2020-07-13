@@ -22,6 +22,7 @@ ENV PNACLPYTHON "python2"
 ENV LD_LIBRARY_PATH "/lib/glibc"
 
 USER lind
+RUN pip2 install -U --user virtualenv==20.0.23
 
 WORKDIR /home/lind/lind_project/
 RUN ./src/mklind -q glibc

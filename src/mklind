@@ -621,7 +621,7 @@ if [[ -z "$VIRTUAL_ENV" ]]; then
 		false
 	fi
 	# install virtualenv modules - need to pin at 20.0.23 for now
-	if ! "$pip_bin" install -U --user virtualenv==20.0.23; then
+        if [[ "$("$pip_bin" show virtualenv | grep Version\: | grep -o [0-9]*\\.[0-9]*\\.[0-9]*)" != '20.0.23' ]]; then
 		print "Need python virtualenv/virtualenv2 in order to build Lind" >&2
 		false
 	fi

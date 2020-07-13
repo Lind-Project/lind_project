@@ -24,6 +24,7 @@ ENV LD_LIBRARY_PATH "/lib/glibc"
 ENV TEST_CASES "cpuid dup2 dup exec fgets fork fork_simple getpid hello mprotec pipe read read_input segfault stat sysconf template write"
 
 USER lind
+RUN pip2 install -U --user virtualenv==20.0.23
 
 WORKDIR /home/lind/lind_project/
 RUN git pull -t -j8
