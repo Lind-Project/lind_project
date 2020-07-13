@@ -72,12 +72,10 @@ RUN ln -rsv "/home/lind/lind_project" "./"
 WORKDIR /root/build/
 RUN lesskey
 
-USER lind
 WORKDIR /home/lind/build/
 RUN git clone https://aur.archlinux.org/downgrade.git downgrade
 WORKDIR /home/lind/build/downgrade
 RUN makepkg --noconfirm -sci
-USER root
 RUN pacman -U *.pkg.tar.xz --noconfirm
 
 USER lind
