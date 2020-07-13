@@ -79,12 +79,20 @@ RUN makepkg --noconfirm -sci
 WORKDIR /home/lind/build/texinfo-4.13/
 RUN ./configure --prefix="/home/lind/.local" && make install
 
+WORKDIR /home/lind/build/
+RUN git clone https://aur.archlinux.org/downgrade.git downgrade
+WORKDIR /home/lind/build/downgrade
+RUN makepkg --noconfirm -sci
+
 USER root
+
+RUN pacman -U *.pkg.tar.xz --noconfirm
 
 WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/" "/var/cache/pacman/pkg/"
 RUN chown -Rc lind:lind .
 
+RUN yes | downgrade gcc=9.3.0 gcc-libs=9.3.0
 RUN pip2 install -U --user virtualenv==20.0.23
 
 CMD bash
