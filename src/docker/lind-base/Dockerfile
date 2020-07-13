@@ -74,6 +74,8 @@ RUN lesskey
 
 WORKDIR /home/lind/build/
 RUN git clone https://aur.archlinux.org/downgrade.git downgrade
+
+USER lind
 WORKDIR /home/lind/build/downgrade
 RUN makepkg --noconfirm -sci
 RUN pacman -U *.pkg.tar.xz --noconfirm
