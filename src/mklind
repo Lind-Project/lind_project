@@ -207,7 +207,7 @@ function clean_src() {
 function download_src() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
-	local pip_bin pip_ver nacl_rev
+	local nacl_rev
 	local -A git_deps toolchain_deps
 
 	# populate associative arrays
@@ -605,16 +605,7 @@ start_time="$(date +%s)"
 
 # start virtualenv if needed
 if [[ -z "$VIRTUAL_ENV" ]]; then
-	# find pip executable
-	if command -v pip2 >/dev/null 2>&1; then
-		pip_bin="pip2"
-	elif command -v pip >/dev/null 2>&1; then
-		pip_bin="pip"
-	else
-		print "Need to install pip/pip2 in order to build Lind" >&2
-		false
-	fi
-	# check pip version
+
 	pip_ver="$("$pip_bin" --version | sed 's/.*(python \([0-9\.]\+\)).*/\1/')"
 	if [[ "$pip_ver" != 2* ]]; then
 		print "Need python2 version of pip in order to build Lind" >&2
@@ -622,6 +613,7 @@ if [[ -z "$VIRTUAL_ENV" ]]; then
 	fi
 	# install virtualenv modules - need to pin at 20.0.23 for now
 	if ! "$pip_bin" install -U --user virtualenv==20.0.23; then
+        if [[ "$("$pip_bin" show virtualenv | grep Version\: | grep -o [0-9]*\\.[0-9]*\\.[0-9]*)" != '20.0.23' ]]; then
 		print "Need python virtualenv/virtualenv2 in order to build Lind" >&2
 		false
 	fi
