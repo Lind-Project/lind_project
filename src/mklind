@@ -207,7 +207,7 @@ function clean_src() {
 function download_src() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
-	local nacl_rev
+	local pip_bin pip_ver nacl_rev
 	local -A git_deps toolchain_deps
 
 	# populate associative arrays
