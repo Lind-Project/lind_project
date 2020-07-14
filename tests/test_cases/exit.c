@@ -5,10 +5,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int main()
+int main(void)
 {
 	puts("Exiting...\n");
-	printf("%i\n", exit(0));
+	exit(0);
 	perror("");
 	puts("exit() succeeded.");
 	return 0;
