@@ -10,6 +10,14 @@ services:
     volumes:
       - ./lind_project:/usr/lind_project
 
+  lind-glibc:
+    image: securesystemslab/lind:lind-glibc
+    build:
+      context: lind-glibc
+      dockerfile: Dockerfile
+    volumes:
+      - ./lind_project:/usr/lind_project
+
   lind-full:
     image: securesystemslab/lind:lind-full
     build:

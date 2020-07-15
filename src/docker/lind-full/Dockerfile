@@ -23,23 +23,9 @@ ENV LD_LIBRARY_PATH "/lib/glibc"
 
 ENV TEST_CASES "cpuid dup2 dup exec fgets fork fork_simple getpid hello mprotec pipe read read_input segfault stat sysconf template write"
 
-# download source files and make glibc
 USER lind
 
 WORKDIR /home/lind/lind_project
-RUN git checkout develop
-
-RUN ./src/mklind -q download
-
-RUN cowsay "Lind download complete."
-
-WORKDIR /tmp
-RUN ls
-
-WORKDIR /home/lind/lind_project
-RUN ./src/mklind -q glibc
-
-RUN cowsay "Glibc installed."
 
 # finish install
 RUN git pull -t -j8
