@@ -30,7 +30,16 @@ WORKDIR /home/lind/lind_project
 RUN git checkout develop
 
 RUN ./src/mklind -q download
+
+RUN cowsay "Lind download complete."
+
+WORKDIR /tmp
+RUN ls
+
+WORKDIR /home/lind/lind_project
 RUN ./src/mklind -q glibc
+
+RUN cowsay "Glibc installed."
 
 # finish install
 RUN git pull -t -j8
