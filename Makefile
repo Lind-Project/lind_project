@@ -37,7 +37,10 @@ list show:
 latest: | lind-full
 	docker build --cache-from=securesystemslab/lind:$| -t securesystemslab/lind:$@ ./src/docker/$|
 
-lind-full: | lind-base
+lind-full: | lind-glibc
+	docker build -t securesystemslab/lind:$@ ./src/docker/$@
+
+lind-glibc: | lind-base
 	docker build -t securesystemslab/lind:$@ ./src/docker/$@
 
 lind-base:
