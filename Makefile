@@ -1,6 +1,7 @@
 #
 # Makefile - Builds the Docker images and host SDK for Lind
 #
+# AUTHOR: Nicholas Renner <nrenner@nyu.com>
 # AUTHOR: Joey Pabalinas <alyptik@protonmail.com>
 
 # default target shows `select` menu
@@ -8,7 +9,7 @@ all lind:
 	@./src/mklind
 
 .PHONY: Makefile all lind run shell list show
-.PHONY: latest naclruntime prebuiltsdk base
+.PHONY: latest lind-full lind-base
 .PHONY: stack deploy pull clean prune
 
 # targets like `make nacl` and `make lind/nacl` run their respective `./ src/mklind -e nacl` command
@@ -33,16 +34,16 @@ list show:
 	@echo
 	docker container list -f label=lind -a
 
-latest: | naclruntime
+latest: | lind-full
 	docker build --cache-from=securesystemslab/lind:$| -t securesystemslab/lind:$@ ./src/docker/$|
 
-naclruntime: | prebuiltsdk
+lind-full: | lind-glibc
 	docker build -t securesystemslab/lind:$@ ./src/docker/$@
 
-prebuiltsdk: | base
+lind-glibc: | lind-base
 	docker build -t securesystemslab/lind:$@ ./src/docker/$@
 
-base:
+lind-base:
 	docker build -t securesystemslab/lind:$@ ./src/docker/$@
 
 stack deploy:
