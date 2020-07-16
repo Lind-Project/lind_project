@@ -1,6 +1,6 @@
-FROM securesystemslab/lind:prebuiltsdk
+FROM securesystemslab/lind:lind-glibc
 LABEL lind "v1.0-rc5"
-LABEL description "Lind NaCl Runtime (Pre-built)"
+LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
 
 ARG BRANCH
@@ -25,11 +25,15 @@ ENV TEST_CASES "cpuid dup2 dup exec fgets fork fork_simple getpid hello mprotec 
 
 USER lind
 
-WORKDIR /home/lind/lind_project/
+WORKDIR /home/lind/lind_project
+
+# finish install
 RUN git pull -t -j8
 RUN for t in nacl repy install; do ./src/mklind -q "$t"; done
+# make tests
 RUN mkdir -p lind/repy/repy/tests
 RUN for c in $TEST_CASES; do x86_64-nacl-gcc -std=c99 "tests/test_cases/$c.c" -o "lind/repy/repy/tests/$c"; done
+# make bash
 WORKDIR /home/lind/lind_project/tests/applications/bash/
 RUN ./bootstrap_nacl --prefix="/home/lind/lind_project/lind/repy/repy"
 RUN make install
@@ -47,3 +51,4 @@ RUN script -qfc "$(printf '%q ' lind /bin/bash --version)" /dev/null
 
 # default to running test cases then a shell if no arguments are passed to `docker run`
 CMD bash -c 'for f in $TEST_CASES; do lind /tests/$f; done; lind /bin/bash --version; exec bash'
+
