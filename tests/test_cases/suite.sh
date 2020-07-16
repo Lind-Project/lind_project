@@ -59,14 +59,16 @@ for var in "${nondeterministicinput[@]}"; do
     varnonexe="${var%.*}";
     exec 3>&2
     exec 2> /dev/null
-    lindoutput=$(lind "/tests/test_cases/test_out/$nexefile");
+    lindoutput="$(lind "/tests/test_cases/test_out/$nexefile")";
     exec 2>&3
     echo "------------------------------------------------------------------"
-    echo "lindoutput"
+    echo "lindoutput:"
     echo "$lindoutput"
-    regularoutput=$(./test_out/$varnonexe)
+    regularoutput="$(./test_out/$varnonexe)";
+    echo "------------------------------------------------------------------"
     echo "regularoutput"
     echo "$regularoutput"
+    echo "------------------------------------------------------------------"
     echo "Does lindoutput fit regular expression modified regularoutput?"
     python2 "${var%.*}.py" "$lindoutput" "$regularoutput"
     if [  "$?" != 0 ]; then
