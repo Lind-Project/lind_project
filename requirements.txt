@@ -1,2 +1,2 @@
-gclient>=0.7.2
-scons>=3.0.1
+gclient==0.7.2
+scons==3.1.2
