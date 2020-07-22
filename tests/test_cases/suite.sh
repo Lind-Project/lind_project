@@ -38,7 +38,6 @@ echo "Copying test cases"
 lindfs cp $PWD/test_out/ &> /dev/null
 
 echo "Executing deterministic test cases"
-echo "------------------------------------------------------------------"
 for var in "${deterministicinput[@]}"; do
     echo "------------------------------------------------------------------"
     echo "Running test: $var"
