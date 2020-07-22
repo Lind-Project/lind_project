@@ -1,9 +1,15 @@
 mkdir -p test_out
 deterministicinput=()
 nondeterministicinput=()
+verbose=false
+nondetfails=0
+detfails=0
+
 declare -n arglist='nondeterministicinput'
 for var in "$@"; do
     case "$var" in
+        -v)
+            verbose=true
         -d)
             declare -n arglist='deterministicinput';;
         -*)
@@ -39,17 +45,24 @@ for var in "${deterministicinput[@]}"; do
     lindoutput=$(lind "/tests/test_cases/test_out/$nexefile");
     exec 2>&3
     echo "------------------------------------------------------------------"
-    echo "lindoutput"
-    echo "$lindoutput"
-    regularoutput=$(./test_out/$varnonexe)
-    echo "regularoutput"
-    echo "$regularoutput"
-    echo "Does lindoutput == regularoutput?"
+    echo "Running test: $var"
+
+
+    if [ "$verbose" = true ] ; then
+        echo "lindoutput"
+        echo "$lindoutput"
+        regularoutput=$(./test_out/$varnonexe)
+        echo "regularoutput"
+        echo "$regularoutput"
+        echo "Does lindoutput == regularoutput?"
+    fi
+
     if [[ "$lindoutput" = "$regularoutput" ]]; then
         echo TEST PASSED;
     else 
         echo TEST FAILED; 
         error=1;
+        detfails=$((detfails+1))
     fi;
 done
 echo "------------------------------------------------------------------"
@@ -61,21 +74,41 @@ for var in "${nondeterministicinput[@]}"; do
     exec 2> /dev/null
     lindoutput="$(lind "/tests/test_cases/test_out/$nexefile")";
     exec 2>&3
+
     echo "------------------------------------------------------------------"
-    echo "lindoutput:"
-    echo "$lindoutput"
-    regularoutput="$(./test_out/$varnonexe)";
-    echo "------------------------------------------------------------------"
-    echo "regularoutput"
-    echo "$regularoutput"
-    echo "------------------------------------------------------------------"
-    echo "Does lindoutput fit to regularoutput in script?"
-    python2 "${var%.*}.py" "$lindoutput" "$regularoutput"
-    if [  "$?" != 0 ]; then
-        error=1
+    echo "Running test: $var"
+
+
+    if [ "$verbose" = true ] ; then
+        echo "lindoutput:"
+        echo "$lindoutput"
+        regularoutput="$(./test_out/$varnonexe)";
+        echo "------------------------------------------------------------------"
+        echo "regularoutput"
+        echo "$regularoutput"
+        echo "------------------------------------------------------------------"
+        echo "Does lindoutput fit to regularoutput in script?"
     fi
+
+
+    python2 "${var%.*}.py" "$lindoutput" "$regularoutput"
+    if [  "$?" == 0 ]; then
+        echo TEST PASSED;
+    else 
+        echo TEST FAILED; 
+        error=1;
+        nondetfails=$((nondetfails+1))
+
+    fi;
 done
 
 rm ./test_out/*
 lindfs deltree "/tests/test_cases/test_out"
+
+    if [  "$error" == 0 ]; then
+        echo "All tests passed.";
+    else 
+        echo "Some tests have failed."; 
+        echo "$detfails deterministic tests and $nondetfails non-deterministic tests have failed."
+    fi;
 exit $error
