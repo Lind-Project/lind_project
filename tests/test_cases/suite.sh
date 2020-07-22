@@ -46,8 +46,8 @@ for var in "${deterministicinput[@]}"; do
     exec 3>&2
     exec 2> /dev/null
     lindoutput=$(lind "/tests/test_cases/test_out/$nexefile");
-    exec 2>&3
     regularoutput=$(./test_out/$varnonexe)
+    exec 2>&3
 
     if [ "$verbose" = true ] ; then
         echo "lindoutput"
@@ -76,8 +76,8 @@ for var in "${nondeterministicinput[@]}"; do
     exec 3>&2
     exec 2> /dev/null
     lindoutput="$(lind "/tests/test_cases/test_out/$nexefile")";
-    exec 2>&3
     regularoutput="$(./test_out/$varnonexe)";
+    exec 2>&3
 
     if [ "$verbose" = true ] ; then
         echo "lindoutput:"
