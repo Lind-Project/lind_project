@@ -38,20 +38,19 @@ lindfs cp $PWD/test_out/
 echo "Executing deterministic test cases"
 echo "------------------------------------------------------------------"
 for var in "${deterministicinput[@]}"; do
+    echo "------------------------------------------------------------------"
+    echo "Running test: $var"
     nexefile="${var%.*}.nexe";
     varnonexe="${var%.*}";
     exec 3>&2
     exec 2> /dev/null
     lindoutput=$(lind "/tests/test_cases/test_out/$nexefile");
     exec 2>&3
-    echo "------------------------------------------------------------------"
-    echo "Running test: $var"
-
+    regularoutput=$(./test_out/$varnonexe)
 
     if [ "$verbose" = true ] ; then
         echo "lindoutput"
         echo "$lindoutput"
-        regularoutput=$(./test_out/$varnonexe)
         echo "regularoutput"
         echo "$regularoutput"
         echo "Does lindoutput == regularoutput?"
@@ -68,21 +67,20 @@ done
 echo "------------------------------------------------------------------"
 echo "Executing nondeterministic test cases"
 for var in "${nondeterministicinput[@]}"; do
+    echo "------------------------------------------------------------------"
+    echo "Running test: $var"
+
     nexefile="${var%.*}.nexe";
     varnonexe="${var%.*}";
     exec 3>&2
     exec 2> /dev/null
     lindoutput="$(lind "/tests/test_cases/test_out/$nexefile")";
     exec 2>&3
-
-    echo "------------------------------------------------------------------"
-    echo "Running test: $var"
-
+    regularoutput="$(./test_out/$varnonexe)";
 
     if [ "$verbose" = true ] ; then
         echo "lindoutput:"
         echo "$lindoutput"
-        regularoutput="$(./test_out/$varnonexe)";
         echo "------------------------------------------------------------------"
         echo "regularoutput"
         echo "$regularoutput"
@@ -102,13 +100,16 @@ for var in "${nondeterministicinput[@]}"; do
     fi;
 done
 
-rm ./test_out/*
-lindfs deltree "/tests/test_cases/test_out"
+rm ./test_out/* &> /dev/null
+lindfs deltree "/tests/test_cases/test_out" &> /dev/null
 
-    if [  "$error" == 0 ]; then
-        echo "All tests passed.";
-    else 
-        echo "Some tests have failed."; 
-        echo "$detfails deterministic tests and $nondetfails non-deterministic tests have failed."
-    fi;
+echo "------------------------------------------------------------------"
+
+if [  "$error" == 0 ]; then
+    echo "All tests passed.";
+else 
+    echo "Some tests have failed."; 
+    echo "$detfails deterministic tests and $nondetfails non-deterministic tests have failed."
+fi;
+
 exit $error
