@@ -9,7 +9,7 @@ declare -n arglist='nondeterministicinput'
 for var in "$@"; do
     case "$var" in
         -v)
-            verbose=true
+            verbose=true;;
         -d)
             declare -n arglist='deterministicinput';;
         -*)
