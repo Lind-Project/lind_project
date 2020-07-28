@@ -94,7 +94,7 @@ main:
 	movl	$1, %edi
 	call	exit
 	.align 32
-.L10
+.L10:
 	jmp	*%r12
 .L4:
 	call	getpid
