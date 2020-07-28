@@ -2,18 +2,26 @@ version: "3.6"
 
 services:
 
-  base:
-    image: securesystemslab/lind:base
+  lind-base:
+    image: securesystemslab/lind:lind-base
     build:
-      context: base
+      context: lind-base
       dockerfile: Dockerfile
     volumes:
       - ./lind_project:/usr/lind_project
 
-  prebuiltsdk:
-    image: securesystemslab/lind:prebuiltsdk
+  lind-glibc:
+    image: securesystemslab/lind:lind-glibc
     build:
-      context: prebuiltsdk
+      context: lind-glibc
+      dockerfile: Dockerfile
+    volumes:
+      - ./lind_project:/usr/lind_project
+
+  lind-full:
+    image: securesystemslab/lind:lind-full
+    build:
+      context: lind-full
       dockerfile: Dockerfile
     volumes:
       - ./lind_project:/usr/lind_project
@@ -23,7 +31,7 @@ services:
     volumes:
       - ./lind_project:/usr/lind_project
     build:
-      context: prebuiltsdk
+      context: lind-full
       dockerfile: Dockerfile
       cache_from:
-        - securesystemslab/lind:prebuiltsdk
+        - securesystemslab/lind:lind-full

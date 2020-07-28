@@ -72,6 +72,15 @@ RUN ln -rsv "/home/lind/lind_project" "./"
 WORKDIR /root/build/
 RUN lesskey
 
+
+USER lind
+WORKDIR /home/lind/build/
+RUN git clone https://aur.archlinux.org/downgrade.git downgrade
+WORKDIR /home/lind/build/downgrade
+RUN makepkg --noconfirm -sci
+USER root
+RUN pacman -U *.pkg.tar.xz --noconfirm
+
 USER lind
 
 WORKDIR /home/lind/build/make-3.82/
@@ -81,14 +90,12 @@ RUN ./configure --prefix="/home/lind/.local" && make install
 
 USER root
 
+
 WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/" "/var/cache/pacman/pkg/"
 RUN chown -Rc lind:lind .
 
-USER lind
-
-WORKDIR /home/lind/lind_project
-RUN git checkout develop
-RUN ./src/mklind -q download
+RUN yes | downgrade gcc=9.3.0 gcc-libs=9.3.0
+RUN pip2 install -U --user virtualenv==20.0.23
 
 CMD bash
