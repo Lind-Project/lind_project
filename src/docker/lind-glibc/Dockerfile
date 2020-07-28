@@ -1,4 +1,4 @@
-FROM securesystemslab/lind:base
+FROM securesystemslab/lind:lind-base
 LABEL lind "v1.0-rc5"
 LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
@@ -21,9 +21,21 @@ ENV PYTHON "python2"
 ENV PNACLPYTHON "python2"
 ENV LD_LIBRARY_PATH "/lib/glibc"
 
+# download source files and make glibc
 USER lind
 
-WORKDIR /home/lind/lind_project/
+WORKDIR /home/lind/lind_project
+RUN git checkout develop
+
+RUN ./src/mklind -q download
+
+RUN echo "Lind download complete."
+
+RUN fortune
+
+WORKDIR /home/lind/lind_project
 RUN ./src/mklind -q glibc
 
-CMD bash
+RUN echo "Glibc installed."
+
+
