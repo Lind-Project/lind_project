@@ -52,6 +52,12 @@ stack deploy:
 pull:
 	docker pull securesystemslab/lind
 
+test: 
+	cd tests/test_cases && bash suite.sh nondet.txt -d dettests.txt
+
+test-verbose: 
+	cd tests/test_cases && bash suite.sh nondet.txt -d dettests.txt -v
+
 clean:
 	@$(MAKE) cleanall
 

@@ -52,3 +52,5 @@ RUN script -qfc "$(printf '%q ' lind /bin/bash --version)" /dev/null
 # default to running test cases then a shell if no arguments are passed to `docker run`
 CMD bash -c 'for f in $TEST_CASES; do lind /tests/$f; done; lind /bin/bash --version; exec bash'
 
+WORKDIR /home/lind/lind_project/
+
