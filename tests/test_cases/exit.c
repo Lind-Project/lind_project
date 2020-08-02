@@ -9,7 +9,5 @@ int main(void)
 {
 	puts("Exiting...\n");
 	exit(0);
-	perror("");
-	puts("exit() succeeded.");
 	return 0;
 }
