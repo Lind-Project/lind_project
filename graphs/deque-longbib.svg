@@ -1,6 +1,6 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" width="1200" height="198" onload="init(evt)" viewBox="0 0 1200 198" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg version="1.1" width="1200" height="182" onload="init(evt)" viewBox="0 0 1200 182" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
 <!-- NOTES:  -->
 <defs>
@@ -364,77 +364,45 @@
 	}
 ]]>
 </script>
-<rect x="0.0" y="0" width="1200.0" height="198.0" fill="url(#background)"  />
+<rect x="0.0" y="0" width="1200.0" height="182.0" fill="url(#background)"  />
 <text id="title" x="600.00" y="24" >Flame Graph</text>
-<text id="details" x="10.00" y="181" > </text>
+<text id="details" x="10.00" y="165" > </text>
 <text id="unzoom" x="10.00" y="24" class="hide">Reset Zoom</text>
 <text id="search" x="1090.00" y="24" >Search</text>
 <text id="ignorecase" x="1174.00" y="24" >ic</text>
-<text id="matched" x="1090.00" y="181" > </text>
+<text id="matched" x="1090.00" y="165" > </text>
 <g id="frames">
 <g >
-<title>MainThread`main (137 samples, 99.28%)</title><rect x="10.0" y="101" width="1171.4" height="15.0" fill="rgb(235,57,2)" rx="2" ry="2" />
-<text  x="13.00" y="111.5" >MainThread`main</text>
+<title>MainThread`wait (1 samples, 0.17%)</title><rect x="1188.0" y="53" width="2.0" height="15.0" fill="rgb(254,110,34)" rx="2" ry="2" />
+<text  x="1191.00" y="63.5" ></text>
 </g>
 <g >
-<title>MainThread`&lt;module&gt; (137 samples, 99.28%)</title><rect x="10.0" y="117" width="1171.4" height="15.0" fill="rgb(232,129,8)" rx="2" ry="2" />
-<text  x="13.00" y="127.5" >MainThread`&lt;module&gt;</text>
+<title>MainThread`&lt;module&gt; (588 samples, 99.83%)</title><rect x="10.0" y="69" width="1178.0" height="15.0" fill="rgb(235,65,15)" rx="2" ry="2" />
+<text  x="13.00" y="79.5" >MainThread`&lt;module&gt;</text>
 </g>
 <g >
-<title>MainThread`start (1 samples, 0.72%)</title><rect x="1172.9" y="85" width="8.5" height="15.0" fill="rgb(210,68,43)" rx="2" ry="2" />
-<text  x="1175.90" y="95.5" ></text>
+<title>all (589 samples, 100%)</title><rect x="10.0" y="133" width="1180.0" height="15.0" fill="rgb(237,150,48)" rx="2" ry="2" />
+<text  x="13.00" y="143.5" ></text>
 </g>
 <g >
-<title>MainThread`wait (1 samples, 0.72%)</title><rect x="1164.3" y="37" width="8.6" height="15.0" fill="rgb(243,38,37)" rx="2" ry="2" />
-<text  x="1167.35" y="47.5" ></text>
+<title>MainThread`main (589 samples, 100.00%)</title><rect x="10.0" y="85" width="1180.0" height="15.0" fill="rgb(249,157,18)" rx="2" ry="2" />
+<text  x="13.00" y="95.5" >MainThread`main</text>
 </g>
 <g >
-<title>MainThread`start (1 samples, 0.72%)</title><rect x="1164.3" y="69" width="8.6" height="15.0" fill="rgb(221,11,10)" rx="2" ry="2" />
-<text  x="1167.35" y="79.5" ></text>
+<title>MainThread`wait (1 samples, 0.17%)</title><rect x="1188.0" y="37" width="2.0" height="15.0" fill="rgb(252,135,39)" rx="2" ry="2" />
+<text  x="1191.00" y="47.5" ></text>
 </g>
 <g >
-<title>MainThread`&lt;module&gt; (136 samples, 98.55%)</title><rect x="10.0" y="85" width="1162.9" height="15.0" fill="rgb(223,188,5)" rx="2" ry="2" />
-<text  x="13.00" y="95.5" >MainThread`&lt;module&gt;</text>
+<title>MainThread`_run_code (589 samples, 100.00%)</title><rect x="10.0" y="117" width="1180.0" height="15.0" fill="rgb(253,129,6)" rx="2" ry="2" />
+<text  x="13.00" y="127.5" >MainThread`_run_code</text>
 </g>
 <g >
-<title>MainThread`wait (1 samples, 0.72%)</title><rect x="1172.9" y="53" width="8.5" height="15.0" fill="rgb(234,115,48)" rx="2" ry="2" />
-<text  x="1175.90" y="63.5" ></text>
+<title>MainThread`start (1 samples, 0.17%)</title><rect x="1188.0" y="69" width="2.0" height="15.0" fill="rgb(207,33,52)" rx="2" ry="2" />
+<text  x="1191.00" y="79.5" ></text>
 </g>
 <g >
-<title>MainThread`wait (1 samples, 0.72%)</title><rect x="1164.3" y="53" width="8.6" height="15.0" fill="rgb(236,184,29)" rx="2" ry="2" />
-<text  x="1167.35" y="63.5" ></text>
-</g>
-<g >
-<title>Thread-1`run (1 samples, 0.72%)</title><rect x="1181.4" y="117" width="8.6" height="15.0" fill="rgb(206,175,13)" rx="2" ry="2" />
-<text  x="1184.45" y="127.5" ></text>
-</g>
-<g >
-<title>Thread-1`_write_to_pipe (1 samples, 0.72%)</title><rect x="1181.4" y="85" width="8.6" height="15.0" fill="rgb(247,129,14)" rx="2" ry="2" />
-<text  x="1184.45" y="95.5" ></text>
-</g>
-<g >
-<title>MainThread`_run_code (137 samples, 99.28%)</title><rect x="10.0" y="133" width="1171.4" height="15.0" fill="rgb(230,168,46)" rx="2" ry="2" />
-<text  x="13.00" y="143.5" >MainThread`_run_code</text>
-</g>
-<g >
-<title>Thread-1`writeWrapper (1 samples, 0.72%)</title><rect x="1181.4" y="101" width="8.6" height="15.0" fill="rgb(241,16,24)" rx="2" ry="2" />
-<text  x="1184.45" y="111.5" ></text>
-</g>
-<g >
-<title>Thread-1`acquire (1 samples, 0.72%)</title><rect x="1181.4" y="69" width="8.6" height="15.0" fill="rgb(219,95,11)" rx="2" ry="2" />
-<text  x="1184.45" y="79.5" ></text>
-</g>
-<g >
-<title>MainThread`wait (1 samples, 0.72%)</title><rect x="1172.9" y="69" width="8.5" height="15.0" fill="rgb(231,65,2)" rx="2" ry="2" />
-<text  x="1175.90" y="79.5" ></text>
-</g>
-<g >
-<title>Thread-1`__bootstrap_inner (1 samples, 0.72%)</title><rect x="1181.4" y="133" width="8.6" height="15.0" fill="rgb(214,51,10)" rx="2" ry="2" />
-<text  x="1184.45" y="143.5" ></text>
-</g>
-<g >
-<title>all (138 samples, 100%)</title><rect x="10.0" y="149" width="1180.0" height="15.0" fill="rgb(231,61,0)" rx="2" ry="2" />
-<text  x="13.00" y="159.5" ></text>
+<title>MainThread`&lt;module&gt; (589 samples, 100.00%)</title><rect x="10.0" y="101" width="1180.0" height="15.0" fill="rgb(235,6,1)" rx="2" ry="2" />
+<text  x="13.00" y="111.5" >MainThread`&lt;module&gt;</text>
 </g>
 </g>
 </svg>
