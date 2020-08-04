@@ -1,4 +1,4 @@
-FROM securesystemslab/lind:lind-base
+FROM securesystemslab/lind:lind-glibc
 LABEL lind "v1.0-rc5"
 LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
@@ -23,14 +23,9 @@ ENV LD_LIBRARY_PATH "/lib/glibc"
 
 ENV TEST_CASES "cpuid dup2 dup exec fgets fork fork_simple getpid hello mprotec pipe read read_input segfault stat sysconf template write"
 
-# download source files and make glibc
 USER lind
 
 WORKDIR /home/lind/lind_project
-RUN git checkout develop
-
-RUN ./src/mklind -q download
-RUN ./src/mklind -q glibc
 
 # finish install
 RUN git pull -t -j8
@@ -56,4 +51,6 @@ RUN script -qfc "$(printf '%q ' lind /bin/bash --version)" /dev/null
 
 # default to running test cases then a shell if no arguments are passed to `docker run`
 CMD bash -c 'for f in $TEST_CASES; do lind /tests/$f; done; lind /bin/bash --version; exec bash'
+
+WORKDIR /home/lind/lind_project/
 

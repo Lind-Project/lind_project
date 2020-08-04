@@ -4,6 +4,7 @@
 #
 # Created by Chris Matthews <cmatthew@cs.uvic.ca>
 # Updated by Joey Pabalinas <joeypabalinas@gmail.com>
+# Updated by Nicholas Renner <nrenner@nyu.edu>
 
 # version and usage strings
 cd ..
@@ -207,7 +208,7 @@ function clean_src() {
 function download_src() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
-	local nacl_rev
+	local pip_bin pip_ver nacl_rev
 	local -A git_deps toolchain_deps
 
 	# populate associative arrays
@@ -525,7 +526,7 @@ function clean_nacl() {
 function build_glibc() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
-	# the build is long and borning, so execute this first if it exists
+	# the build is long and boring, so execute this first if it exists
 	print ""
 	fortune 2>/dev/null || print "Fortune Not Found. Skipping." >&2
 	print "" "Copying component.h header to glibc: "
