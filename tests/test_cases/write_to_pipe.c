@@ -26,9 +26,5 @@ int main()
     int msec = difference * 1000 / CLOCKS_PER_SEC;
 
     fprintf(stderr, "write msec: %d ms\n", msec);
-
-
-    close(1);
-    close(2);
-    
 }
+

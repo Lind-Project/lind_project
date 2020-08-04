@@ -27,9 +27,6 @@ int main()
 
     fprintf(stderr, "read msec: %d ms\n", msec);
 
-    // printf("%s\n", buffer);
-
-    close(0);
-
     
 }
+
