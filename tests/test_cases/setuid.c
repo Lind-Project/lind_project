@@ -8,7 +8,9 @@
 
 int main() 
 {
-	printf("Setting uid to 1000...\n");
-	printf("setuid() succeeded? %d\n", setuid(1000));
+	printf("#1 Setting uid to 1000...\n");
+	printf("#1 setuid() succeeded? %d\n", setuid(1000));
+	printf("#2 Setting uid to 1000...\n");
+	printf("#2 setuid() succeeded? %d\n", setuid(1000));
 	return 0;
 }

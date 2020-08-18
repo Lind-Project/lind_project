@@ -8,7 +8,9 @@
 
 int main() 
 {
-	printf("Setting gid to 1000...\n");
-	printf("setgid() succeeded? %d\n", setgid(1000));
+	printf("#1 Setting gid to 1000...\n");
+	printf("#1 setgid() succeeded? %d\n", setgid(1000));
+	printf("#2 Setting gid to 1000...\n");
+	printf("#2 setgid() succeeded? %d\n", setgid(1000));
 	return 0;
 }
