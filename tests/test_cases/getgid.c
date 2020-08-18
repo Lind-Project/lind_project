@@ -8,15 +8,11 @@
 
 int main(void)
 {
-	puts("Printing gid: ");
-	printf("%d\n", getgid());
-	perror("");
-	puts("getgid() succeeded.");
+	printf("#1 Printing gid: %d\n", getgid());
+	printf("#2 Printing gid: %d\n", getgid());
 
-    puts("Printing effective gid: ");
-    printf("%d\n", getegid());
-	perror("");
-	puts("getegid() succeeded.");
+	printf("#1 Printing egid: %d\n", getegid());
+	printf("#2 Printing egid: %d\n", getegid());
 
 	return 0;
 }

@@ -6,17 +6,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-int main() 
+int main(void)
 {
-	puts("Printing uid: ");
-	printf("%d\n", getuid());
-	perror("");
-	puts("getuid() succeeded.");
+	printf("#1 Printing uid: %d\n", getuid());
+	printf("#2 Printing uid: %d\n", getuid());
 
-    puts("Printing effective uid: ");
-    printf("%d\n", geteuid());
-	perror("");
-	puts("geteuid() succeeded.");
+	printf("#1 Printing euid: %d\n", geteuid());
+	printf("#2 Printing euid: %d\n", geteuid());
 
 	return 0;
 }
