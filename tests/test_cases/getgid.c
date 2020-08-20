@@ -13,6 +13,7 @@ int main(void)
 
 	printf("#1 Printing egid: %d\n", getegid());
 	printf("#2 Printing egid: %d\n", getegid());
+	printf("#3 Printing egid: %d\n", getegid());
 
 	return 0;
 }
