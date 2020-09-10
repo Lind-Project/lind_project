@@ -1,0 +1,419 @@
+<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg version="1.1" width="1200" height="246" onload="init(evt)" viewBox="0 0 1200 246" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><!--Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples.--><!--NOTES: --><defs><linearGradient id="background" y1="0" y2="1" x1="0" x2="0"><stop stop-color="#eeeeee" offset="5%"/><stop stop-color="#eeeeb0" offset="95%"/></linearGradient></defs><style type="text/css">
+text { font-family:"Verdana"; font-size:12px; fill:rgb(0,0,0); }
+#title { text-anchor:middle; font-size:17px; }
+#search { opacity:0.1; cursor:pointer; }
+#search:hover, #search.show { opacity:1; }
+#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+#unzoom { cursor:pointer; }
+#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+.hide { display:none; }
+.parent { opacity:0.5; }
+</style><script type="text/ecmascript"><![CDATA[var nametype = 'Function:';
+var fontsize = 12;
+var fontwidth = 0.59;
+var xpad = 10;
+var inverted = true;
+var searchcolor = 'rgb(230,0,230)';
+var fluiddrawing = true;
+var truncate_text_right = false;]]><![CDATA["use strict";
+var details, searchbtn, unzoombtn, matchedtxt, svg, searching, frames;
+function init(evt) {
+    details = document.getElementById("details").firstChild;
+    searchbtn = document.getElementById("search");
+    unzoombtn = document.getElementById("unzoom");
+    matchedtxt = document.getElementById("matched");
+    svg = document.getElementsByTagName("svg")[0];
+    frames = document.getElementById("frames");
+    searching = 0;
+
+    // Use GET parameters to restore a flamegraph's state.
+    var restore_state = function() {
+        var params = get_params();
+        if (params.x && params.y)
+            zoom(find_group(document.querySelector('[x="' + params.x + '"][y="' + params.y + '"]')));
+        if (params.s)
+            search(params.s);
+    };
+
+    if (fluiddrawing) {
+        // Make width dynamic so the SVG fits its parent's width.
+        svg.removeAttribute("width");
+        // Edge requires us to have a viewBox that gets updated with size changes.
+        var isEdge = /Edge\/\d./i.test(navigator.userAgent);
+        if (!isEdge) {
+          svg.removeAttribute("viewBox");
+        }
+        var update_for_width_change = function() {
+            if (isEdge) {
+                svg.attributes.viewBox.value = "0 0 " + svg.width.baseVal.value + " " + svg.height.baseVal.value;
+            }
+
+            // Keep consistent padding on left and right of frames container.
+            frames.attributes.width.value = svg.width.baseVal.value - xpad * 2;
+
+            // Text truncation needs to be adjusted for the current width.
+            var el = frames.children;
+            for(var i = 0; i < el.length; i++) {
+                update_text(el[i]);
+            }
+
+            // Keep search elements at a fixed distance from right edge.
+            var svgWidth = svg.width.baseVal.value;
+            searchbtn.attributes.x.value = svgWidth - xpad - 100;
+            matchedtxt.attributes.x.value = svgWidth - xpad - 100;
+        };
+        window.addEventListener('resize', function() {
+            update_for_width_change();
+        });
+        // This needs to be done asynchronously for Safari to work.
+        setTimeout(function() {
+            unzoom();
+            update_for_width_change();
+            restore_state();
+        }, 0);
+    } else {
+        restore_state();
+    }
+}
+// event listeners
+window.addEventListener("click", function(e) {
+    var target = find_group(e.target);
+    if (target) {
+        if (target.nodeName == "a") {
+            if (e.ctrlKey === false) return;
+            e.preventDefault();
+        }
+        if (target.classList.contains("parent")) unzoom();
+        zoom(target);
+
+        // set parameters for zoom state
+        var el = target.querySelector("rect");
+        if (el && el.attributes && el.attributes.y && el.attributes._orig_x) {
+            var params = get_params()
+            params.x = el.attributes._orig_x.value;
+            params.y = el.attributes.y.value;
+            history.replaceState(null, null, parse_params(params));
+        }
+    }
+    else if (e.target.id == "unzoom") {
+        unzoom();
+
+        // remove zoom state
+        var params = get_params();
+        if (params.x) delete params.x;
+        if (params.y) delete params.y;
+        history.replaceState(null, null, parse_params(params));
+    }
+    else if (e.target.id == "search") search_prompt();
+}, false)
+// mouse-over for info
+// show
+window.addEventListener("mouseover", function(e) {
+    var target = find_group(e.target);
+    if (target) details.nodeValue = nametype + " " + g_to_text(target);
+}, false)
+// clear
+window.addEventListener("mouseout", function(e) {
+    var target = find_group(e.target);
+    if (target) details.nodeValue = ' ';
+}, false)
+// ctrl-F for search
+window.addEventListener("keydown",function (e) {
+    if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+        e.preventDefault();
+        search_prompt();
+    }
+}, false)
+// functions
+function get_params() {
+    var params = {};
+    var paramsarr = window.location.search.substr(1).split('&');
+    for (var i = 0; i < paramsarr.length; ++i) {
+        var tmp = paramsarr[i].split("=");
+        if (!tmp[0] || !tmp[1]) continue;
+        params[tmp[0]]  = decodeURIComponent(tmp[1]);
+    }
+    return params;
+}
+function parse_params(params) {
+    var uri = "?";
+    for (var key in params) {
+        uri += key + '=' + encodeURIComponent(params[key]) + '&';
+    }
+    if (uri.slice(-1) == "&")
+        uri = uri.substring(0, uri.length - 1);
+    if (uri == '?')
+        uri = window.location.href.split('?')[0];
+    return uri;
+}
+function find_child(node, selector) {
+    var children = node.querySelectorAll(selector);
+    if (children.length) return children[0];
+    return;
+}
+function find_group(node) {
+    var parent = node.parentElement;
+    if (!parent) return;
+    if (parent.id == "frames") return node;
+    return find_group(parent);
+}
+function orig_save(e, attr, val) {
+    if (e.attributes["_orig_" + attr] != undefined) return;
+    if (e.attributes[attr] == undefined) return;
+    if (val == undefined) val = e.attributes[attr].value;
+    e.setAttribute("_orig_" + attr, val);
+}
+function orig_load(e, attr) {
+    if (e.attributes["_orig_"+attr] == undefined) return;
+    e.attributes[attr].value = e.attributes["_orig_" + attr].value;
+    e.removeAttribute("_orig_" + attr);
+}
+function g_to_text(e) {
+    var text = find_child(e, "title").firstChild.nodeValue;
+    return (text)
+}
+function g_to_func(e) {
+    var func = g_to_text(e);
+    // if there's any manipulation we want to do to the function
+    // name before it's searched, do it here before returning.
+    return (func);
+}
+function update_text(e) {
+    var r = find_child(e, "rect");
+    var t = find_child(e, "text");
+    var w = parseFloat(r.attributes.width.value) * frames.attributes.width.value / 100 - 3;
+    var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+    t.attributes.x.value = format_percent((parseFloat(r.attributes.x.value) + (100 * 3 / frames.attributes.width.value)));
+    // Smaller than this size won't fit anything
+    if (w < 2 * fontsize * fontwidth) {
+        t.textContent = "";
+        return;
+    }
+    t.textContent = txt;
+    // Fit in full text width
+    if (/^ *\$/.test(txt) || t.getComputedTextLength() < w)
+        return;
+    if (truncate_text_right) {
+        // Truncate the right side of the text.
+        for (var x = txt.length - 2; x > 0; x--) {
+            if (t.getSubStringLength(0, x + 2) <= w) {
+                t.textContent = txt.substring(0, x) + "..";
+                return;
+            }
+        }
+    } else {
+        // Truncate the left side of the text.
+        for (var x = 2; x < txt.length; x++) {
+            if (t.getSubStringLength(x - 2, txt.length) <= w) {
+                t.textContent = ".." + txt.substring(x, txt.length);
+                return;
+            }
+        }
+    }
+    t.textContent = "";
+}
+// zoom
+function zoom_reset(e) {
+    if (e.attributes != undefined) {
+        orig_load(e, "x");
+        orig_load(e, "width");
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_reset(c[i]);
+    }
+}
+function zoom_child(e, x, ratio) {
+    if (e.attributes != undefined) {
+        if (e.attributes.x != undefined) {
+            orig_save(e, "x");
+            e.attributes.x.value = format_percent((parseFloat(e.attributes.x.value) - x) * ratio);
+            if (e.tagName == "text") {
+                e.attributes.x.value = format_percent(parseFloat(find_child(e.parentNode, "rect[x]").attributes.x.value) + (100 * 3 / frames.attributes.width.value));
+            }
+        }
+        if (e.attributes.width != undefined) {
+            orig_save(e, "width");
+            e.attributes.width.value = format_percent(parseFloat(e.attributes.width.value) * ratio);
+        }
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_child(c[i], x, ratio);
+    }
+}
+function zoom_parent(e) {
+    if (e.attributes) {
+        if (e.attributes.x != undefined) {
+            orig_save(e, "x");
+            e.attributes.x.value = "0.0%";
+        }
+        if (e.attributes.width != undefined) {
+            orig_save(e, "width");
+            e.attributes.width.value = "100.0%";
+        }
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_parent(c[i]);
+    }
+}
+function zoom(node) {
+    var attr = find_child(node, "rect").attributes;
+    var width = parseFloat(attr.width.value);
+    var xmin = parseFloat(attr.x.value);
+    var xmax = xmin + width;
+    var ymin = parseFloat(attr.y.value);
+    var ratio = 100 / width;
+    // XXX: Workaround for JavaScript float issues (fix me)
+    var fudge = 0.001;
+    unzoombtn.classList.remove("hide");
+    var el = frames.children;
+    for (var i = 0; i < el.length; i++) {
+        var e = el[i];
+        var a = find_child(e, "rect").attributes;
+        var ex = parseFloat(a.x.value);
+        var ew = parseFloat(a.width.value);
+        // Is it an ancestor
+        if (!inverted) {
+            var upstack = parseFloat(a.y.value) > ymin;
+        } else {
+            var upstack = parseFloat(a.y.value) < ymin;
+        }
+        if (upstack) {
+            // Direct ancestor
+            if (ex <= xmin && (ex+ew+fudge) >= xmax) {
+                e.classList.add("parent");
+                zoom_parent(e);
+                update_text(e);
+            }
+            // not in current path
+            else
+                e.classList.add("hide");
+        }
+        // Children maybe
+        else {
+            // no common path
+            if (ex < xmin || ex + fudge >= xmax) {
+                e.classList.add("hide");
+            }
+            else {
+                zoom_child(e, xmin, ratio);
+                update_text(e);
+            }
+        }
+    }
+}
+function unzoom() {
+    unzoombtn.classList.add("hide");
+    var el = frames.children;
+    for(var i = 0; i < el.length; i++) {
+        el[i].classList.remove("parent");
+        el[i].classList.remove("hide");
+        zoom_reset(el[i]);
+        update_text(el[i]);
+    }
+}
+// search
+function reset_search() {
+    var el = document.querySelectorAll("#frames rect");
+    for (var i = 0; i < el.length; i++) {
+        orig_load(el[i], "fill")
+    }
+    var params = get_params();
+    delete params.s;
+    history.replaceState(null, null, parse_params(params));
+}
+function search_prompt() {
+    if (!searching) {
+        var term = prompt("Enter a search term (regexp " +
+            "allowed, eg: ^ext4_)", "");
+        if (term != null) {
+            search(term)
+        }
+    } else {
+        reset_search();
+        searching = 0;
+        searchbtn.classList.remove("show");
+        searchbtn.firstChild.nodeValue = "Search"
+        matchedtxt.classList.add("hide");
+        matchedtxt.firstChild.nodeValue = ""
+    }
+}
+function search(term) {
+    var re = new RegExp(term);
+    var el = frames.children;
+    var matches = new Object();
+    var maxwidth = 0;
+    for (var i = 0; i < el.length; i++) {
+        var e = el[i];
+        var func = g_to_func(e);
+        var rect = find_child(e, "rect");
+        if (func == null || rect == null)
+            continue;
+        // Save max width. Only works as we have a root frame
+        var w = parseFloat(rect.attributes.width.value);
+        if (w > maxwidth)
+            maxwidth = w;
+        if (func.match(re)) {
+            // highlight
+            var x = parseFloat(rect.attributes.x.value);
+            orig_save(rect, "fill");
+            rect.attributes.fill.value = searchcolor;
+            // remember matches
+            if (matches[x] == undefined) {
+                matches[x] = w;
+            } else {
+                if (w > matches[x]) {
+                    // overwrite with parent
+                    matches[x] = w;
+                }
+            }
+            searching = 1;
+        }
+    }
+    if (!searching)
+        return;
+    var params = get_params();
+    params.s = term;
+    history.replaceState(null, null, parse_params(params));
+
+    searchbtn.classList.add("show");
+    searchbtn.firstChild.nodeValue = "Reset Search";
+    // calculate percent matched, excluding vertical overlap
+    var count = 0;
+    var lastx = -1;
+    var lastw = 0;
+    var keys = Array();
+    for (k in matches) {
+        if (matches.hasOwnProperty(k))
+            keys.push(k);
+    }
+    // sort the matched frames by their x location
+    // ascending, then width descending
+    keys.sort(function(a, b){
+        return a - b;
+    });
+    // Step through frames saving only the biggest bottom-up frames
+    // thanks to the sort order. This relies on the tree property
+    // where children are always smaller than their parents.
+    var fudge = 0.0001;    // JavaScript floating point
+    for (var k in keys) {
+        var x = parseFloat(keys[k]);
+        var w = matches[keys[k]];
+        if (x >= lastx + lastw - fudge) {
+            count += w;
+            lastx = x;
+            lastw = w;
+        }
+    }
+    // display matched percent
+    matchedtxt.classList.remove("hide");
+    var pct = 100 * count / maxwidth;
+    if (pct != 100) pct = pct.toFixed(1);
+    matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+}
+function format_percent(n) {
+    return n.toFixed(4) + "%";
+}
+]]></script><rect x="0" y="0" width="100%" height="246" fill="url(#background)"/><text id="title" x="50.0000%" y="24.00">py-spy</text><text id="details" x="10" y="229.00"> </text><text id="unzoom" class="hide" x="10" y="24.00">Reset Zoom</text><text id="search" x="1090" y="24.00">Search</text><text id="matched" x="1090" y="229.00"> </text><svg id="frames" x="10" width="1180"><g><title>wrapped_function (namespace.py:1266) (478 samples, 1.54%)</title><rect x="0.8254%" y="84" width="1.5352%" height="15" fill="rgb(227,0,7)"/><text x="1.0754%" y="94.50"></text></g><g><title>acquire (emulmisc.py:277) (462 samples, 1.48%)</title><rect x="0.8768%" y="100" width="1.4838%" height="15" fill="rgb(217,0,24)"/><text x="1.1268%" y="110.50"></text></g><g><title>_process_retval_helper (namespace.py:1158) (364 samples, 1.17%)</title><rect x="2.4312%" y="116" width="1.1690%" height="15" fill="rgb(221,193,54)"/><text x="2.6812%" y="126.50"></text></g><g><title>copy (namespace.py:273) (313 samples, 1.01%)</title><rect x="2.5950%" y="132" width="1.0052%" height="15" fill="rgb(248,212,6)"/><text x="2.8450%" y="142.50"></text></g><g><title>__do_func_call (namespace.py:1003) (1,086 samples, 3.49%)</title><rect x="0.1702%" y="68" width="3.4878%" height="15" fill="rgb(208,68,35)"/><text x="0.4202%" y="78.50">__d..</text></g><g><title>wrapped_function (namespace.py:1268) (404 samples, 1.30%)</title><rect x="2.3605%" y="84" width="1.2975%" height="15" fill="rgb(232,128,0)"/><text x="2.6105%" y="94.50"></text></g><g><title>_process_retval (namespace.py:1188) (402 samples, 1.29%)</title><rect x="2.3670%" y="100" width="1.2911%" height="15" fill="rgb(207,160,47)"/><text x="2.6170%" y="110.50"></text></g><g><title>LindSyscall (lind_server.py:9851) (1,140 samples, 3.66%)</title><rect x="0.0546%" y="52" width="3.6612%" height="15" fill="rgb(228,23,34)"/><text x="0.3046%" y="62.50">Lind..</text></g><g><title>_read_from_pipe (lind_server.py:3536) (450 samples, 1.45%)</title><rect x="4.0852%" y="116" width="1.4452%" height="15" fill="rgb(218,30,26)"/><text x="4.3352%" y="126.50"></text></g><g><title>_read_from_pipe (lind_server.py:3538) (2,731 samples, 8.77%)</title><rect x="5.9608%" y="116" width="8.7709%" height="15" fill="rgb(220,122,19)"/><text x="6.2108%" y="126.50">_read_from_p..</text></g><g><title>_read_from_pipe (lind_server.py:3540) (1,505 samples, 4.83%)</title><rect x="14.7317%" y="116" width="4.8335%" height="15" fill="rgb(250,228,42)"/><text x="14.9817%" y="126.50">_read_..</text></g><g><title>_read_from_pipe (lind_server.py:3548) (14,996 samples, 48.16%)</title><rect x="21.4375%" y="116" width="48.1614%" height="15" fill="rgb(240,193,28)"/><text x="21.6875%" y="126.50">_read_from_pipe (lind_server.py:3548)</text></g><g><title>_read_from_pipe (lind_server.py:3549) (491 samples, 1.58%)</title><rect x="69.5989%" y="116" width="1.5769%" height="15" fill="rgb(216,20,37)"/><text x="69.8489%" y="126.50"></text></g><g><title>read_syscall (lind_server.py:3592) (20,922 samples, 67.19%)</title><rect x="3.9920%" y="100" width="67.1934%" height="15" fill="rgb(206,188,39)"/><text x="4.2420%" y="110.50">read_syscall (lind_server.py:3592)</text></g><g><title>lind_fs_read (lind_server.py:6786) (20,997 samples, 67.43%)</title><rect x="3.7576%" y="84" width="67.4342%" height="15" fill="rgb(217,207,13)"/><text x="4.0076%" y="94.50">lind_fs_read (lind_server.py:6786)</text></g><g><title>wrapped_function (namespace.py:1266) (497 samples, 1.60%)</title><rect x="74.4291%" y="132" width="1.5962%" height="15" fill="rgb(231,73,38)"/><text x="74.6791%" y="142.50"></text></g><g><title>acquire (emulmisc.py:277) (492 samples, 1.58%)</title><rect x="74.4452%" y="148" width="1.5801%" height="15" fill="rgb(225,20,46)"/><text x="74.6952%" y="158.50"></text></g><g><title>_copy (namespace.py:858) (1,175 samples, 3.77%)</title><rect x="76.1955%" y="196" width="3.7736%" height="15" fill="rgb(210,31,41)"/><text x="76.4455%" y="206.50">_cop..</text></g><g><title>_process_retval_helper (namespace.py:1158) (1,504 samples, 4.83%)</title><rect x="76.0928%" y="164" width="4.8303%" height="15" fill="rgb(221,200,47)"/><text x="76.3428%" y="174.50">_proce..</text></g><g><title>copy (namespace.py:273) (1,504 samples, 4.83%)</title><rect x="76.0928%" y="180" width="4.8303%" height="15" fill="rgb(226,26,5)"/><text x="76.3428%" y="190.50">copy (..</text></g><g><title>__do_func_call (namespace.py:1003) (2,173 samples, 6.98%)</title><rect x="73.9538%" y="116" width="6.9788%" height="15" fill="rgb(249,33,26)"/><text x="74.2038%" y="126.50">__do_func..</text></g><g><title>wrapped_function (namespace.py:1268) (1,528 samples, 4.91%)</title><rect x="76.0253%" y="132" width="4.9073%" height="15" fill="rgb(235,183,28)"/><text x="76.2753%" y="142.50">wrappe..</text></g><g><title>_process_retval (namespace.py:1188) (1,509 samples, 4.85%)</title><rect x="76.0863%" y="148" width="4.8463%" height="15" fill="rgb(221,5,38)"/><text x="76.3363%" y="158.50">_proce..</text></g><g><title>write_syscall (lind_server.py:3669) (2,208 samples, 7.09%)</title><rect x="73.9313%" y="100" width="7.0912%" height="15" fill="rgb(247,18,42)"/><text x="74.1813%" y="110.50">write_sysc..</text></g><g><title>wrapped_function (namespace.py:1266) (1,234 samples, 3.96%)</title><rect x="82.0182%" y="132" width="3.9631%" height="15" fill="rgb(241,131,45)"/><text x="82.2682%" y="142.50">wrap..</text></g><g><title>acquire (emulmisc.py:277) (1,234 samples, 3.96%)</title><rect x="82.0182%" y="148" width="3.9631%" height="15" fill="rgb(249,31,29)"/><text x="82.2682%" y="158.50">acqu..</text></g><g><title>_copy (namespace.py:858) (630 samples, 2.02%)</title><rect x="86.0488%" y="196" width="2.0233%" height="15" fill="rgb(225,111,53)"/><text x="86.2988%" y="206.50">_..</text></g><g><title>_process_retval_helper (namespace.py:1158) (1,016 samples, 3.26%)</title><rect x="86.0231%" y="164" width="3.2630%" height="15" fill="rgb(238,160,17)"/><text x="86.2731%" y="174.50">_pr..</text></g><g><title>copy (namespace.py:273) (1,013 samples, 3.25%)</title><rect x="86.0327%" y="180" width="3.2534%" height="15" fill="rgb(214,148,48)"/><text x="86.2827%" y="190.50">cop..</text></g><g><title>__do_func_call (namespace.py:1003) (2,545 samples, 8.17%)</title><rect x="81.1478%" y="116" width="8.1736%" height="15" fill="rgb(232,36,49)"/><text x="81.3978%" y="126.50">__do_func_c..</text></g><g><title>wrapped_function (namespace.py:1268) (1,040 samples, 3.34%)</title><rect x="85.9813%" y="132" width="3.3401%" height="15" fill="rgb(209,103,24)"/><text x="86.2313%" y="142.50">wra..</text></g><g><title>_process_retval (namespace.py:1188) (1,040 samples, 3.34%)</title><rect x="85.9813%" y="148" width="3.3401%" height="15" fill="rgb(229,88,8)"/><text x="86.2313%" y="158.50">_pr..</text></g><g><title>write_syscall (lind_server.py:3670) (2,704 samples, 8.68%)</title><rect x="81.0226%" y="100" width="8.6842%" height="15" fill="rgb(213,181,19)"/><text x="81.2726%" y="110.50">write_syscal..</text></g><g><title>wrapped_function (namespace.py:1266) (1,380 samples, 4.43%)</title><rect x="90.3074%" y="148" width="4.4320%" height="15" fill="rgb(254,191,54)"/><text x="90.5574%" y="158.50">wrapp..</text></g><g><title>acquire (emulmisc.py:277) (1,378 samples, 4.43%)</title><rect x="90.3138%" y="164" width="4.4256%" height="15" fill="rgb(241,83,37)"/><text x="90.5638%" y="174.50">acqui..</text></g><g><title>_process_retval_helper (namespace.py:1158) (339 samples, 1.09%)</title><rect x="94.9995%" y="180" width="1.0887%" height="15" fill="rgb(233,36,39)"/><text x="95.2495%" y="190.50"></text></g><g><title>copy (namespace.py:273) (339 samples, 1.09%)</title><rect x="94.9995%" y="196" width="1.0887%" height="15" fill="rgb(226,3,54)"/><text x="95.2495%" y="206.50"></text></g><g><title>__do_func_call (namespace.py:1003) (1,986 samples, 6.38%)</title><rect x="89.8160%" y="132" width="6.3783%" height="15" fill="rgb(245,192,40)"/><text x="90.0660%" y="142.50">__do_fun..</text></g><g><title>wrapped_function (namespace.py:1268) (453 samples, 1.45%)</title><rect x="94.7394%" y="148" width="1.4549%" height="15" fill="rgb(238,167,29)"/><text x="94.9894%" y="158.50"></text></g><g><title>_process_retval (namespace.py:1188) (442 samples, 1.42%)</title><rect x="94.7747%" y="164" width="1.4195%" height="15" fill="rgb(232,182,51)"/><text x="95.0247%" y="174.50"></text></g><g><title>_write_to_pipe (lind_server.py:3627) (1,997 samples, 6.41%)</title><rect x="89.7999%" y="116" width="6.4136%" height="15" fill="rgb(231,60,39)"/><text x="90.0499%" y="126.50">_write_t..</text></g><g><title>_write_to_pipe (lind_server.py:3630) (818 samples, 2.63%)</title><rect x="96.2135%" y="116" width="2.6271%" height="15" fill="rgb(208,69,12)"/><text x="96.4635%" y="126.50">_w..</text></g><g><title>write_syscall (lind_server.py:3677) (2,902 samples, 9.32%)</title><rect x="89.7260%" y="100" width="9.3201%" height="15" fill="rgb(235,93,37)"/><text x="89.9760%" y="110.50">write_syscall..</text></g><g><title>lind_fs_write (lind_server.py:6560) (8,739 samples, 28.07%)</title><rect x="71.4520%" y="84" width="28.0663%" height="15" fill="rgb(213,116,39)"/><text x="71.7020%" y="94.50">lind_fs_write (lind_server.py:6560)</text></g><g><title>dispatch_syscall (lind_server.py:9791) (29,837 samples, 95.82%)</title><rect x="3.7512%" y="68" width="95.8249%" height="15" fill="rgb(222,207,29)"/><text x="4.0012%" y="78.50">dispatch_syscall (lind_server.py:9791)</text></g><g><title>LindSyscall (lind_server.py:9864) (29,844 samples, 95.85%)</title><rect x="3.7319%" y="52" width="95.8474%" height="15" fill="rgb(206,96,30)"/><text x="3.9819%" y="62.50">LindSyscall (lind_server.py:9864)</text></g><g><title>all (31,137 samples, 100%)</title><rect x="0.0000%" y="36" width="100.0000%" height="15" fill="rgb(218,138,4)"/><text x="0.2500%" y="46.50"></text></g></svg></svg>
