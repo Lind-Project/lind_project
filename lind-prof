@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd "$REPY_PATH/repy"
+sel_ldr -a -- /lib/glibc/runnable-ld.so --library-path /lib/glibc "${@:3}" &
+PID=$!
+
+echo $PID
+
+py-spy record -o /home/lind/lind_project/graphs/$1 --rate $2 --pid $PID
