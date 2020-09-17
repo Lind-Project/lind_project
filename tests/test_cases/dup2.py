@@ -10,7 +10,7 @@ if len(lind_result) != len(host_result):
 
 if lind_result[0] != host_result[1]:
     print "Mismatched deterministic lines"
-    exit(-1)"
+    exit(-1)
 
 if lind_result[1] != host_result[1]:
     print "Mismatched messages printed before the file contents"
