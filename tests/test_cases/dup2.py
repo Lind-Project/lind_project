@@ -8,7 +8,7 @@ if len(lind_result) != len(host_result):
     print "Mismatched number of lines"
     exit(-1)
 
-if lind_result[0] != host_result[1]:
+if lind_result[0] != host_result[0]:
     print "Mismatched deterministic lines"
     exit(-1)
 
