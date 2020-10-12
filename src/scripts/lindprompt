@@ -45,7 +45,7 @@ while true; do
           then read -r -p "File is not an nexe file. Try to run anyway? [y/N]" response
           case "$response" in
               [yY][eE][sS]|[yY])
-                  $LIND_ROOT/lind/repy/bin/lind ${myarr[1]};
+                  $LIND_ROOT/lind/repy/bin/lind ${myarr[@]:1};
                   continue;
                   ;;
               *)
@@ -53,13 +53,13 @@ while true; do
                   ;;
           esac;
       fi
-      $LIND_ROOT/lind/repy/bin/lind ${myarr[1]};
+      $LIND_ROOT/lind/repy/bin/lind ${myarr[@]:1};
       ;;
     exit|quit)
       exit
       ;;
     *)
-      if result=$(${myarr[@]}); then
+      if result=$(eval ${myarr[@]}); then
         printf "$result\n"
       else
         echo "Command not found. Try help for information about commands"
