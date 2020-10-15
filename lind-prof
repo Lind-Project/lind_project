@@ -6,4 +6,4 @@ PID=$!
 
 echo $PID
 
-py-spy record -o /home/lind/lind_project/graphs/$1 --rate $2 --pid $PID
+py-spy record -o /home/lind/lind_project/graphs/$1 --native --subprocesses --rate $2 --pid $PID
