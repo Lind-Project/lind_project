@@ -17,8 +17,4 @@ if [[ ! -e ./configure ]]; then
 	./autogen.sh
 fi
 
-./configure --enable-cond-command --enable-cond-regexp --enable-dparen-arithmetic --enable-process-substitution --host=x86_64-nacl "$@"
-sed -i '/extern int gethostname/ s!int))!size_t))!' ./externs.h
-sed -i '/gethostname (name, namelen)/,+2 s!int namelen!size_t namelen!' ./lib/sh/oslib.c
-
 make
