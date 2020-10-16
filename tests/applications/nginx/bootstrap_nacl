@@ -17,6 +17,7 @@ export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 	--with-compat \
 	--with-debug \
 	--without-http_rewrite_module\
+	--without-http_gzip_module
 	--with-http_addition_module \
 	--with-http_auth_request_module \
 	--with-http_dav_module \
