@@ -17,7 +17,7 @@ if [[ ! -e ./configure ]]; then
 	./autogen.sh
 fi
 
-./configure DPY_FORMAT_LONG_LONG=ll V=2 F=0 FROM_SOURCE=1 TOOLCHAIN=glibc CFLAGS=$SSL32_CFLAGS LDFLAGS=$SSL32_LDFLAGS --host=x86_64-nacl "$@"
+./configure -DPY_FORMAT_LONG_LONG=ll V=2 F=0 FROM_SOURCE=1 TOOLCHAIN=glibc CFLAGS=$SSL32_CFLAGS LDFLAGS=$SSL32_LDFLAGS --host=x86_64-nacl "$@"
 
 cp "./Modules/Setup.dist"  "./Modules/Setup"
 
