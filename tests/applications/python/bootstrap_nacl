@@ -23,4 +23,8 @@ cp "./Modules/Setup.dist"  "./Modules/Setup"
 
 touch Include/Python-ast.h Python/Python-ast.c
 
+sed '323s/ll//' ./Objects/stringobject.c
+
+sed '339s/ll//' ./Objects/stringobject.c
+
 make
