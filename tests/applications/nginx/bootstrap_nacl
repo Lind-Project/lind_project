@@ -8,7 +8,7 @@ fi
 export CC=x86_64-nacl-gcc
 export CXX=x86_64-nacl-g++
 export LD=x86_64-nacl-ld
-export CFLAGS=''
+export CFLAGS='-g'
 export CXXFLAGS='-g -fno-pie'
 export LDFLAGS='-g -fno-pie'
 export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
