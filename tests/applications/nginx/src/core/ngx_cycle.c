@@ -1,7 +1,3 @@
-#ifndef NGX_HAVE_SYSVSHM
-#define NGX_HAVE_SYSVSHM 1
-#endif
-
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
