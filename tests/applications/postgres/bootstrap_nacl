@@ -17,6 +17,6 @@ if [[ ! -e ./configure ]]; then
 	./autogen.sh
 fi
 
-./configure --with-template=linux --host=x86_64-nacl "$@"
+./configure --with-template=cygwin --host=x86_64-nacl "$@"
 
 make
