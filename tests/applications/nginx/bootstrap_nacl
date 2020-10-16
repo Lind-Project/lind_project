@@ -39,8 +39,6 @@ export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 	--with-stream \
 	--with-stream_geoip_module \
 	--with-stream_realip_module \
-	--with-stream_ssl_module \
-	--with-stream_ssl_preread_module \
 	--with-threads \
 	"$@"
 
