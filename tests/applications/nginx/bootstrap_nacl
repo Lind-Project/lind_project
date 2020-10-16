@@ -42,7 +42,6 @@ export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 	--with-stream_ssl_module \
 	--with-stream_ssl_preread_module \
 	--with-threads \
-	--host=x86_64-nacl \
 	"$@"
 
 make
