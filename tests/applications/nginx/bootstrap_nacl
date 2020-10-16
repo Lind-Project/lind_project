@@ -8,7 +8,7 @@ fi
 export CC=x86_64-nacl-gcc
 export CXX=x86_64-nacl-g++
 export LD=x86_64-nacl-ld
-export CFLAGS='-g -fno-pie'
+export CFLAGS=''
 export CXXFLAGS='-g -fno-pie'
 export LDFLAGS='-g -fno-pie'
 export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
@@ -16,6 +16,7 @@ export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 ./auto/configure \
 	--with-compat \
 	--with-debug \
+	--without-http_rewrite_module\
 	--with-http_addition_module \
 	--with-http_auth_request_module \
 	--with-http_dav_module \
