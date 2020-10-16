@@ -17,4 +17,6 @@ if [[ ! -e ./configure ]]; then
 	./autogen.sh
 fi
 
+./configure --host=x86_64-nacl "$@"
+
 make
