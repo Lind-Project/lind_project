@@ -19,4 +19,6 @@ fi
 
 ./configure --with-template=linux --without-readline --without-zlib USE_DEV_URANDOM=1 --host=x86_64-nacl "$@"
 
+./src/backend/utils/Gen_dummy_probes.pl
+
 make
