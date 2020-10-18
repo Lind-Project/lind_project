@@ -3,6 +3,7 @@
 #
 # src/backend/utils/Makefile
 #
+enable_dtrace=no
 
 subdir = src/backend/utils
 top_builddir = ../../..
