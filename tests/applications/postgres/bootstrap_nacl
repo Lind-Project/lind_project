@@ -17,6 +17,6 @@ if [[ ! -e ./configure ]]; then
 	./autogen.sh
 fi
 
-./configure --with-template=linux --without-readline --without-zlib --enable-dtrace USE_DEV_URANDOM=1 --host=x86_64-nacl "$@"
+./configure --with-template=linux --without-readline --without-zlib enable_dtrace=false USE_DEV_URANDOM=1 --host=x86_64-nacl "$@"
 
 make
