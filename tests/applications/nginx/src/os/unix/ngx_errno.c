@@ -1,6 +1,8 @@
+
 #ifndef NGX_SYS_NERR
 #define NGX_SYS_NERR  132
 #endif
+
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
