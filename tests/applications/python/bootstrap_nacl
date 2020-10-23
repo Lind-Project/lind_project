@@ -17,7 +17,7 @@ if [[ ! -e ./configure ]]; then
 	./autogen.sh
 fi
 
-./configure CFLAGS=-std=c99 --host=x86_64-nacl "$@"
+./configure CFLAGS='-std=c99 -DPY_FORMAT_LONG_LONG="ll"' --host=x86_64-nacl "$@"
 
 cp "./Modules/Setup.dist"  "./Modules/Setup"
 
