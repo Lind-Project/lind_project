@@ -20,4 +20,3 @@ fi
 ./configure  CFLAGS=-DPY_FORMAT_LONG_LONG="ll" --host=x86_64-nacl "$@"
 
 make
-
