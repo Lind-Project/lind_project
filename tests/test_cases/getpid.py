@@ -1,4 +1,5 @@
 #!/bin/python2
+# Checks if getpid.c runs the same natively as it does within Lind
 import sys
 lindoutput = sys.argv[1].split('\n')
 hostoutput = sys.argv[2].split('\n')

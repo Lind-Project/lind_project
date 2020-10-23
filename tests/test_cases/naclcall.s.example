@@ -1,1 +1,0 @@
-naclcall %eax, %r15
