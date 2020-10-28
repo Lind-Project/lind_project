@@ -3,7 +3,7 @@
  * ts_utils.h
  *	  helper utilities for tsearch
  *
- * Copyright (c) 1998-2017, PostgreSQL Global Development Group
+ * Copyright (c) 1998-2020, PostgreSQL Global Development Group
  *
  * src/include/tsearch/ts_utils.h
  *
@@ -25,15 +25,27 @@
 struct TSVectorParseStateData;	/* opaque struct in tsvector_parser.c */
 typedef struct TSVectorParseStateData *TSVectorParseState;
 
-extern TSVectorParseState init_tsvector_parser(char *input,
-					 bool oprisdelim,
-					 bool is_tsquery);
+#define P_TSV_OPR_IS_DELIM	(1 << 0)
+#define P_TSV_IS_TSQUERY	(1 << 1)
+#define P_TSV_IS_WEB		(1 << 2)
+
+extern TSVectorParseState init_tsvector_parser(char *input, int flags);
 extern void reset_tsvector_parser(TSVectorParseState state, char *input);
 extern bool gettoken_tsvector(TSVectorParseState state,
-				  char **token, int *len,
-				  WordEntryPos **pos, int *poslen,
-				  char **endptr);
+							  char **token, int *len,
+							  WordEntryPos **pos, int *poslen,
+							  char **endptr);
 extern void close_tsvector_parser(TSVectorParseState state);
+
+/* phrase operator begins with '<' */
+#define ISOPERATOR(x) \
+	( pg_mblen(x) == 1 && ( *(x) == '!' ||	\
+							*(x) == '&' ||	\
+							*(x) == '|' ||	\
+							*(x) == '(' ||	\
+							*(x) == ')' ||	\
+							*(x) == '<'		\
+						  ) )
 
 /* parse_tsquery */
 
@@ -46,13 +58,17 @@ typedef void (*PushFunction) (Datum opaque, TSQueryParserState state,
 													 * QueryOperand struct */
 							  bool prefix);
 
+#define P_TSQ_PLAIN		(1 << 0)
+#define P_TSQ_WEB		(1 << 1)
+
 extern TSQuery parse_tsquery(char *buf,
-			  PushFunction pushval,
-			  Datum opaque, bool isplain);
+							 PushFunction pushval,
+							 Datum opaque,
+							 int flags);
 
 /* Functions for use by PushFunction implementations */
 extern void pushValue(TSQueryParserState state,
-		  char *strval, int lenval, int16 weight, bool prefix);
+					  char *strval, int lenval, int16 weight, bool prefix);
 extern void pushStop(TSQueryParserState state);
 extern void pushOperator(TSQueryParserState state, int8 oper, int16 distance);
 
@@ -97,7 +113,7 @@ extern void parsetext(Oid cfgId, ParsedText *prs, char *buf, int32 buflen);
  */
 
 extern void hlparsetext(Oid cfgId, HeadlineParsedText *prs, TSQuery query,
-			char *buf, int32 buflen);
+						char *buf, int32 buflen);
 extern text *generateHeadline(HeadlineParsedText *prs);
 
 /*
@@ -108,13 +124,21 @@ extern text *generateHeadline(HeadlineParsedText *prs);
  * whether a given primitive tsquery value is matched in the data.
  */
 
+/* TS_execute requires ternary logic to handle NOT with phrase matches */
+typedef enum
+{
+	TS_NO,						/* definitely no match */
+	TS_YES,						/* definitely does match */
+	TS_MAYBE					/* can't verify match for lack of pos data */
+} TSTernaryValue;
+
 /*
  * struct ExecPhraseData is passed to a TSExecuteCallback function if we need
  * lexeme position data (because of a phrase-match operator in the tsquery).
- * The callback should fill in position data when it returns true (success).
- * If it cannot return position data, it may leave "data" unchanged, but
- * then the caller of TS_execute() must pass the TS_EXEC_PHRASE_NO_POS flag
- * and must arrange for a later recheck with position data available.
+ * The callback should fill in position data when it returns TS_YES (success).
+ * If it cannot return position data, it should leave "data" unchanged and
+ * return TS_MAYBE.  The caller of TS_execute() must then arrange for a later
+ * recheck with position data available.
  *
  * The reported lexeme positions must be sorted and unique.  Callers must only
  * consult the position bits of the pos array, ie, WEP_GETPOS(data->pos[i]).
@@ -146,35 +170,35 @@ typedef struct ExecPhraseData
  * val: lexeme to test for presence of
  * data: to be filled with lexeme positions; NULL if position data not needed
  *
- * Return TRUE if lexeme is present in data, else FALSE.  If data is not
- * NULL, it should be filled with lexeme positions, but function can leave
- * it as zeroes if position data is not available.
+ * Return TS_YES if lexeme is present in data, TS_MAYBE if it might be
+ * present, TS_NO if it definitely is not present.  If data is not NULL,
+ * it must be filled with lexeme positions if available.  If position data
+ * is not available, leave *data as zeroes and return TS_MAYBE, never TS_YES.
  */
-typedef bool (*TSExecuteCallback) (void *arg, QueryOperand *val,
-								   ExecPhraseData *data);
+typedef TSTernaryValue (*TSExecuteCallback) (void *arg, QueryOperand *val,
+											 ExecPhraseData *data);
 
 /*
  * Flag bits for TS_execute
  */
 #define TS_EXEC_EMPTY			(0x00)
 /*
- * If TS_EXEC_CALC_NOT is not set, then NOT expressions are automatically
- * evaluated to be true.  Useful in cases where NOT cannot be accurately
- * computed (GiST) or it isn't important (ranking).  From TS_execute's
- * perspective, !CALC_NOT means that the TSExecuteCallback function might
- * return false-positive indications of a lexeme's presence.
+ * If TS_EXEC_SKIP_NOT is set, then NOT sub-expressions are automatically
+ * evaluated to be true.  This was formerly the default behavior.  It's now
+ * deprecated because it tends to give silly answers, but some applications
+ * might still have a use for it.
  */
-#define TS_EXEC_CALC_NOT		(0x01)
+#define TS_EXEC_SKIP_NOT		(0x01)
 /*
  * If TS_EXEC_PHRASE_NO_POS is set, allow OP_PHRASE to be executed lossily
- * in the absence of position information: a TRUE result indicates that the
+ * in the absence of position information: a true result indicates that the
  * phrase might be present.  Without this flag, OP_PHRASE always returns
  * false if lexeme position information is not available.
  */
 #define TS_EXEC_PHRASE_NO_POS	(0x02)
 
 extern bool TS_execute(QueryItem *curitem, void *arg, uint32 flags,
-		   TSExecuteCallback chkcond);
+					   TSExecuteCallback chkcond);
 extern bool tsquery_requires_match(QueryItem *curitem);
 
 /*
@@ -234,6 +258,6 @@ extern void QTNClearFlags(QTNode *in, uint32 flags);
 extern bool QTNEq(QTNode *a, QTNode *b);
 extern TSQuerySign makeTSQuerySign(TSQuery a);
 extern QTNode *findsubquery(QTNode *root, QTNode *ex, QTNode *subs,
-			 bool *isfind);
+							bool *isfind);
 
 #endif							/* _PG_TS_UTILS_H_ */

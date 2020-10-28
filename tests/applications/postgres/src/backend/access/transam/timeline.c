@@ -21,7 +21,7 @@
  * The fields are separated by tabs. Lines beginning with # are comments, and
  * are ignored. Empty lines are also ignored.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * src/backend/access/transam/timeline.c
@@ -37,6 +37,7 @@
 #include "access/timeline.h"
 #include "access/xlog.h"
 #include "access/xlog_internal.h"
+#include "access/xlogarchive.h"
 #include "access/xlogdefs.h"
 #include "pgstat.h"
 #include "storage/fd.h"
@@ -321,8 +322,7 @@ writeTimeLineHistory(TimeLineID newTLI, TimeLineID parentTLI,
 	unlink(tmppath);
 
 	/* do not use get_sync_bit() here --- want to fsync only at end of fill */
-	fd = OpenTransientFile(tmppath, O_RDWR | O_CREAT | O_EXCL,
-						   S_IRUSR | S_IWUSR);
+	fd = OpenTransientFile(tmppath, O_RDWR | O_CREAT | O_EXCL);
 	if (fd < 0)
 		ereport(ERROR,
 				(errcode_for_file_access(),
@@ -339,7 +339,7 @@ writeTimeLineHistory(TimeLineID newTLI, TimeLineID parentTLI,
 	else
 		TLHistoryFilePath(path, parentTLI);
 
-	srcfd = OpenTransientFile(path, O_RDONLY, 0);
+	srcfd = OpenTransientFile(path, O_RDONLY);
 	if (srcfd < 0)
 	{
 		if (errno != ENOENT)
@@ -385,7 +385,11 @@ writeTimeLineHistory(TimeLineID newTLI, TimeLineID parentTLI,
 			}
 			pgstat_report_wait_end();
 		}
-		CloseTransientFile(srcfd);
+
+		if (CloseTransientFile(srcfd) != 0)
+			ereport(ERROR,
+					(errcode_for_file_access(),
+					 errmsg("could not close file \"%s\": %m", path)));
 	}
 
 	/*
@@ -428,11 +432,10 @@ writeTimeLineHistory(TimeLineID newTLI, TimeLineID parentTLI,
 				 errmsg("could not fsync file \"%s\": %m", tmppath)));
 	pgstat_report_wait_end();
 
-	if (CloseTransientFile(fd))
+	if (CloseTransientFile(fd) != 0)
 		ereport(ERROR,
 				(errcode_for_file_access(),
 				 errmsg("could not close file \"%s\": %m", tmppath)));
-
 
 	/*
 	 * Now move the completed history file into place with its final name.
@@ -443,7 +446,7 @@ writeTimeLineHistory(TimeLineID newTLI, TimeLineID parentTLI,
 	 * Perform the rename using link if available, paranoidly trying to avoid
 	 * overwriting an existing file (there shouldn't be one).
 	 */
-	durable_link_or_rename(tmppath, path, ERROR);
+	durable_rename_excl(tmppath, path, ERROR);
 
 	/* The history file can be archived immediately. */
 	if (XLogArchivingActive())
@@ -475,8 +478,7 @@ writeTimeLineHistoryFile(TimeLineID tli, char *content, int size)
 	unlink(tmppath);
 
 	/* do not use get_sync_bit() here --- want to fsync only at end of fill */
-	fd = OpenTransientFile(tmppath, O_RDWR | O_CREAT | O_EXCL,
-						   S_IRUSR | S_IWUSR);
+	fd = OpenTransientFile(tmppath, O_RDWR | O_CREAT | O_EXCL);
 	if (fd < 0)
 		ereport(ERROR,
 				(errcode_for_file_access(),
@@ -508,11 +510,10 @@ writeTimeLineHistoryFile(TimeLineID tli, char *content, int size)
 				 errmsg("could not fsync file \"%s\": %m", tmppath)));
 	pgstat_report_wait_end();
 
-	if (CloseTransientFile(fd))
+	if (CloseTransientFile(fd) != 0)
 		ereport(ERROR,
 				(errcode_for_file_access(),
 				 errmsg("could not close file \"%s\": %m", tmppath)));
-
 
 	/*
 	 * Now move the completed history file into place with its final name.
@@ -523,7 +524,7 @@ writeTimeLineHistoryFile(TimeLineID tli, char *content, int size)
 	 * Perform the rename using link if available, paranoidly trying to avoid
 	 * overwriting an existing file (there shouldn't be one).
 	 */
-	durable_link_or_rename(tmppath, path, ERROR);
+	durable_rename_excl(tmppath, path, ERROR);
 }
 
 /*

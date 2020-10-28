@@ -29,7 +29,7 @@
  *
  *			int32
  *			pglz_decompress(const char *source, int32 slen, char *dest,
- *							int32 rawsize)
+ *							int32 rawsize, bool check_complete)
  *
  *				source is the compressed input.
  *
@@ -43,6 +43,12 @@
  *					to pglz_compress(). No terminating zero byte is added.
  *
  *				rawsize is the length of the uncompressed data.
+ *
+ *				check_complete is a flag to let us know if -1 should be
+ *					returned in cases where we don't reach the end of the
+ *					source or dest buffers, or not.  This should be false
+ *					if the caller is asking for only a partial result and
+ *					true otherwise.
  *
  *				The return value is the number of bytes written in the
  *				buffer dest, or -1 if decompression fails.
@@ -159,14 +165,14 @@
  *			scanned for the history add's, otherwise a literal character
  *			is omitted and only his history entry added.
  *
- *		Acknowledgements:
+ *		Acknowledgments:
  *
  *			Many thanks to Adisak Pochanayon, who's article about SLZ
  *			inspired me to write the PostgreSQL compression this way.
  *
  *			Jan Wieck
  *
- * Copyright (c) 1999-2017, PostgreSQL Global Development Group
+ * Copyright (c) 1999-2020, PostgreSQL Global Development Group
  *
  * src/common/pg_lzcompress.c
  * ----------
@@ -674,13 +680,14 @@ pglz_compress(const char *source, int32 slen, char *dest,
  * pglz_decompress -
  *
  *		Decompresses source into dest. Returns the number of bytes
- *		decompressed in the destination buffer, or -1 if decompression
- *		fails.
+ *		decompressed in the destination buffer, and *optionally*
+ *		checks that both the source and dest buffers have been
+ *		fully read and written to, respectively.
  * ----------
  */
 int32
 pglz_decompress(const char *source, int32 slen, char *dest,
-				int32 rawsize)
+				int32 rawsize, bool check_complete)
 {
 	const unsigned char *sp;
 	const unsigned char *srcend;
@@ -701,16 +708,19 @@ pglz_decompress(const char *source, int32 slen, char *dest,
 		unsigned char ctrl = *sp++;
 		int			ctrlc;
 
-		for (ctrlc = 0; ctrlc < 8 && sp < srcend; ctrlc++)
+		for (ctrlc = 0; ctrlc < 8 && sp < srcend && dp < destend; ctrlc++)
 		{
+
 			if (ctrl & 1)
 			{
 				/*
-				 * Otherwise it contains the match length minus 3 and the
-				 * upper 4 bits of the offset. The next following byte
-				 * contains the lower 8 bits of the offset. If the length is
-				 * coded as 18, another extension tag byte tells how much
-				 * longer the match really was (0-255).
+				 * Set control bit means we must read a match tag. The match
+				 * is coded with two bytes. First byte uses lower nibble to
+				 * code length - 3. Higher nibble contains upper 4 bits of the
+				 * offset. The next following byte contains the lower 8 bits
+				 * of the offset. If the length is coded as 18, another
+				 * extension tag byte tells how much longer the match really
+				 * was (0-255).
 				 */
 				int32		len;
 				int32		off;
@@ -722,29 +732,45 @@ pglz_decompress(const char *source, int32 slen, char *dest,
 					len += *sp++;
 
 				/*
-				 * Check for output buffer overrun, to ensure we don't clobber
-				 * memory in case of corrupt input.  Note: we must advance dp
-				 * here to ensure the error is detected below the loop.  We
-				 * don't simply put the elog inside the loop since that will
-				 * probably interfere with optimization.
-				 */
-				if (dp + len > destend)
-				{
-					dp += len;
-					break;
-				}
-
-				/*
 				 * Now we copy the bytes specified by the tag from OUTPUT to
-				 * OUTPUT. It is dangerous and platform dependent to use
-				 * memcpy() here, because the copied areas could overlap
-				 * extremely!
+				 * OUTPUT (copy len bytes from dp - off to dp). The copied
+				 * areas could overlap, to preven possible uncertainty, we
+				 * copy only non-overlapping regions.
 				 */
-				while (len--)
+				len = Min(len, destend - dp);
+				while (off < len)
 				{
-					*dp = dp[-off];
-					dp++;
+					/*---------
+					 * When offset is smaller than length - source and
+					 * destination regions overlap. memmove() is resolving
+					 * this overlap in an incompatible way with pglz. Thus we
+					 * resort to memcpy()-ing non-overlapping regions.
+					 *
+					 * Consider input: 112341234123412341234
+					 * At byte 5       here ^ we have match with length 16 and
+					 * offset 4.       11234M(len=16, off=4)
+					 * We are decoding first period of match and rewrite match
+					 *                 112341234M(len=12, off=8)
+					 *
+					 * The same match is now at position 9, it points to the
+					 * same start byte of output, but from another position:
+					 * the offset is doubled.
+					 *
+					 * We iterate through this offset growth until we can
+					 * proceed to usual memcpy(). If we would try to decode
+					 * the match at byte 5 (len=16, off=4) by memmove() we
+					 * would issue memmove(5, 1, 16) which would produce
+					 * 112341234XXXXXXXXXXXX, where series of X is 12
+					 * undefined bytes, that were at bytes [5:17].
+					 *---------
+					 */
+					memcpy(dp, dp - off, off);
+					len -= off;
+					dp += off;
+					off += off;
 				}
+				memcpy(dp, dp - off, len);
+				dp += len;
 			}
 			else
 			{
@@ -752,9 +778,6 @@ pglz_decompress(const char *source, int32 slen, char *dest,
 				 * An unset control bit means LITERAL BYTE. So we just copy
 				 * one from INPUT to OUTPUT.
 				 */
-				if (dp >= destend)	/* check for buffer overrun */
-					break;		/* do not clobber memory */
-
 				*dp++ = *sp++;
 			}
 
@@ -766,13 +789,52 @@ pglz_decompress(const char *source, int32 slen, char *dest,
 	}
 
 	/*
-	 * Check we decompressed the right amount.
+	 * Check we decompressed the right amount. If we are slicing, then we
+	 * won't necessarily be at the end of the source or dest buffers when we
+	 * hit a stop, so we don't test them.
 	 */
-	if (dp != destend || sp != srcend)
+	if (check_complete && (dp != destend || sp != srcend))
 		return -1;
 
 	/*
 	 * That's it.
 	 */
-	return rawsize;
+	return (char *) dp - dest;
+}
+
+
+/* ----------
+ * pglz_max_compressed_size -
+ *
+ *		Calculate the maximum compressed size for a given amount of raw data.
+ *		Return the maximum size, or total compressed size if maximum size is
+ *		larger than total compressed size.
+ *
+ * We can't use PGLZ_MAX_OUTPUT for this purpose, because that's used to size
+ * the compression buffer (and abort the compression). It does not really say
+ * what's the maximum compressed size for an input of a given length, and it
+ * may happen that while the whole value is compressible (and thus fits into
+ * PGLZ_MAX_OUTPUT nicely), the prefix is not compressible at all.
+ * ----------
+ */
+int32
+pglz_maximum_compressed_size(int32 rawsize, int32 total_compressed_size)
+{
+	int32		compressed_size;
+
+	/*
+	 * pglz uses one control bit per byte, so we need (rawsize * 9) bits. We
+	 * care about bytes though, so we add 7 to make sure we include the last
+	 * incomplete byte (integer division rounds down).
+	 *
+	 * XXX Use int64 to prevent overflow during calculation.
+	 */
+	compressed_size = (int32) ((int64) rawsize * 9 + 7) / 8;
+
+	/*
+	 * Maximum compressed size can't be larger than total compressed size.
+	 */
+	compressed_size = Min(compressed_size, total_compressed_size);
+
+	return compressed_size;
 }

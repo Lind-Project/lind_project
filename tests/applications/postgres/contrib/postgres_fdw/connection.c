@@ -3,7 +3,7 @@
  * connection.c
  *		  Connection management functions for postgres_fdw
  *
- * Portions Copyright (c) 2012-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 2012-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *		  contrib/postgres_fdw/connection.c
@@ -12,20 +12,20 @@
  */
 #include "postgres.h"
 
-#include "postgres_fdw.h"
-
 #include "access/htup_details.h"
-#include "catalog/pg_user_mapping.h"
 #include "access/xact.h"
+#include "catalog/pg_user_mapping.h"
+#include "commands/defrem.h"
 #include "mb/pg_wchar.h"
 #include "miscadmin.h"
 #include "pgstat.h"
+#include "postgres_fdw.h"
+#include "storage/fd.h"
 #include "storage/latch.h"
 #include "utils/hsearch.h"
 #include "utils/inval.h"
 #include "utils/memutils.h"
 #include "utils/syscache.h"
-
 
 /*
  * Connection cache hash table entry
@@ -75,23 +75,23 @@ static bool xact_got_connection = false;
 /* prototypes of private functions */
 static PGconn *connect_pg_server(ForeignServer *server, UserMapping *user);
 static void disconnect_pg_server(ConnCacheEntry *entry);
-static void check_conn_params(const char **keywords, const char **values);
+static void check_conn_params(const char **keywords, const char **values, UserMapping *user);
 static void configure_remote_session(PGconn *conn);
 static void do_sql_command(PGconn *conn, const char *sql);
 static void begin_remote_xact(ConnCacheEntry *entry);
 static void pgfdw_xact_callback(XactEvent event, void *arg);
 static void pgfdw_subxact_callback(SubXactEvent event,
-					   SubTransactionId mySubid,
-					   SubTransactionId parentSubid,
-					   void *arg);
+								   SubTransactionId mySubid,
+								   SubTransactionId parentSubid,
+								   void *arg);
 static void pgfdw_inval_callback(Datum arg, int cacheid, uint32 hashvalue);
 static void pgfdw_reject_incomplete_xact_state_change(ConnCacheEntry *entry);
 static bool pgfdw_cancel_query(PGconn *conn);
 static bool pgfdw_exec_cleanup_query(PGconn *conn, const char *query,
-						 bool ignore_errors);
+									 bool ignore_errors);
 static bool pgfdw_get_cleanup_result(PGconn *conn, TimestampTz endtime,
-						 PGresult **result);
-
+									 PGresult **result);
+static bool UserMappingPasswordRequired(UserMapping *user);
 
 /*
  * Get a PGconn which can be used to execute queries on the remote PostgreSQL
@@ -260,10 +260,39 @@ connect_pg_server(ForeignServer *server, UserMapping *user)
 
 		keywords[n] = values[n] = NULL;
 
-		/* verify connection parameters and make connection */
-		check_conn_params(keywords, values);
+		/* verify the set of connection parameters */
+		check_conn_params(keywords, values, user);
 
+		/*
+		 * We must obey fd.c's limit on non-virtual file descriptors.  Assume
+		 * that a PGconn represents one long-lived FD.  (Doing this here also
+		 * ensures that VFDs are closed if needed to make room.)
+		 */
+		if (!AcquireExternalFD())
+		{
+#ifndef WIN32					/* can't write #if within ereport() macro */
+			ereport(ERROR,
+					(errcode(ERRCODE_SQLCLIENT_UNABLE_TO_ESTABLISH_SQLCONNECTION),
+					 errmsg("could not connect to server \"%s\"",
+							server->servername),
+					 errdetail("There are too many open files on the local server."),
+					 errhint("Raise the server's max_files_per_process and/or \"ulimit -n\" limits.")));
+#else
+			ereport(ERROR,
+					(errcode(ERRCODE_SQLCLIENT_UNABLE_TO_ESTABLISH_SQLCONNECTION),
+					 errmsg("could not connect to server \"%s\"",
+							server->servername),
+					 errdetail("There are too many open files on the local server."),
+					 errhint("Raise the server's max_files_per_process setting.")));
+#endif
+		}
+
+		/* OK to make connection */
 		conn = PQconnectdbParams(keywords, values, false);
+
+		if (!conn)
+			ReleaseExternalFD();	/* because the PG_CATCH block won't */
+
 		if (!conn || PQstatus(conn) != CONNECTION_OK)
 			ereport(ERROR,
 					(errcode(ERRCODE_SQLCLIENT_UNABLE_TO_ESTABLISH_SQLCONNECTION),
@@ -274,14 +303,16 @@ connect_pg_server(ForeignServer *server, UserMapping *user)
 		/*
 		 * Check that non-superuser has used password to establish connection;
 		 * otherwise, he's piggybacking on the postgres server's user
-		 * identity. See also dblink_security_check() in contrib/dblink.
+		 * identity. See also dblink_security_check() in contrib/dblink and
+		 * check_conn_params.
 		 */
-		if (!superuser() && !PQconnectionUsedPassword(conn))
+		if (!superuser_arg(user->userid) && UserMappingPasswordRequired(user) &&
+			!PQconnectionUsedPassword(conn))
 			ereport(ERROR,
 					(errcode(ERRCODE_S_R_E_PROHIBITED_SQL_STATEMENT_ATTEMPTED),
 					 errmsg("password is required"),
 					 errdetail("Non-superuser cannot connect if the server does not request a password."),
-					 errhint("Target server's authentication method must be changed.")));
+					 errhint("Target server's authentication method must be changed or password_required=false set in the user mapping attributes.")));
 
 		/* Prepare new session for use */
 		configure_remote_session(conn);
@@ -293,7 +324,10 @@ connect_pg_server(ForeignServer *server, UserMapping *user)
 	{
 		/* Release PGconn data structure if we managed to create one */
 		if (conn)
+		{
 			PQfinish(conn);
+			ReleaseExternalFD();
+		}
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
@@ -311,23 +345,44 @@ disconnect_pg_server(ConnCacheEntry *entry)
 	{
 		PQfinish(entry->conn);
 		entry->conn = NULL;
+		ReleaseExternalFD();
 	}
 }
 
 /*
+ * Return true if the password_required is defined and false for this user
+ * mapping, otherwise false. The mapping has been pre-validated.
+ */
+static bool
+UserMappingPasswordRequired(UserMapping *user)
+{
+	ListCell   *cell;
+
+	foreach(cell, user->options)
+	{
+		DefElem    *def = (DefElem *) lfirst(cell);
+
+		if (strcmp(def->defname, "password_required") == 0)
+			return defGetBoolean(def);
+	}
+
+	return true;
+}
+
+/*
  * For non-superusers, insist that the connstr specify a password.  This
- * prevents a password from being picked up from .pgpass, a service file,
- * the environment, etc.  We don't want the postgres user's passwords
- * to be accessible to non-superusers.  (See also dblink_connstr_check in
- * contrib/dblink.)
+ * prevents a password from being picked up from .pgpass, a service file, the
+ * environment, etc.  We don't want the postgres user's passwords,
+ * certificates, etc to be accessible to non-superusers.  (See also
+ * dblink_connstr_check in contrib/dblink.)
  */
 static void
-check_conn_params(const char **keywords, const char **values)
+check_conn_params(const char **keywords, const char **values, UserMapping *user)
 {
 	int			i;
 
 	/* no check required if superuser */
-	if (superuser())
+	if (superuser_arg(user->userid))
 		return;
 
 	/* ok if params contain a non-empty password */
@@ -336,6 +391,10 @@ check_conn_params(const char **keywords, const char **values)
 		if (strcmp(keywords[i], "password") == 0 && values[i][0] != '\0')
 			return;
 	}
+
+	/* ok if the superuser explicitly said so at user mapping creation time */
+	if (!UserMappingPasswordRequired(user))
+		return;
 
 	ereport(ERROR,
 			(errcode(ERRCODE_S_R_E_PROHIBITED_SQL_STATEMENT_ATTEMPTED),
@@ -546,7 +605,8 @@ pgfdw_get_result(PGconn *conn, const char *query)
 
 				/* Sleep until there's something to do */
 				wc = WaitLatchOrSocket(MyLatch,
-									   WL_LATCH_SET | WL_SOCKET_READABLE,
+									   WL_LATCH_SET | WL_SOCKET_READABLE |
+									   WL_EXIT_ON_PM_DEATH,
 									   PQsocket(conn),
 									   -1L, PG_WAIT_EXTENSION);
 				ResetLatch(MyLatch);
@@ -630,17 +690,14 @@ pgfdw_report_error(int elevel, PGresult *res, PGconn *conn,
 				 message_detail ? errdetail_internal("%s", message_detail) : 0,
 				 message_hint ? errhint("%s", message_hint) : 0,
 				 message_context ? errcontext("%s", message_context) : 0,
-				 sql ? errcontext("Remote SQL command: %s", sql) : 0));
+				 sql ? errcontext("remote SQL command: %s", sql) : 0));
 	}
-	PG_CATCH();
+	PG_FINALLY();
 	{
 		if (clear)
 			PQclear(res);
-		PG_RE_THROW();
 	}
 	PG_END_TRY();
-	if (clear)
-		PQclear(res);
 }
 
 /*
@@ -1152,7 +1209,8 @@ pgfdw_get_cleanup_result(PGconn *conn, TimestampTz endtime, PGresult **result)
 
 				/* Sleep until there's something to do */
 				wc = WaitLatchOrSocket(MyLatch,
-									   WL_LATCH_SET | WL_SOCKET_READABLE | WL_TIMEOUT,
+									   WL_LATCH_SET | WL_SOCKET_READABLE |
+									   WL_TIMEOUT | WL_EXIT_ON_PM_DEATH,
 									   PQsocket(conn),
 									   cur_timeout, PG_WAIT_EXTENSION);
 				ResetLatch(MyLatch);

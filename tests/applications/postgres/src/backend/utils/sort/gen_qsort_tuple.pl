@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
 #
 # gen_qsort_tuple.pl
@@ -26,6 +26,7 @@
 #
 
 use strict;
+use warnings;
 
 my $SUFFIX;
 my $EXTRAARGS;
@@ -130,6 +131,8 @@ swapfunc(SortTuple *a, SortTuple *b, size_t n)
 #define vecswap(a, b, n) if ((n) > 0) swapfunc(a, b, n)
 
 EOM
+
+	return;
 }
 
 sub emit_qsort_implementation
@@ -263,4 +266,6 @@ loop:
 	}
 }
 EOM
+
+	return;
 }

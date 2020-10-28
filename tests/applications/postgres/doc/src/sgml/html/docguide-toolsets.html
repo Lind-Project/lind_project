@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>J.2. Tool Sets</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="prev" href="docguide-docbook.html" title="J.1. DocBook" /><link rel="next" href="docguide-build.html" title="J.3. Building the Documentation" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">J.2. Tool Sets</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="docguide-docbook.html" title="J.1. DocBook">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="docguide.html" title="Appendix J. Documentation">Up</a></td><th width="60%" align="center">Appendix J. Documentation</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="docguide-build.html" title="J.3. Building the Documentation">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DOCGUIDE-TOOLSETS"><div class="titlepage"><div><div><h2 class="title" style="clear: both">J.2. Tool Sets</h2></div></div></div><div class="toc"><dl class="toc"><dt><span class="sect2"><a href="docguide-toolsets.html#id-1.11.11.5.5">J.2.1. Installation on Fedora, RHEL, and Derivatives</a></span></dt><dt><span class="sect2"><a href="docguide-toolsets.html#id-1.11.11.5.6">J.2.2. Installation on FreeBSD</a></span></dt><dt><span class="sect2"><a href="docguide-toolsets.html#id-1.11.11.5.7">J.2.3. Debian Packages</a></span></dt><dt><span class="sect2"><a href="docguide-toolsets.html#id-1.11.11.5.8">J.2.4. macOS</a></span></dt><dt><span class="sect2"><a href="docguide-toolsets.html#DOCGUIDE-TOOLSETS-CONFIGURE">J.2.5. Detection by <code class="command">configure</code></a></span></dt></dl></div><p>
+   The following tools are used to process the documentation.  Some
+   might be optional, as noted.
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><a class="ulink" href="https://www.oasis-open.org/docbook/" target="_top">DocBook DTD</a></span></dt><dd><p>
+       This is the definition of DocBook itself.  We currently use version
+       4.5; you cannot use later or earlier versions.  You need
+       the <acronym class="acronym">XML</acronym> variant of the DocBook DTD, not
+       the <acronym class="acronym">SGML</acronym> variant.
+      </p></dd><dt><span class="term"><a class="ulink" href="https://github.com/docbook/wiki/wiki/DocBookXslStylesheets" target="_top">DocBook XSL Stylesheets</a></span></dt><dd><p>
+       These contain the processing instructions for converting the
+       DocBook sources to other formats, such as
+       <acronym class="acronym">HTML</acronym>.
+      </p><p>
+       The minimum required version is currently 1.77.0, but it is recommended
+       to use the latest available version for best results.
+      </p></dd><dt><span class="term"><a class="ulink" href="http://xmlsoft.org/" target="_top">Libxml2</a> for <code class="command">xmllint</code></span></dt><dd><p>
+       This library and the <code class="command">xmllint</code> tool it contains are
+       used for processing XML.  Many developers will already
+       have <span class="application">Libxml2</span> installed, because it is also
+       used when building the PostgreSQL code.  Note, however,
+       that <code class="command">xmllint</code> might need to be installed from a
+       separate subpackage.
+      </p></dd><dt><span class="term"><a class="ulink" href="http://xmlsoft.org/XSLT/" target="_top">Libxslt</a> for <code class="command">xsltproc</code></span></dt><dd><p>
+       <code class="command">xsltproc</code> is an XSLT processor, that is, a program to
+       convert XML to other formats using XSLT stylesheets.
+      </p></dd><dt><span class="term"><a class="ulink" href="https://xmlgraphics.apache.org/fop/" target="_top">FOP</a></span></dt><dd><p>
+       This is a program for converting, among other things, XML to PDF.
+      </p></dd></dl></div><p>
+  </p><p>
+   We have documented experience with several installation methods for
+   the various tools that are needed to process the documentation.
+   These will be described below.  There might be some other packaged
+   distributions for these tools. Please report package status to the
+   documentation mailing list, and we will include that information
+   here.
+  </p><p>
+   You can get away with not installing DocBook XML and the DocBook XSLT
+   stylesheets locally, because the required files will be downloaded from the
+   Internet and cached locally.  This may in fact be the preferred solution if
+   your operating system packages provide only an old version of especially
+   the stylesheets or if no packages are available at all.  See
+   the <code class="option">--nonet</code> option for <code class="command">xmllint</code>
+   and <code class="command">xsltproc</code> for more information.
+  </p><div class="sect2" id="id-1.11.11.5.5"><div class="titlepage"><div><div><h3 class="title">J.2.1. Installation on Fedora, RHEL, and Derivatives</h3></div></div></div><p>
+    To install the required packages, use:
+</p><pre class="programlisting">
+yum install docbook-dtds docbook-style-xsl fop libxslt
+</pre><p>
+   </p></div><div class="sect2" id="id-1.11.11.5.6"><div class="titlepage"><div><div><h3 class="title">J.2.2. Installation on FreeBSD</h3></div></div></div><p>
+    To install the required packages with <code class="command">pkg</code>, use:
+</p><pre class="programlisting">
+pkg install docbook-xml docbook-xsl fop libxslt
+</pre><p>
+   </p><p>
+    When building the documentation from the <code class="filename">doc</code>
+    directory you'll need to use <code class="command">gmake</code>, because the
+    makefile provided is not suitable for FreeBSD's <code class="command">make</code>.
+   </p></div><div class="sect2" id="id-1.11.11.5.7"><div class="titlepage"><div><div><h3 class="title">J.2.3. Debian Packages</h3></div></div></div><p>
+    There is a full set of packages of the documentation tools
+    available for <span class="productname">Debian GNU/Linux</span>.
+    To install, simply use:
+</p><pre class="programlisting">
+apt-get install docbook-xml docbook-xsl fop libxml2-utils xsltproc
+</pre><p>
+   </p></div><div class="sect2" id="id-1.11.11.5.8"><div class="titlepage"><div><div><h3 class="title">J.2.4. macOS</h3></div></div></div><p>
+    On macOS, you can build the HTML and man documentation without installing
+    anything extra.  If you want to build PDFs or want to install a local copy
+    of DocBook, you can get those from your preferred package manager.
+   </p><p>
+    If you use MacPorts, the following will get you set up:
+</p><pre class="programlisting">
+sudo port install docbook-xml-4.5 docbook-xsl fop
+</pre><p>
+    If you use Homebrew, use this:
+</p><pre class="programlisting">
+brew install docbook docbook-xsl fop
+</pre><p>
+   </p></div><div class="sect2" id="DOCGUIDE-TOOLSETS-CONFIGURE"><div class="titlepage"><div><div><h3 class="title">J.2.5. Detection by <code class="command">configure</code></h3></div></div></div><p>
+   Before you can build the documentation you need to run the
+   <code class="filename">configure</code> script as you would when building
+   the <span class="productname">PostgreSQL</span> programs themselves.
+   Check the output near the end of the run, it should look something
+   like this:
+</p><pre class="screen">
+checking for xmllint... xmllint
+checking for DocBook XML V4.5... yes
+checking for dbtoepub... dbtoepub
+checking for xsltproc... xsltproc
+checking for fop... fop
+</pre><p>
+   If <code class="filename">xmllint</code> was not found then some of the following
+   tests will be skipped.
+  </p></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="docguide-docbook.html" title="J.1. DocBook">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="docguide.html" title="Appendix J. Documentation">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="docguide-build.html" title="J.3. Building the Documentation">Next</a></td></tr><tr><td width="40%" align="left" valign="top">J.1. DocBook </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="40%" align="right" valign="top"> J.3. Building the Documentation</td></tr></table></div></body></html>

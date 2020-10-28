@@ -4,7 +4,7 @@
  *	  Support for finding the values associated with Param nodes.
  *
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -15,12 +15,43 @@
 
 #include "postgres.h"
 
+#include "access/xact.h"
+#include "mb/stringinfo_mb.h"
 #include "nodes/bitmapset.h"
 #include "nodes/params.h"
 #include "storage/shmem.h"
 #include "utils/datum.h"
 #include "utils/lsyscache.h"
+#include "utils/memutils.h"
 
+
+/*
+ * Allocate and initialize a new ParamListInfo structure.
+ *
+ * To make a new structure for the "dynamic" way (with hooks), pass 0 for
+ * numParams and set numParams manually.
+ */
+ParamListInfo
+makeParamList(int numParams)
+{
+	ParamListInfo retval;
+	Size		size;
+
+	size = offsetof(ParamListInfoData, params) +
+		numParams * sizeof(ParamExternData);
+
+	retval = (ParamListInfo) palloc(size);
+	retval->paramFetch = NULL;
+	retval->paramFetchArg = NULL;
+	retval->paramCompile = NULL;
+	retval->paramCompileArg = NULL;
+	retval->parserSetup = NULL;
+	retval->parserSetupArg = NULL;
+	retval->paramValuesStr = NULL;
+	retval->numParams = numParams;
+
+	return retval;
+}
 
 /*
  * Copy a ParamListInfo structure.
@@ -31,49 +62,32 @@
  * set of parameter values.  If dynamic parameter hooks are present, we
  * intentionally do not copy them into the result.  Rather, we forcibly
  * instantiate all available parameter values and copy the datum values.
+ *
+ * paramValuesStr is not copied, either.
  */
 ParamListInfo
 copyParamList(ParamListInfo from)
 {
 	ParamListInfo retval;
-	Size		size;
-	int			i;
 
 	if (from == NULL || from->numParams <= 0)
 		return NULL;
 
-	size = offsetof(ParamListInfoData, params) +
-		from->numParams * sizeof(ParamExternData);
+	retval = makeParamList(from->numParams);
 
-	retval = (ParamListInfo) palloc(size);
-	retval->paramFetch = NULL;
-	retval->paramFetchArg = NULL;
-	retval->parserSetup = NULL;
-	retval->parserSetupArg = NULL;
-	retval->numParams = from->numParams;
-	retval->paramMask = NULL;
-
-	for (i = 0; i < from->numParams; i++)
+	for (int i = 0; i < from->numParams; i++)
 	{
-		ParamExternData *oprm = &from->params[i];
+		ParamExternData *oprm;
 		ParamExternData *nprm = &retval->params[i];
+		ParamExternData prmdata;
 		int16		typLen;
 		bool		typByVal;
 
-		/* Ignore parameters we don't need, to save cycles and space. */
-		if (from->paramMask != NULL &&
-			!bms_is_member(i, from->paramMask))
-		{
-			nprm->value = (Datum) 0;
-			nprm->isnull = true;
-			nprm->pflags = 0;
-			nprm->ptype = InvalidOid;
-			continue;
-		}
-
 		/* give hook a chance in case parameter is dynamic */
-		if (!OidIsValid(oprm->ptype) && from->paramFetch != NULL)
-			(*from->paramFetch) (from, i + 1);
+		if (from->paramFetch != NULL)
+			oprm = from->paramFetch(from, i + 1, false, &prmdata);
+		else
+			oprm = &from->params[i];
 
 		/* flat-copy the parameter info */
 		*nprm = *oprm;
@@ -102,22 +116,19 @@ EstimateParamListSpace(ParamListInfo paramLI)
 
 	for (i = 0; i < paramLI->numParams; i++)
 	{
-		ParamExternData *prm = &paramLI->params[i];
+		ParamExternData *prm;
+		ParamExternData prmdata;
 		Oid			typeOid;
 		int16		typLen;
 		bool		typByVal;
 
-		/* Ignore parameters we don't need, to save cycles and space. */
-		if (paramLI->paramMask != NULL &&
-			!bms_is_member(i, paramLI->paramMask))
-			typeOid = InvalidOid;
+		/* give hook a chance in case parameter is dynamic */
+		if (paramLI->paramFetch != NULL)
+			prm = paramLI->paramFetch(paramLI, i + 1, false, &prmdata);
 		else
-		{
-			/* give hook a chance in case parameter is dynamic */
-			if (!OidIsValid(prm->ptype) && paramLI->paramFetch != NULL)
-				(*paramLI->paramFetch) (paramLI, i + 1);
-			typeOid = prm->ptype;
-		}
+			prm = &paramLI->params[i];
+
+		typeOid = prm->ptype;
 
 		sz = add_size(sz, sizeof(Oid)); /* space for type OID */
 		sz = add_size(sz, sizeof(uint16));	/* space for pflags */
@@ -139,7 +150,7 @@ EstimateParamListSpace(ParamListInfo paramLI)
 }
 
 /*
- * Serialize a paramListInfo structure into caller-provided storage.
+ * Serialize a ParamListInfo structure into caller-provided storage.
  *
  * We write the number of parameters first, as a 4-byte integer, and then
  * write details for each parameter in turn.  The details for each parameter
@@ -153,6 +164,8 @@ EstimateParamListSpace(ParamListInfo paramLI)
  * RestoreParamList can be used to recreate a ParamListInfo based on the
  * serialized representation; this will be a static, self-contained copy
  * just as copyParamList would create.
+ *
+ * paramValuesStr is not included.
  */
 void
 SerializeParamList(ParamListInfo paramLI, char **start_address)
@@ -171,22 +184,19 @@ SerializeParamList(ParamListInfo paramLI, char **start_address)
 	/* Write each parameter in turn. */
 	for (i = 0; i < nparams; i++)
 	{
-		ParamExternData *prm = &paramLI->params[i];
+		ParamExternData *prm;
+		ParamExternData prmdata;
 		Oid			typeOid;
 		int16		typLen;
 		bool		typByVal;
 
-		/* Ignore parameters we don't need, to save cycles and space. */
-		if (paramLI->paramMask != NULL &&
-			!bms_is_member(i, paramLI->paramMask))
-			typeOid = InvalidOid;
+		/* give hook a chance in case parameter is dynamic */
+		if (paramLI->paramFetch != NULL)
+			prm = paramLI->paramFetch(paramLI, i + 1, false, &prmdata);
 		else
-		{
-			/* give hook a chance in case parameter is dynamic */
-			if (!OidIsValid(prm->ptype) && paramLI->paramFetch != NULL)
-				(*paramLI->paramFetch) (paramLI, i + 1);
-			typeOid = prm->ptype;
-		}
+			prm = &paramLI->params[i];
+
+		typeOid = prm->ptype;
 
 		/* Write type OID. */
 		memcpy(*start_address, &typeOid, sizeof(Oid));
@@ -224,25 +234,14 @@ ParamListInfo
 RestoreParamList(char **start_address)
 {
 	ParamListInfo paramLI;
-	Size		size;
-	int			i;
 	int			nparams;
 
 	memcpy(&nparams, *start_address, sizeof(int));
 	*start_address += sizeof(int);
 
-	size = offsetof(ParamListInfoData, params) +
-		nparams * sizeof(ParamExternData);
+	paramLI = makeParamList(nparams);
 
-	paramLI = (ParamListInfo) palloc(size);
-	paramLI->paramFetch = NULL;
-	paramLI->paramFetchArg = NULL;
-	paramLI->parserSetup = NULL;
-	paramLI->parserSetupArg = NULL;
-	paramLI->numParams = nparams;
-	paramLI->paramMask = NULL;
-
-	for (i = 0; i < nparams; i++)
+	for (int i = 0; i < nparams; i++)
 	{
 		ParamExternData *prm = &paramLI->params[i];
 
@@ -259,4 +258,107 @@ RestoreParamList(char **start_address)
 	}
 
 	return paramLI;
+}
+
+/*
+ * BuildParamLogString
+ *		Return a string that represents the parameter list, for logging.
+ *
+ * If caller already knows textual representations for some parameters, it can
+ * pass an array of exactly params->numParams values as knownTextValues, which
+ * can contain NULLs for any unknown individual values.  NULL can be given if
+ * no parameters are known.
+ *
+ * If maxlen is >= 0, that's the maximum number of bytes of any one
+ * parameter value to be printed; an ellipsis is added if the string is
+ * longer.  (Added quotes are not considered in this calculation.)
+ */
+char *
+BuildParamLogString(ParamListInfo params, char **knownTextValues, int maxlen)
+{
+	MemoryContext tmpCxt,
+				oldCxt;
+	StringInfoData buf;
+
+	/*
+	 * NB: think not of returning params->paramValuesStr!  It may have been
+	 * generated with a different maxlen, and so be unsuitable.  Besides that,
+	 * this is the function used to create that string.
+	 */
+
+	/*
+	 * No work if the param fetch hook is in use.  Also, it's not possible to
+	 * do this in an aborted transaction.  (It might be possible to improve on
+	 * this last point when some knownTextValues exist, but it seems tricky.)
+	 */
+	if (params->paramFetch != NULL ||
+		IsAbortedTransactionBlockState())
+		return NULL;
+
+	/* Initialize the output stringinfo, in caller's memory context */
+	initStringInfo(&buf);
+
+	/* Use a temporary context to call output functions, just in case */
+	tmpCxt = AllocSetContextCreate(CurrentMemoryContext,
+								   "BuildParamLogString",
+								   ALLOCSET_DEFAULT_SIZES);
+	oldCxt = MemoryContextSwitchTo(tmpCxt);
+
+	for (int paramno = 0; paramno < params->numParams; paramno++)
+	{
+		ParamExternData *param = &params->params[paramno];
+
+		appendStringInfo(&buf,
+						 "%s$%d = ",
+						 paramno > 0 ? ", " : "",
+						 paramno + 1);
+
+		if (param->isnull || !OidIsValid(param->ptype))
+			appendStringInfoString(&buf, "NULL");
+		else
+		{
+			if (knownTextValues != NULL && knownTextValues[paramno] != NULL)
+				appendStringInfoStringQuoted(&buf, knownTextValues[paramno],
+											 maxlen);
+			else
+			{
+				Oid			typoutput;
+				bool		typisvarlena;
+				char	   *pstring;
+
+				getTypeOutputInfo(param->ptype, &typoutput, &typisvarlena);
+				pstring = OidOutputFunctionCall(typoutput, param->value);
+				appendStringInfoStringQuoted(&buf, pstring, maxlen);
+			}
+		}
+	}
+
+	MemoryContextSwitchTo(oldCxt);
+	MemoryContextDelete(tmpCxt);
+
+	return buf.data;
+}
+
+/*
+ * ParamsErrorCallback - callback for printing parameters in error context
+ *
+ * Note that this is a no-op unless BuildParamLogString has been called
+ * beforehand.
+ */
+void
+ParamsErrorCallback(void *arg)
+{
+	ParamsErrorCbData *data = (ParamsErrorCbData *) arg;
+
+	if (data == NULL ||
+		data->params == NULL ||
+		data->params->paramValuesStr == NULL)
+		return;
+
+	if (data->portalName && data->portalName[0] != '\0')
+		errcontext("portal \"%s\" with parameters: %s",
+				   data->portalName, data->params->paramValuesStr);
+	else
+		errcontext("unnamed portal with parameters: %s",
+				   data->params->paramValuesStr);
 }

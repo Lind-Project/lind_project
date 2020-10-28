@@ -1,4 +1,4 @@
-# Basic logical replication test
+# This test checks that constraints work on subscriber
 use strict;
 use warnings;
 use PostgresNode;
@@ -19,14 +19,14 @@ $node_subscriber->start;
 $node_publisher->safe_psql('postgres',
 	"CREATE TABLE tab_fk (bid int PRIMARY KEY);");
 $node_publisher->safe_psql('postgres',
-"CREATE TABLE tab_fk_ref (id int PRIMARY KEY, junk text, bid int REFERENCES tab_fk (bid));"
+	"CREATE TABLE tab_fk_ref (id int PRIMARY KEY, junk text, bid int REFERENCES tab_fk (bid));"
 );
 
 # Setup structure on subscriber; column order intentionally different
 $node_subscriber->safe_psql('postgres',
 	"CREATE TABLE tab_fk (bid int PRIMARY KEY);");
 $node_subscriber->safe_psql('postgres',
-"CREATE TABLE tab_fk_ref (id int PRIMARY KEY, bid int REFERENCES tab_fk (bid), junk text);"
+	"CREATE TABLE tab_fk_ref (id int PRIMARY KEY, bid int REFERENCES tab_fk (bid), junk text);"
 );
 
 # Setup logical replication
@@ -34,16 +34,11 @@ my $publisher_connstr = $node_publisher->connstr . ' dbname=postgres';
 $node_publisher->safe_psql('postgres',
 	"CREATE PUBLICATION tap_pub FOR ALL TABLES;");
 
-my $appname = 'tap_sub';
 $node_subscriber->safe_psql('postgres',
-"CREATE SUBSCRIPTION tap_sub CONNECTION '$publisher_connstr application_name=$appname' PUBLICATION tap_pub WITH (copy_data = false)"
+	"CREATE SUBSCRIPTION tap_sub CONNECTION '$publisher_connstr' PUBLICATION tap_pub WITH (copy_data = false)"
 );
 
-# Wait for subscriber to finish initialization
-my $caughtup_query =
-"SELECT pg_current_wal_lsn() <= replay_lsn FROM pg_stat_replication WHERE application_name = '$appname';";
-$node_publisher->poll_query_until('postgres', $caughtup_query)
-  or die "Timed out while waiting for subscriber to catch up";
+$node_publisher->wait_for_catchup('tap_sub');
 
 $node_publisher->safe_psql('postgres',
 	"INSERT INTO tab_fk (bid) VALUES (1);");
@@ -52,8 +47,7 @@ $node_publisher->safe_psql('postgres',
 	"INSERT INTO tab_fk_ref (id, bid, junk) VALUES (1, 1, repeat(pi()::text,20000));"
 );
 
-$node_publisher->poll_query_until('postgres', $caughtup_query)
-  or die "Timed out while waiting for subscriber to catch up";
+$node_publisher->wait_for_catchup('tap_sub');
 
 # Check data on subscriber
 my $result = $node_subscriber->safe_psql('postgres',
@@ -71,8 +65,7 @@ $node_publisher->safe_psql('postgres', "DROP TABLE tab_fk CASCADE;");
 $node_publisher->safe_psql('postgres',
 	"INSERT INTO tab_fk_ref (id, bid) VALUES (2, 2);");
 
-$node_publisher->poll_query_until('postgres', $caughtup_query)
-  or die "Timed out while waiting for subscriber to catch up";
+$node_publisher->wait_for_catchup('tap_sub');
 
 # FK is not enforced on subscriber
 $result = $node_subscriber->safe_psql('postgres',
@@ -108,8 +101,7 @@ ALTER TABLE tab_fk_ref ENABLE REPLICA TRIGGER filter_basic_dml_trg;
 $node_publisher->safe_psql('postgres',
 	"INSERT INTO tab_fk_ref (id, bid) VALUES (10, 10);");
 
-$node_publisher->poll_query_until('postgres', $caughtup_query)
-  or die "Timed out while waiting for subscriber to catch up";
+$node_publisher->wait_for_catchup('tap_sub');
 
 # The trigger should cause the insert to be skipped on subscriber
 $result = $node_subscriber->safe_psql('postgres',
@@ -120,21 +112,20 @@ is($result, qq(2|1|2), 'check replica insert trigger applied on subscriber');
 $node_publisher->safe_psql('postgres',
 	"UPDATE tab_fk_ref SET bid = 2 WHERE bid = 1;");
 
-$node_publisher->poll_query_until('postgres', $caughtup_query)
-  or die "Timed out while waiting for subscriber to catch up";
+$node_publisher->wait_for_catchup('tap_sub');
 
 # The trigger should cause the update to be skipped on subscriber
 $result = $node_subscriber->safe_psql('postgres',
 	"SELECT count(*), min(bid), max(bid) FROM tab_fk_ref;");
-is($result, qq(2|1|2), 'check replica update column trigger applied on subscriber');
+is($result, qq(2|1|2),
+	'check replica update column trigger applied on subscriber');
 
 # Update on a column not specified in the trigger, but it will trigger
 # anyway because logical replication ships all columns in an update.
 $node_publisher->safe_psql('postgres',
 	"UPDATE tab_fk_ref SET id = 6 WHERE id = 1;");
 
-$node_publisher->poll_query_until('postgres', $caughtup_query)
-  or die "Timed out while waiting for subscriber to catch up";
+$node_publisher->wait_for_catchup('tap_sub');
 
 $result = $node_subscriber->safe_psql('postgres',
 	"SELECT count(*), min(id), max(id) FROM tab_fk_ref;");

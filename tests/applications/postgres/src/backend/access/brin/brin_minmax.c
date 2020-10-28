@@ -2,7 +2,7 @@
  * brin_minmax.c
  *		Implementation of Min/Max opclass for BRIN
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -10,18 +10,17 @@
  */
 #include "postgres.h"
 
-#include "access/genam.h"
 #include "access/brin_internal.h"
 #include "access/brin_tuple.h"
+#include "access/genam.h"
 #include "access/stratnum.h"
-#include "catalog/pg_type.h"
 #include "catalog/pg_amop.h"
+#include "catalog/pg_type.h"
 #include "utils/builtins.h"
 #include "utils/datum.h"
 #include "utils/lsyscache.h"
 #include "utils/rel.h"
 #include "utils/syscache.h"
-
 
 typedef struct MinmaxOpaque
 {
@@ -30,7 +29,7 @@ typedef struct MinmaxOpaque
 } MinmaxOpaque;
 
 static FmgrInfo *minmax_get_strategy_procinfo(BrinDesc *bdesc, uint16 attno,
-							 Oid subtype, uint16 strategynum);
+											  Oid subtype, uint16 strategynum);
 
 
 Datum
@@ -90,7 +89,7 @@ brin_minmax_add_value(PG_FUNCTION_ARGS)
 	}
 
 	attno = column->bv_attno;
-	attr = bdesc->bd_tupdesc->attrs[attno - 1];
+	attr = TupleDescAttr(bdesc->bd_tupdesc, attno - 1);
 
 	/*
 	 * If the recorded value is null, store the new value (which we know to be
@@ -260,7 +259,7 @@ brin_minmax_union(PG_FUNCTION_ARGS)
 		PG_RETURN_VOID();
 
 	attno = col_a->bv_attno;
-	attr = bdesc->bd_tupdesc->attrs[attno - 1];
+	attr = TupleDescAttr(bdesc->bd_tupdesc, attno - 1);
 
 	/*
 	 * Adjust "allnulls".  If A doesn't have values, just copy the values from
@@ -347,7 +346,7 @@ minmax_get_strategy_procinfo(BrinDesc *bdesc, uint16 attno, Oid subtype,
 		bool		isNull;
 
 		opfamily = bdesc->bd_index->rd_opfamily[attno - 1];
-		attr = bdesc->bd_tupdesc->attrs[attno - 1];
+		attr = TupleDescAttr(bdesc->bd_tupdesc, attno - 1);
 		tuple = SearchSysCache4(AMOPSTRATEGY, ObjectIdGetDatum(opfamily),
 								ObjectIdGetDatum(attr->atttypid),
 								ObjectIdGetDatum(subtype),

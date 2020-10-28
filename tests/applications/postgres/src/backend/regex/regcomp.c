@@ -55,7 +55,7 @@ static const chr *scanplain(struct vars *);
 static void onechr(struct vars *, chr, struct state *, struct state *);
 static void wordchrs(struct vars *);
 static void processlacon(struct vars *, struct state *, struct state *, int,
-			 struct state *, struct state *);
+						 struct state *, struct state *);
 static struct subre *subre(struct vars *, int, int, struct state *, struct state *);
 static void freesubre(struct vars *, struct subre *);
 static void freesrnode(struct vars *, struct subre *);
@@ -161,15 +161,15 @@ static int	push(struct nfa *, struct arc *, struct state **);
 static int	combine(struct arc *, struct arc *);
 static void fixempties(struct nfa *, FILE *);
 static struct state *emptyreachable(struct nfa *, struct state *,
-			   struct state *, struct arc **);
+									struct state *, struct arc **);
 static int	isconstraintarc(struct arc *);
 static int	hasconstraintout(struct state *);
 static void fixconstraintloops(struct nfa *, FILE *);
 static int	findconstraintloop(struct nfa *, struct state *);
 static void breakconstraintloop(struct nfa *, struct state *);
 static void clonesuccessorstates(struct nfa *, struct state *, struct state *,
-					 struct state *, struct arc *,
-					 char *, char *, int);
+								 struct state *, struct arc *,
+								 char *, char *, int);
 static void cleanup(struct nfa *);
 static void markreachable(struct nfa *, struct state *, struct state *, struct state *);
 static void markcanreach(struct nfa *, struct state *, struct state *, struct state *);
@@ -288,7 +288,6 @@ struct vars
 #define NWBDRY	'W'				/* non-word-boundary constraint */
 #define SBEGIN	'A'				/* beginning of string (even if not BOL) */
 #define SEND	'Z'				/* end of string (even if not EOL) */
-#define PREFER	'P'				/* length preference */
 
 /* is an arc colored, and hence on a color chain? */
 #define COLORED(a) \
@@ -909,7 +908,8 @@ parseqatom(struct vars *v,
 			}
 			/* legal in EREs due to specification botch */
 			NOTE(REG_UPBOTCH);
-			/* fallthrough into case PLAIN */
+			/* fall through into case PLAIN */
+			/* FALLTHROUGH */
 		case PLAIN:
 			onechr(v, v->nextvalue, lp, rp);
 			okcolors(v->nfa, v->cm);

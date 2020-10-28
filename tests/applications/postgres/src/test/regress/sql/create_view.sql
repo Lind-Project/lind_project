@@ -101,7 +101,7 @@ CREATE VIEW temp_view_test.v2 AS SELECT * FROM base_table;
 -- should fail
 CREATE VIEW temp_view_test.v3_temp AS SELECT * FROM temp_table;
 -- should fail
-CREATE SCHEMA test_schema
+CREATE SCHEMA test_view_schema
     CREATE TEMP VIEW testview AS SELECT 1;
 
 -- joins: if any of the join relations are temporary, the view
@@ -391,6 +391,12 @@ select pg_get_viewdef('vv1', true);
 alter table tt5 drop column c;
 select pg_get_viewdef('vv1', true);
 
+create view v4 as select * from v1;
+alter view v1 rename column a to x;
+select pg_get_viewdef('v1', true);
+select pg_get_viewdef('v4', true);
+
+
 -- Unnamed FULL JOIN USING is lots of fun too
 
 create table tt7 (x int, xx int, y int);
@@ -601,7 +607,41 @@ select pg_get_viewdef('tt23v', true);
 select pg_get_ruledef(oid, true) from pg_rewrite
   where ev_class = 'tt23v'::regclass and ev_type = '1';
 
+-- test extraction of FieldSelect field names (get_name_for_var_field)
+
+create view tt24v as
+with cte as materialized (select r from (values(1,2),(3,4)) r)
+select (r).column2 as col_a, (rr).column2 as col_b from
+  cte join (select rr from (values(1,7),(3,8)) rr limit 2) ss
+  on (r).column1 = (rr).column1;
+select pg_get_viewdef('tt24v', true);
+create view tt25v as
+with cte as materialized (select pg_get_keywords() k)
+select (k).word from cte;
+select pg_get_viewdef('tt25v', true);
+-- also check cases seen only in EXPLAIN
+explain (verbose, costs off)
+select * from tt24v;
+explain (verbose, costs off)
+select (r).column2 from (select r from (values(1,2),(3,4)) r limit 1) ss;
+
+-- test pretty-print parenthesization rules, and SubLink deparsing
+
+create view tt26v as
+select x + y + z as c1,
+       (x * y) + z as c2,
+       x + (y * z) as c3,
+       (x + y) * z as c4,
+       x * (y + z) as c5,
+       x + (y + z) as c6,
+       x + (y # z) as c7,
+       (x > y) AND (y > z OR x > z) as c8,
+       (x > y) OR (y > z AND NOT (x > z)) as c9,
+       (x,y) <> ALL (values(1,2),(3,4)) as c10,
+       (x,y) <= ANY (values(1,2),(3,4)) as c11
+from (values(1,2,3)) v(x,y,z);
+select pg_get_viewdef('tt26v', true);
+
 -- clean up all the random objects we made above
-\set VERBOSITY terse \\ -- suppress cascade details
 DROP SCHEMA temp_view_test CASCADE;
 DROP SCHEMA testviewschm2 CASCADE;

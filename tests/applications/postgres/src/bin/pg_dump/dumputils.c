@@ -5,7 +5,7 @@
  * Basically this is stuff that is useful in both pg_dump and pg_dumpall.
  *
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * src/bin/pg_dump/dumputils.c
@@ -21,12 +21,12 @@
 
 
 static bool parseAclItem(const char *item, const char *type,
-			 const char *name, const char *subname, int remoteVersion,
-			 PQExpBuffer grantee, PQExpBuffer grantor,
-			 PQExpBuffer privs, PQExpBuffer privswgo);
+						 const char *name, const char *subname, int remoteVersion,
+						 PQExpBuffer grantee, PQExpBuffer grantor,
+						 PQExpBuffer privs, PQExpBuffer privswgo);
 static char *copyAclUserName(PQExpBuffer output, char *input);
 static void AddAcl(PQExpBuffer aclbuf, const char *keyword,
-	   const char *subname);
+				   const char *subname);
 
 
 /*
@@ -36,7 +36,7 @@ static void AddAcl(PQExpBuffer aclbuf, const char *keyword,
  *	subname: the sub-object name, if any (already quoted); NULL if none
  *	nspname: the namespace the object is in (NULL if none); not pre-quoted
  *	type: the object type (as seen in GRANT command: must be one of
- *		TABLE, SEQUENCE, FUNCTION, LANGUAGE, SCHEMA, DATABASE, TABLESPACE,
+ *		TABLE, SEQUENCE, FUNCTION, PROCEDURE, LANGUAGE, SCHEMA, DATABASE, TABLESPACE,
  *		FOREIGN DATA WRAPPER, SERVER, or LARGE OBJECT)
  *	acls: the ACL string fetched from the database
  *	racls: the ACL string of any initial-but-now-revoked privileges
@@ -45,7 +45,7 @@ static void AddAcl(PQExpBuffer aclbuf, const char *keyword,
  *	prefix: string to prefix to each generated command; typically empty
  *	remoteVersion: version of database
  *
- * Returns TRUE if okay, FALSE if could not parse the acl string.
+ * Returns true if okay, false if could not parse the acl string.
  * The resulting commands (if any) are appended to the contents of 'sql'.
  *
  * Note: when processing a default ACL, prefix is "ALTER DEFAULT PRIVILEGES "
@@ -95,6 +95,8 @@ buildACLCommands(const char *name, const char *subname, const char *nspname,
 	{
 		if (!parsePGArray(racls, &raclitems, &nraclitems))
 		{
+			if (aclitems)
+				free(aclitems);
 			if (raclitems)
 				free(raclitems);
 			return false;
@@ -395,7 +397,7 @@ buildACLCommands(const char *name, const char *subname, const char *nspname,
  *	owner: username of privileges owner (will be passed through fmtId)
  *	remoteVersion: version of database
  *
- * Returns TRUE if okay, FALSE if could not parse the acl string.
+ * Returns true if okay, false if could not parse the acl string.
  * The resulting commands (if any) are appended to the contents of 'sql'.
  */
 bool
@@ -423,7 +425,7 @@ buildDefaultACLCommands(const char *type, const char *nspname,
 
 	if (strlen(initacls) != 0 || strlen(initracls) != 0)
 	{
-		appendPQExpBuffer(sql, "SELECT pg_catalog.binary_upgrade_set_record_init_privs(true);\n");
+		appendPQExpBufferStr(sql, "SELECT pg_catalog.binary_upgrade_set_record_init_privs(true);\n");
 		if (!buildACLCommands("", NULL, NULL, type,
 							  initacls, initracls, owner,
 							  prefix->data, remoteVersion, sql))
@@ -431,7 +433,7 @@ buildDefaultACLCommands(const char *type, const char *nspname,
 			destroyPQExpBuffer(prefix);
 			return false;
 		}
-		appendPQExpBuffer(sql, "SELECT pg_catalog.binary_upgrade_set_record_init_privs(false);\n");
+		appendPQExpBufferStr(sql, "SELECT pg_catalog.binary_upgrade_set_record_init_privs(false);\n");
 	}
 
 	if (!buildACLCommands("", NULL, NULL, type,
@@ -479,15 +481,13 @@ parseAclItem(const char *item, const char *type,
 	char	   *slpos;
 	char	   *pos;
 
-	buf = strdup(item);
-	if (!buf)
-		return false;
+	buf = pg_strdup(item);
 
 	/* user or group name is string up to = */
 	eqpos = copyAclUserName(grantee, buf);
 	if (*eqpos != '=')
 	{
-		free(buf);
+		pg_free(buf);
 		return false;
 	}
 
@@ -499,13 +499,13 @@ parseAclItem(const char *item, const char *type,
 		slpos = copyAclUserName(grantor, slpos);
 		if (*slpos != '\0')
 		{
-			free(buf);
+			pg_free(buf);
 			return false;
 		}
 	}
 	else
 	{
-		free(buf);
+		pg_free(buf);
 		return false;
 	}
 
@@ -562,6 +562,9 @@ do { \
 	else if (strcmp(type, "FUNCTION") == 0 ||
 			 strcmp(type, "FUNCTIONS") == 0)
 		CONVERT_PRIV('X', "EXECUTE");
+	else if (strcmp(type, "PROCEDURE") == 0 ||
+			 strcmp(type, "PROCEDURES") == 0)
+		CONVERT_PRIV('X', "EXECUTE");
 	else if (strcmp(type, "LANGUAGE") == 0)
 		CONVERT_PRIV('U', "USAGE");
 	else if (strcmp(type, "SCHEMA") == 0 ||
@@ -612,7 +615,7 @@ do { \
 			appendPQExpBuffer(privs, "(%s)", subname);
 	}
 
-	free(buf);
+	pg_free(buf);
 
 	return true;
 }
@@ -979,4 +982,80 @@ SplitGUCList(char *rawstring, char separator,
 
 	*nextptr = NULL;
 	return true;
+}
+
+/*
+ * Helper function for dumping "ALTER DATABASE/ROLE SET ..." commands.
+ *
+ * Parse the contents of configitem (a "name=value" string), wrap it in
+ * a complete ALTER command, and append it to buf.
+ *
+ * type is DATABASE or ROLE, and name is the name of the database or role.
+ * If we need an "IN" clause, type2 and name2 similarly define what to put
+ * there; otherwise they should be NULL.
+ * conn is used only to determine string-literal quoting conventions.
+ */
+void
+makeAlterConfigCommand(PGconn *conn, const char *configitem,
+					   const char *type, const char *name,
+					   const char *type2, const char *name2,
+					   PQExpBuffer buf)
+{
+	char	   *mine;
+	char	   *pos;
+
+	/* Parse the configitem.  If we can't find an "=", silently do nothing. */
+	mine = pg_strdup(configitem);
+	pos = strchr(mine, '=');
+	if (pos == NULL)
+	{
+		pg_free(mine);
+		return;
+	}
+	*pos++ = '\0';
+
+	/* Build the command, with suitable quoting for everything. */
+	appendPQExpBuffer(buf, "ALTER %s %s ", type, fmtId(name));
+	if (type2 != NULL && name2 != NULL)
+		appendPQExpBuffer(buf, "IN %s %s ", type2, fmtId(name2));
+	appendPQExpBuffer(buf, "SET %s TO ", fmtId(mine));
+
+	/*
+	 * Variables that are marked GUC_LIST_QUOTE were already fully quoted by
+	 * flatten_set_variable_args() before they were put into the setconfig
+	 * array.  However, because the quoting rules used there aren't exactly
+	 * like SQL's, we have to break the list value apart and then quote the
+	 * elements as string literals.  (The elements may be double-quoted as-is,
+	 * but we can't just feed them to the SQL parser; it would do the wrong
+	 * thing with elements that are zero-length or longer than NAMEDATALEN.)
+	 *
+	 * Variables that are not so marked should just be emitted as simple
+	 * string literals.  If the variable is not known to
+	 * variable_is_guc_list_quote(), we'll do that; this makes it unsafe to
+	 * use GUC_LIST_QUOTE for extension variables.
+	 */
+	if (variable_is_guc_list_quote(mine))
+	{
+		char	  **namelist;
+		char	  **nameptr;
+
+		/* Parse string into list of identifiers */
+		/* this shouldn't fail really */
+		if (SplitGUCList(pos, ',', &namelist))
+		{
+			for (nameptr = namelist; *nameptr; nameptr++)
+			{
+				if (nameptr != namelist)
+					appendPQExpBufferStr(buf, ", ");
+				appendStringLiteralConn(buf, *nameptr, conn);
+			}
+		}
+		pg_free(namelist);
+	}
+	else
+		appendStringLiteralConn(buf, pos, conn);
+
+	appendPQExpBufferStr(buf, ";\n");
+
+	pg_free(mine);
 }

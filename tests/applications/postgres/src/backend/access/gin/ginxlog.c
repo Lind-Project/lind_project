@@ -4,7 +4,7 @@
  *	  WAL replay logic for inverted index.
  *
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -38,36 +38,6 @@ ginRedoClearIncompleteSplit(XLogReaderState *record, uint8 block_id)
 	}
 	if (BufferIsValid(buffer))
 		UnlockReleaseBuffer(buffer);
-}
-
-static void
-ginRedoCreateIndex(XLogReaderState *record)
-{
-	XLogRecPtr	lsn = record->EndRecPtr;
-	Buffer		RootBuffer,
-				MetaBuffer;
-	Page		page;
-
-	MetaBuffer = XLogInitBufferForRedo(record, 0);
-	Assert(BufferGetBlockNumber(MetaBuffer) == GIN_METAPAGE_BLKNO);
-	page = (Page) BufferGetPage(MetaBuffer);
-
-	GinInitMetabuffer(MetaBuffer);
-
-	PageSetLSN(page, lsn);
-	MarkBufferDirty(MetaBuffer);
-
-	RootBuffer = XLogInitBufferForRedo(record, 1);
-	Assert(BufferGetBlockNumber(RootBuffer) == GIN_ROOT_BLKNO);
-	page = (Page) BufferGetPage(RootBuffer);
-
-	GinInitBuffer(RootBuffer, GIN_LEAF);
-
-	PageSetLSN(page, lsn);
-	MarkBufferDirty(RootBuffer);
-
-	UnlockReleaseBuffer(RootBuffer);
-	UnlockReleaseBuffer(MetaBuffer);
 }
 
 static void
@@ -235,8 +205,8 @@ ginRedoRecompress(Page page, ginxlogRecompressDataLeaf *data)
 		while (segno < a_segno)
 		{
 			/*
-			 * Once modification is started and page tail is copied, we've
-			 * to copy unmodified segments.
+			 * Once modification is started and page tail is copied, we've to
+			 * copy unmodified segments.
 			 */
 			segsize = SizeOfGinPostingList(oldseg);
 			if (tailCopy)
@@ -287,12 +257,12 @@ ginRedoRecompress(Page page, ginxlogRecompressDataLeaf *data)
 		}
 
 		/*
-		 * We're about to start modification of the page.  So, copy tail of the
-		 * page if it's not done already.
+		 * We're about to start modification of the page.  So, copy tail of
+		 * the page if it's not done already.
 		 */
 		if (!tailCopy && segptr != segmentend)
 		{
-			int tailSize = segmentend - segptr;
+			int			tailSize = segmentend - segptr;
 
 			tailCopy = (Pointer) palloc(tailSize);
 			memcpy(tailCopy, segptr, tailSize);
@@ -334,7 +304,7 @@ ginRedoRecompress(Page page, ginxlogRecompressDataLeaf *data)
 	segptr = (Pointer) oldseg;
 	if (segptr != segmentend && tailCopy)
 	{
-		int restSize = segmentend - segptr;
+		int			restSize = segmentend - segptr;
 
 		Assert(writePtr + restSize <= PageGetSpecialPointer(page));
 		memcpy(writePtr, segptr, restSize);
@@ -531,24 +501,7 @@ ginRedoDeletePage(XLogReaderState *record)
 		page = BufferGetPage(dbuffer);
 		Assert(GinPageIsData(page));
 		GinPageSetDeleted(page);
-
-		/*
-		 * deleteXid field of ginxlogDeletePage was added during backpatching.
-		 * But, non-backpatched instances will continue generate WAL without
-		 * this field.  We should be able to correctly apply that.  We can
-		 * distinguish new WAL records by size their data, because
-		 * ginxlogDeletePage changes its size on both 32-bit and 64-bit
-		 * platforms.
-		 */
-		StaticAssertStmt(sizeof(ginxlogDeletePage) !=
-						 sizeof(ginxlogDeletePageOld),
-						 "ginxlogDeletePage size should be changed "
-						 "with addition of deleteXid field");
-		Assert(XLogRecGetDataLen(record) == sizeof(ginxlogDeletePage) ||
-			   XLogRecGetDataLen(record) == sizeof(ginxlogDeletePageOld));
-		if (XLogRecGetDataLen(record) == sizeof(ginxlogDeletePage))
-			GinPageSetDeleteXid(page, data->deleteXid);
-
+		GinPageSetDeleteXid(page, data->deleteXid);
 		PageSetLSN(page, lsn);
 		MarkBufferDirty(dbuffer);
 	}
@@ -589,7 +542,7 @@ ginRedoUpdateMetapage(XLogReaderState *record)
 	Assert(BufferGetBlockNumber(metabuffer) == GIN_METAPAGE_BLKNO);
 	metapage = BufferGetPage(metabuffer);
 
-	GinInitPage(metapage, GIN_META, BufferGetPageSize(metabuffer));
+	GinInitMetabuffer(metabuffer);
 	memcpy(GinPageGetMeta(metapage), &data->metadata, sizeof(GinMetaPageData));
 	PageSetLSN(metapage, lsn);
 	MarkBufferDirty(metabuffer);
@@ -731,7 +684,7 @@ ginRedoDeleteListPages(XLogReaderState *record)
 	Assert(BufferGetBlockNumber(metabuffer) == GIN_METAPAGE_BLKNO);
 	metapage = BufferGetPage(metabuffer);
 
-	GinInitPage(metapage, GIN_META, BufferGetPageSize(metabuffer));
+	GinInitMetabuffer(metabuffer);
 
 	memcpy(GinPageGetMeta(metapage), &data->metadata, sizeof(GinMetaPageData));
 	PageSetLSN(metapage, lsn);
@@ -784,9 +737,6 @@ gin_redo(XLogReaderState *record)
 	oldCtx = MemoryContextSwitchTo(opCtx);
 	switch (info)
 	{
-		case XLOG_GIN_CREATE_INDEX:
-			ginRedoCreateIndex(record);
-			break;
 		case XLOG_GIN_CREATE_PTREE:
 			ginRedoCreatePTree(record);
 			break;
@@ -843,6 +793,7 @@ void
 gin_mask(char *pagedata, BlockNumber blkno)
 {
 	Page		page = (Page) pagedata;
+	PageHeader	pagehdr = (PageHeader) page;
 	GinPageOpaque opaque;
 
 	mask_page_lsn_and_checksum(page);
@@ -851,18 +802,12 @@ gin_mask(char *pagedata, BlockNumber blkno)
 	mask_page_hint_bits(page);
 
 	/*
-	 * GIN metapage doesn't use pd_lower/pd_upper. Other page types do. Hence,
-	 * we need to apply masking for those pages.
+	 * For a GIN_DELETED page, the page is initialized to empty.  Hence, mask
+	 * the whole page content.  For other pages, mask the hole if pd_lower
+	 * appears to have been set correctly.
 	 */
-	if (opaque->flags != GIN_META)
-	{
-		/*
-		 * For GIN_DELETED page, the page is initialized to empty. Hence, mask
-		 * the page content.
-		 */
-		if (opaque->flags & GIN_DELETED)
-			mask_page_content(page);
-		else
-			mask_unused_space(page);
-	}
+	if (opaque->flags & GIN_DELETED)
+		mask_page_content(page);
+	else if (pagehdr->pd_lower > SizeOfPageHeaderData)
+		mask_unused_space(page);
 }

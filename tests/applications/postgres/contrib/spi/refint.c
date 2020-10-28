@@ -12,6 +12,7 @@
 #include "commands/trigger.h"
 #include "executor/spi.h"
 #include "utils/builtins.h"
+#include "utils/memutils.h"
 #include "utils/rel.h"
 
 PG_MODULE_MAGIC;
@@ -182,16 +183,17 @@ check_primary_key(PG_FUNCTION_ARGS)
 		pplan = SPI_prepare(sql, nkeys, argtypes);
 		if (pplan == NULL)
 			/* internal error */
-			elog(ERROR, "check_primary_key: SPI_prepare returned %d", SPI_result);
+			elog(ERROR, "check_primary_key: SPI_prepare returned %s", SPI_result_code_string(SPI_result));
 
 		/*
 		 * Remember that SPI_prepare places plan in current memory context -
-		 * so, we have to save plan in Top memory context for later use.
+		 * so, we have to save plan in TopMemoryContext for later use.
 		 */
 		if (SPI_keepplan(pplan))
 			/* internal error */
 			elog(ERROR, "check_primary_key: SPI_keepplan failed");
-		plan->splan = (SPIPlanPtr *) malloc(sizeof(SPIPlanPtr));
+		plan->splan = (SPIPlanPtr *) MemoryContextAlloc(TopMemoryContext,
+														sizeof(SPIPlanPtr));
 		*(plan->splan) = pplan;
 		plan->nplans = 1;
 	}
@@ -306,7 +308,7 @@ check_foreign_key(PG_FUNCTION_ARGS)
 		/* internal error */
 		elog(ERROR, "check_foreign_key: too short %d (< 5) list of arguments", nargs);
 
-	nrefs = pg_atoi(args[0], sizeof(int), 0);
+	nrefs = pg_strtoint32(args[0]);
 	if (nrefs < 1)
 		/* internal error */
 		elog(ERROR, "check_foreign_key: %d (< 1) number of references specified", nrefs);
@@ -395,7 +397,7 @@ check_foreign_key(PG_FUNCTION_ARGS)
 			/* this shouldn't happen! SPI_ERROR_NOOUTFUNC ? */
 			if (oldval == NULL)
 				/* internal error */
-				elog(ERROR, "check_foreign_key: SPI_getvalue returned %d", SPI_result);
+				elog(ERROR, "check_foreign_key: SPI_getvalue returned %s", SPI_result_code_string(SPI_result));
 			newval = SPI_getvalue(newtuple, tupdesc, fnumber);
 			if (newval == NULL || strcmp(oldval, newval) != 0)
 				isequal = false;
@@ -417,7 +419,8 @@ check_foreign_key(PG_FUNCTION_ARGS)
 		char		sql[8192];
 		char	  **args2 = args;
 
-		plan->splan = (SPIPlanPtr *) malloc(nrefs * sizeof(SPIPlanPtr));
+		plan->splan = (SPIPlanPtr *) MemoryContextAlloc(TopMemoryContext,
+														nrefs * sizeof(SPIPlanPtr));
 
 		for (r = 0; r < nrefs; r++)
 		{
@@ -473,9 +476,12 @@ check_foreign_key(PG_FUNCTION_ARGS)
 						nv = SPI_getvalue(newtuple, tupdesc, fn);
 						type = SPI_gettype(tupdesc, fn);
 
-						if ((strcmp(type, "text") && strcmp(type, "varchar") &&
-							 strcmp(type, "char") && strcmp(type, "bpchar") &&
-							 strcmp(type, "date") && strcmp(type, "timestamp")) == 0)
+						if (strcmp(type, "text") == 0 ||
+							strcmp(type, "varchar") == 0 ||
+							strcmp(type, "char") == 0 ||
+							strcmp(type, "bpchar") == 0 ||
+							strcmp(type, "date") == 0 ||
+							strcmp(type, "timestamp") == 0)
 							is_char_type = 1;
 #ifdef	DEBUG_QUERY
 						elog(DEBUG4, "check_foreign_key Debug value %s type %s %d",
@@ -489,7 +495,6 @@ check_foreign_key(PG_FUNCTION_ARGS)
 								 " %s = %s%s%s %s ",
 								 args2[k], (is_char_type > 0) ? "'" : "",
 								 nv, (is_char_type > 0) ? "'" : "", (k < nkeys) ? ", " : "");
-						is_char_type = 0;
 					}
 					strcat(sql, " where ");
 
@@ -529,7 +534,7 @@ check_foreign_key(PG_FUNCTION_ARGS)
 			pplan = SPI_prepare(sql, nkeys, argtypes);
 			if (pplan == NULL)
 				/* internal error */
-				elog(ERROR, "check_foreign_key: SPI_prepare returned %d", SPI_result);
+				elog(ERROR, "check_foreign_key: SPI_prepare returned %s", SPI_result_code_string(SPI_result));
 
 			/*
 			 * Remember that SPI_prepare places plan in current memory context
@@ -612,6 +617,13 @@ find_plan(char *ident, EPlan **eplan, int *nplans)
 {
 	EPlan	   *newp;
 	int			i;
+	MemoryContext oldcontext;
+
+	/*
+	 * All allocations done for the plans need to happen in a session-safe
+	 * context.
+	 */
+	oldcontext = MemoryContextSwitchTo(TopMemoryContext);
 
 	if (*nplans > 0)
 	{
@@ -621,20 +633,24 @@ find_plan(char *ident, EPlan **eplan, int *nplans)
 				break;
 		}
 		if (i != *nplans)
+		{
+			MemoryContextSwitchTo(oldcontext);
 			return (*eplan + i);
-		*eplan = (EPlan *) realloc(*eplan, (i + 1) * sizeof(EPlan));
+		}
+		*eplan = (EPlan *) repalloc(*eplan, (i + 1) * sizeof(EPlan));
 		newp = *eplan + i;
 	}
 	else
 	{
-		newp = *eplan = (EPlan *) malloc(sizeof(EPlan));
+		newp = *eplan = (EPlan *) palloc(sizeof(EPlan));
 		(*nplans) = i = 0;
 	}
 
-	newp->ident = strdup(ident);
+	newp->ident = pstrdup(ident);
 	newp->nplans = 0;
 	newp->splan = NULL;
 	(*nplans)++;
 
-	return (newp);
+	MemoryContextSwitchTo(oldcontext);
+	return newp;
 }

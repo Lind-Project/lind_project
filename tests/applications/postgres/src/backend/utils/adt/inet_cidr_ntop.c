@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- *	  src/backend/utils/adt/inet_net_ntop.c
+ *	  src/backend/utils/adt/inet_cidr_ntop.c
  */
 
 #if defined(LIBC_SCCS) && !defined(lint)
@@ -38,13 +38,13 @@ static const char rcsid[] = "Id: inet_net_ntop.c,v 1.1.2.2 2004/03/09 09:17:27 m
 #endif
 
 static char *inet_cidr_ntop_ipv4(const u_char *src, int bits,
-					char *dst, size_t size);
+								 char *dst, size_t size);
 static char *inet_cidr_ntop_ipv6(const u_char *src, int bits,
-					char *dst, size_t size);
+								 char *dst, size_t size);
 
 /*
  * char *
- * inet_cidr_ntop(af, src, bits, dst, size)
+ * pg_inet_cidr_ntop(af, src, bits, dst, size)
  *	convert network number from network to presentation format.
  *	generates CIDR style result always.
  * return:
@@ -53,17 +53,17 @@ static char *inet_cidr_ntop_ipv6(const u_char *src, int bits,
  *	Paul Vixie (ISC), July 1996
  */
 char *
-inet_cidr_ntop(int af, const void *src, int bits, char *dst, size_t size)
+pg_inet_cidr_ntop(int af, const void *src, int bits, char *dst, size_t size)
 {
 	switch (af)
 	{
 		case PGSQL_AF_INET:
-			return (inet_cidr_ntop_ipv4(src, bits, dst, size));
+			return inet_cidr_ntop_ipv4(src, bits, dst, size);
 		case PGSQL_AF_INET6:
-			return (inet_cidr_ntop_ipv6(src, bits, dst, size));
+			return inet_cidr_ntop_ipv6(src, bits, dst, size);
 		default:
 			errno = EAFNOSUPPORT;
-			return (NULL);
+			return NULL;
 	}
 }
 
@@ -92,7 +92,7 @@ inet_cidr_ntop_ipv4(const u_char *src, int bits, char *dst, size_t size)
 	if (bits < 0 || bits > 32)
 	{
 		errno = EINVAL;
-		return (NULL);
+		return NULL;
 	}
 
 	if (bits == 0)
@@ -137,16 +137,16 @@ inet_cidr_ntop_ipv4(const u_char *src, int bits, char *dst, size_t size)
 	if (size <= sizeof "/32")
 		goto emsgsize;
 	dst += SPRINTF((dst, "/%u", bits));
-	return (odst);
+	return odst;
 
 emsgsize:
 	errno = EMSGSIZE;
-	return (NULL);
+	return NULL;
 }
 
 /*
  * static char *
- * inet_cidr_ntop_ipv6(src, bits, fakebits, dst, size)
+ * inet_cidr_ntop_ipv6(src, bits, dst, size)
  *	convert IPv6 network number from network to presentation format.
  *	generates CIDR style result always. Picks the shortest representation
  *	unless the IP is really IPv4.
@@ -182,7 +182,7 @@ inet_cidr_ntop_ipv6(const u_char *src, int bits, char *dst, size_t size)
 	if (bits < 0 || bits > 128)
 	{
 		errno = EINVAL;
-		return (NULL);
+		return NULL;
 	}
 
 	cp = outbuf;
@@ -202,7 +202,7 @@ inet_cidr_ntop_ipv6(const u_char *src, int bits, char *dst, size_t size)
 		b = bits % 8;
 		if (b != 0)
 		{
-			m = ~0 << (8 - b);
+			m = ((u_int) ~0) << (8 - b);
 			inbuf[p - 1] &= m;
 		}
 
@@ -286,9 +286,9 @@ inet_cidr_ntop_ipv6(const u_char *src, int bits, char *dst, size_t size)
 		goto emsgsize;
 	strcpy(dst, outbuf);
 
-	return (dst);
+	return dst;
 
 emsgsize:
 	errno = EMSGSIZE;
-	return (NULL);
+	return NULL;
 }

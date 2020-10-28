@@ -1,14 +1,14 @@
 # translation of pg_config-tr.po to Turkish
 # Devrim GUNDUZ <devrim@CommandPrompt.com>, 2004, 2005, 2007.
 # Nicolai Tufar <ntufar@gmail.com>, 2005, 2007.
-# Abdullah GÜLNER <agulner@gmail.com>, 2017, 2018, 2019.
+# Abdullah Gülner <agulner@gmail.com>, 2018.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: pg_config-tr\n"
 "Report-Msgid-Bugs-To: pgsql-bugs@postgresql.org\n"
-"POT-Creation-Date: 2019-03-27 09:24+0000\n"
-"PO-Revision-Date: 2019-03-28 10:02+0300\n"
+"POT-Creation-Date: 2018-11-27 07:44+0000\n"
+"PO-Revision-Date: 2018-11-27 16:29+0300\n"
 "Last-Translator: Abdullah Gülner\n"
 "Language-Team: Turkish <ceviri@postgresql.org.tr>\n"
 "Language: tr\n"

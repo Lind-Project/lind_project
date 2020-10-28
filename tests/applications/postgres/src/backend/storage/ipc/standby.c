@@ -7,7 +7,7 @@
  *	AccessExclusiveLocks and starting snapshots for Hot Standby mode.
  *	Plus conflict recovery processing.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -43,7 +43,9 @@ int			max_standby_streaming_delay = 30 * 1000;
 static HTAB *RecoveryLockLists;
 
 static void ResolveRecoveryConflictWithVirtualXIDs(VirtualTransactionId *waitlist,
-									   ProcSignalReason reason, bool report_waiting);
+												   ProcSignalReason reason,
+												   uint32 wait_event_info,
+												   bool report_waiting);
 static void SendRecoveryConflictWithBufferPin(ProcSignalReason reason);
 static XLogRecPtr LogCurrentRunningXacts(RunningTransactions CurrRunningXacts);
 static void LogAccessExclusiveLocks(int nlocks, xl_standby_lock *locks);
@@ -53,8 +55,8 @@ static void LogAccessExclusiveLocks(int nlocks, xl_standby_lock *locks);
  */
 typedef struct RecoveryLockListsEntry
 {
-	TransactionId	xid;
-	List		   *locks;
+	TransactionId xid;
+	List	   *locks;
 } RecoveryLockListsEntry;
 
 /*
@@ -73,7 +75,7 @@ void
 InitRecoveryTransactionEnvironment(void)
 {
 	VirtualTransactionId vxid;
-	HASHCTL			hash_ctl;
+	HASHCTL		hash_ctl;
 
 	/*
 	 * Initialize the hash table for tracking the list of locks held by each
@@ -90,7 +92,7 @@ InitRecoveryTransactionEnvironment(void)
 	/*
 	 * Initialize shared invalidation management for Startup process, being
 	 * careful to register ourselves as a sendOnly process so we don't need to
-	 * read messages, nor will we get signalled when the queue starts filling
+	 * read messages, nor will we get signaled when the queue starts filling
 	 * up.
 	 */
 	SharedInvalBackendInit(true);
@@ -99,7 +101,7 @@ InitRecoveryTransactionEnvironment(void)
 	 * Lock a virtual transaction id for Startup process.
 	 *
 	 * We need to do GetNextLocalTransactionId() because
-	 * SharedInvalBackendInit() leaves localTransactionid invalid and the lock
+	 * SharedInvalBackendInit() leaves localTransactionId invalid and the lock
 	 * manager doesn't like that at all.
 	 *
 	 * Note that we don't need to run XactLockTableInsert() because nobody
@@ -184,7 +186,7 @@ static int	standbyWait_us = STANDBY_INITIAL_WAIT_US;
  * more then we return true, if we can wait some more return false.
  */
 static bool
-WaitExceedsMaxStandbyDelay(void)
+WaitExceedsMaxStandbyDelay(uint32 wait_event_info)
 {
 	TimestampTz ltime;
 
@@ -198,11 +200,13 @@ WaitExceedsMaxStandbyDelay(void)
 	/*
 	 * Sleep a bit (this is essential to avoid busy-waiting).
 	 */
+	pgstat_report_wait_start(wait_event_info);
 	pg_usleep(standbyWait_us);
+	pgstat_report_wait_end();
 
 	/*
 	 * Progressively increase the sleep times, but not to more than 1s, since
-	 * pg_usleep isn't interruptable on some platforms.
+	 * pg_usleep isn't interruptible on some platforms.
 	 */
 	standbyWait_us *= 2;
 	if (standbyWait_us > 1000000)
@@ -223,7 +227,8 @@ WaitExceedsMaxStandbyDelay(void)
  */
 static void
 ResolveRecoveryConflictWithVirtualXIDs(VirtualTransactionId *waitlist,
-									   ProcSignalReason reason, bool report_waiting)
+									   ProcSignalReason reason, uint32 wait_event_info,
+									   bool report_waiting)
 {
 	TimestampTz waitStart = 0;
 	char	   *new_status;
@@ -259,12 +264,12 @@ ResolveRecoveryConflictWithVirtualXIDs(VirtualTransactionId *waitlist,
 				new_status = (char *) palloc(len + 8 + 1);
 				memcpy(new_status, old_status, len);
 				strcpy(new_status + len, " waiting");
-				set_ps_display(new_status, false);
+				set_ps_display(new_status);
 				new_status[len] = '\0'; /* truncate off " waiting" */
 			}
 
 			/* Is it time to kill it? */
-			if (WaitExceedsMaxStandbyDelay())
+			if (WaitExceedsMaxStandbyDelay(wait_event_info))
 			{
 				pid_t		pid;
 
@@ -290,7 +295,7 @@ ResolveRecoveryConflictWithVirtualXIDs(VirtualTransactionId *waitlist,
 	/* Reset ps display if we changed it */
 	if (new_status)
 	{
-		set_ps_display(new_status, false);
+		set_ps_display(new_status);
 		pfree(new_status);
 	}
 }
@@ -317,6 +322,7 @@ ResolveRecoveryConflictWithSnapshot(TransactionId latestRemovedXid, RelFileNode 
 
 	ResolveRecoveryConflictWithVirtualXIDs(backends,
 										   PROCSIG_RECOVERY_CONFLICT_SNAPSHOT,
+										   WAIT_EVENT_RECOVERY_CONFLICT_SNAPSHOT,
 										   true);
 }
 
@@ -346,6 +352,7 @@ ResolveRecoveryConflictWithTablespace(Oid tsid)
 												InvalidOid);
 	ResolveRecoveryConflictWithVirtualXIDs(temp_file_users,
 										   PROCSIG_RECOVERY_CONFLICT_TABLESPACE,
+										   WAIT_EVENT_RECOVERY_CONFLICT_TABLESPACE,
 										   true);
 }
 
@@ -408,7 +415,7 @@ ResolveRecoveryConflictWithLock(LOCKTAG locktag)
 		 */
 		VirtualTransactionId *backends;
 
-		backends = GetLockConflicts(&locktag, AccessExclusiveLock);
+		backends = GetLockConflicts(&locktag, AccessExclusiveLock, NULL);
 
 		/*
 		 * Prevent ResolveRecoveryConflictWithVirtualXIDs() from reporting
@@ -417,6 +424,7 @@ ResolveRecoveryConflictWithLock(LOCKTAG locktag)
 		 */
 		ResolveRecoveryConflictWithVirtualXIDs(backends,
 											   PROCSIG_RECOVERY_CONFLICT_LOCK,
+											   PG_WAIT_LOCK | locktag.locktag_type,
 											   false);
 	}
 	else
@@ -685,6 +693,7 @@ StandbyReleaseLockList(List *locks)
 	{
 		xl_standby_lock *lock = (xl_standby_lock *) linitial(locks);
 		LOCKTAG		locktag;
+
 		elog(trace_recovery(DEBUG4),
 			 "releasing recovery lock: xid %u db %u rel %u",
 			 lock->xid, lock->dbOid, lock->relOid);
@@ -742,7 +751,7 @@ StandbyReleaseLockTree(TransactionId xid, int nsubxids, TransactionId *subxids)
 void
 StandbyReleaseAllLocks(void)
 {
-	HASH_SEQ_STATUS	status;
+	HASH_SEQ_STATUS status;
 	RecoveryLockListsEntry *entry;
 
 	elog(trace_recovery(DEBUG2), "release all standby locks");
@@ -761,7 +770,7 @@ StandbyReleaseAllLocks(void)
  *		as long as they're not prepared transactions.
  */
 void
-StandbyReleaseOldLocks(int nxids, TransactionId *xids)
+StandbyReleaseOldLocks(TransactionId oldxid)
 {
 	HASH_SEQ_STATUS status;
 	RecoveryLockListsEntry *entry;
@@ -769,38 +778,19 @@ StandbyReleaseOldLocks(int nxids, TransactionId *xids)
 	hash_seq_init(&status, RecoveryLockLists);
 	while ((entry = hash_seq_search(&status)))
 	{
-		bool		remove = false;
-
 		Assert(TransactionIdIsValid(entry->xid));
 
+		/* Skip if prepared transaction. */
 		if (StandbyTransactionIdIsPrepared(entry->xid))
-			remove = false;
-		else
-		{
-			int			i;
-			bool		found = false;
+			continue;
 
-			for (i = 0; i < nxids; i++)
-			{
-				if (entry->xid == xids[i])
-				{
-					found = true;
-					break;
-				}
-			}
+		/* Skip if >= oldxid. */
+		if (!TransactionIdPrecedes(entry->xid, oldxid))
+			continue;
 
-			/*
-			 * If its not a running transaction, remove it.
-			 */
-			if (!found)
-				remove = true;
-		}
-
-		if (remove)
-		{
-			StandbyReleaseLockList(entry->locks);
-			hash_search(RecoveryLockLists, entry, HASH_REMOVE, NULL);
-		}
+		/* Remove all locks and hash table entry. */
+		StandbyReleaseLockList(entry->locks);
+		hash_search(RecoveryLockLists, entry, HASH_REMOVE, NULL);
 	}
 }
 
@@ -899,7 +889,7 @@ standby_redo(XLogReaderState *record)
  * up from a checkpoint and are immediately at our starting point, we
  * unconditionally move to STANDBY_INITIALIZED. After this point we
  * must do 4 things:
- *	* move shared nextXid forwards as we see new xids
+ *	* move shared nextFullXid forwards as we see new xids
  *	* extend the clog and subtrans with each new xid
  *	* keep track of uncommitted known assigned xids
  *	* keep track of uncommitted AccessExclusiveLocks
@@ -1074,11 +1064,6 @@ LogAccessExclusiveLock(Oid dbOid, Oid relOid)
 
 	xlrec.xid = GetCurrentTransactionId();
 
-	/*
-	 * Decode the locktag back to the original values, to avoid sending lots
-	 * of empty bytes with every message.  See lock.h to check how a locktag
-	 * is defined for LOCKTAG_RELATION
-	 */
 	xlrec.dbOid = dbOid;
 	xlrec.relOid = relOid;
 

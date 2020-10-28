@@ -2,31 +2,29 @@
  * brinfuncs.c
  *		Functions to investigate BRIN indexes
  *
- * Copyright (c) 2014-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2014-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *		contrib/pageinspect/brinfuncs.c
  */
 #include "postgres.h"
 
-#include "pageinspect.h"
-
-#include "access/htup_details.h"
 #include "access/brin.h"
 #include "access/brin_internal.h"
 #include "access/brin_page.h"
 #include "access/brin_revmap.h"
 #include "access/brin_tuple.h"
+#include "access/htup_details.h"
 #include "catalog/index.h"
 #include "catalog/pg_type.h"
 #include "funcapi.h"
 #include "lib/stringinfo.h"
+#include "miscadmin.h"
+#include "pageinspect.h"
 #include "utils/array.h"
 #include "utils/builtins.h"
 #include "utils/lsyscache.h"
 #include "utils/rel.h"
-#include "miscadmin.h"
-
 
 PG_FUNCTION_INFO_V1(brin_page_type);
 PG_FUNCTION_INFO_V1(brin_page_items);
@@ -41,7 +39,7 @@ typedef struct brin_column_state
 
 
 static Page verify_brin_page(bytea *raw_page, uint16 type,
-				 const char *strtype);
+							 const char *strtype);
 
 Datum
 brin_page_type(PG_FUNCTION_ARGS)
@@ -54,7 +52,7 @@ brin_page_type(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use raw page functions"))));
+				 errmsg("must be superuser to use raw page functions")));
 
 	raw_page_size = VARSIZE(raw_page) - VARHDRSZ;
 
@@ -143,7 +141,7 @@ brin_page_items(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use raw page functions"))));
+				 errmsg("must be superuser to use raw page functions")));
 
 	/* check to see if caller supports us returning a tuplestore */
 	if (rsinfo == NULL || !IsA(rsinfo, ReturnSetInfo))
@@ -338,7 +336,7 @@ brin_metapage_info(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use raw page functions"))));
+				 errmsg("must be superuser to use raw page functions")));
 
 	page = verify_brin_page(raw_page, BRIN_PAGETYPE_META, "metapage");
 
@@ -376,7 +374,7 @@ brin_revmap_data(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use raw page functions"))));
+				 errmsg("must be superuser to use raw page functions")));
 
 	if (SRF_IS_FIRSTCALL())
 	{

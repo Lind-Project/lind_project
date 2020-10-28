@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>19.14. Error Handling</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="prev" href="runtime-config-compatible.html" title="19.13. Version and Platform Compatibility" /><link rel="next" href="runtime-config-preset.html" title="19.15. Preset Options" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">19.14. Error Handling</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="runtime-config-compatible.html" title="19.13. Version and Platform Compatibility">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="runtime-config.html" title="Chapter 19. Server Configuration">Up</a></td><th width="60%" align="center">Chapter 19. Server Configuration</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="runtime-config-preset.html" title="19.15. Preset Options">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="RUNTIME-CONFIG-ERROR-HANDLING"><div class="titlepage"><div><div><h2 class="title" style="clear: both">19.14. Error Handling</h2></div></div></div><div class="variablelist"><dl class="variablelist"><dt id="GUC-EXIT-ON-ERROR"><span class="term"><code class="varname">exit_on_error</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.6.17.2.1.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        If on, any error will terminate the current session.  By default,
+        this is set to off, so that only FATAL errors will terminate the
+        session.
+       </p></dd><dt id="GUC-RESTART-AFTER-CRASH"><span class="term"><code class="varname">restart_after_crash</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.6.17.2.2.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        When set to on, which is the default, <span class="productname">PostgreSQL</span>
+        will automatically reinitialize after a backend crash.  Leaving this
+        value set to on is normally the best way to maximize the availability
+        of the database.  However, in some circumstances, such as when
+        <span class="productname">PostgreSQL</span> is being invoked by clusterware, it may be
+        useful to disable the restart so that the clusterware can gain
+        control and take any actions it deems appropriate.
+       </p></dd><dt id="GUC-DATA-SYNC-RETRY"><span class="term"><code class="varname">data_sync_retry</code> (<code class="type">boolean</code>)
+      <a id="id-1.6.6.17.2.3.1.3" class="indexterm"></a>
+      </span></dt><dd><p>
+        When set to off, which is the default, <span class="productname">PostgreSQL</span>
+        will raise a PANIC-level error on failure to flush modified data files
+        to the file system.  This causes the database server to crash.  This
+        parameter can only be set at server start.
+       </p><p>
+        On some operating systems, the status of data in the kernel's page
+        cache is unknown after a write-back failure.  In some cases it might
+        have been entirely forgotten, making it unsafe to retry; the second
+        attempt may be reported as successful, when in fact the data has been
+        lost.  In these circumstances, the only way to avoid data loss is to
+        recover from the WAL after any failure is reported, preferably
+        after investigating the root cause of the failure and replacing any
+        faulty hardware.
+       </p><p>
+        If set to on, <span class="productname">PostgreSQL</span> will instead
+        report an error but continue to run so that the data flushing
+        operation can be retried in a later checkpoint.  Only set it to on
+        after investigating the operating system's treatment of buffered data
+        in case of write-back failure.
+       </p></dd></dl></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="runtime-config-compatible.html" title="19.13. Version and Platform Compatibility">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="runtime-config.html" title="Chapter 19. Server Configuration">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="runtime-config-preset.html" title="19.15. Preset Options">Next</a></td></tr><tr><td width="40%" align="left" valign="top">19.13. Version and Platform Compatibility </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 19.15. Preset Options</td></tr></table></div></body></html>

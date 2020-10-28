@@ -2,7 +2,7 @@
  * ginxlog.h
  *	  header file for postgres inverted index xlog implementation.
  *
- *	Copyright (c) 2006-2017, PostgreSQL Global Development Group
+ *	Copyright (c) 2006-2020, PostgreSQL Global Development Group
  *
  *	src/include/access/ginxlog.h
  *--------------------------------------------------------------------------
@@ -15,8 +15,6 @@
 #include "access/xlogreader.h"
 #include "lib/stringinfo.h"
 #include "storage/off.h"
-
-#define XLOG_GIN_CREATE_INDEX  0x00
 
 #define XLOG_GIN_CREATE_PTREE  0x10
 
@@ -129,7 +127,7 @@ typedef struct ginxlogSplit
 
 /*
  * Vacuum simply WAL-logs the whole page, when anything is modified. This
- * is functionally identical to heap_newpage records, but is kept separate for
+ * is functionally identical to XLOG_FPI records, but is kept separate for
  * debugging purposes. (When inspecting the WAL stream, it's easier to see
  * what's going on when GIN vacuum records are marked as such, not as heap
  * records.) This is currently only used for entry tree leaf pages.
@@ -160,16 +158,6 @@ typedef struct ginxlogDeletePage
 	BlockNumber rightLink;
 	TransactionId deleteXid;	/* last Xid which could see this page in scan */
 } ginxlogDeletePage;
-
-/*
- * Previous version of ginxlogDeletePage struct, which didn't have deleteXid
- * field.  Used for size comparison (see ginRedoDeletePage()).
- */
-typedef struct ginxlogDeletePageOld
-{
-	OffsetNumber parentOffset;
-	BlockNumber rightLink;
-} ginxlogDeletePageOld;
 
 #define XLOG_GIN_UPDATE_META_PAGE 0x60
 

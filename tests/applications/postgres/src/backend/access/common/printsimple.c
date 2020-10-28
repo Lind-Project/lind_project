@@ -8,7 +8,7 @@
  *	  doesn't handle standalone backends or protocol versions other than
  *	  3.0, because we don't need such handling for current applications.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -20,7 +20,6 @@
 
 #include "access/printsimple.h"
 #include "catalog/pg_type.h"
-#include "fmgr.h"
 #include "libpq/pqformat.h"
 #include "utils/builtins.h"
 
@@ -34,19 +33,19 @@ printsimple_startup(DestReceiver *self, int operation, TupleDesc tupdesc)
 	int			i;
 
 	pq_beginmessage(&buf, 'T'); /* RowDescription */
-	pq_sendint(&buf, tupdesc->natts, 2);
+	pq_sendint16(&buf, tupdesc->natts);
 
 	for (i = 0; i < tupdesc->natts; ++i)
 	{
-		Form_pg_attribute attr = tupdesc->attrs[i];
+		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
 
 		pq_sendstring(&buf, NameStr(attr->attname));
-		pq_sendint(&buf, 0, 4); /* table oid */
-		pq_sendint(&buf, 0, 2); /* attnum */
-		pq_sendint(&buf, (int) attr->atttypid, 4);
-		pq_sendint(&buf, attr->attlen, 2);
-		pq_sendint(&buf, attr->atttypmod, 4);
-		pq_sendint(&buf, 0, 2); /* format code */
+		pq_sendint32(&buf, 0);	/* table oid */
+		pq_sendint16(&buf, 0);	/* attnum */
+		pq_sendint32(&buf, (int) attr->atttypid);
+		pq_sendint16(&buf, attr->attlen);
+		pq_sendint32(&buf, attr->atttypmod);
+		pq_sendint16(&buf, 0);	/* format code */
 	}
 
 	pq_endmessage(&buf);
@@ -67,16 +66,16 @@ printsimple(TupleTableSlot *slot, DestReceiver *self)
 
 	/* Prepare and send message */
 	pq_beginmessage(&buf, 'D');
-	pq_sendint(&buf, tupdesc->natts, 2);
+	pq_sendint16(&buf, tupdesc->natts);
 
 	for (i = 0; i < tupdesc->natts; ++i)
 	{
-		Form_pg_attribute attr = tupdesc->attrs[i];
+		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
 		Datum		value;
 
 		if (slot->tts_isnull[i])
 		{
-			pq_sendint(&buf, -1, 4);
+			pq_sendint32(&buf, -1);
 			continue;
 		}
 
@@ -113,7 +112,7 @@ printsimple(TupleTableSlot *slot, DestReceiver *self)
 			case INT8OID:
 				{
 					int64		num = DatumGetInt64(value);
-					char		str[23];	/* sign, 21 digits and '\0' */
+					char		str[MAXINT8LEN + 1];
 
 					pg_lltoa(num, str);
 					pq_sendcountedtext(&buf, str, strlen(str), false);

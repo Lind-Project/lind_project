@@ -17,6 +17,8 @@
 # to want to use.
 html:
 
+# We don't need the tree-wide headers or install support here.
+NO_GENERATED_HEADERS=yes
 NO_TEMP_INSTALL=yes
 
 subdir = doc/src/sgml
@@ -37,15 +39,7 @@ ifndef FOP
 FOP = $(missing) fop
 endif
 
-SGMLINCLUDE = -D . -D $(srcdir)
-
-ifndef NSGMLS
-NSGMLS = $(missing) nsgmls
-endif
-
-ifndef OSX
-OSX = $(missing) osx
-endif
+XMLINCLUDE = --path .
 
 ifndef XMLLINT
 XMLLINT = $(missing) xmllint
@@ -59,18 +53,12 @@ override XSLTPROCFLAGS += --stringparam pg.version '$(VERSION)'
 
 
 GENERATED_SGML = version.sgml \
-	features-supported.sgml features-unsupported.sgml errcodes-table.sgml
+	features-supported.sgml features-unsupported.sgml errcodes-table.sgml \
+	keywords-table.sgml
 
 ALLSGML := $(wildcard $(srcdir)/*.sgml $(srcdir)/ref/*.sgml) $(GENERATED_SGML)
 
-# Enable some extra warnings
-# -wfully-tagged needed to throw a warning on missing tags
-# for older tool chains, 2007-08-31
-# -wnet catches XML-style empty-element tags like <xref linkend="abc"/>.
-# Note: try "make SPFLAGS=-wxml" to catch a lot of other dubious constructs,
-# in particular < and & that haven't been made into entities.  It's far too
-# noisy to turn on by default, unfortunately.
-override SPFLAGS += -wall -wno-unused-param -wno-empty -wfully-tagged -wnet
+ALL_IMAGES := $(wildcard $(srcdir)/images/*.svg)
 
 
 ##
@@ -79,9 +67,9 @@ override SPFLAGS += -wall -wno-unused-param -wno-empty -wfully-tagged -wnet
 
 man distprep-man: man-stamp
 
-man-stamp: stylesheet-man.xsl postgres.xml
-	$(XMLLINT) --noout --valid postgres.xml
-	$(XSLTPROC) $(XSLTPROCFLAGS) $(XSLTPROC_MAN_FLAGS) $^
+man-stamp: stylesheet-man.xsl postgres.sgml $(ALLSGML)
+	$(XMLLINT) $(XMLINCLUDE) --noout --valid $(word 2,$^)
+	$(XSLTPROC) $(XMLINCLUDE) $(XSLTPROCFLAGS) $(XSLTPROC_MAN_FLAGS) $(wordlist 1,2,$^)
 	touch $@
 
 
@@ -109,51 +97,28 @@ features-unsupported.sgml: $(top_srcdir)/src/backend/catalog/sql_feature_package
 errcodes-table.sgml: $(top_srcdir)/src/backend/utils/errcodes.txt generate-errcodes-table.pl
 	$(PERL) $(srcdir)/generate-errcodes-table.pl $< > $@
 
+keywords-table.sgml: $(top_srcdir)/src/include/parser/kwlist.h $(wildcard $(srcdir)/keywords/sql*.txt) generate-keywords-table.pl
+	$(PERL) $(srcdir)/generate-keywords-table.pl $(srcdir) > $@
+
 
 ##
 ## Generation of some text files.
 ##
 
 ICONV = iconv
-LYNX = lynx
+PANDOC = pandoc
 
-# The documentation may contain non-ASCII characters (mostly for
-# contributor names), which lynx converts to the encoding determined
-# by the current locale.  To get text output that is deterministic and
-# easily readable by everyone, we make lynx produce LATIN1 and then
-# convert that to ASCII with transliteration for the non-ASCII characters.
-# Official releases were historically built on FreeBSD, which has limited
-# locale support and is very picky about locale name spelling.  The
-# below has been finely tuned to run on FreeBSD and Linux/glibc.
 INSTALL: % : %.html
-	$(PERL) -p -e 's,<h(1|2) class="title",<h\1 align=center,g' $< | LC_ALL=en_US.ISO8859-1 $(LYNX) -force_html -dump -nolist -stdin | $(ICONV) -f latin1 -t us-ascii//TRANSLIT > $@
+	$(PANDOC) -t plain -o $@.tmp $<
+	$(ICONV) -f utf8 -t us-ascii//TRANSLIT $@.tmp > $@
+	rm $@.tmp
 
 INSTALL.html: %.html : stylesheet-text.xsl %.xml
 	$(XMLLINT) --noout --valid $*.xml
 	$(XSLTPROC) $(XSLTPROCFLAGS) $(XSLTPROC_HTML_FLAGS) $^ >$@
 
-INSTALL.xml: standalone-install.sgml installation.sgml version.sgml
-	$(OSX) $(SPFLAGS) $(SGMLINCLUDE) -x lower $(filter-out version.sgml,$^) >$@.tmp
-	$(call mangle-xml,chapter)
-
-
-##
-## SGML->XML conversion
-##
-
-# For obscure reasons, GNU make 3.81 complains about circular dependencies
-# if we try to do "make all" in a VPATH build without the explicit
-# $(srcdir) on the postgres.sgml dependency in this rule.  GNU make bug?
-postgres.xml: $(srcdir)/postgres.sgml $(ALLSGML)
-	$(OSX) $(SPFLAGS) $(SGMLINCLUDE) -x lower $< >$@.tmp
-	$(call mangle-xml,book)
-
-define mangle-xml
-$(PERL) -p -e 's/\[(aacute|acirc|aelig|agrave|amp|aring|atilde|auml|bull|copy|eacute|egrave|gt|iacute|lt|mdash|nbsp|ntilde|oacute|ocirc|oslash|ouml|pi|quot|scaron|uuml) *\]/\&\1;/gi;' \
-           -e '$$_ .= qq{<!DOCTYPE $(1) PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">\n} if $$. == 1;' \
-  <$@.tmp > $@
-rm $@.tmp
-endef
+INSTALL.xml: standalone-profile.xsl standalone-install.xml postgres.sgml $(ALLSGML)
+	$(XSLTPROC) $(XMLINCLUDE) $(XSLTPROCFLAGS) --xinclude $(wordlist 1,2,$^) >$@
 
 
 ##
@@ -166,24 +131,30 @@ endif
 
 html: html-stamp
 
-html-stamp: stylesheet.xsl postgres.xml
-	$(XMLLINT) --noout --valid postgres.xml
-	$(XSLTPROC) $(XSLTPROCFLAGS) $(XSLTPROC_HTML_FLAGS) $^
+html-stamp: stylesheet.xsl postgres.sgml $(ALLSGML) $(ALL_IMAGES)
+	$(XMLLINT) $(XMLINCLUDE) --noout --valid $(word 2,$^)
+	$(XSLTPROC) $(XMLINCLUDE) $(XSLTPROCFLAGS) $(XSLTPROC_HTML_FLAGS) $(wordlist 1,2,$^)
+	cp $(ALL_IMAGES) html/
 	cp $(srcdir)/stylesheet.css html/
 	touch $@
 
-htmlhelp: stylesheet-hh.xsl postgres.xml
-	$(XMLLINT) --noout --valid postgres.xml
-	$(XSLTPROC) $(XSLTPROCFLAGS) $^
+htmlhelp: htmlhelp-stamp
+
+htmlhelp-stamp: stylesheet-hh.xsl postgres.sgml $(ALLSGML) $(ALL_IMAGES)
+	$(XMLLINT) $(XMLINCLUDE) --noout --valid $(word 2,$^)
+	$(XSLTPROC) $(XMLINCLUDE) $(XSLTPROCFLAGS) $(wordlist 1,2,$^)
+	cp $(ALL_IMAGES) htmlhelp/
+	cp $(srcdir)/stylesheet.css htmlhelp/
+	touch $@
 
 # single-page HTML
-postgres.html: stylesheet-html-nochunk.xsl postgres.xml
-	$(XMLLINT) --noout --valid postgres.xml
-	$(XSLTPROC) $(XSLTPROCFLAGS) $(XSLTPROC_HTML_FLAGS) -o $@ $^
+postgres.html: stylesheet-html-nochunk.xsl postgres.sgml $(ALLSGML) $(ALL_IMAGES)
+	$(XMLLINT) $(XMLINCLUDE) --noout --valid $(word 2,$^)
+	$(XSLTPROC) $(XMLINCLUDE) $(XSLTPROCFLAGS) $(XSLTPROC_HTML_FLAGS) -o $@ $(wordlist 1,2,$^)
 
 # single-page text
 postgres.txt: postgres.html
-	$(LYNX) -force_html -dump -nolist $< > $@
+	$(PANDOC) -t plain -o $@ $<
 
 
 ##
@@ -193,15 +164,17 @@ postgres.txt: postgres.html
 postgres.pdf:
 	$(error Invalid target;  use postgres-A4.pdf or postgres-US.pdf as targets)
 
-%-A4.fo: stylesheet-fo.xsl %.xml
-	$(XMLLINT) --noout --valid $*.xml
-	$(XSLTPROC) $(XSLTPROCFLAGS) --stringparam paper.type A4 -o $@ $^
+XSLTPROC_FO_FLAGS += --stringparam img.src.path '$(srcdir)/'
 
-%-US.fo: stylesheet-fo.xsl %.xml
-	$(XMLLINT) --noout --valid $*.xml
-	$(XSLTPROC) $(XSLTPROCFLAGS) --stringparam paper.type USletter -o $@ $^
+%-A4.fo: stylesheet-fo.xsl %.sgml $(ALLSGML)
+	$(XMLLINT) $(XMLINCLUDE) --noout --valid $(word 2,$^)
+	$(XSLTPROC) $(XMLINCLUDE) $(XSLTPROCFLAGS) $(XSLTPROC_FO_FLAGS) --stringparam paper.type A4 -o $@ $(wordlist 1,2,$^)
 
-%.pdf: %.fo
+%-US.fo: stylesheet-fo.xsl %.sgml $(ALLSGML)
+	$(XMLLINT) $(XMLINCLUDE) --noout --valid $(word 2,$^)
+	$(XSLTPROC) $(XMLINCLUDE) $(XSLTPROCFLAGS) $(XSLTPROC_FO_FLAGS) --stringparam paper.type USletter -o $@ $(wordlist 1,2,$^)
+
+%.pdf: %.fo $(ALL_IMAGES)
 	$(FOP) -fo $< -pdf $@
 
 
@@ -210,9 +183,9 @@ postgres.pdf:
 ##
 
 epub: postgres.epub
-postgres.epub: postgres.xml
+postgres.epub: postgres.sgml $(ALLSGML) $(ALL_IMAGES)
 	$(XMLLINT) --noout --valid $<
-	$(DBTOEPUB) $<
+	$(DBTOEPUB) -o $@ $<
 
 
 ##
@@ -223,7 +196,8 @@ DB2X_TEXIXML = db2x_texixml
 DB2X_XSLTPROC = db2x_xsltproc
 MAKEINFO = makeinfo
 
-%.texixml: %.xml
+%.texixml: %.sgml $(ALLSGML)
+	$(XMLLINT) --noout --valid $<
 	$(DB2X_XSLTPROC) -s texi -g output-file=$(basename $@) $< -o $@
 
 %.texi: %.texixml
@@ -239,7 +213,7 @@ MAKEINFO = makeinfo
 
 # Quick syntax check without style processing
 check: postgres.sgml $(ALLSGML) check-tabs
-	$(NSGMLS) $(SPFLAGS) $(SGMLINCLUDE) -s $<
+	$(XMLLINT) $(XMLINCLUDE) --noout --valid $<
 
 
 ##
@@ -309,7 +283,7 @@ check-tabs:
 
 # This allows removing some files from the distribution tarballs while
 # keeping the dependencies satisfied.
-.SECONDARY: postgres.xml $(GENERATED_SGML)
+.SECONDARY: $(GENERATED_SGML)
 .SECONDARY: INSTALL.html INSTALL.xml
 .SECONDARY: postgres-A4.fo postgres-US.fo
 
@@ -323,10 +297,8 @@ clean:
 	rm -f *.fo *.pdf
 # generated SGML files
 	rm -f $(GENERATED_SGML)
-# SGML->XML conversion
-	rm -f postgres.xml *.tmp
 # HTML Help
-	rm -f htmlhelp.hhp toc.hhc index.hhk
+	rm -rf htmlhelp/ htmlhelp-stamp
 # EPUB
 	rm -f postgres.epub
 # Texinfo

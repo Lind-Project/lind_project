@@ -65,7 +65,7 @@ distclean maintainer-clean:
 
 check-tests: | temp-install
 check check-tests installcheck installcheck-parallel installcheck-tests: CHECKPREP_TOP=src/test/regress
-check check-tests installcheck installcheck-parallel installcheck-tests:
+check check-tests installcheck installcheck-parallel installcheck-tests: submake-generated-headers
 	$(MAKE) -C src/test/regress $@
 
 $(call recurse,check-world,src/test src/pl src/interfaces/ecpg contrib src/bin,check)
@@ -77,12 +77,15 @@ $(call recurse,install-tests,src/test/regress,install-tests)
 GNUmakefile: GNUmakefile.in $(top_builddir)/config.status
 	./config.status $@
 
+update-unicode: | submake-generated-headers submake-libpgport
+	$(MAKE) -C src/common/unicode $@
+	$(MAKE) -C contrib/unaccent $@
+
 
 ##########################################################################
 
 distdir	= postgresql-$(VERSION)
 dummy	= =install=
-garbage = =*  "#"*  ."#"*  *~*  *.orig  *.rej  core  postgresql-*
 
 dist: $(distdir).tar.gz $(distdir).tar.bz2
 	rm -rf $(distdir)
@@ -131,4 +134,10 @@ distcheck: dist
 	rm -rf $(distdir) $(dummy)
 	@echo "Distribution integrity checks out."
 
-.PHONY: dist distdir distcheck docs install-docs world check-world install-world installcheck-world
+headerscheck: submake-generated-headers
+	$(top_srcdir)/src/tools/pginclude/headerscheck $(top_srcdir) $(abs_top_builddir)
+
+cpluspluscheck: submake-generated-headers
+	$(top_srcdir)/src/tools/pginclude/cpluspluscheck $(top_srcdir) $(abs_top_builddir)
+
+.PHONY: dist distdir distcheck docs install-docs world check-world install-world installcheck-world headerscheck cpluspluscheck

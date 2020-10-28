@@ -15,7 +15,7 @@
  * there's hardly any use case for using these without superuser-rights
  * anyway.
  *
- * Copyright (c) 2007-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2007-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *	  contrib/pageinspect/heapfuncs.c
@@ -25,15 +25,30 @@
 
 #include "postgres.h"
 
-#include "pageinspect.h"
-
 #include "access/htup_details.h"
-#include "funcapi.h"
+#include "access/relation.h"
+#include "catalog/pg_am_d.h"
 #include "catalog/pg_type.h"
+#include "funcapi.h"
 #include "miscadmin.h"
+#include "pageinspect.h"
+#include "port/pg_bitutils.h"
 #include "utils/array.h"
 #include "utils/builtins.h"
 #include "utils/rel.h"
+
+/*
+ * It's not supported to create tuples with oids anymore, but when pg_upgrade
+ * was used to upgrade from an older version, tuples might still have an
+ * oid. Seems worthwhile to display that.
+ */
+#define HeapTupleHeaderGetOidOld(tup) \
+( \
+	((tup)->t_infomask & HEAP_HASOID_OLD) ? \
+	   *((Oid *) ((char *)(tup) + (tup)->t_hoff - sizeof(Oid))) \
+	: \
+		InvalidOid \
+)
 
 
 /*
@@ -120,7 +135,7 @@ heap_page_items(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use raw page functions"))));
+				 errmsg("must be superuser to use raw page functions")));
 
 	raw_page_size = VARSIZE(raw_page) - VARHDRSZ;
 
@@ -235,14 +250,13 @@ heap_page_items(PG_FUNCTION_ARGS)
 
 					bits_len =
 						BITMAPLEN(HeapTupleHeaderGetNatts(tuphdr)) * BITS_PER_BYTE;
-					values[11] = CStringGetTextDatum(
-													 bits_to_text(tuphdr->t_bits, bits_len));
+					values[11] = CStringGetTextDatum(bits_to_text(tuphdr->t_bits, bits_len));
 				}
 				else
 					nulls[11] = true;
 
-				if (tuphdr->t_infomask & HEAP_HASOID)
-					values[12] = HeapTupleHeaderGetOid(tuphdr);
+				if (tuphdr->t_infomask & HEAP_HASOID_OLD)
+					values[12] = HeapTupleHeaderGetOidOld(tuphdr);
 				else
 					nulls[12] = true;
 			}
@@ -304,6 +318,10 @@ tuple_data_split_internal(Oid relid, char *tupdata,
 	raw_attrs = initArrayResult(BYTEAOID, CurrentMemoryContext, false);
 	nattrs = tupdesc->natts;
 
+	if (rel->rd_rel->relam != HEAP_TABLE_AM_OID)
+		ereport(ERROR, (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+						errmsg("only heap AM is supported")));
+
 	if (nattrs < (t_infomask2 & HEAP_NATTS_MASK))
 		ereport(ERROR,
 				(errcode(ERRCODE_DATA_CORRUPTED),
@@ -315,7 +333,7 @@ tuple_data_split_internal(Oid relid, char *tupdata,
 		bool		is_null;
 		bytea	   *attr_data = NULL;
 
-		attr = tupdesc->attrs[i];
+		attr = TupleDescAttr(tupdesc, i);
 
 		/*
 		 * Tuple header can specify less attributes than tuple descriptor as
@@ -334,7 +352,7 @@ tuple_data_split_internal(Oid relid, char *tupdata,
 
 			if (attr->attlen == -1)
 			{
-				off = att_align_pointer(off, tupdesc->attrs[i]->attalign, -1,
+				off = att_align_pointer(off, attr->attalign, -1,
 										tupdata + off);
 
 				/*
@@ -353,7 +371,7 @@ tuple_data_split_internal(Oid relid, char *tupdata,
 			}
 			else
 			{
-				off = att_align_nominal(off, tupdesc->attrs[i]->attalign);
+				off = att_align_nominal(off, attr->attalign);
 				len = attr->attlen;
 			}
 
@@ -371,7 +389,7 @@ tuple_data_split_internal(Oid relid, char *tupdata,
 				memcpy(VARDATA(attr_data), tupdata + off, len);
 			}
 
-			off = att_addlength_pointer(off, tupdesc->attrs[i]->attlen,
+			off = att_addlength_pointer(off, attr->attlen,
 										tupdata + off);
 		}
 
@@ -474,4 +492,130 @@ tuple_data_split(PG_FUNCTION_ARGS)
 		pfree(t_bits);
 
 	PG_RETURN_ARRAYTYPE_P(res);
+}
+
+/*
+ * heap_tuple_infomask_flags
+ *
+ * Decode into a human-readable format t_infomask and t_infomask2 associated
+ * to a tuple.  All the flags are described in access/htup_details.h.
+ */
+PG_FUNCTION_INFO_V1(heap_tuple_infomask_flags);
+
+Datum
+heap_tuple_infomask_flags(PG_FUNCTION_ARGS)
+{
+#define HEAP_TUPLE_INFOMASK_COLS 2
+	Datum		values[HEAP_TUPLE_INFOMASK_COLS];
+	bool		nulls[HEAP_TUPLE_INFOMASK_COLS];
+	uint16		t_infomask = PG_GETARG_INT16(0);
+	uint16		t_infomask2 = PG_GETARG_INT16(1);
+	int			cnt = 0;
+	ArrayType  *a;
+	int			bitcnt;
+	Datum	   *flags;
+	TupleDesc	tupdesc;
+	HeapTuple	tuple;
+
+	if (!superuser())
+		ereport(ERROR,
+				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
+				 errmsg("must be superuser to use raw page functions")));
+
+	/* Build a tuple descriptor for our result type */
+	if (get_call_result_type(fcinfo, NULL, &tupdesc) != TYPEFUNC_COMPOSITE)
+		elog(ERROR, "return type must be a row type");
+
+	bitcnt = pg_popcount((const char *) &t_infomask, sizeof(uint16)) +
+		pg_popcount((const char *) &t_infomask2, sizeof(uint16));
+
+	/* Initialize values and NULL flags arrays */
+	MemSet(values, 0, sizeof(values));
+	MemSet(nulls, 0, sizeof(nulls));
+
+	/* If no flags, return a set of empty arrays */
+	if (bitcnt <= 0)
+	{
+		values[0] = PointerGetDatum(construct_empty_array(TEXTOID));
+		values[1] = PointerGetDatum(construct_empty_array(TEXTOID));
+		tuple = heap_form_tuple(tupdesc, values, nulls);
+		PG_RETURN_DATUM(HeapTupleGetDatum(tuple));
+	}
+
+	/* build set of raw flags */
+	flags = (Datum *) palloc0(sizeof(Datum) * bitcnt);
+
+	/* decode t_infomask */
+	if ((t_infomask & HEAP_HASNULL) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_HASNULL");
+	if ((t_infomask & HEAP_HASVARWIDTH) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_HASVARWIDTH");
+	if ((t_infomask & HEAP_HASEXTERNAL) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_HASEXTERNAL");
+	if ((t_infomask & HEAP_HASOID_OLD) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_HASOID_OLD");
+	if ((t_infomask & HEAP_XMAX_KEYSHR_LOCK) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_XMAX_KEYSHR_LOCK");
+	if ((t_infomask & HEAP_COMBOCID) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_COMBOCID");
+	if ((t_infomask & HEAP_XMAX_EXCL_LOCK) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_XMAX_EXCL_LOCK");
+	if ((t_infomask & HEAP_XMAX_LOCK_ONLY) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_XMAX_LOCK_ONLY");
+	if ((t_infomask & HEAP_XMIN_COMMITTED) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_XMIN_COMMITTED");
+	if ((t_infomask & HEAP_XMIN_INVALID) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_XMIN_INVALID");
+	if ((t_infomask & HEAP_XMAX_COMMITTED) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_XMAX_COMMITTED");
+	if ((t_infomask & HEAP_XMAX_INVALID) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_XMAX_INVALID");
+	if ((t_infomask & HEAP_XMAX_IS_MULTI) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_XMAX_IS_MULTI");
+	if ((t_infomask & HEAP_UPDATED) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_UPDATED");
+	if ((t_infomask & HEAP_MOVED_OFF) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_MOVED_OFF");
+	if ((t_infomask & HEAP_MOVED_IN) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_MOVED_IN");
+
+	/* decode t_infomask2 */
+	if ((t_infomask2 & HEAP_KEYS_UPDATED) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_KEYS_UPDATED");
+	if ((t_infomask2 & HEAP_HOT_UPDATED) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_HOT_UPDATED");
+	if ((t_infomask2 & HEAP_ONLY_TUPLE) != 0)
+		flags[cnt++] = CStringGetTextDatum("HEAP_ONLY_TUPLE");
+
+	/* build value */
+	Assert(cnt <= bitcnt);
+	a = construct_array(flags, cnt, TEXTOID, -1, false, TYPALIGN_INT);
+	values[0] = PointerGetDatum(a);
+
+	/*
+	 * Build set of combined flags.  Use the same array as previously, this
+	 * keeps the code simple.
+	 */
+	cnt = 0;
+	MemSet(flags, 0, sizeof(Datum) * bitcnt);
+
+	/* decode combined masks of t_infomask */
+	if ((t_infomask & HEAP_XMAX_SHR_LOCK) == HEAP_XMAX_SHR_LOCK)
+		flags[cnt++] = CStringGetTextDatum("HEAP_XMAX_SHR_LOCK");
+	if ((t_infomask & HEAP_XMIN_FROZEN) == HEAP_XMIN_FROZEN)
+		flags[cnt++] = CStringGetTextDatum("HEAP_XMIN_FROZEN");
+	if ((t_infomask & HEAP_MOVED) == HEAP_MOVED)
+		flags[cnt++] = CStringGetTextDatum("HEAP_MOVED");
+
+	/* Build an empty array if there are no combined flags */
+	if (cnt == 0)
+		a = construct_empty_array(TEXTOID);
+	else
+		a = construct_array(flags, cnt, TEXTOID, -1, false, TYPALIGN_INT);
+	pfree(flags);
+	values[1] = PointerGetDatum(a);
+
+	/* Returns the record as Datum */
+	tuple = heap_form_tuple(tupdesc, values, nulls);
+	PG_RETURN_DATUM(HeapTupleGetDatum(tuple));
 }

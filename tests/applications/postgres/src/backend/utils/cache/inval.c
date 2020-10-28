@@ -5,12 +5,12 @@
  *
  *	This is subtle stuff, so pay attention:
  *
- *	When a tuple is updated or deleted, our standard time qualification rules
+ *	When a tuple is updated or deleted, our standard visibility rules
  *	consider that it is *still valid* so long as we are in the same command,
  *	ie, until the next CommandCounterIncrement() or transaction commit.
- *	(See utils/time/tqual.c, and note that system catalogs are generally
- *	scanned under the most current snapshot available, rather than the
- *	transaction snapshot.)	At the command boundary, the old tuple stops
+ *	(See access/heap/heapam_visibility.c, and note that system catalogs are
+ *  generally scanned under the most current snapshot available, rather than
+ *  the transaction snapshot.)	At the command boundary, the old tuple stops
  *	being valid and the new version, if any, becomes valid.  Therefore,
  *	we cannot simply flush a tuple from the system caches during heap_update()
  *	or heap_delete().  The tuple is still good at that point; what's more,
@@ -86,7 +86,7 @@
  *	problems can be overcome cheaply.
  *
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -592,7 +592,7 @@ LocalExecuteInvalidationMessage(SharedInvalidationMessage *msg)
 			{
 				struct RELCACHECALLBACK *ccitem = relcache_callback_list + i;
 
-				(*ccitem->function) (ccitem->arg, msg->rc.relId);
+				ccitem->function(ccitem->arg, msg->rc.relId);
 			}
 		}
 	}
@@ -652,14 +652,14 @@ InvalidateSystemCaches(void)
 	{
 		struct SYSCACHECALLBACK *ccitem = syscache_callback_list + i;
 
-		(*ccitem->function) (ccitem->arg, ccitem->id, 0);
+		ccitem->function(ccitem->arg, ccitem->id, 0);
 	}
 
 	for (i = 0; i < relcache_callback_count; i++)
 	{
 		struct RELCACHECALLBACK *ccitem = relcache_callback_list + i;
 
-		(*ccitem->function) (ccitem->arg, InvalidOid);
+		ccitem->function(ccitem->arg, InvalidOid);
 	}
 }
 
@@ -1168,7 +1168,7 @@ CacheInvalidateHeapTuple(Relation relation,
 	{
 		Form_pg_class classtup = (Form_pg_class) GETSTRUCT(tuple);
 
-		relationId = HeapTupleGetOid(tuple);
+		relationId = classtup->oid;
 		if (classtup->relisshared)
 			databaseId = InvalidOid;
 		else
@@ -1311,7 +1311,7 @@ CacheInvalidateRelcacheByTuple(HeapTuple classTuple)
 
 	PrepareInvalidationState();
 
-	relationId = HeapTupleGetOid(classTuple);
+	relationId = classtup->oid;
 	if (classtup->relisshared)
 		databaseId = InvalidOid;
 	else
@@ -1497,7 +1497,7 @@ CallSyscacheCallbacks(int cacheid, uint32 hashvalue)
 		struct SYSCACHECALLBACK *ccitem = syscache_callback_list + i;
 
 		Assert(ccitem->id == cacheid);
-		(*ccitem->function) (ccitem->arg, cacheid, hashvalue);
+		ccitem->function(ccitem->arg, cacheid, hashvalue);
 		i = ccitem->link - 1;
 	}
 }

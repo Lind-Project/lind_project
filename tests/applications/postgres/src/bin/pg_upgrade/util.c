@@ -3,17 +3,16 @@
  *
  *	utility functions
  *
- *	Copyright (c) 2010-2017, PostgreSQL Global Development Group
+ *	Copyright (c) 2010-2020, PostgreSQL Global Development Group
  *	src/bin/pg_upgrade/util.c
  */
 
 #include "postgres_fe.h"
 
-#include "common/username.h"
-#include "pg_upgrade.h"
-
 #include <signal.h>
 
+#include "common/username.h"
+#include "pg_upgrade.h"
 
 LogOpts		log_opts;
 

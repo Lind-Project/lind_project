@@ -3,10 +3,9 @@
  */
 #include "postgres.h"
 
+#include "_int.h"
 #include "access/gin.h"
 #include "access/stratnum.h"
-
-#include "_int.h"
 
 PG_FUNCTION_INFO_V1(ginint4_queryextract);
 
@@ -116,7 +115,7 @@ ginint4_consistent(PG_FUNCTION_ARGS)
 
 	/* Pointer	   *extra_data = (Pointer *) PG_GETARG_POINTER(4); */
 	bool	   *recheck = (bool *) PG_GETARG_POINTER(5);
-	bool		res = FALSE;
+	bool		res = false;
 	int32		i;
 
 	switch (strategy)
@@ -125,25 +124,25 @@ ginint4_consistent(PG_FUNCTION_ARGS)
 			/* result is not lossy */
 			*recheck = false;
 			/* at least one element in check[] is true, so result = true */
-			res = TRUE;
+			res = true;
 			break;
 		case RTContainedByStrategyNumber:
 		case RTOldContainedByStrategyNumber:
 			/* we will need recheck */
 			*recheck = true;
 			/* at least one element in check[] is true, so result = true */
-			res = TRUE;
+			res = true;
 			break;
 		case RTSameStrategyNumber:
 			/* we will need recheck */
 			*recheck = true;
 			/* Must have all elements in check[] true */
-			res = TRUE;
+			res = true;
 			for (i = 0; i < nkeys; i++)
 			{
 				if (!check[i])
 				{
-					res = FALSE;
+					res = false;
 					break;
 				}
 			}
@@ -153,12 +152,12 @@ ginint4_consistent(PG_FUNCTION_ARGS)
 			/* result is not lossy */
 			*recheck = false;
 			/* Must have all elements in check[] true */
-			res = TRUE;
+			res = true;
 			for (i = 0; i < nkeys; i++)
 			{
 				if (!check[i])
 				{
-					res = FALSE;
+					res = false;
 					break;
 				}
 			}

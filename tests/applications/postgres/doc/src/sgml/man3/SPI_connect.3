@@ -1,0 +1,72 @@
+'\" t
+.\"     Title: SPI_connect
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 2020
+.\"    Manual: PostgreSQL 13.0 Documentation
+.\"    Source: PostgreSQL 13.0
+.\"  Language: English
+.\"
+.TH "SPI_CONNECT" "3" "2020" "PostgreSQL 13.0" "PostgreSQL 13.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+SPI_connect, SPI_connect_ext \- connect a C function to the SPI manager
+.SH "SYNOPSIS"
+.sp
+.nf
+int SPI_connect(void)
+.fi
+.sp
+.nf
+int SPI_connect_ext(int \fIoptions\fR)
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBSPI_connect\fR
+opens a connection from a C function invocation to the SPI manager\&. You must call this function if you want to execute commands through SPI\&. Some utility SPI functions can be called from unconnected C functions\&.
+.PP
+\fBSPI_connect_ext\fR
+does the same but has an argument that allows passing option flags\&. Currently, the following option values are available:
+.PP
+SPI_OPT_NONATOMIC
+.RS 4
+Sets the SPI connection to be
+nonatomic, which means that transaction control calls
+\fBSPI_commit\fR,
+\fBSPI_rollback\fR, and
+\fBSPI_start_transaction\fR
+are allowed\&. Otherwise, calling these functions will result in an immediate error\&.
+.RE
+.PP
+SPI_connect()
+is equivalent to
+SPI_connect_ext(0)\&.
+.SH "RETURN VALUE"
+.PP
+SPI_OK_CONNECT
+.RS 4
+on success
+.RE
+.PP
+SPI_ERROR_CONNECT
+.RS 4
+on error
+.RE

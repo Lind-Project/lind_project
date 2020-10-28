@@ -19,7 +19,7 @@
  * data across crashes.  During database startup, we simply force the
  * currently-active page of SUBTRANS to zeroes.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * src/backend/access/transam/subtrans.c
@@ -81,7 +81,7 @@ SubTransSetParent(TransactionId xid, TransactionId parent)
 	Assert(TransactionIdIsValid(parent));
 	Assert(TransactionIdFollows(xid, parent));
 
-	LWLockAcquire(SubtransControlLock, LW_EXCLUSIVE);
+	LWLockAcquire(SubtransSLRULock, LW_EXCLUSIVE);
 
 	slotno = SimpleLruReadPage(SubTransCtl, pageno, true, xid);
 	ptr = (TransactionId *) SubTransCtl->shared->page_buffer[slotno];
@@ -99,7 +99,7 @@ SubTransSetParent(TransactionId xid, TransactionId parent)
 		SubTransCtl->shared->page_dirty[slotno] = true;
 	}
 
-	LWLockRelease(SubtransControlLock);
+	LWLockRelease(SubtransSLRULock);
 }
 
 /*
@@ -129,7 +129,7 @@ SubTransGetParent(TransactionId xid)
 
 	parent = *ptr;
 
-	LWLockRelease(SubtransControlLock);
+	LWLockRelease(SubtransSLRULock);
 
 	return parent;
 }
@@ -191,9 +191,9 @@ void
 SUBTRANSShmemInit(void)
 {
 	SubTransCtl->PagePrecedes = SubTransPagePrecedes;
-	SimpleLruInit(SubTransCtl, "subtrans", NUM_SUBTRANS_BUFFERS, 0,
-				  SubtransControlLock, "pg_subtrans",
-				  LWTRANCHE_SUBTRANS_BUFFERS);
+	SimpleLruInit(SubTransCtl, "Subtrans", NUM_SUBTRANS_BUFFERS, 0,
+				  SubtransSLRULock, "pg_subtrans",
+				  LWTRANCHE_SUBTRANS_BUFFER);
 	/* Override default assumption that writes should be fsync'd */
 	SubTransCtl->do_fsync = false;
 }
@@ -213,7 +213,7 @@ BootStrapSUBTRANS(void)
 {
 	int			slotno;
 
-	LWLockAcquire(SubtransControlLock, LW_EXCLUSIVE);
+	LWLockAcquire(SubtransSLRULock, LW_EXCLUSIVE);
 
 	/* Create and zero the first page of the subtrans log */
 	slotno = ZeroSUBTRANSPage(0);
@@ -222,7 +222,7 @@ BootStrapSUBTRANS(void)
 	SimpleLruWritePage(SubTransCtl, slotno);
 	Assert(!SubTransCtl->shared->page_dirty[slotno]);
 
-	LWLockRelease(SubtransControlLock);
+	LWLockRelease(SubtransSLRULock);
 }
 
 /*
@@ -241,14 +241,15 @@ ZeroSUBTRANSPage(int pageno)
 
 /*
  * This must be called ONCE during postmaster or standalone-backend startup,
- * after StartupXLOG has initialized ShmemVariableCache->nextXid.
+ * after StartupXLOG has initialized ShmemVariableCache->nextFullXid.
  *
- * oldestActiveXID is the oldest XID of any prepared transaction, or nextXid
+ * oldestActiveXID is the oldest XID of any prepared transaction, or nextFullXid
  * if there are none.
  */
 void
 StartupSUBTRANS(TransactionId oldestActiveXID)
 {
+	FullTransactionId nextFullXid;
 	int			startPage;
 	int			endPage;
 
@@ -258,10 +259,11 @@ StartupSUBTRANS(TransactionId oldestActiveXID)
 	 * Whenever we advance into a new page, ExtendSUBTRANS will likewise zero
 	 * the new page without regard to whatever was previously on disk.
 	 */
-	LWLockAcquire(SubtransControlLock, LW_EXCLUSIVE);
+	LWLockAcquire(SubtransSLRULock, LW_EXCLUSIVE);
 
 	startPage = TransactionIdToPage(oldestActiveXID);
-	endPage = TransactionIdToPage(ShmemVariableCache->nextXid);
+	nextFullXid = ShmemVariableCache->nextFullXid;
+	endPage = TransactionIdToPage(XidFromFullTransactionId(nextFullXid));
 
 	while (startPage != endPage)
 	{
@@ -273,7 +275,7 @@ StartupSUBTRANS(TransactionId oldestActiveXID)
 	}
 	(void) ZeroSUBTRANSPage(startPage);
 
-	LWLockRelease(SubtransControlLock);
+	LWLockRelease(SubtransSLRULock);
 }
 
 /*
@@ -335,20 +337,20 @@ ExtendSUBTRANS(TransactionId newestXact)
 
 	pageno = TransactionIdToPage(newestXact);
 
-	LWLockAcquire(SubtransControlLock, LW_EXCLUSIVE);
+	LWLockAcquire(SubtransSLRULock, LW_EXCLUSIVE);
 
 	/* Zero the page */
 	ZeroSUBTRANSPage(pageno);
 
-	LWLockRelease(SubtransControlLock);
+	LWLockRelease(SubtransSLRULock);
 }
 
 
 /*
  * Remove all SUBTRANS segments before the one holding the passed transaction ID
  *
- * This is normally called during checkpoint, with oldestXact being the
- * oldest TransactionXmin of any running transaction.
+ * oldestXact is the oldest TransactionXmin of any running transaction.  This
+ * is called only during checkpoint.
  */
 void
 TruncateSUBTRANS(TransactionId oldestXact)

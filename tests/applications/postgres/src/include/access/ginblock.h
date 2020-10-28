@@ -2,7 +2,7 @@
  * ginblock.h
  *	  details of structures stored in GIN index blocks
  *
- *	Copyright (c) 2006-2017, PostgreSQL Global Development Group
+ *	Copyright (c) 2006-2020, PostgreSQL Global Development Group
  *
  *	src/include/access/ginblock.h
  *--------------------------------------------------------------------------
@@ -171,9 +171,6 @@ typedef struct GinMetaPageData
 	 GinItemPointerGetBlockNumber(p) == (BlockNumber)0)
 #define ItemPointerSetMax(p)  \
 	ItemPointerSet((p), InvalidBlockNumber, (OffsetNumber)0xffff)
-#define ItemPointerIsMax(p)  \
-	(GinItemPointerGetOffsetNumber(p) == (OffsetNumber)0xffff && \
-	 GinItemPointerGetBlockNumber(p) == InvalidBlockNumber)
 #define ItemPointerSetLossyPage(p, b)  \
 	ItemPointerSet((p), (b), (OffsetNumber)0xffff)
 #define ItemPointerIsLossyPage(p)  \
@@ -198,8 +195,11 @@ typedef struct
 
 /*
  * Category codes to distinguish placeholder nulls from ordinary NULL keys.
- * Note that the datatype size and the first two code values are chosen to be
- * compatible with the usual usage of bool isNull flags.
+ *
+ * The first two code values were chosen to be compatible with the usual usage
+ * of bool isNull flags.  However, casting between bool and GinNullCategory is
+ * risky because of the possibility of different bit patterns and type sizes,
+ * so it is no longer done.
  *
  * GIN_CAT_EMPTY_QUERY is never stored in the index; and notice that it is
  * chosen to sort before not after regular key values.

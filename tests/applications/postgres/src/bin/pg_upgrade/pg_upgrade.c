@@ -3,7 +3,7 @@
  *
  *	main source file
  *
- *	Copyright (c) 2010-2017, PostgreSQL Global Development Group
+ *	Copyright (c) 2010-2020, PostgreSQL Global Development Group
  *	src/bin/pg_upgrade/pg_upgrade.c
  */
 
@@ -28,25 +28,28 @@
  *	We control all assignments of pg_enum.oid because these oids are stored
  *	in user tables as enum values.
  *
- *	We control all assignments of pg_authid.oid because these oids are stored
- *	in pg_largeobject_metadata.
+ *	We control all assignments of pg_authid.oid for historical reasons (the
+ *	oids used to be stored in pg_largeobject_metadata, which is now copied via
+ *	SQL commands), that might change at some point in the future.
  */
 
 
 
 #include "postgres_fe.h"
 
-#include "pg_upgrade.h"
-#include "catalog/pg_class.h"
-#include "common/restricted_token.h"
-#include "fe_utils/string_utils.h"
-
 #ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
 #endif
 
+#include "catalog/pg_class_d.h"
+#include "common/file_perm.h"
+#include "common/logging.h"
+#include "common/restricted_token.h"
+#include "fe_utils/string_utils.h"
+#include "pg_upgrade.h"
+
 static void prepare_new_cluster(void);
-static void prepare_new_databases(void);
+static void prepare_new_globals(void);
 static void create_new_objects(void);
 static void copy_xact_xlog_xid(void);
 static void set_frozenxids(bool minmxid_only);
@@ -76,14 +79,15 @@ main(int argc, char **argv)
 	char	   *deletion_script_file_name = NULL;
 	bool		live_check = false;
 
+	pg_logging_init(argv[0]);
 	set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("pg_upgrade"));
 
-	/* Ensure that all files created by pg_upgrade are non-world-readable */
-	umask(S_IRWXG | S_IRWXO);
+	/* Set default restrictive mask until new cluster permissions are read */
+	umask(PG_MODE_MASK_OWNER);
 
 	parseCommandLine(argc, argv);
 
-	get_restricted_token(os_info.progname);
+	get_restricted_token();
 
 	adjust_data_dir(&old_cluster);
 	adjust_data_dir(&new_cluster);
@@ -98,6 +102,13 @@ main(int argc, char **argv)
 	get_sock_dir(&new_cluster, false);
 
 	check_cluster_compatibility(live_check);
+
+	/* Set mask based on PGDATA permissions */
+	if (!GetDataDirectoryCreatePerm(new_cluster.pgdata))
+		pg_fatal("could not read permissions of directory \"%s\": %s\n",
+				 new_cluster.pgdata, strerror(errno));
+
+	umask(pg_mode_mask);
 
 	check_and_dump_old_cluster(live_check);
 
@@ -128,7 +139,7 @@ main(int argc, char **argv)
 	/* -- NEW -- */
 	start_postmaster(&new_cluster, true);
 
-	prepare_new_databases();
+	prepare_new_globals();
 
 	create_new_objects();
 
@@ -190,13 +201,28 @@ main(int argc, char **argv)
 static void
 setup(char *argv0, bool *live_check)
 {
-	char		exec_path[MAXPGPATH];	/* full path to my executable */
-
 	/*
 	 * make sure the user has a clean environment, otherwise, we may confuse
 	 * libpq when we connect to one (or both) of the servers.
 	 */
 	check_pghost_envvar();
+
+	/*
+	 * In case the user hasn't specified the directory for the new binaries
+	 * with -B, default to using the path of the currently executed pg_upgrade
+	 * binary.
+	 */
+	if (!new_cluster.bindir)
+	{
+		char		exec_path[MAXPGPATH];
+
+		if (find_my_exec(argv0, exec_path) < 0)
+			pg_fatal("%s: could not find own program executable\n", argv0);
+		/* Trim off program name and keep just path */
+		*last_dir_separator(exec_path) = '\0';
+		canonicalize_path(exec_path);
+		new_cluster.bindir = pg_strdup(exec_path);
+	}
 
 	verify_directories();
 
@@ -233,15 +259,6 @@ setup(char *argv0, bool *live_check)
 			pg_fatal("There seems to be a postmaster servicing the new cluster.\n"
 					 "Please shutdown that postmaster and try again.\n");
 	}
-
-	/* get path to pg_upgrade executable */
-	if (find_my_exec(argv0, exec_path) < 0)
-		pg_fatal("%s: could not find own program executable\n", argv0);
-
-	/* Trim off program name and keep just path */
-	*last_dir_separator(exec_path) = '\0';
-	canonicalize_path(exec_path);
-	os_info.exec_path = pg_strdup(exec_path);
 }
 
 
@@ -250,7 +267,7 @@ prepare_new_cluster(void)
 {
 	/*
 	 * It would make more sense to freeze after loading the schema, but that
-	 * would cause us to lose the frozenids restored by the load. We use
+	 * would cause us to lose the frozenxids restored by the load. We use
 	 * --analyze so autovacuum doesn't update statistics later
 	 */
 	prep_status("Analyzing all rows in the new cluster");
@@ -276,7 +293,7 @@ prepare_new_cluster(void)
 
 
 static void
-prepare_new_databases(void)
+prepare_new_globals(void)
 {
 	/*
 	 * Before we restore anything, set frozenxids of initdb-created tables.
@@ -288,20 +305,11 @@ prepare_new_databases(void)
 	 */
 	prep_status("Restoring global objects in the new cluster");
 
-	/*
-	 * We have to create the databases first so we can install support
-	 * functions in all the other databases.  Ideally we could create the
-	 * support functions in template1 but pg_dumpall creates database using
-	 * the template0 template.
-	 */
 	exec_prog(UTILITY_LOG_FILE, NULL, true, true,
 			  "\"%s/psql\" " EXEC_PSQL_ARGS " %s -f \"%s\"",
 			  new_cluster.bindir, cluster_conn_opts(&new_cluster),
 			  GLOBALS_DUMP_FILE);
 	check_ok();
-
-	/* we load this to get a current list of databases */
-	get_db_and_rel_infos(&new_cluster);
 }
 
 
@@ -312,38 +320,80 @@ create_new_objects(void)
 
 	prep_status("Restoring database schemas in the new cluster\n");
 
+	/*
+	 * We cannot process the template1 database concurrently with others,
+	 * because when it's transiently dropped, connection attempts would fail.
+	 * So handle it in a separate non-parallelized pass.
+	 */
 	for (dbnum = 0; dbnum < old_cluster.dbarr.ndbs; dbnum++)
 	{
 		char		sql_file_name[MAXPGPATH],
 					log_file_name[MAXPGPATH];
 		DbInfo	   *old_db = &old_cluster.dbarr.dbs[dbnum];
-		PQExpBufferData connstr,
-					escaped_connstr;
+		const char *create_opts;
 
-		initPQExpBuffer(&connstr);
-		appendPQExpBuffer(&connstr, "dbname=");
-		appendConnStrVal(&connstr, old_db->db_name);
-		initPQExpBuffer(&escaped_connstr);
-		appendShellString(&escaped_connstr, connstr.data);
-		termPQExpBuffer(&connstr);
+		/* Process only template1 in this pass */
+		if (strcmp(old_db->db_name, "template1") != 0)
+			continue;
 
 		pg_log(PG_STATUS, "%s", old_db->db_name);
 		snprintf(sql_file_name, sizeof(sql_file_name), DB_DUMP_FILE_MASK, old_db->db_oid);
 		snprintf(log_file_name, sizeof(log_file_name), DB_DUMP_LOG_FILE_MASK, old_db->db_oid);
 
 		/*
-		 * pg_dump only produces its output at the end, so there is little
-		 * parallelism if using the pipe.
+		 * template1 database will already exist in the target installation,
+		 * so tell pg_restore to drop and recreate it; otherwise we would fail
+		 * to propagate its database-level properties.
 		 */
+		create_opts = "--clean --create";
+
+		exec_prog(log_file_name,
+				  NULL,
+				  true,
+				  true,
+				  "\"%s/pg_restore\" %s %s --exit-on-error --verbose "
+				  "--dbname postgres \"%s\"",
+				  new_cluster.bindir,
+				  cluster_conn_opts(&new_cluster),
+				  create_opts,
+				  sql_file_name);
+
+		break;					/* done once we've processed template1 */
+	}
+
+	for (dbnum = 0; dbnum < old_cluster.dbarr.ndbs; dbnum++)
+	{
+		char		sql_file_name[MAXPGPATH],
+					log_file_name[MAXPGPATH];
+		DbInfo	   *old_db = &old_cluster.dbarr.dbs[dbnum];
+		const char *create_opts;
+
+		/* Skip template1 in this pass */
+		if (strcmp(old_db->db_name, "template1") == 0)
+			continue;
+
+		pg_log(PG_STATUS, "%s", old_db->db_name);
+		snprintf(sql_file_name, sizeof(sql_file_name), DB_DUMP_FILE_MASK, old_db->db_oid);
+		snprintf(log_file_name, sizeof(log_file_name), DB_DUMP_LOG_FILE_MASK, old_db->db_oid);
+
+		/*
+		 * postgres database will already exist in the target installation, so
+		 * tell pg_restore to drop and recreate it; otherwise we would fail to
+		 * propagate its database-level properties.
+		 */
+		if (strcmp(old_db->db_name, "postgres") == 0)
+			create_opts = "--clean --create";
+		else
+			create_opts = "--create";
+
 		parallel_exec_prog(log_file_name,
 						   NULL,
-						   "\"%s/pg_restore\" %s --exit-on-error --verbose --dbname %s \"%s\"",
+						   "\"%s/pg_restore\" %s %s --exit-on-error --verbose "
+						   "--dbname template1 \"%s\"",
 						   new_cluster.bindir,
 						   cluster_conn_opts(&new_cluster),
-						   escaped_connstr.data,
+						   create_opts,
 						   sql_file_name);
-
-		termPQExpBuffer(&escaped_connstr);
 	}
 
 	/* reap all children */
@@ -360,7 +410,7 @@ create_new_objects(void)
 	if (GET_MAJOR_VERSION(old_cluster.major_version) < 903)
 		set_frozenxids(true);
 
-	/* regenerate now that we have objects in the databases */
+	/* update new_cluster info now that we have objects in the databases */
 	get_db_and_rel_infos(&new_cluster);
 }
 
@@ -368,7 +418,7 @@ create_new_objects(void)
  * Delete the given subdirectory contents from the new cluster
  */
 static void
-remove_new_subdir(char *subdir, bool rmtopdir)
+remove_new_subdir(const char *subdir, bool rmtopdir)
 {
 	char		new_path[MAXPGPATH];
 
@@ -385,7 +435,7 @@ remove_new_subdir(char *subdir, bool rmtopdir)
  * Copy the files from the old cluster into it
  */
 static void
-copy_subdir_files(char *old_subdir, char *new_subdir)
+copy_subdir_files(const char *old_subdir, const char *new_subdir)
 {
 	char		old_path[MAXPGPATH];
 	char		new_path[MAXPGPATH];

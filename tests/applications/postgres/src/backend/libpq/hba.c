@@ -5,7 +5,7 @@
  *	  wherein you authenticate a user by seeing what IP address the system
  *	  says he comes from and choosing authentication method based on it).
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -39,10 +39,10 @@
 #include "storage/fd.h"
 #include "utils/acl.h"
 #include "utils/builtins.h"
-#include "utils/varlena.h"
 #include "utils/guc.h"
 #include "utils/lsyscache.h"
 #include "utils/memutils.h"
+#include "utils/varlena.h"
 
 #ifdef USE_LDAP
 #ifdef WIN32
@@ -139,16 +139,16 @@ static const char *const UserAuthName[] =
 
 
 static MemoryContext tokenize_file(const char *filename, FILE *file,
-			  List **tok_lines, int elevel);
+								   List **tok_lines, int elevel);
 static List *tokenize_inc_file(List *tokens, const char *outer_filename,
-				  const char *inc_filename, int elevel, char **err_msg);
+							   const char *inc_filename, int elevel, char **err_msg);
 static bool parse_hba_auth_opt(char *name, char *val, HbaLine *hbaline,
-				   int elevel, char **err_msg);
-static bool verify_option_list_length(List *options, char *optionname,
-						  List *masters, char *mastername, int line_num);
+							   int elevel, char **err_msg);
+static bool verify_option_list_length(List *options, const char *optionname,
+									  List *masters, const char *mastername, int line_num);
 static ArrayType *gethba_options(HbaLine *hba);
 static void fill_hba_line(Tuplestorestate *tuple_store, TupleDesc tupdesc,
-			  int lineno, HbaLine *hba, const char *err_msg);
+						  int lineno, HbaLine *hba, const char *err_msg);
 static void fill_hba_view(Tuplestorestate *tuple_store, TupleDesc tupdesc);
 
 
@@ -187,9 +187,9 @@ pg_isblank(const char c)
  * set *err_msg to a string describing the error.  Currently the only
  * possible error is token too long for buf.
  *
- * If successful: store null-terminated token at *buf and return TRUE.
- * If no more tokens on line: set *buf = '\0' and return FALSE.
- * If error: fill buf with truncated or misformatted token and return FALSE.
+ * If successful: store null-terminated token at *buf and return true.
+ * If no more tokens on line: set *buf = '\0' and return false.
+ * If error: fill buf with truncated or misformatted token and return false.
  */
 static bool
 next_token(char **lineptr, char *buf, int bufsz,
@@ -994,7 +994,9 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 	}
 	else if (strcmp(token->string, "host") == 0 ||
 			 strcmp(token->string, "hostssl") == 0 ||
-			 strcmp(token->string, "hostnossl") == 0)
+			 strcmp(token->string, "hostnossl") == 0 ||
+			 strcmp(token->string, "hostgssenc") == 0 ||
+			 strcmp(token->string, "hostnogssenc") == 0)
 	{
 
 		if (token->string[4] == 's')	/* "hostssl" */
@@ -1022,10 +1024,23 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 			*err_msg = "hostssl record cannot match because SSL is not supported by this build";
 #endif
 		}
-		else if (token->string[4] == 'n')	/* "hostnossl" */
+		else if (token->string[4] == 'g')	/* "hostgssenc" */
 		{
-			parsedline->conntype = ctHostNoSSL;
+			parsedline->conntype = ctHostGSS;
+#ifndef ENABLE_GSS
+			ereport(elevel,
+					(errcode(ERRCODE_CONFIG_FILE_ERROR),
+					 errmsg("hostgssenc record cannot match because GSSAPI is not supported by this build"),
+					 errhint("Compile with --with-gssapi to use GSSAPI connections."),
+					 errcontext("line %d of configuration file \"%s\"",
+								line_num, HbaFileName)));
+			*err_msg = "hostgssenc record cannot match because GSSAPI is not supported by this build";
+#endif
 		}
+		else if (token->string[4] == 'n' && token->string[6] == 's')
+			parsedline->conntype = ctHostNoSSL;
+		else if (token->string[4] == 'n' && token->string[6] == 'g')
+			parsedline->conntype = ctHostNoGSS;
 		else
 		{
 			/* "host" */
@@ -1045,7 +1060,7 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 	}
 
 	/* Get the databases. */
-	field = lnext(field);
+	field = lnext(tok_line->fields, field);
 	if (!field)
 	{
 		ereport(elevel,
@@ -1065,7 +1080,7 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 	}
 
 	/* Get the roles. */
-	field = lnext(field);
+	field = lnext(tok_line->fields, field);
 	if (!field)
 	{
 		ereport(elevel,
@@ -1087,7 +1102,7 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 	if (parsedline->conntype != ctLocal)
 	{
 		/* Read the IP address field. (with or without CIDR netmask) */
-		field = lnext(field);
+		field = lnext(tok_line->fields, field);
 		if (!field)
 		{
 			ereport(elevel,
@@ -1207,7 +1222,7 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 			{
 				/* Read the mask field. */
 				pfree(str);
-				field = lnext(field);
+				field = lnext(tok_line->fields, field);
 				if (!field)
 				{
 					ereport(elevel,
@@ -1268,7 +1283,7 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 	}							/* != ctLocal */
 
 	/* Get the authentication method */
-	field = lnext(field);
+	field = lnext(tok_line->fields, field);
 	if (!field)
 	{
 		ereport(elevel,
@@ -1404,6 +1419,19 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 		*err_msg = "gssapi authentication is not supported on local sockets";
 		return NULL;
 	}
+	if (parsedline->conntype == ctHostGSS &&
+		parsedline->auth_method != uaGSS &&
+		parsedline->auth_method != uaReject &&
+		parsedline->auth_method != uaTrust)
+	{
+		ereport(elevel,
+				(errcode(ERRCODE_CONFIG_FILE_ERROR),
+				 errmsg("GSSAPI encryption only supports gss, trust, or reject authentication"),
+				 errcontext("line %d of configuration file \"%s\"",
+							line_num, HbaFileName)));
+		*err_msg = "GSSAPI encryption only supports gss, trust, or reject authentication";
+		return NULL;
+	}
 
 	if (parsedline->conntype != ctLocal &&
 		parsedline->auth_method == uaPeer)
@@ -1460,7 +1488,7 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 	}
 
 	/* Parse remaining arguments */
-	while ((field = lnext(field)) != NULL)
+	while ((field = lnext(tok_line->fields, field)) != NULL)
 	{
 		tokens = lfirst(field);
 		foreach(tokencell, tokens)
@@ -1500,27 +1528,32 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 	 */
 	if (parsedline->auth_method == uaLDAP)
 	{
+#ifndef HAVE_LDAP_INITIALIZE
+		/* Not mandatory for OpenLDAP, because it can use DNS SRV records */
 		MANDATORY_AUTH_ARG(parsedline->ldapserver, "ldapserver", "ldap");
+#endif
 
 		/*
 		 * LDAP can operate in two modes: either with a direct bind, using
 		 * ldapprefix and ldapsuffix, or using a search+bind, using
-		 * ldapbasedn, ldapbinddn, ldapbindpasswd and ldapsearchattribute.
-		 * Disallow mixing these parameters.
+		 * ldapbasedn, ldapbinddn, ldapbindpasswd and one of
+		 * ldapsearchattribute or ldapsearchfilter.  Disallow mixing these
+		 * parameters.
 		 */
 		if (parsedline->ldapprefix || parsedline->ldapsuffix)
 		{
 			if (parsedline->ldapbasedn ||
 				parsedline->ldapbinddn ||
 				parsedline->ldapbindpasswd ||
-				parsedline->ldapsearchattribute)
+				parsedline->ldapsearchattribute ||
+				parsedline->ldapsearchfilter)
 			{
 				ereport(elevel,
 						(errcode(ERRCODE_CONFIG_FILE_ERROR),
-						 errmsg("cannot use ldapbasedn, ldapbinddn, ldapbindpasswd, ldapsearchattribute, or ldapurl together with ldapprefix"),
+						 errmsg("cannot use ldapbasedn, ldapbinddn, ldapbindpasswd, ldapsearchattribute, ldapsearchfilter, or ldapurl together with ldapprefix"),
 						 errcontext("line %d of configuration file \"%s\"",
 									line_num, HbaFileName)));
-				*err_msg = "cannot use ldapbasedn, ldapbinddn, ldapbindpasswd, ldapsearchattribute, or ldapurl together with ldapprefix";
+				*err_msg = "cannot use ldapbasedn, ldapbinddn, ldapbindpasswd, ldapsearchattribute, ldapsearchfilter, or ldapurl together with ldapprefix";
 				return NULL;
 			}
 		}
@@ -1532,6 +1565,22 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 					 errcontext("line %d of configuration file \"%s\"",
 								line_num, HbaFileName)));
 			*err_msg = "authentication method \"ldap\" requires argument \"ldapbasedn\", \"ldapprefix\", or \"ldapsuffix\" to be set";
+			return NULL;
+		}
+
+		/*
+		 * When using search+bind, you can either use a simple attribute
+		 * (defaulting to "uid") or a fully custom search filter.  You can't
+		 * do both.
+		 */
+		if (parsedline->ldapsearchattribute && parsedline->ldapsearchfilter)
+		{
+			ereport(elevel,
+					(errcode(ERRCODE_CONFIG_FILE_ERROR),
+					 errmsg("cannot use ldapsearchattribute together with ldapsearchfilter"),
+					 errcontext("line %d of configuration file \"%s\"",
+								line_num, HbaFileName)));
+			*err_msg = "cannot use ldapsearchattribute together with ldapsearchfilter";
 			return NULL;
 		}
 	}
@@ -1591,7 +1640,7 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 	 */
 	if (parsedline->auth_method == uaCert)
 	{
-		parsedline->clientcert = true;
+		parsedline->clientcert = clientCertCA;
 	}
 
 	return parsedline;
@@ -1599,7 +1648,7 @@ parse_hba_line(TokenizedLine *tok_line, int elevel)
 
 
 static bool
-verify_option_list_length(List *options, char *optionname, List *masters, char *mastername, int line_num)
+verify_option_list_length(List *options, const char *optionname, List *masters, const char *mastername, int line_num)
 {
 	if (list_length(options) == 0 ||
 		list_length(options) == 1 ||
@@ -1657,23 +1706,38 @@ parse_hba_auth_opt(char *name, char *val, HbaLine *hbaline,
 			*err_msg = "clientcert can only be configured for \"hostssl\" rows";
 			return false;
 		}
-		if (strcmp(val, "1") == 0)
+		if (strcmp(val, "1") == 0
+			|| strcmp(val, "verify-ca") == 0)
 		{
-			hbaline->clientcert = true;
+			hbaline->clientcert = clientCertCA;
 		}
-		else
+		else if (strcmp(val, "verify-full") == 0)
+		{
+			hbaline->clientcert = clientCertFull;
+		}
+		else if (strcmp(val, "0") == 0
+				 || strcmp(val, "no-verify") == 0)
 		{
 			if (hbaline->auth_method == uaCert)
 			{
 				ereport(elevel,
 						(errcode(ERRCODE_CONFIG_FILE_ERROR),
-						 errmsg("clientcert can not be set to 0 when using \"cert\" authentication"),
+						 errmsg("clientcert cannot be set to \"no-verify\" when using \"cert\" authentication"),
 						 errcontext("line %d of configuration file \"%s\"",
 									line_num, HbaFileName)));
-				*err_msg = "clientcert can not be set to 0 when using \"cert\" authentication";
+				*err_msg = "clientcert cannot be set to \"no-verify\" when using \"cert\" authentication";
 				return false;
 			}
-			hbaline->clientcert = false;
+			hbaline->clientcert = clientCertOff;
+		}
+		else
+		{
+			ereport(elevel,
+					(errcode(ERRCODE_CONFIG_FILE_ERROR),
+					 errmsg("invalid value for clientcert: \"%s\"", val),
+					 errcontext("line %d of configuration file \"%s\"",
+								line_num, HbaFileName)));
+			return false;
 		}
 	}
 	else if (strcmp(name, "pamservice") == 0)
@@ -1710,7 +1774,8 @@ parse_hba_auth_opt(char *name, char *val, HbaLine *hbaline,
 			return false;
 		}
 
-		if (strcmp(urldata->lud_scheme, "ldap") != 0)
+		if (strcmp(urldata->lud_scheme, "ldap") != 0 &&
+			strcmp(urldata->lud_scheme, "ldaps") != 0)
 		{
 			ereport(elevel,
 					(errcode(ERRCODE_CONFIG_FILE_ERROR),
@@ -1721,6 +1786,8 @@ parse_hba_auth_opt(char *name, char *val, HbaLine *hbaline,
 			return false;
 		}
 
+		if (urldata->lud_scheme)
+			hbaline->ldapscheme = pstrdup(urldata->lud_scheme);
 		if (urldata->lud_host)
 			hbaline->ldapserver = pstrdup(urldata->lud_host);
 		hbaline->ldapport = urldata->lud_port;
@@ -1731,14 +1798,7 @@ parse_hba_auth_opt(char *name, char *val, HbaLine *hbaline,
 			hbaline->ldapsearchattribute = pstrdup(urldata->lud_attrs[0]);	/* only use first one */
 		hbaline->ldapscope = urldata->lud_scope;
 		if (urldata->lud_filter)
-		{
-			ereport(elevel,
-					(errcode(ERRCODE_CONFIG_FILE_ERROR),
-					 errmsg("filters not supported in LDAP URLs")));
-			*err_msg = "filters not supported in LDAP URLs";
-			ldap_free_urldesc(urldata);
-			return false;
-		}
+			hbaline->ldapsearchfilter = pstrdup(urldata->lud_filter);
 		ldap_free_urldesc(urldata);
 #else							/* not OpenLDAP */
 		ereport(elevel,
@@ -1754,6 +1814,17 @@ parse_hba_auth_opt(char *name, char *val, HbaLine *hbaline,
 			hbaline->ldaptls = true;
 		else
 			hbaline->ldaptls = false;
+	}
+	else if (strcmp(name, "ldapscheme") == 0)
+	{
+		REQUIRE_AUTH_OPTION(uaLDAP, "ldapscheme", "ldap");
+		if (strcmp(val, "ldap") != 0 && strcmp(val, "ldaps") != 0)
+			ereport(elevel,
+					(errcode(ERRCODE_CONFIG_FILE_ERROR),
+					 errmsg("invalid ldapscheme value: \"%s\"", val),
+					 errcontext("line %d of configuration file \"%s\"",
+								line_num, HbaFileName)));
+		hbaline->ldapscheme = pstrdup(val);
 	}
 	else if (strcmp(name, "ldapserver") == 0)
 	{
@@ -1789,6 +1860,11 @@ parse_hba_auth_opt(char *name, char *val, HbaLine *hbaline,
 	{
 		REQUIRE_AUTH_OPTION(uaLDAP, "ldapsearchattribute", "ldap");
 		hbaline->ldapsearchattribute = pstrdup(val);
+	}
+	else if (strcmp(name, "ldapsearchfilter") == 0)
+	{
+		REQUIRE_AUTH_OPTION(uaLDAP, "ldapsearchfilter", "ldap");
+		hbaline->ldapsearchfilter = pstrdup(val);
 	}
 	else if (strcmp(name, "ldapbasedn") == 0)
 	{
@@ -2030,6 +2106,17 @@ check_hba(hbaPort *port)
 					continue;
 			}
 
+			/* Check GSSAPI state */
+#ifdef ENABLE_GSS
+			if (port->gss->enc && hba->conntype == ctHostNoGSS)
+				continue;
+			else if (!port->gss->enc && hba->conntype == ctHostGSS)
+				continue;
+#else
+			if (hba->conntype == ctHostGSS)
+				continue;
+#endif
+
 			/* Check IP address */
 			switch (hba->ip_cmp_method)
 			{
@@ -2188,12 +2275,12 @@ load_hba(void)
 /*
  * This macro specifies the maximum number of authentication options
  * that are possible with any given authentication method that is supported.
- * Currently LDAP supports 10, and there are 3 that are not dependent on
+ * Currently LDAP supports 11, and there are 3 that are not dependent on
  * the auth method here.  It may not actually be possible to set all of them
  * at the same time, but we'll set the macro value high enough to be
  * conservative and avoid warnings from static analysis tools.
  */
-#define MAX_HBA_OPTIONS 13
+#define MAX_HBA_OPTIONS 14
 
 /*
  * Create a text array listing the options specified in the HBA line.
@@ -2222,9 +2309,9 @@ gethba_options(HbaLine *hba)
 		options[noptions++] =
 			CStringGetTextDatum(psprintf("map=%s", hba->usermap));
 
-	if (hba->clientcert)
+	if (hba->clientcert != clientCertOff)
 		options[noptions++] =
-			CStringGetTextDatum("clientcert=true");
+			CStringGetTextDatum(psprintf("clientcert=%s", (hba->clientcert == clientCertCA) ? "verify-ca" : "verify-full"));
 
 	if (hba->pamservice)
 		options[noptions++] =
@@ -2270,6 +2357,11 @@ gethba_options(HbaLine *hba)
 				CStringGetTextDatum(psprintf("ldapsearchattribute=%s",
 											 hba->ldapsearchattribute));
 
+		if (hba->ldapsearchfilter)
+			options[noptions++] =
+				CStringGetTextDatum(psprintf("ldapsearchfilter=%s",
+											 hba->ldapsearchfilter));
+
 		if (hba->ldapscope)
 			options[noptions++] =
 				CStringGetTextDatum(psprintf("ldapscope=%d", hba->ldapscope));
@@ -2298,7 +2390,7 @@ gethba_options(HbaLine *hba)
 	Assert(noptions <= MAX_HBA_OPTIONS);
 
 	if (noptions > 0)
-		return construct_array(options, noptions, TEXTOID, -1, false, 'i');
+		return construct_array(options, noptions, TEXTOID, -1, false, TYPALIGN_INT);
 	else
 		return NULL;
 }
@@ -2360,6 +2452,12 @@ fill_hba_line(Tuplestorestate *tuple_store, TupleDesc tupdesc,
 				break;
 			case ctHostNoSSL:
 				typestr = "hostnossl";
+				break;
+			case ctHostGSS:
+				typestr = "hostgssenc";
+				break;
+			case ctHostNoGSS:
+				typestr = "hostnogssenc";
 				break;
 		}
 		if (typestr)
@@ -2569,8 +2667,7 @@ pg_hba_file_rules(PG_FUNCTION_ARGS)
 	if (!(rsi->allowedModes & SFRM_Materialize))
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("materialize mode required, but it is not " \
-						"allowed in this context")));
+				 errmsg("materialize mode required, but it is not allowed in this context")));
 
 	rsi->returnMode = SFRM_Materialize;
 
@@ -2631,7 +2728,7 @@ parse_ident_line(TokenizedLine *tok_line)
 	parsedline->usermap = pstrdup(token->string);
 
 	/* Get the ident user token */
-	field = lnext(field);
+	field = lnext(tok_line->fields, field);
 	IDENT_FIELD_ABSENT(field);
 	tokens = lfirst(field);
 	IDENT_MULTI_VALUE(tokens);
@@ -2639,7 +2736,7 @@ parse_ident_line(TokenizedLine *tok_line)
 	parsedline->ident_user = pstrdup(token->string);
 
 	/* Get the PG rolename token */
-	field = lnext(field);
+	field = lnext(tok_line->fields, field);
 	IDENT_FIELD_ABSENT(field);
 	tokens = lfirst(field);
 	IDENT_MULTI_VALUE(tokens);
@@ -2805,7 +2902,6 @@ check_ident_usermap(IdentLine *identLine, const char *usermap_name,
 				*found_p = true;
 		}
 	}
-	return;
 }
 
 

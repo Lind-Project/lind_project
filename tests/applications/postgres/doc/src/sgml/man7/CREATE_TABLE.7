@@ -1,0 +1,1699 @@
+'\" t
+.\"     Title: CREATE TABLE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 2020
+.\"    Manual: PostgreSQL 13.0 Documentation
+.\"    Source: PostgreSQL 13.0
+.\"  Language: English
+.\"
+.TH "CREATE TABLE" "7" "2020" "PostgreSQL 13.0" "PostgreSQL 13.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+CREATE_TABLE \- define a new table
+.SH "SYNOPSIS"
+.sp
+.nf
+CREATE [ [ GLOBAL | LOCAL ] { TEMPORARY | TEMP } | UNLOGGED ] TABLE [ IF NOT EXISTS ] \fItable_name\fR ( [
+  { \fIcolumn_name\fR \fIdata_type\fR [ COLLATE \fIcollation\fR ] [ \fIcolumn_constraint\fR [ \&.\&.\&. ] ]
+    | \fItable_constraint\fR
+    | LIKE \fIsource_table\fR [ \fIlike_option\fR \&.\&.\&. ] }
+    [, \&.\&.\&. ]
+] )
+[ INHERITS ( \fIparent_table\fR [, \&.\&.\&. ] ) ]
+[ PARTITION BY { RANGE | LIST | HASH } ( { \fIcolumn_name\fR | ( \fIexpression\fR ) } [ COLLATE \fIcollation\fR ] [ \fIopclass\fR ] [, \&.\&.\&. ] ) ]
+[ USING \fImethod\fR ]
+[ WITH ( \fIstorage_parameter\fR [= \fIvalue\fR] [, \&.\&.\&. ] ) | WITHOUT OIDS ]
+[ ON COMMIT { PRESERVE ROWS | DELETE ROWS | DROP } ]
+[ TABLESPACE \fItablespace_name\fR ]
+
+CREATE [ [ GLOBAL | LOCAL ] { TEMPORARY | TEMP } | UNLOGGED ] TABLE [ IF NOT EXISTS ] \fItable_name\fR
+    OF \fItype_name\fR [ (
+  { \fIcolumn_name\fR [ WITH OPTIONS ] [ \fIcolumn_constraint\fR [ \&.\&.\&. ] ]
+    | \fItable_constraint\fR }
+    [, \&.\&.\&. ]
+) ]
+[ PARTITION BY { RANGE | LIST | HASH } ( { \fIcolumn_name\fR | ( \fIexpression\fR ) } [ COLLATE \fIcollation\fR ] [ \fIopclass\fR ] [, \&.\&.\&. ] ) ]
+[ USING \fImethod\fR ]
+[ WITH ( \fIstorage_parameter\fR [= \fIvalue\fR] [, \&.\&.\&. ] ) | WITHOUT OIDS ]
+[ ON COMMIT { PRESERVE ROWS | DELETE ROWS | DROP } ]
+[ TABLESPACE \fItablespace_name\fR ]
+
+CREATE [ [ GLOBAL | LOCAL ] { TEMPORARY | TEMP } | UNLOGGED ] TABLE [ IF NOT EXISTS ] \fItable_name\fR
+    PARTITION OF \fIparent_table\fR [ (
+  { \fIcolumn_name\fR [ WITH OPTIONS ] [ \fIcolumn_constraint\fR [ \&.\&.\&. ] ]
+    | \fItable_constraint\fR }
+    [, \&.\&.\&. ]
+) ] { FOR VALUES \fIpartition_bound_spec\fR | DEFAULT }
+[ PARTITION BY { RANGE | LIST | HASH } ( { \fIcolumn_name\fR | ( \fIexpression\fR ) } [ COLLATE \fIcollation\fR ] [ \fIopclass\fR ] [, \&.\&.\&. ] ) ]
+[ USING \fImethod\fR ]
+[ WITH ( \fIstorage_parameter\fR [= \fIvalue\fR] [, \&.\&.\&. ] ) | WITHOUT OIDS ]
+[ ON COMMIT { PRESERVE ROWS | DELETE ROWS | DROP } ]
+[ TABLESPACE \fItablespace_name\fR ]
+
+where \fIcolumn_constraint\fR is:
+
+[ CONSTRAINT \fIconstraint_name\fR ]
+{ NOT NULL |
+  NULL |
+  CHECK ( \fIexpression\fR ) [ NO INHERIT ] |
+  DEFAULT \fIdefault_expr\fR |
+  GENERATED ALWAYS AS ( \fIgeneration_expr\fR ) STORED |
+  GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( \fIsequence_options\fR ) ] |
+  UNIQUE \fIindex_parameters\fR |
+  PRIMARY KEY \fIindex_parameters\fR |
+  REFERENCES \fIreftable\fR [ ( \fIrefcolumn\fR ) ] [ MATCH FULL | MATCH PARTIAL | MATCH SIMPLE ]
+    [ ON DELETE \fIreferential_action\fR ] [ ON UPDATE \fIreferential_action\fR ] }
+[ DEFERRABLE | NOT DEFERRABLE ] [ INITIALLY DEFERRED | INITIALLY IMMEDIATE ]
+
+and \fItable_constraint\fR is:
+
+[ CONSTRAINT \fIconstraint_name\fR ]
+{ CHECK ( \fIexpression\fR ) [ NO INHERIT ] |
+  UNIQUE ( \fIcolumn_name\fR [, \&.\&.\&. ] ) \fIindex_parameters\fR |
+  PRIMARY KEY ( \fIcolumn_name\fR [, \&.\&.\&. ] ) \fIindex_parameters\fR |
+  EXCLUDE [ USING \fIindex_method\fR ] ( \fIexclude_element\fR WITH \fIoperator\fR [, \&.\&.\&. ] ) \fIindex_parameters\fR [ WHERE ( \fIpredicate\fR ) ] |
+  FOREIGN KEY ( \fIcolumn_name\fR [, \&.\&.\&. ] ) REFERENCES \fIreftable\fR [ ( \fIrefcolumn\fR [, \&.\&.\&. ] ) ]
+    [ MATCH FULL | MATCH PARTIAL | MATCH SIMPLE ] [ ON DELETE \fIreferential_action\fR ] [ ON UPDATE \fIreferential_action\fR ] }
+[ DEFERRABLE | NOT DEFERRABLE ] [ INITIALLY DEFERRED | INITIALLY IMMEDIATE ]
+
+and \fIlike_option\fR is:
+
+{ INCLUDING | EXCLUDING } { COMMENTS | CONSTRAINTS | DEFAULTS | GENERATED | IDENTITY | INDEXES | STATISTICS | STORAGE | ALL }
+
+and \fIpartition_bound_spec\fR is:
+
+IN ( \fIpartition_bound_expr\fR [, \&.\&.\&.] ) |
+FROM ( { \fIpartition_bound_expr\fR | MINVALUE | MAXVALUE } [, \&.\&.\&.] )
+  TO ( { \fIpartition_bound_expr\fR | MINVALUE | MAXVALUE } [, \&.\&.\&.] ) |
+WITH ( MODULUS \fInumeric_literal\fR, REMAINDER \fInumeric_literal\fR )
+
+\fIindex_parameters\fR in UNIQUE, PRIMARY KEY, and EXCLUDE constraints are:
+
+[ INCLUDE ( \fIcolumn_name\fR [, \&.\&.\&. ] ) ]
+[ WITH ( \fIstorage_parameter\fR [= \fIvalue\fR] [, \&.\&.\&. ] ) ]
+[ USING INDEX TABLESPACE \fItablespace_name\fR ]
+
+\fIexclude_element\fR in an EXCLUDE constraint is:
+
+{ \fIcolumn_name\fR | ( \fIexpression\fR ) } [ \fIopclass\fR ] [ ASC | DESC ] [ NULLS { FIRST | LAST } ]
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBCREATE TABLE\fR
+will create a new, initially empty table in the current database\&. The table will be owned by the user issuing the command\&.
+.PP
+If a schema name is given (for example,
+CREATE TABLE myschema\&.mytable \&.\&.\&.) then the table is created in the specified schema\&. Otherwise it is created in the current schema\&. Temporary tables exist in a special schema, so a schema name cannot be given when creating a temporary table\&. The name of the table must be distinct from the name of any other table, sequence, index, view, or foreign table in the same schema\&.
+.PP
+\fBCREATE TABLE\fR
+also automatically creates a data type that represents the composite type corresponding to one row of the table\&. Therefore, tables cannot have the same name as any existing data type in the same schema\&.
+.PP
+The optional constraint clauses specify constraints (tests) that new or updated rows must satisfy for an insert or update operation to succeed\&. A constraint is an SQL object that helps define the set of valid values in the table in various ways\&.
+.PP
+There are two ways to define constraints: table constraints and column constraints\&. A column constraint is defined as part of a column definition\&. A table constraint definition is not tied to a particular column, and it can encompass more than one column\&. Every column constraint can also be written as a table constraint; a column constraint is only a notational convenience for use when the constraint only affects one column\&.
+.PP
+To be able to create a table, you must have
+USAGE
+privilege on all column types or the type in the
+OF
+clause, respectively\&.
+.SH "PARAMETERS"
+.PP
+TEMPORARY or TEMP
+.RS 4
+If specified, the table is created as a temporary table\&. Temporary tables are automatically dropped at the end of a session, or optionally at the end of the current transaction (see
+ON COMMIT
+below)\&. Existing permanent tables with the same name are not visible to the current session while the temporary table exists, unless they are referenced with schema\-qualified names\&. Any indexes created on a temporary table are automatically temporary as well\&.
+.sp
+The
+autovacuum daemon
+cannot access and therefore cannot vacuum or analyze temporary tables\&. For this reason, appropriate vacuum and analyze operations should be performed via session SQL commands\&. For example, if a temporary table is going to be used in complex queries, it is wise to run
+\fBANALYZE\fR
+on the temporary table after it is populated\&.
+.sp
+Optionally,
+GLOBAL
+or
+LOCAL
+can be written before
+TEMPORARY
+or
+TEMP\&. This presently makes no difference in
+PostgreSQL
+and is deprecated; see
+Compatibility
+below\&.
+.RE
+.PP
+UNLOGGED
+.RS 4
+If specified, the table is created as an unlogged table\&. Data written to unlogged tables is not written to the write\-ahead log (see
+Chapter\ \&29), which makes them considerably faster than ordinary tables\&. However, they are not crash\-safe: an unlogged table is automatically truncated after a crash or unclean shutdown\&. The contents of an unlogged table are also not replicated to standby servers\&. Any indexes created on an unlogged table are automatically unlogged as well\&.
+.RE
+.PP
+IF NOT EXISTS
+.RS 4
+Do not throw an error if a relation with the same name already exists\&. A notice is issued in this case\&. Note that there is no guarantee that the existing relation is anything like the one that would have been created\&.
+.RE
+.PP
+\fItable_name\fR
+.RS 4
+The name (optionally schema\-qualified) of the table to be created\&.
+.RE
+.PP
+OF \fItype_name\fR
+.RS 4
+Creates a
+typed table, which takes its structure from the specified composite type (name optionally schema\-qualified)\&. A typed table is tied to its type; for example the table will be dropped if the type is dropped (with
+DROP TYPE \&.\&.\&. CASCADE)\&.
+.sp
+When a typed table is created, then the data types of the columns are determined by the underlying composite type and are not specified by the
+CREATE TABLE
+command\&. But the
+CREATE TABLE
+command can add defaults and constraints to the table and can specify storage parameters\&.
+.RE
+.PP
+\fIcolumn_name\fR
+.RS 4
+The name of a column to be created in the new table\&.
+.RE
+.PP
+\fIdata_type\fR
+.RS 4
+The data type of the column\&. This can include array specifiers\&. For more information on the data types supported by
+PostgreSQL, refer to
+Chapter\ \&8\&.
+.RE
+.PP
+COLLATE \fIcollation\fR
+.RS 4
+The
+COLLATE
+clause assigns a collation to the column (which must be of a collatable data type)\&. If not specified, the column data type\*(Aqs default collation is used\&.
+.RE
+.PP
+INHERITS ( \fIparent_table\fR [, \&.\&.\&. ] )
+.RS 4
+The optional
+INHERITS
+clause specifies a list of tables from which the new table automatically inherits all columns\&. Parent tables can be plain tables or foreign tables\&.
+.sp
+Use of
+INHERITS
+creates a persistent relationship between the new child table and its parent table(s)\&. Schema modifications to the parent(s) normally propagate to children as well, and by default the data of the child table is included in scans of the parent(s)\&.
+.sp
+If the same column name exists in more than one parent table, an error is reported unless the data types of the columns match in each of the parent tables\&. If there is no conflict, then the duplicate columns are merged to form a single column in the new table\&. If the column name list of the new table contains a column name that is also inherited, the data type must likewise match the inherited column(s), and the column definitions are merged into one\&. If the new table explicitly specifies a default value for the column, this default overrides any defaults from inherited declarations of the column\&. Otherwise, any parents that specify default values for the column must all specify the same default, or an error will be reported\&.
+.sp
+CHECK
+constraints are merged in essentially the same way as columns: if multiple parent tables and/or the new table definition contain identically\-named
+CHECK
+constraints, these constraints must all have the same check expression, or an error will be reported\&. Constraints having the same name and expression will be merged into one copy\&. A constraint marked
+NO INHERIT
+in a parent will not be considered\&. Notice that an unnamed
+CHECK
+constraint in the new table will never be merged, since a unique name will always be chosen for it\&.
+.sp
+Column
+STORAGE
+settings are also copied from parent tables\&.
+.sp
+If a column in the parent table is an identity column, that property is not inherited\&. A column in the child table can be declared identity column if desired\&.
+.RE
+.PP
+PARTITION BY { RANGE | LIST | HASH } ( { \fIcolumn_name\fR | ( \fIexpression\fR ) } [ \fIopclass\fR ] [, \&.\&.\&.] )
+.RS 4
+The optional
+PARTITION BY
+clause specifies a strategy of partitioning the table\&. The table thus created is called a
+partitioned
+table\&. The parenthesized list of columns or expressions forms the
+partition key
+for the table\&. When using range or hash partitioning, the partition key can include multiple columns or expressions (up to 32, but this limit can be altered when building
+PostgreSQL), but for list partitioning, the partition key must consist of a single column or expression\&.
+.sp
+Range and list partitioning require a btree operator class, while hash partitioning requires a hash operator class\&. If no operator class is specified explicitly, the default operator class of the appropriate type will be used; if no default operator class exists, an error will be raised\&. When hash partitioning is used, the operator class used must implement support function 2 (see
+Section\ \&37.16.3
+for details)\&.
+.sp
+A partitioned table is divided into sub\-tables (called partitions), which are created using separate
+CREATE TABLE
+commands\&. The partitioned table is itself empty\&. A data row inserted into the table is routed to a partition based on the value of columns or expressions in the partition key\&. If no existing partition matches the values in the new row, an error will be reported\&.
+.sp
+Partitioned tables do not support
+EXCLUDE
+constraints; however, you can define these constraints on individual partitions\&.
+.sp
+See
+Section\ \&5.11
+for more discussion on table partitioning\&.
+.RE
+.PP
+PARTITION OF \fIparent_table\fR { FOR VALUES \fIpartition_bound_spec\fR | DEFAULT }
+.RS 4
+Creates the table as a
+partition
+of the specified parent table\&. The table can be created either as a partition for specific values using
+FOR VALUES
+or as a default partition using
+DEFAULT\&. Any indexes, constraints and user\-defined row\-level triggers that exist in the parent table are cloned on the new partition\&.
+.sp
+The
+\fIpartition_bound_spec\fR
+must correspond to the partitioning method and partition key of the parent table, and must not overlap with any existing partition of that parent\&. The form with
+IN
+is used for list partitioning, the form with
+FROM
+and
+TO
+is used for range partitioning, and the form with
+WITH
+is used for hash partitioning\&.
+.sp
+\fIpartition_bound_expr\fR
+is any variable\-free expression (subqueries, window functions, aggregate functions, and set\-returning functions are not allowed)\&. Its data type must match the data type of the corresponding partition key column\&. The expression is evaluated once at table creation time, so it can even contain volatile expressions such as
+\fBCURRENT_TIMESTAMP\fR\&.
+.sp
+When creating a list partition,
+NULL
+can be specified to signify that the partition allows the partition key column to be null\&. However, there cannot be more than one such list partition for a given parent table\&.
+NULL
+cannot be specified for range partitions\&.
+.sp
+When creating a range partition, the lower bound specified with
+FROM
+is an inclusive bound, whereas the upper bound specified with
+TO
+is an exclusive bound\&. That is, the values specified in the
+FROM
+list are valid values of the corresponding partition key columns for this partition, whereas those in the
+TO
+list are not\&. Note that this statement must be understood according to the rules of row\-wise comparison (Section\ \&9.24.5)\&. For example, given
+PARTITION BY RANGE (x,y), a partition bound
+FROM (1, 2) TO (3, 4)
+allows
+x=1
+with any
+y>=2,
+x=2
+with any non\-null
+y, and
+x=3
+with any
+y<4\&.
+.sp
+The special values
+MINVALUE
+and
+MAXVALUE
+may be used when creating a range partition to indicate that there is no lower or upper bound on the column\*(Aqs value\&. For example, a partition defined using
+FROM (MINVALUE) TO (10)
+allows any values less than 10, and a partition defined using
+FROM (10) TO (MAXVALUE)
+allows any values greater than or equal to 10\&.
+.sp
+When creating a range partition involving more than one column, it can also make sense to use
+MAXVALUE
+as part of the lower bound, and
+MINVALUE
+as part of the upper bound\&. For example, a partition defined using
+FROM (0, MAXVALUE) TO (10, MAXVALUE)
+allows any rows where the first partition key column is greater than 0 and less than or equal to 10\&. Similarly, a partition defined using
+FROM (\*(Aqa\*(Aq, MINVALUE) TO (\*(Aqb\*(Aq, MINVALUE)
+allows any rows where the first partition key column starts with "a"\&.
+.sp
+Note that if
+MINVALUE
+or
+MAXVALUE
+is used for one column of a partitioning bound, the same value must be used for all subsequent columns\&. For example,
+(10, MINVALUE, 0)
+is not a valid bound; you should write
+(10, MINVALUE, MINVALUE)\&.
+.sp
+Also note that some element types, such as
+timestamp, have a notion of "infinity", which is just another value that can be stored\&. This is different from
+MINVALUE
+and
+MAXVALUE, which are not real values that can be stored, but rather they are ways of saying that the value is unbounded\&.
+MAXVALUE
+can be thought of as being greater than any other value, including "infinity" and
+MINVALUE
+as being less than any other value, including "minus infinity"\&. Thus the range
+FROM (\*(Aqinfinity\*(Aq) TO (MAXVALUE)
+is not an empty range; it allows precisely one value to be stored \(em "infinity"\&.
+.sp
+If
+DEFAULT
+is specified, the table will be created as the default partition of the parent table\&. This option is not available for hash\-partitioned tables\&. A partition key value not fitting into any other partition of the given parent will be routed to the default partition\&.
+.sp
+When a table has an existing
+DEFAULT
+partition and a new partition is added to it, the default partition must be scanned to verify that it does not contain any rows which properly belong in the new partition\&. If the default partition contains a large number of rows, this may be slow\&. The scan will be skipped if the default partition is a foreign table or if it has a constraint which proves that it cannot contain rows which should be placed in the new partition\&.
+.sp
+When creating a hash partition, a modulus and remainder must be specified\&. The modulus must be a positive integer, and the remainder must be a non\-negative integer less than the modulus\&. Typically, when initially setting up a hash\-partitioned table, you should choose a modulus equal to the number of partitions and assign every table the same modulus and a different remainder (see examples, below)\&. However, it is not required that every partition have the same modulus, only that every modulus which occurs among the partitions of a hash\-partitioned table is a factor of the next larger modulus\&. This allows the number of partitions to be increased incrementally without needing to move all the data at once\&. For example, suppose you have a hash\-partitioned table with 8 partitions, each of which has modulus 8, but find it necessary to increase the number of partitions to 16\&. You can detach one of the modulus\-8 partitions, create two new modulus\-16 partitions covering the same portion of the key space (one with a remainder equal to the remainder of the detached partition, and the other with a remainder equal to that value plus 8), and repopulate them with data\&. You can then repeat this \-\- perhaps at a later time \-\- for each modulus\-8 partition until none remain\&. While this may still involve a large amount of data movement at each step, it is still better than having to create a whole new table and move all the data at once\&.
+.sp
+A partition must have the same column names and types as the partitioned table to which it belongs\&. Modifications to the column names or types of a partitioned table will automatically propagate to all partitions\&.
+CHECK
+constraints will be inherited automatically by every partition, but an individual partition may specify additional
+CHECK
+constraints; additional constraints with the same name and condition as in the parent will be merged with the parent constraint\&. Defaults may be specified separately for each partition\&. But note that a partition\*(Aqs default value is not applied when inserting a tuple through a partitioned table\&.
+.sp
+Rows inserted into a partitioned table will be automatically routed to the correct partition\&. If no suitable partition exists, an error will occur\&.
+.sp
+Operations such as TRUNCATE which normally affect a table and all of its inheritance children will cascade to all partitions, but may also be performed on an individual partition\&. Note that dropping a partition with
+DROP TABLE
+requires taking an
+ACCESS EXCLUSIVE
+lock on the parent table\&.
+.RE
+.PP
+LIKE \fIsource_table\fR [ \fIlike_option\fR \&.\&.\&. ]
+.RS 4
+The
+LIKE
+clause specifies a table from which the new table automatically copies all column names, their data types, and their not\-null constraints\&.
+.sp
+Unlike
+INHERITS, the new table and original table are completely decoupled after creation is complete\&. Changes to the original table will not be applied to the new table, and it is not possible to include data of the new table in scans of the original table\&.
+.sp
+Also unlike
+INHERITS, columns and constraints copied by
+LIKE
+are not merged with similarly named columns and constraints\&. If the same name is specified explicitly or in another
+LIKE
+clause, an error is signaled\&.
+.sp
+The optional
+\fIlike_option\fR
+clauses specify which additional properties of the original table to copy\&. Specifying
+INCLUDING
+copies the property, specifying
+EXCLUDING
+omits the property\&.
+EXCLUDING
+is the default\&. If multiple specifications are made for the same kind of object, the last one is used\&. The available options are:
+.PP
+INCLUDING COMMENTS
+.RS 4
+Comments for the copied columns, constraints, and indexes will be copied\&. The default behavior is to exclude comments, resulting in the copied columns and constraints in the new table having no comments\&.
+.RE
+.PP
+INCLUDING CONSTRAINTS
+.RS 4
+CHECK
+constraints will be copied\&. No distinction is made between column constraints and table constraints\&. Not\-null constraints are always copied to the new table\&.
+.RE
+.PP
+INCLUDING DEFAULTS
+.RS 4
+Default expressions for the copied column definitions will be copied\&. Otherwise, default expressions are not copied, resulting in the copied columns in the new table having null defaults\&. Note that copying defaults that call database\-modification functions, such as
+\fBnextval\fR, may create a functional linkage between the original and new tables\&.
+.RE
+.PP
+INCLUDING GENERATED
+.RS 4
+Any generation expressions of copied column definitions will be copied\&. By default, new columns will be regular base columns\&.
+.RE
+.PP
+INCLUDING IDENTITY
+.RS 4
+Any identity specifications of copied column definitions will be copied\&. A new sequence is created for each identity column of the new table, separate from the sequences associated with the old table\&.
+.RE
+.PP
+INCLUDING INDEXES
+.RS 4
+Indexes,
+PRIMARY KEY,
+UNIQUE, and
+EXCLUDE
+constraints on the original table will be created on the new table\&. Names for the new indexes and constraints are chosen according to the default rules, regardless of how the originals were named\&. (This behavior avoids possible duplicate\-name failures for the new indexes\&.)
+.RE
+.PP
+INCLUDING STATISTICS
+.RS 4
+Extended statistics are copied to the new table\&.
+.RE
+.PP
+INCLUDING STORAGE
+.RS 4
+STORAGE
+settings for the copied column definitions will be copied\&. The default behavior is to exclude
+STORAGE
+settings, resulting in the copied columns in the new table having type\-specific default settings\&. For more on
+STORAGE
+settings, see
+Section\ \&68.2\&.
+.RE
+.PP
+INCLUDING ALL
+.RS 4
+INCLUDING ALL
+is an abbreviated form selecting all the available individual options\&. (It could be useful to write individual
+EXCLUDING
+clauses after
+INCLUDING ALL
+to select all but some specific options\&.)
+.RE
+.sp
+The
+LIKE
+clause can also be used to copy column definitions from views, foreign tables, or composite types\&. Inapplicable options (e\&.g\&.,
+INCLUDING INDEXES
+from a view) are ignored\&.
+.RE
+.PP
+CONSTRAINT \fIconstraint_name\fR
+.RS 4
+An optional name for a column or table constraint\&. If the constraint is violated, the constraint name is present in error messages, so constraint names like
+col must be positive
+can be used to communicate helpful constraint information to client applications\&. (Double\-quotes are needed to specify constraint names that contain spaces\&.) If a constraint name is not specified, the system generates a name\&.
+.RE
+.PP
+NOT NULL
+.RS 4
+The column is not allowed to contain null values\&.
+.RE
+.PP
+NULL
+.RS 4
+The column is allowed to contain null values\&. This is the default\&.
+.sp
+This clause is only provided for compatibility with non\-standard SQL databases\&. Its use is discouraged in new applications\&.
+.RE
+.PP
+CHECK ( \fIexpression\fR ) [ NO INHERIT ]
+.RS 4
+The
+CHECK
+clause specifies an expression producing a Boolean result which new or updated rows must satisfy for an insert or update operation to succeed\&. Expressions evaluating to TRUE or UNKNOWN succeed\&. Should any row of an insert or update operation produce a FALSE result, an error exception is raised and the insert or update does not alter the database\&. A check constraint specified as a column constraint should reference that column\*(Aqs value only, while an expression appearing in a table constraint can reference multiple columns\&.
+.sp
+Currently,
+CHECK
+expressions cannot contain subqueries nor refer to variables other than columns of the current row (see
+Section\ \&5.4.1)\&. The system column
+tableoid
+may be referenced, but not any other system column\&.
+.sp
+A constraint marked with
+NO INHERIT
+will not propagate to child tables\&.
+.sp
+When a table has multiple
+CHECK
+constraints, they will be tested for each row in alphabetical order by name, after checking
+NOT NULL
+constraints\&. (PostgreSQL
+versions before 9\&.5 did not honor any particular firing order for
+CHECK
+constraints\&.)
+.RE
+.PP
+DEFAULT \fIdefault_expr\fR
+.RS 4
+The
+DEFAULT
+clause assigns a default data value for the column whose column definition it appears within\&. The value is any variable\-free expression (in particular, cross\-references to other columns in the current table are not allowed)\&. Subqueries are not allowed either\&. The data type of the default expression must match the data type of the column\&.
+.sp
+The default expression will be used in any insert operation that does not specify a value for the column\&. If there is no default for a column, then the default is null\&.
+.RE
+.PP
+GENERATED ALWAYS AS ( \fIgeneration_expr\fR ) STORED
+.RS 4
+This clause creates the column as a
+generated column\&. The column cannot be written to, and when read the result of the specified expression will be returned\&.
+.sp
+The keyword
+STORED
+is required to signify that the column will be computed on write and will be stored on disk\&.
+.sp
+The generation expression can refer to other columns in the table, but not other generated columns\&. Any functions and operators used must be immutable\&. References to other tables are not allowed\&.
+.RE
+.PP
+GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( \fIsequence_options\fR ) ]
+.RS 4
+This clause creates the column as an
+identity column\&. It will have an implicit sequence attached to it and the column in new rows will automatically have values from the sequence assigned to it\&.
+.sp
+The clauses
+ALWAYS
+and
+BY DEFAULT
+determine how explicitly user\-specified values are handled in
+\fBINSERT\fR
+and
+\fBUPDATE\fR
+commands\&.
+.sp
+In an
+\fBINSERT\fR
+command, if
+ALWAYS
+is selected, a user\-specified value is only accepted if the
+\fBINSERT\fR
+statement specifies
+OVERRIDING SYSTEM VALUE\&. If
+BY DEFAULT
+is selected, then the user\-specified value takes precedence\&. See
+\fBINSERT\fR(7)
+for details\&. (In the
+\fBCOPY\fR
+command, user\-specified values are always used regardless of this setting\&.)
+.sp
+In an
+\fBUPDATE\fR
+command, if
+ALWAYS
+is selected, any update of the column to any value other than
+DEFAULT
+will be rejected\&. If
+BY DEFAULT
+is selected, the column can be updated normally\&. (There is no
+OVERRIDING
+clause for the
+\fBUPDATE\fR
+command\&.)
+.sp
+The optional
+\fIsequence_options\fR
+clause can be used to override the options of the sequence\&. See
+CREATE SEQUENCE (\fBCREATE_SEQUENCE\fR(7))
+for details\&.
+.RE
+.PP
+UNIQUE (column constraint)
+.br
+UNIQUE ( \fIcolumn_name\fR [, \&.\&.\&. ] ) [ INCLUDE ( \fIcolumn_name\fR [, \&.\&.\&.]) ] (table constraint)
+.RS 4
+The
+UNIQUE
+constraint specifies that a group of one or more columns of a table can contain only unique values\&. The behavior of the unique table constraint is the same as that for column constraints, with the additional capability to span multiple columns\&.
+.sp
+For the purpose of a unique constraint, null values are not considered equal\&.
+.sp
+Each unique table constraint must name a set of columns that is different from the set of columns named by any other unique or primary key constraint defined for the table\&. (Otherwise it would just be the same constraint listed twice\&.)
+.sp
+When establishing a unique constraint for a multi\-level partition hierarchy, all the columns in the partition key of the target partitioned table, as well as those of all its descendant partitioned tables, must be included in the constraint definition\&.
+.sp
+Adding a unique constraint will automatically create a unique btree index on the column or group of columns used in the constraint\&. The optional clause
+INCLUDE
+adds to that index one or more columns on which the uniqueness is not enforced\&. Note that although the constraint is not enforced on the included columns, it still depends on them\&. Consequently, some operations on these columns (e\&.g\&.,
+DROP COLUMN) can cause cascaded constraint and index deletion\&.
+.RE
+.PP
+PRIMARY KEY (column constraint)
+.br
+PRIMARY KEY ( \fIcolumn_name\fR [, \&.\&.\&. ] ) [ INCLUDE ( \fIcolumn_name\fR [, \&.\&.\&.]) ] (table constraint)
+.RS 4
+The
+PRIMARY KEY
+constraint specifies that a column or columns of a table can contain only unique (non\-duplicate), nonnull values\&. Only one primary key can be specified for a table, whether as a column constraint or a table constraint\&.
+.sp
+The primary key constraint should name a set of columns that is different from the set of columns named by any unique constraint defined for the same table\&. (Otherwise, the unique constraint is redundant and will be discarded\&.)
+.sp
+PRIMARY KEY
+enforces the same data constraints as a combination of
+UNIQUE
+and
+NOT NULL, but identifying a set of columns as the primary key also provides metadata about the design of the schema, since a primary key implies that other tables can rely on this set of columns as a unique identifier for rows\&.
+.sp
+PRIMARY KEY
+constraints share the restrictions that
+UNIQUE
+constraints have when placed on partitioned tables\&.
+.sp
+Adding a
+PRIMARY KEY
+constraint will automatically create a unique btree index on the column or group of columns used in the constraint\&. The optional
+INCLUDE
+clause allows a list of columns to be specified which will be included in the non\-key portion of the index\&. Although uniqueness is not enforced on the included columns, the constraint still depends on them\&. Consequently, some operations on the included columns (e\&.g\&.,
+DROP COLUMN) can cause cascaded constraint and index deletion\&.
+.RE
+.PP
+EXCLUDE [ USING \fIindex_method\fR ] ( \fIexclude_element\fR WITH \fIoperator\fR [, \&.\&.\&. ] ) \fIindex_parameters\fR [ WHERE ( \fIpredicate\fR ) ]
+.RS 4
+The
+EXCLUDE
+clause defines an exclusion constraint, which guarantees that if any two rows are compared on the specified column(s) or expression(s) using the specified operator(s), not all of these comparisons will return
+TRUE\&. If all of the specified operators test for equality, this is equivalent to a
+UNIQUE
+constraint, although an ordinary unique constraint will be faster\&. However, exclusion constraints can specify constraints that are more general than simple equality\&. For example, you can specify a constraint that no two rows in the table contain overlapping circles (see
+Section\ \&8.8) by using the
+&&
+operator\&.
+.sp
+Exclusion constraints are implemented using an index, so each specified operator must be associated with an appropriate operator class (see
+Section\ \&11.10) for the index access method
+\fIindex_method\fR\&. The operators are required to be commutative\&. Each
+\fIexclude_element\fR
+can optionally specify an operator class and/or ordering options; these are described fully under
+CREATE INDEX (\fBCREATE_INDEX\fR(7))\&.
+.sp
+The access method must support
+amgettuple
+(see
+Chapter\ \&61); at present this means
+GIN
+cannot be used\&. Although it\*(Aqs allowed, there is little point in using B\-tree or hash indexes with an exclusion constraint, because this does nothing that an ordinary unique constraint doesn\*(Aqt do better\&. So in practice the access method will always be
+GiST
+or
+SP\-GiST\&.
+.sp
+The
+\fIpredicate\fR
+allows you to specify an exclusion constraint on a subset of the table; internally this creates a partial index\&. Note that parentheses are required around the predicate\&.
+.RE
+.PP
+REFERENCES \fIreftable\fR [ ( \fIrefcolumn\fR ) ] [ MATCH \fImatchtype\fR ] [ ON DELETE \fIreferential_action\fR ] [ ON UPDATE \fIreferential_action\fR ] (column constraint)
+.br
+FOREIGN KEY ( \fIcolumn_name\fR [, \&.\&.\&. ] ) REFERENCES \fIreftable\fR [ ( \fIrefcolumn\fR [, \&.\&.\&. ] ) ] [ MATCH \fImatchtype\fR ] [ ON DELETE \fIreferential_action\fR ] [ ON UPDATE \fIreferential_action\fR ] (table constraint)
+.RS 4
+These clauses specify a foreign key constraint, which requires that a group of one or more columns of the new table must only contain values that match values in the referenced column(s) of some row of the referenced table\&. If the
+\fIrefcolumn\fR
+list is omitted, the primary key of the
+\fIreftable\fR
+is used\&. The referenced columns must be the columns of a non\-deferrable unique or primary key constraint in the referenced table\&. The user must have
+REFERENCES
+permission on the referenced table (either the whole table, or the specific referenced columns)\&. The addition of a foreign key constraint requires a
+SHARE ROW EXCLUSIVE
+lock on the referenced table\&. Note that foreign key constraints cannot be defined between temporary tables and permanent tables\&.
+.sp
+A value inserted into the referencing column(s) is matched against the values of the referenced table and referenced columns using the given match type\&. There are three match types:
+MATCH FULL,
+MATCH PARTIAL, and
+MATCH SIMPLE
+(which is the default)\&.
+MATCH FULL
+will not allow one column of a multicolumn foreign key to be null unless all foreign key columns are null; if they are all null, the row is not required to have a match in the referenced table\&.
+MATCH SIMPLE
+allows any of the foreign key columns to be null; if any of them are null, the row is not required to have a match in the referenced table\&.
+MATCH PARTIAL
+is not yet implemented\&. (Of course,
+NOT NULL
+constraints can be applied to the referencing column(s) to prevent these cases from arising\&.)
+.sp
+In addition, when the data in the referenced columns is changed, certain actions are performed on the data in this table\*(Aqs columns\&. The
+ON DELETE
+clause specifies the action to perform when a referenced row in the referenced table is being deleted\&. Likewise, the
+ON UPDATE
+clause specifies the action to perform when a referenced column in the referenced table is being updated to a new value\&. If the row is updated, but the referenced column is not actually changed, no action is done\&. Referential actions other than the
+NO ACTION
+check cannot be deferred, even if the constraint is declared deferrable\&. There are the following possible actions for each clause:
+.PP
+NO ACTION
+.RS 4
+Produce an error indicating that the deletion or update would create a foreign key constraint violation\&. If the constraint is deferred, this error will be produced at constraint check time if there still exist any referencing rows\&. This is the default action\&.
+.RE
+.PP
+RESTRICT
+.RS 4
+Produce an error indicating that the deletion or update would create a foreign key constraint violation\&. This is the same as
+NO ACTION
+except that the check is not deferrable\&.
+.RE
+.PP
+CASCADE
+.RS 4
+Delete any rows referencing the deleted row, or update the values of the referencing column(s) to the new values of the referenced columns, respectively\&.
+.RE
+.PP
+SET NULL
+.RS 4
+Set the referencing column(s) to null\&.
+.RE
+.PP
+SET DEFAULT
+.RS 4
+Set the referencing column(s) to their default values\&. (There must be a row in the referenced table matching the default values, if they are not null, or the operation will fail\&.)
+.RE
+.sp
+If the referenced column(s) are changed frequently, it might be wise to add an index to the referencing column(s) so that referential actions associated with the foreign key constraint can be performed more efficiently\&.
+.RE
+.PP
+DEFERRABLE
+.br
+NOT DEFERRABLE
+.RS 4
+This controls whether the constraint can be deferred\&. A constraint that is not deferrable will be checked immediately after every command\&. Checking of constraints that are deferrable can be postponed until the end of the transaction (using the
+SET CONSTRAINTS (\fBSET_CONSTRAINTS\fR(7))
+command)\&.
+NOT DEFERRABLE
+is the default\&. Currently, only
+UNIQUE,
+PRIMARY KEY,
+EXCLUDE, and
+REFERENCES
+(foreign key) constraints accept this clause\&.
+NOT NULL
+and
+CHECK
+constraints are not deferrable\&. Note that deferrable constraints cannot be used as conflict arbitrators in an
+\fBINSERT\fR
+statement that includes an
+ON CONFLICT DO UPDATE
+clause\&.
+.RE
+.PP
+INITIALLY IMMEDIATE
+.br
+INITIALLY DEFERRED
+.RS 4
+If a constraint is deferrable, this clause specifies the default time to check the constraint\&. If the constraint is
+INITIALLY IMMEDIATE, it is checked after each statement\&. This is the default\&. If the constraint is
+INITIALLY DEFERRED, it is checked only at the end of the transaction\&. The constraint check time can be altered with the
+SET CONSTRAINTS (\fBSET_CONSTRAINTS\fR(7))
+command\&.
+.RE
+.PP
+USING \fImethod\fR
+.RS 4
+This optional clause specifies the table access method to use to store the contents for the new table; the method needs be an access method of type
+TABLE\&. See
+Chapter\ \&60
+for more information\&. If this option is not specified, the default table access method is chosen for the new table\&. See
+default_table_access_method
+for more information\&.
+.RE
+.PP
+WITH ( \fIstorage_parameter\fR [= \fIvalue\fR] [, \&.\&.\&. ] )
+.RS 4
+This clause specifies optional storage parameters for a table or index; see
+Storage Parameters
+below for more information\&. For backward\-compatibility the
+WITH
+clause for a table can also include
+OIDS=FALSE
+to specify that rows of the new table should not contain OIDs (object identifiers),
+OIDS=TRUE
+is not supported anymore\&.
+.RE
+.PP
+WITHOUT OIDS
+.RS 4
+This is backward\-compatible syntax for declaring a table
+WITHOUT OIDS, creating a table
+WITH OIDS
+is not supported anymore\&.
+.RE
+.PP
+ON COMMIT
+.RS 4
+The behavior of temporary tables at the end of a transaction block can be controlled using
+ON COMMIT\&. The three options are:
+.PP
+PRESERVE ROWS
+.RS 4
+No special action is taken at the ends of transactions\&. This is the default behavior\&.
+.RE
+.PP
+DELETE ROWS
+.RS 4
+All rows in the temporary table will be deleted at the end of each transaction block\&. Essentially, an automatic
+\fBTRUNCATE\fR(7)
+is done at each commit\&. When used on a partitioned table, this is not cascaded to its partitions\&.
+.RE
+.PP
+DROP
+.RS 4
+The temporary table will be dropped at the end of the current transaction block\&. When used on a partitioned table, this action drops its partitions and when used on tables with inheritance children, it drops the dependent children\&.
+.RE
+.RE
+.PP
+TABLESPACE \fItablespace_name\fR
+.RS 4
+The
+\fItablespace_name\fR
+is the name of the tablespace in which the new table is to be created\&. If not specified,
+default_tablespace
+is consulted, or
+temp_tablespaces
+if the table is temporary\&. For partitioned tables, since no storage is required for the table itself, the tablespace specified overrides
+default_tablespace
+as the default tablespace to use for any newly created partitions when no other tablespace is explicitly specified\&.
+.RE
+.PP
+USING INDEX TABLESPACE \fItablespace_name\fR
+.RS 4
+This clause allows selection of the tablespace in which the index associated with a
+UNIQUE,
+PRIMARY KEY, or
+EXCLUDE
+constraint will be created\&. If not specified,
+default_tablespace
+is consulted, or
+temp_tablespaces
+if the table is temporary\&.
+.RE
+.SS "Storage Parameters"
+.PP
+The
+WITH
+clause can specify
+storage parameters
+for tables, and for indexes associated with a
+UNIQUE,
+PRIMARY KEY, or
+EXCLUDE
+constraint\&. Storage parameters for indexes are documented in
+CREATE INDEX (\fBCREATE_INDEX\fR(7))\&. The storage parameters currently available for tables are listed below\&. For many of these parameters, as shown, there is an additional parameter with the same name prefixed with
+toast\&., which controls the behavior of the table\*(Aqs secondary
+TOAST
+table, if any (see
+Section\ \&68.2
+for more information about TOAST)\&. If a table parameter value is set and the equivalent
+toast\&.
+parameter is not, the TOAST table will use the table\*(Aqs parameter value\&. Specifying these parameters for partitioned tables is not supported, but you may specify them for individual leaf partitions\&.
+.PP
+\fIfillfactor\fR (integer)
+.RS 4
+The fillfactor for a table is a percentage between 10 and 100\&. 100 (complete packing) is the default\&. When a smaller fillfactor is specified,
+\fBINSERT\fR
+operations pack table pages only to the indicated percentage; the remaining space on each page is reserved for updating rows on that page\&. This gives
+\fBUPDATE\fR
+a chance to place the updated copy of a row on the same page as the original, which is more efficient than placing it on a different page\&. For a table whose entries are never updated, complete packing is the best choice, but in heavily updated tables smaller fillfactors are appropriate\&. This parameter cannot be set for TOAST tables\&.
+.RE
+.PP
+toast_tuple_target (integer)
+.RS 4
+The toast_tuple_target specifies the minimum tuple length required before we try to move long column values into TOAST tables, and is also the target length we try to reduce the length below once toasting begins\&. This only affects columns marked as either External or Extended and applies only to new tuples; there is no effect on existing rows\&. By default this parameter is set to allow at least 4 tuples per block, which with the default block size will be 2040 bytes\&. Valid values are between 128 bytes and the (block size \- header), by default 8160 bytes\&. Changing this value may not be useful for very short or very long rows\&. Note that the default setting is often close to optimal, and it is possible that setting this parameter could have negative effects in some cases\&. This parameter cannot be set for TOAST tables\&.
+.RE
+.PP
+parallel_workers (integer)
+.RS 4
+This sets the number of workers that should be used to assist a parallel scan of this table\&. If not set, the system will determine a value based on the relation size\&. The actual number of workers chosen by the planner or by utility statements that use parallel scans may be less, for example due to the setting of
+max_worker_processes\&.
+.RE
+.PP
+autovacuum_enabled, toast\&.autovacuum_enabled (boolean)
+.RS 4
+Enables or disables the autovacuum daemon for a particular table\&. If true, the autovacuum daemon will perform automatic
+\fBVACUUM\fR
+and/or
+\fBANALYZE\fR
+operations on this table following the rules discussed in
+Section\ \&24.1.6\&. If false, this table will not be autovacuumed, except to prevent transaction ID wraparound\&. See
+Section\ \&24.1.5
+for more about wraparound prevention\&. Note that the autovacuum daemon does not run at all (except to prevent transaction ID wraparound) if the
+autovacuum
+parameter is false; setting individual tables\*(Aq storage parameters does not override that\&. Therefore there is seldom much point in explicitly setting this storage parameter to
+true, only to
+false\&.
+.RE
+.PP
+vacuum_index_cleanup, toast\&.vacuum_index_cleanup (boolean)
+.RS 4
+Enables or disables index cleanup when
+\fBVACUUM\fR
+is run on this table\&. The default value is
+true\&. Disabling index cleanup can speed up
+\fBVACUUM\fR
+very significantly, but may also lead to severely bloated indexes if table modifications are frequent\&. The
+INDEX_CLEANUP
+parameter of
+\fBVACUUM\fR(7), if specified, overrides the value of this option\&.
+.RE
+.PP
+vacuum_truncate, toast\&.vacuum_truncate (boolean)
+.RS 4
+Enables or disables vacuum to try to truncate off any empty pages at the end of this table\&. The default value is
+true\&. If
+true,
+\fBVACUUM\fR
+and autovacuum do the truncation and the disk space for the truncated pages is returned to the operating system\&. Note that the truncation requires
+ACCESS EXCLUSIVE
+lock on the table\&. The
+TRUNCATE
+parameter of
+\fBVACUUM\fR(7), if specified, overrides the value of this option\&.
+.RE
+.PP
+autovacuum_vacuum_threshold, toast\&.autovacuum_vacuum_threshold (integer)
+.RS 4
+Per\-table value for
+autovacuum_vacuum_threshold
+parameter\&.
+.RE
+.PP
+autovacuum_vacuum_scale_factor, toast\&.autovacuum_vacuum_scale_factor (floating point)
+.RS 4
+Per\-table value for
+autovacuum_vacuum_scale_factor
+parameter\&.
+.RE
+.PP
+autovacuum_vacuum_insert_threshold, toast\&.autovacuum_vacuum_insert_threshold (integer)
+.RS 4
+Per\-table value for
+autovacuum_vacuum_insert_threshold
+parameter\&. The special value of \-1 may be used to disable insert vacuums on the table\&.
+.RE
+.PP
+autovacuum_vacuum_insert_scale_factor, toast\&.autovacuum_vacuum_insert_scale_factor (float4)
+.RS 4
+Per\-table value for
+autovacuum_vacuum_insert_scale_factor
+parameter\&.
+.RE
+.PP
+autovacuum_analyze_threshold (integer)
+.RS 4
+Per\-table value for
+autovacuum_analyze_threshold
+parameter\&.
+.RE
+.PP
+autovacuum_analyze_scale_factor (floating point)
+.RS 4
+Per\-table value for
+autovacuum_analyze_scale_factor
+parameter\&.
+.RE
+.PP
+autovacuum_vacuum_cost_delay, toast\&.autovacuum_vacuum_cost_delay (floating point)
+.RS 4
+Per\-table value for
+autovacuum_vacuum_cost_delay
+parameter\&.
+.RE
+.PP
+autovacuum_vacuum_cost_limit, toast\&.autovacuum_vacuum_cost_limit (integer)
+.RS 4
+Per\-table value for
+autovacuum_vacuum_cost_limit
+parameter\&.
+.RE
+.PP
+autovacuum_freeze_min_age, toast\&.autovacuum_freeze_min_age (integer)
+.RS 4
+Per\-table value for
+vacuum_freeze_min_age
+parameter\&. Note that autovacuum will ignore per\-table
+autovacuum_freeze_min_age
+parameters that are larger than half the system\-wide
+autovacuum_freeze_max_age
+setting\&.
+.RE
+.PP
+autovacuum_freeze_max_age, toast\&.autovacuum_freeze_max_age (integer)
+.RS 4
+Per\-table value for
+autovacuum_freeze_max_age
+parameter\&. Note that autovacuum will ignore per\-table
+autovacuum_freeze_max_age
+parameters that are larger than the system\-wide setting (it can only be set smaller)\&.
+.RE
+.PP
+autovacuum_freeze_table_age, toast\&.autovacuum_freeze_table_age (integer)
+.RS 4
+Per\-table value for
+vacuum_freeze_table_age
+parameter\&.
+.RE
+.PP
+autovacuum_multixact_freeze_min_age, toast\&.autovacuum_multixact_freeze_min_age (integer)
+.RS 4
+Per\-table value for
+vacuum_multixact_freeze_min_age
+parameter\&. Note that autovacuum will ignore per\-table
+autovacuum_multixact_freeze_min_age
+parameters that are larger than half the system\-wide
+autovacuum_multixact_freeze_max_age
+setting\&.
+.RE
+.PP
+autovacuum_multixact_freeze_max_age, toast\&.autovacuum_multixact_freeze_max_age (integer)
+.RS 4
+Per\-table value for
+autovacuum_multixact_freeze_max_age
+parameter\&. Note that autovacuum will ignore per\-table
+autovacuum_multixact_freeze_max_age
+parameters that are larger than the system\-wide setting (it can only be set smaller)\&.
+.RE
+.PP
+autovacuum_multixact_freeze_table_age, toast\&.autovacuum_multixact_freeze_table_age (integer)
+.RS 4
+Per\-table value for
+vacuum_multixact_freeze_table_age
+parameter\&.
+.RE
+.PP
+log_autovacuum_min_duration, toast\&.log_autovacuum_min_duration (integer)
+.RS 4
+Per\-table value for
+log_autovacuum_min_duration
+parameter\&.
+.RE
+.PP
+user_catalog_table (boolean)
+.RS 4
+Declare the table as an additional catalog table for purposes of logical replication\&. See
+Section\ \&48.6.2
+for details\&. This parameter cannot be set for TOAST tables\&.
+.RE
+.SH "NOTES"
+.PP
+PostgreSQL
+automatically creates an index for each unique constraint and primary key constraint to enforce uniqueness\&. Thus, it is not necessary to create an index explicitly for primary key columns\&. (See
+CREATE INDEX (\fBCREATE_INDEX\fR(7))
+for more information\&.)
+.PP
+Unique constraints and primary keys are not inherited in the current implementation\&. This makes the combination of inheritance and unique constraints rather dysfunctional\&.
+.PP
+A table cannot have more than 1600 columns\&. (In practice, the effective limit is usually lower because of tuple\-length constraints\&.)
+.SH "EXAMPLES"
+.PP
+Create table
+films
+and table
+distributors:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE films (
+    code        char(5) CONSTRAINT firstkey PRIMARY KEY,
+    title       varchar(40) NOT NULL,
+    did         integer NOT NULL,
+    date_prod   date,
+    kind        varchar(10),
+    len         interval hour to minute
+);
+
+CREATE TABLE distributors (
+     did    integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY,
+     name   varchar(40) NOT NULL CHECK (name <> \*(Aq\*(Aq)
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a table with a 2\-dimensional array:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE array_int (
+    vector  int[][]
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Define a unique table constraint for the table
+films\&. Unique table constraints can be defined on one or more columns of the table:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE films (
+    code        char(5),
+    title       varchar(40),
+    did         integer,
+    date_prod   date,
+    kind        varchar(10),
+    len         interval hour to minute,
+    CONSTRAINT production UNIQUE(date_prod)
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Define a check column constraint:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE distributors (
+    did     integer CHECK (did > 100),
+    name    varchar(40)
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Define a check table constraint:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE distributors (
+    did     integer,
+    name    varchar(40),
+    CONSTRAINT con1 CHECK (did > 100 AND name <> \*(Aq\*(Aq)
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Define a primary key table constraint for the table
+films:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE films (
+    code        char(5),
+    title       varchar(40),
+    did         integer,
+    date_prod   date,
+    kind        varchar(10),
+    len         interval hour to minute,
+    CONSTRAINT code_title PRIMARY KEY(code,title)
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Define a primary key constraint for table
+distributors\&. The following two examples are equivalent, the first using the table constraint syntax, the second the column constraint syntax:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE distributors (
+    did     integer,
+    name    varchar(40),
+    PRIMARY KEY(did)
+);
+
+CREATE TABLE distributors (
+    did     integer PRIMARY KEY,
+    name    varchar(40)
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Assign a literal constant default value for the column
+name, arrange for the default value of column
+did
+to be generated by selecting the next value of a sequence object, and make the default value of
+modtime
+be the time at which the row is inserted:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE distributors (
+    name      varchar(40) DEFAULT \*(AqLuso Films\*(Aq,
+    did       integer DEFAULT nextval(\*(Aqdistributors_serial\*(Aq),
+    modtime   timestamp DEFAULT current_timestamp
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Define two
+NOT NULL
+column constraints on the table
+distributors, one of which is explicitly given a name:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE distributors (
+    did     integer CONSTRAINT no_null NOT NULL,
+    name    varchar(40) NOT NULL
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Define a unique constraint for the
+name
+column:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE distributors (
+    did     integer,
+    name    varchar(40) UNIQUE
+);
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+The same, specified as a table constraint:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE distributors (
+    did     integer,
+    name    varchar(40),
+    UNIQUE(name)
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create the same table, specifying 70% fill factor for both the table and its unique index:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE distributors (
+    did     integer,
+    name    varchar(40),
+    UNIQUE(name) WITH (fillfactor=70)
+)
+WITH (fillfactor=70);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create table
+circles
+with an exclusion constraint that prevents any two circles from overlapping:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE circles (
+    c circle,
+    EXCLUDE USING gist (c WITH &&)
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create table
+cinemas
+in tablespace
+diskvol1:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE cinemas (
+        id serial,
+        name text,
+        location text
+) TABLESPACE diskvol1;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a composite type and a typed table:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TYPE employee_type AS (name text, salary numeric);
+
+CREATE TABLE employees OF employee_type (
+    PRIMARY KEY (name),
+    salary WITH OPTIONS DEFAULT 1000
+);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a range partitioned table:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE measurement (
+    logdate         date not null,
+    peaktemp        int,
+    unitsales       int
+) PARTITION BY RANGE (logdate);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a range partitioned table with multiple columns in the partition key:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE measurement_year_month (
+    logdate         date not null,
+    peaktemp        int,
+    unitsales       int
+) PARTITION BY RANGE (EXTRACT(YEAR FROM logdate), EXTRACT(MONTH FROM logdate));
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a list partitioned table:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE cities (
+    city_id      bigserial not null,
+    name         text not null,
+    population   bigint
+) PARTITION BY LIST (left(lower(name), 1));
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a hash partitioned table:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE orders (
+    order_id     bigint not null,
+    cust_id      bigint not null,
+    status       text
+) PARTITION BY HASH (order_id);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create partition of a range partitioned table:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE measurement_y2016m07
+    PARTITION OF measurement (
+    unitsales DEFAULT 0
+) FOR VALUES FROM (\*(Aq2016\-07\-01\*(Aq) TO (\*(Aq2016\-08\-01\*(Aq);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a few partitions of a range partitioned table with multiple columns in the partition key:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE measurement_ym_older
+    PARTITION OF measurement_year_month
+    FOR VALUES FROM (MINVALUE, MINVALUE) TO (2016, 11);
+
+CREATE TABLE measurement_ym_y2016m11
+    PARTITION OF measurement_year_month
+    FOR VALUES FROM (2016, 11) TO (2016, 12);
+
+CREATE TABLE measurement_ym_y2016m12
+    PARTITION OF measurement_year_month
+    FOR VALUES FROM (2016, 12) TO (2017, 01);
+
+CREATE TABLE measurement_ym_y2017m01
+    PARTITION OF measurement_year_month
+    FOR VALUES FROM (2017, 01) TO (2017, 02);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create partition of a list partitioned table:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE cities_ab
+    PARTITION OF cities (
+    CONSTRAINT city_id_nonzero CHECK (city_id != 0)
+) FOR VALUES IN (\*(Aqa\*(Aq, \*(Aqb\*(Aq);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create partition of a list partitioned table that is itself further partitioned and then add a partition to it:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE cities_ab
+    PARTITION OF cities (
+    CONSTRAINT city_id_nonzero CHECK (city_id != 0)
+) FOR VALUES IN (\*(Aqa\*(Aq, \*(Aqb\*(Aq) PARTITION BY RANGE (population);
+
+CREATE TABLE cities_ab_10000_to_100000
+    PARTITION OF cities_ab FOR VALUES FROM (10000) TO (100000);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create partitions of a hash partitioned table:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE orders_p1 PARTITION OF orders
+    FOR VALUES WITH (MODULUS 4, REMAINDER 0);
+CREATE TABLE orders_p2 PARTITION OF orders
+    FOR VALUES WITH (MODULUS 4, REMAINDER 1);
+CREATE TABLE orders_p3 PARTITION OF orders
+    FOR VALUES WITH (MODULUS 4, REMAINDER 2);
+CREATE TABLE orders_p4 PARTITION OF orders
+    FOR VALUES WITH (MODULUS 4, REMAINDER 3);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a default partition:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLE cities_partdef
+    PARTITION OF cities DEFAULT;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+The
+\fBCREATE TABLE\fR
+command conforms to the
+SQL
+standard, with exceptions listed below\&.
+.SS "Temporary Tables"
+.PP
+Although the syntax of
+CREATE TEMPORARY TABLE
+resembles that of the SQL standard, the effect is not the same\&. In the standard, temporary tables are defined just once and automatically exist (starting with empty contents) in every session that needs them\&.
+PostgreSQL
+instead requires each session to issue its own
+CREATE TEMPORARY TABLE
+command for each temporary table to be used\&. This allows different sessions to use the same temporary table name for different purposes, whereas the standard\*(Aqs approach constrains all instances of a given temporary table name to have the same table structure\&.
+.PP
+The standard\*(Aqs definition of the behavior of temporary tables is widely ignored\&.
+PostgreSQL\*(Aqs behavior on this point is similar to that of several other SQL databases\&.
+.PP
+The SQL standard also distinguishes between global and local temporary tables, where a local temporary table has a separate set of contents for each SQL module within each session, though its definition is still shared across sessions\&. Since
+PostgreSQL
+does not support SQL modules, this distinction is not relevant in
+PostgreSQL\&.
+.PP
+For compatibility\*(Aqs sake,
+PostgreSQL
+will accept the
+GLOBAL
+and
+LOCAL
+keywords in a temporary table declaration, but they currently have no effect\&. Use of these keywords is discouraged, since future versions of
+PostgreSQL
+might adopt a more standard\-compliant interpretation of their meaning\&.
+.PP
+The
+ON COMMIT
+clause for temporary tables also resembles the SQL standard, but has some differences\&. If the
+ON COMMIT
+clause is omitted, SQL specifies that the default behavior is
+ON COMMIT DELETE ROWS\&. However, the default behavior in
+PostgreSQL
+is
+ON COMMIT PRESERVE ROWS\&. The
+ON COMMIT DROP
+option does not exist in SQL\&.
+.SS "Non\-Deferred Uniqueness Constraints"
+.PP
+When a
+UNIQUE
+or
+PRIMARY KEY
+constraint is not deferrable,
+PostgreSQL
+checks for uniqueness immediately whenever a row is inserted or modified\&. The SQL standard says that uniqueness should be enforced only at the end of the statement; this makes a difference when, for example, a single command updates multiple key values\&. To obtain standard\-compliant behavior, declare the constraint as
+DEFERRABLE
+but not deferred (i\&.e\&.,
+INITIALLY IMMEDIATE)\&. Be aware that this can be significantly slower than immediate uniqueness checking\&.
+.SS "Column Check Constraints"
+.PP
+The SQL standard says that
+CHECK
+column constraints can only refer to the column they apply to; only
+CHECK
+table constraints can refer to multiple columns\&.
+PostgreSQL
+does not enforce this restriction; it treats column and table check constraints alike\&.
+.SS "EXCLUDE Constraint"
+.PP
+The
+EXCLUDE
+constraint type is a
+PostgreSQL
+extension\&.
+.SS "NULL \(lqConstraint\(rq"
+.PP
+The
+NULL
+\(lqconstraint\(rq
+(actually a non\-constraint) is a
+PostgreSQL
+extension to the SQL standard that is included for compatibility with some other database systems (and for symmetry with the
+NOT NULL
+constraint)\&. Since it is the default for any column, its presence is simply noise\&.
+.SS "Constraint Naming"
+.PP
+The SQL standard says that table and domain constraints must have names that are unique across the schema containing the table or domain\&.
+PostgreSQL
+is laxer: it only requires constraint names to be unique across the constraints attached to a particular table or domain\&. However, this extra freedom does not exist for index\-based constraints (UNIQUE,
+PRIMARY KEY, and
+EXCLUDE
+constraints), because the associated index is named the same as the constraint, and index names must be unique across all relations within the same schema\&.
+.PP
+Currently,
+PostgreSQL
+does not record names for
+NOT NULL
+constraints at all, so they are not subject to the uniqueness restriction\&. This might change in a future release\&.
+.SS "Inheritance"
+.PP
+Multiple inheritance via the
+INHERITS
+clause is a
+PostgreSQL
+language extension\&. SQL:1999 and later define single inheritance using a different syntax and different semantics\&. SQL:1999\-style inheritance is not yet supported by
+PostgreSQL\&.
+.SS "Zero\-Column Tables"
+.PP
+PostgreSQL
+allows a table of no columns to be created (for example,
+CREATE TABLE foo();)\&. This is an extension from the SQL standard, which does not allow zero\-column tables\&. Zero\-column tables are not in themselves very useful, but disallowing them creates odd special cases for
+\fBALTER TABLE DROP COLUMN\fR, so it seems cleaner to ignore this spec restriction\&.
+.SS "Multiple Identity Columns"
+.PP
+PostgreSQL
+allows a table to have more than one identity column\&. The standard specifies that a table can have at most one identity column\&. This is relaxed mainly to give more flexibility for doing schema changes or migrations\&. Note that the
+\fBINSERT\fR
+command supports only one override clause that applies to the entire statement, so having multiple identity columns with different behaviors is not well supported\&.
+.SS "Generated Columns"
+.PP
+The option
+STORED
+is not standard but is also used by other SQL implementations\&. The SQL standard does not specify the storage of generated columns\&.
+.SS "LIKE Clause"
+.PP
+While a
+LIKE
+clause exists in the SQL standard, many of the options that
+PostgreSQL
+accepts for it are not in the standard, and some of the standard\*(Aqs options are not implemented by
+PostgreSQL\&.
+.SS "WITH Clause"
+.PP
+The
+WITH
+clause is a
+PostgreSQL
+extension; storage parameters are not in the standard\&.
+.SS "Tablespaces"
+.PP
+The
+PostgreSQL
+concept of tablespaces is not part of the standard\&. Hence, the clauses
+TABLESPACE
+and
+USING INDEX TABLESPACE
+are extensions\&.
+.SS "Typed Tables"
+.PP
+Typed tables implement a subset of the SQL standard\&. According to the standard, a typed table has columns corresponding to the underlying composite type as well as one other column that is the
+\(lqself\-referencing column\(rq\&.
+PostgreSQL
+does not support self\-referencing columns explicitly\&.
+.SS "PARTITION BY Clause"
+.PP
+The
+PARTITION BY
+clause is a
+PostgreSQL
+extension\&.
+.SS "PARTITION OF Clause"
+.PP
+The
+PARTITION OF
+clause is a
+PostgreSQL
+extension\&.
+.SH "SEE ALSO"
+ALTER TABLE (\fBALTER_TABLE\fR(7)), DROP TABLE (\fBDROP_TABLE\fR(7)), CREATE TABLE AS (\fBCREATE_TABLE_AS\fR(7)), CREATE TABLESPACE (\fBCREATE_TABLESPACE\fR(7)), CREATE TYPE (\fBCREATE_TYPE\fR(7))

@@ -3,7 +3,7 @@
  * miscinit.c
  *	  miscellaneous initialization support stuff
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -26,12 +26,11 @@
 #include <pwd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#ifdef HAVE_UTIME_H
 #include <utime.h>
-#endif
 
 #include "access/htup_details.h"
 #include "catalog/pg_authid.h"
+#include "common/file_perm.h"
 #include "libpq/libpq.h"
 #include "mb/pg_wchar.h"
 #include "miscadmin.h"
@@ -42,10 +41,12 @@
 #include "storage/ipc.h"
 #include "storage/latch.h"
 #include "storage/pg_shmem.h"
+#include "storage/pmsignal.h"
 #include "storage/proc.h"
 #include "storage/procarray.h"
 #include "utils/builtins.h"
 #include "utils/guc.h"
+#include "utils/inval.h"
 #include "utils/memutils.h"
 #include "utils/pidfile.h"
 #include "utils/syscache.h"
@@ -55,6 +56,8 @@
 #define DIRECTORY_LOCK_FILE		"postmaster.pid"
 
 ProcessingMode Mode = InitProcessing;
+
+BackendType MyBackendType;
 
 /* List of lock files to be removed at proc exit */
 static List *lock_files = NIL;
@@ -75,6 +78,181 @@ bool		IgnoreSystemIndexes = false;
 
 
 /* ----------------------------------------------------------------
+ *	common process startup code
+ * ----------------------------------------------------------------
+ */
+
+/*
+ * Initialize the basic environment for a postmaster child
+ *
+ * Should be called as early as possible after the child's startup.
+ */
+void
+InitPostmasterChild(void)
+{
+	IsUnderPostmaster = true;	/* we are a postmaster subprocess now */
+
+	/*
+	 * Set reference point for stack-depth checking. We re-do that even in the
+	 * !EXEC_BACKEND case, because there are some edge cases where processes
+	 * are started with an alternative stack (e.g. starting bgworkers when
+	 * running postgres using the rr debugger, as bgworkers are launched from
+	 * signal handlers).
+	 */
+	set_stack_base();
+
+	InitProcessGlobals();
+
+	/*
+	 * make sure stderr is in binary mode before anything can possibly be
+	 * written to it, in case it's actually the syslogger pipe, so the pipe
+	 * chunking protocol isn't disturbed. Non-logpipe data gets translated on
+	 * redirection (e.g. via pg_ctl -l) anyway.
+	 */
+#ifdef WIN32
+	_setmode(fileno(stderr), _O_BINARY);
+#endif
+
+	/* We don't want the postmaster's proc_exit() handlers */
+	on_exit_reset();
+
+	/* Initialize process-local latch support */
+	InitializeLatchSupport();
+	MyLatch = &LocalLatchData;
+	InitLatch(MyLatch);
+
+	/*
+	 * If possible, make this process a group leader, so that the postmaster
+	 * can signal any child processes too. Not all processes will have
+	 * children, but for consistency we make all postmaster child processes do
+	 * this.
+	 */
+#ifdef HAVE_SETSID
+	if (setsid() < 0)
+		elog(FATAL, "setsid() failed: %m");
+#endif
+
+	/* Request a signal if the postmaster dies, if possible. */
+	PostmasterDeathSignalInit();
+}
+
+/*
+ * Initialize the basic environment for a standalone process.
+ *
+ * argv0 has to be suitable to find the program's executable.
+ */
+void
+InitStandaloneProcess(const char *argv0)
+{
+	Assert(!IsPostmasterEnvironment);
+
+	InitProcessGlobals();
+
+	/* Initialize process-local latch support */
+	InitializeLatchSupport();
+	MyLatch = &LocalLatchData;
+	InitLatch(MyLatch);
+
+	/* Compute paths, no postmaster to inherit from */
+	if (my_exec_path[0] == '\0')
+	{
+		if (find_my_exec(argv0, my_exec_path) < 0)
+			elog(FATAL, "%s: could not locate my own executable path",
+				 argv0);
+	}
+
+	if (pkglib_path[0] == '\0')
+		get_pkglib_path(my_exec_path, pkglib_path);
+}
+
+void
+SwitchToSharedLatch(void)
+{
+	Assert(MyLatch == &LocalLatchData);
+	Assert(MyProc != NULL);
+
+	MyLatch = &MyProc->procLatch;
+
+	if (FeBeWaitSet)
+		ModifyWaitEvent(FeBeWaitSet, 1, WL_LATCH_SET, MyLatch);
+
+	/*
+	 * Set the shared latch as the local one might have been set. This
+	 * shouldn't normally be necessary as code is supposed to check the
+	 * condition before waiting for the latch, but a bit care can't hurt.
+	 */
+	SetLatch(MyLatch);
+}
+
+void
+SwitchBackToLocalLatch(void)
+{
+	Assert(MyLatch != &LocalLatchData);
+	Assert(MyProc != NULL && MyLatch == &MyProc->procLatch);
+
+	MyLatch = &LocalLatchData;
+
+	if (FeBeWaitSet)
+		ModifyWaitEvent(FeBeWaitSet, 1, WL_LATCH_SET, MyLatch);
+
+	SetLatch(MyLatch);
+}
+
+const char *
+GetBackendTypeDesc(BackendType backendType)
+{
+	const char *backendDesc = "unknown process type";
+
+	switch (backendType)
+	{
+		case B_INVALID:
+			backendDesc = "not initialized";
+			break;
+		case B_AUTOVAC_LAUNCHER:
+			backendDesc = "autovacuum launcher";
+			break;
+		case B_AUTOVAC_WORKER:
+			backendDesc = "autovacuum worker";
+			break;
+		case B_BACKEND:
+			backendDesc = "client backend";
+			break;
+		case B_BG_WORKER:
+			backendDesc = "background worker";
+			break;
+		case B_BG_WRITER:
+			backendDesc = "background writer";
+			break;
+		case B_CHECKPOINTER:
+			backendDesc = "checkpointer";
+			break;
+		case B_STARTUP:
+			backendDesc = "startup";
+			break;
+		case B_WAL_RECEIVER:
+			backendDesc = "walreceiver";
+			break;
+		case B_WAL_SENDER:
+			backendDesc = "walsender";
+			break;
+		case B_WAL_WRITER:
+			backendDesc = "walwriter";
+			break;
+		case B_ARCHIVER:
+			backendDesc = "archiver";
+			break;
+		case B_STATS_COLLECTOR:
+			backendDesc = "stats collector";
+			break;
+		case B_LOGGER:
+			backendDesc = "logger";
+			break;
+	}
+
+	return backendDesc;
+}
+
+/* ----------------------------------------------------------------
  *				database path / name support stuff
  * ----------------------------------------------------------------
  */
@@ -85,6 +263,100 @@ SetDatabasePath(const char *path)
 	/* This should happen only once per process */
 	Assert(!DatabasePath);
 	DatabasePath = MemoryContextStrdup(TopMemoryContext, path);
+}
+
+/*
+ * Validate the proposed data directory.
+ *
+ * Also initialize file and directory create modes and mode mask.
+ */
+void
+checkDataDir(void)
+{
+	struct stat stat_buf;
+
+	Assert(DataDir);
+
+	if (stat(DataDir, &stat_buf) != 0)
+	{
+		if (errno == ENOENT)
+			ereport(FATAL,
+					(errcode_for_file_access(),
+					 errmsg("data directory \"%s\" does not exist",
+							DataDir)));
+		else
+			ereport(FATAL,
+					(errcode_for_file_access(),
+					 errmsg("could not read permissions of directory \"%s\": %m",
+							DataDir)));
+	}
+
+	/* eventual chdir would fail anyway, but let's test ... */
+	if (!S_ISDIR(stat_buf.st_mode))
+		ereport(FATAL,
+				(errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),
+				 errmsg("specified data directory \"%s\" is not a directory",
+						DataDir)));
+
+	/*
+	 * Check that the directory belongs to my userid; if not, reject.
+	 *
+	 * This check is an essential part of the interlock that prevents two
+	 * postmasters from starting in the same directory (see CreateLockFile()).
+	 * Do not remove or weaken it.
+	 *
+	 * XXX can we safely enable this check on Windows?
+	 */
+#if !defined(WIN32) && !defined(__CYGWIN__)
+	if (stat_buf.st_uid != geteuid())
+		ereport(FATAL,
+				(errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),
+				 errmsg("data directory \"%s\" has wrong ownership",
+						DataDir),
+				 errhint("The server must be started by the user that owns the data directory.")));
+#endif
+
+	/*
+	 * Check if the directory has correct permissions.  If not, reject.
+	 *
+	 * Only two possible modes are allowed, 0700 and 0750.  The latter mode
+	 * indicates that group read/execute should be allowed on all newly
+	 * created files and directories.
+	 *
+	 * XXX temporarily suppress check when on Windows, because there may not
+	 * be proper support for Unix-y file permissions.  Need to think of a
+	 * reasonable check to apply on Windows.
+	 */
+#if !defined(WIN32) && !defined(__CYGWIN__)
+	if (stat_buf.st_mode & PG_MODE_MASK_GROUP)
+		ereport(FATAL,
+				(errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),
+				 errmsg("data directory \"%s\" has invalid permissions",
+						DataDir),
+				 errdetail("Permissions should be u=rwx (0700) or u=rwx,g=rx (0750).")));
+#endif
+
+	/*
+	 * Reset creation modes and mask based on the mode of the data directory.
+	 *
+	 * The mask was set earlier in startup to disallow group permissions on
+	 * newly created files and directories.  However, if group read/execute
+	 * are present on the data directory then modify the create modes and mask
+	 * to allow group read/execute on newly created files and directories and
+	 * set the data_directory_mode GUC.
+	 *
+	 * Suppress when on Windows, because there may not be proper support for
+	 * Unix-y file permissions.
+	 */
+#if !defined(WIN32) && !defined(__CYGWIN__)
+	SetDataDirectoryCreatePerm(stat_buf.st_mode);
+
+	umask(pg_mode_mask);
+	data_directory_mode = pg_dir_create_mode;
+#endif
+
+	/* Check for PG_VERSION */
+	ValidatePgVersion(DataDir);
 }
 
 /*
@@ -166,122 +438,6 @@ static int	SecurityRestrictionContext = 0;
 
 /* We also remember if a SET ROLE is currently active */
 static bool SetRoleIsActive = false;
-
-/*
- * Initialize the basic environment for a postmaster child
- *
- * Should be called as early as possible after the child's startup.
- */
-void
-InitPostmasterChild(void)
-{
-	IsUnderPostmaster = true;	/* we are a postmaster subprocess now */
-
-	MyProcPid = getpid();		/* reset MyProcPid */
-
-	MyStartTime = time(NULL);	/* set our start time in case we call elog */
-
-	/*
-	 * make sure stderr is in binary mode before anything can possibly be
-	 * written to it, in case it's actually the syslogger pipe, so the pipe
-	 * chunking protocol isn't disturbed. Non-logpipe data gets translated on
-	 * redirection (e.g. via pg_ctl -l) anyway.
-	 */
-#ifdef WIN32
-	_setmode(fileno(stderr), _O_BINARY);
-#endif
-
-	/* We don't want the postmaster's proc_exit() handlers */
-	on_exit_reset();
-
-	/* Initialize process-local latch support */
-	InitializeLatchSupport();
-	MyLatch = &LocalLatchData;
-	InitLatch(MyLatch);
-
-	/*
-	 * If possible, make this process a group leader, so that the postmaster
-	 * can signal any child processes too. Not all processes will have
-	 * children, but for consistency we make all postmaster child processes do
-	 * this.
-	 */
-#ifdef HAVE_SETSID
-	if (setsid() < 0)
-		elog(FATAL, "setsid() failed: %m");
-#endif
-}
-
-/*
- * Initialize the basic environment for a standalone process.
- *
- * argv0 has to be suitable to find the program's executable.
- */
-void
-InitStandaloneProcess(const char *argv0)
-{
-	Assert(!IsPostmasterEnvironment);
-
-	MyProcPid = getpid();		/* reset MyProcPid */
-
-	MyStartTime = time(NULL);	/* set our start time in case we call elog */
-
-	/*
-	 * Initialize random() for the first time, like PostmasterMain() would.
-	 * In a regular IsUnderPostmaster backend, BackendRun() computes a
-	 * high-entropy seed before any user query.  Fewer distinct initial seeds
-	 * can occur here.
-	 */
-	srandom((unsigned int) (MyProcPid ^ MyStartTime));
-
-	/* Initialize process-local latch support */
-	InitializeLatchSupport();
-	MyLatch = &LocalLatchData;
-	InitLatch(MyLatch);
-
-	/* Compute paths, no postmaster to inherit from */
-	if (my_exec_path[0] == '\0')
-	{
-		if (find_my_exec(argv0, my_exec_path) < 0)
-			elog(FATAL, "%s: could not locate my own executable path",
-				 argv0);
-	}
-
-	if (pkglib_path[0] == '\0')
-		get_pkglib_path(my_exec_path, pkglib_path);
-}
-
-void
-SwitchToSharedLatch(void)
-{
-	Assert(MyLatch == &LocalLatchData);
-	Assert(MyProc != NULL);
-
-	MyLatch = &MyProc->procLatch;
-
-	if (FeBeWaitSet)
-		ModifyWaitEvent(FeBeWaitSet, 1, WL_LATCH_SET, MyLatch);
-
-	/*
-	 * Set the shared latch as the local one might have been set. This
-	 * shouldn't normally be necessary as code is supposed to check the
-	 * condition before waiting for the latch, but a bit care can't hurt.
-	 */
-	SetLatch(MyLatch);
-}
-
-void
-SwitchBackToLocalLatch(void)
-{
-	Assert(MyLatch != &LocalLatchData);
-	Assert(MyProc != NULL && MyLatch == &MyProc->procLatch);
-
-	MyLatch = &LocalLatchData;
-
-	if (FeBeWaitSet)
-		ModifyWaitEvent(FeBeWaitSet, 1, WL_LATCH_SET, MyLatch);
-
-	SetLatch(MyLatch);
-}
 
 /*
  * GetUserId - get the current effective user ID.
@@ -503,6 +659,13 @@ InitializeSessionUserId(const char *rolename, Oid roleid)
 	/* call only once */
 	AssertState(!OidIsValid(AuthenticatedUserId));
 
+	/*
+	 * Make sure syscache entries are flushed for recent catalog changes. This
+	 * allows us to find roles that were created on-the-fly during
+	 * authentication.
+	 */
+	AcceptInvalidationMessages();
+
 	if (rolename != NULL)
 	{
 		roleTup = SearchSysCache1(AUTHNAME, PointerGetDatum(rolename));
@@ -521,7 +684,7 @@ InitializeSessionUserId(const char *rolename, Oid roleid)
 	}
 
 	rform = (Form_pg_authid) GETSTRUCT(roleTup);
-	roleid = HeapTupleGetOid(roleTup);
+	roleid = rform->oid;
 	rname = NameStr(rform->rolname);
 
 	AuthenticatedUserId = roleid;
@@ -836,10 +999,10 @@ CreateLockFile(const char *filename, bool amPostmaster,
 		/*
 		 * Try to create the lock file --- O_EXCL makes this atomic.
 		 *
-		 * Think not to make the file protection weaker than 0600.  See
+		 * Think not to make the file protection weaker than 0600/0640.  See
 		 * comments below.
 		 */
-		fd = open(filename, O_RDWR | O_CREAT | O_EXCL, 0600);
+		fd = open(filename, O_RDWR | O_CREAT | O_EXCL, pg_file_create_mode);
 		if (fd >= 0)
 			break;				/* Success; exit the retry loop */
 
@@ -856,7 +1019,7 @@ CreateLockFile(const char *filename, bool amPostmaster,
 		 * Read the file to get the old owner's PID.  Note race condition
 		 * here: file might have been deleted since we tried to create it.
 		 */
-		fd = open(filename, O_RDONLY, 0600);
+		fd = open(filename, O_RDONLY, pg_file_create_mode);
 		if (fd < 0)
 		{
 			if (errno == ENOENT)
@@ -906,17 +1069,14 @@ CreateLockFile(const char *filename, bool amPostmaster,
 		 * implies that the existing process has a different userid than we
 		 * do, which means it cannot be a competing postmaster.  A postmaster
 		 * cannot successfully attach to a data directory owned by a userid
-		 * other than its own.  (This is now checked directly in
-		 * checkDataDir(), but has been true for a long time because of the
-		 * restriction that the data directory isn't group- or
-		 * world-accessible.)  Also, since we create the lockfiles mode 600,
-		 * we'd have failed above if the lockfile belonged to another userid
-		 * --- which means that whatever process kill() is reporting about
-		 * isn't the one that made the lockfile.  (NOTE: this last
-		 * consideration is the only one that keeps us from blowing away a
-		 * Unix socket file belonging to an instance of Postgres being run by
-		 * someone else, at least on machines where /tmp hasn't got a
-		 * stickybit.)
+		 * other than its own, as enforced in checkDataDir(). Also, since we
+		 * create the lockfiles mode 0600/0640, we'd have failed above if the
+		 * lockfile belonged to another userid --- which means that whatever
+		 * process kill() is reporting about isn't the one that made the
+		 * lockfile.  (NOTE: this last consideration is the only one that
+		 * keeps us from blowing away a Unix socket file belonging to an
+		 * instance of Postgres being run by someone else, at least on
+		 * machines where /tmp hasn't got a stickybit.)
 		 */
 		if (other_pid != my_pid && other_pid != my_p_pid &&
 			other_pid != my_gp_pid)
@@ -1121,29 +1281,8 @@ TouchSocketLockFiles(void)
 		if (strcmp(socketLockFile, DIRECTORY_LOCK_FILE) == 0)
 			continue;
 
-		/*
-		 * utime() is POSIX standard, utimes() is a common alternative; if we
-		 * have neither, fall back to actually reading the file (which only
-		 * sets the access time not mod time, but that should be enough in
-		 * most cases).  In all paths, we ignore errors.
-		 */
-#ifdef HAVE_UTIME
-		utime(socketLockFile, NULL);
-#else							/* !HAVE_UTIME */
-#ifdef HAVE_UTIMES
-		utimes(socketLockFile, NULL);
-#else							/* !HAVE_UTIMES */
-		int			fd;
-		char		buffer[1];
-
-		fd = open(socketLockFile, O_RDONLY | PG_BINARY, 0);
-		if (fd >= 0)
-		{
-			read(fd, buffer, sizeof(buffer));
-			close(fd);
-		}
-#endif							/* HAVE_UTIMES */
-#endif							/* HAVE_UTIME */
+		/* we just ignore any error here */
+		(void) utime(socketLockFile, NULL);
 	}
 }
 
@@ -1241,8 +1380,7 @@ AddToDataDirLockFile(int target_line, const char *str)
 	len = strlen(destbuffer);
 	errno = 0;
 	pgstat_report_wait_start(WAIT_EVENT_LOCK_FILE_ADDTODATADIR_WRITE);
-	if (lseek(fd, (off_t) 0, SEEK_SET) != 0 ||
-		(int) write(fd, destbuffer, len) != len)
+	if (pg_pwrite(fd, destbuffer, len, 0) != len)
 	{
 		pgstat_report_wait_end();
 		/* if write didn't set errno, assume problem is no disk space */
@@ -1277,11 +1415,11 @@ AddToDataDirLockFile(int target_line, const char *str)
 
 /*
  * Recheck that the data directory lock file still exists with expected
- * content.  Return TRUE if the lock file appears OK, FALSE if it isn't.
+ * content.  Return true if the lock file appears OK, false if it isn't.
  *
  * We call this periodically in the postmaster.  The idea is that if the
  * lock file has been removed or replaced by another postmaster, we should
- * do a panic database shutdown.  Therefore, we should return TRUE if there
+ * do a panic database shutdown.  Therefore, we should return true if there
  * is any doubt: we do not want to cause a panic shutdown unnecessarily.
  * Transient failures like EINTR or ENFILE should not cause us to fail.
  * (If there really is something wrong, we'll detect it on a future recheck.)

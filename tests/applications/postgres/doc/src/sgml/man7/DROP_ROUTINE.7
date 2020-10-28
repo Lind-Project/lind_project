@@ -1,0 +1,122 @@
+'\" t
+.\"     Title: DROP ROUTINE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 2020
+.\"    Manual: PostgreSQL 13.0 Documentation
+.\"    Source: PostgreSQL 13.0
+.\"  Language: English
+.\"
+.TH "DROP ROUTINE" "7" "2020" "PostgreSQL 13.0" "PostgreSQL 13.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+DROP_ROUTINE \- remove a routine
+.SH "SYNOPSIS"
+.sp
+.nf
+DROP ROUTINE [ IF EXISTS ] \fIname\fR [ ( [ [ \fIargmode\fR ] [ \fIargname\fR ] \fIargtype\fR [, \&.\&.\&.] ] ) ] [, \&.\&.\&.]
+    [ CASCADE | RESTRICT ]
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBDROP ROUTINE\fR
+removes the definition of an existing routine, which can be an aggregate function, a normal function, or a procedure\&. See under
+DROP AGGREGATE (\fBDROP_AGGREGATE\fR(7)),
+DROP FUNCTION (\fBDROP_FUNCTION\fR(7)), and
+DROP PROCEDURE (\fBDROP_PROCEDURE\fR(7))
+for the description of the parameters, more examples, and further details\&.
+.SH "EXAMPLES"
+.PP
+To drop the routine
+foo
+for type
+integer:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+DROP ROUTINE foo(integer);
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This command will work independent of whether
+foo
+is an aggregate, function, or procedure\&.
+.SH "COMPATIBILITY"
+.PP
+This command conforms to the SQL standard, with these
+PostgreSQL
+extensions:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+The standard only allows one routine to be dropped per command\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+The
+IF EXISTS
+option
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+The ability to specify argument modes and names
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Aggregate functions are an extension\&.
+.RE
+.SH "SEE ALSO"
+DROP AGGREGATE (\fBDROP_AGGREGATE\fR(7)), DROP FUNCTION (\fBDROP_FUNCTION\fR(7)), DROP PROCEDURE (\fBDROP_PROCEDURE\fR(7)), ALTER ROUTINE (\fBALTER_ROUTINE\fR(7))
+.PP
+Note that there is no
+CREATE ROUTINE
+command\&.

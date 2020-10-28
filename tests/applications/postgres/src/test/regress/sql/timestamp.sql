@@ -48,10 +48,6 @@ TRUNCATE TIMESTAMP_TBL;
 INSERT INTO TIMESTAMP_TBL VALUES ('-infinity');
 INSERT INTO TIMESTAMP_TBL VALUES ('infinity');
 INSERT INTO TIMESTAMP_TBL VALUES ('epoch');
--- Obsolete special values
-INSERT INTO TIMESTAMP_TBL VALUES ('invalid');
-INSERT INTO TIMESTAMP_TBL VALUES ('undefined');
-INSERT INTO TIMESTAMP_TBL VALUES ('current');
 
 -- Postgres v6.0 standard output format
 INSERT INTO TIMESTAMP_TBL VALUES ('Mon Feb 10 17:32:01 1997 PST');
@@ -234,6 +230,14 @@ SELECT '' AS to_char_10, to_char(d1, 'IYYY IYY IY I IW IDDD ID')
 
 SELECT '' AS to_char_11, to_char(d1, 'FMIYYY FMIYY FMIY FMI FMIW FMIDDD FMID')
    FROM TIMESTAMP_TBL;
+
+SELECT '' AS to_char_12, to_char(d, 'FF1 FF2 FF3 FF4 FF5 FF6  ff1 ff2 ff3 ff4 ff5 ff6  MS US')
+   FROM (VALUES
+       ('2018-11-02 12:34:56'::timestamp),
+       ('2018-11-02 12:34:56.78'),
+       ('2018-11-02 12:34:56.78901'),
+       ('2018-11-02 12:34:56.78901234')
+   ) d(d);
 
 -- timestamp numeric fields constructor
 SELECT make_timestamp(2014,12,28,6,30,45.887);

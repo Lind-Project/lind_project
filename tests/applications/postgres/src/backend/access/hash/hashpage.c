@@ -3,7 +3,7 @@
  * hashpage.c
  *	  Hash table page management code for the Postgres hash access method
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -31,30 +31,21 @@
 #include "access/hash.h"
 #include "access/hash_xlog.h"
 #include "miscadmin.h"
+#include "port/pg_bitutils.h"
 #include "storage/lmgr.h"
+#include "storage/predicate.h"
 #include "storage/smgr.h"
 
-
 static bool _hash_alloc_buckets(Relation rel, BlockNumber firstblock,
-					uint32 nblocks);
+								uint32 nblocks);
 static void _hash_splitbucket(Relation rel, Buffer metabuf,
-				  Bucket obucket, Bucket nbucket,
-				  Buffer obuf,
-				  Buffer nbuf,
-				  HTAB *htab,
-				  uint32 maxbucket,
-				  uint32 highmask, uint32 lowmask);
+							  Bucket obucket, Bucket nbucket,
+							  Buffer obuf,
+							  Buffer nbuf,
+							  HTAB *htab,
+							  uint32 maxbucket,
+							  uint32 highmask, uint32 lowmask);
 static void log_split_page(Relation rel, Buffer buf);
-
-
-/*
- * We use high-concurrency locking on hash indexes (see README for an overview
- * of the locking rules).  However, we can skip taking lmgr locks when the
- * index is local to the current backend (ie, either temp or new in the
- * current transaction).  No one else can see it, so there's no reason to
- * take locks.  We still take buffer-level locks, but not lmgr locks.
- */
-#define USELOCKING(rel)		(!RELATION_IS_LOCAL(rel))
 
 
 /*
@@ -298,20 +289,20 @@ _hash_dropscanbuf(Relation rel, HashScanOpaque so)
 {
 	/* release pin we hold on primary bucket page */
 	if (BufferIsValid(so->hashso_bucket_buf) &&
-		so->hashso_bucket_buf != so->hashso_curbuf)
+		so->hashso_bucket_buf != so->currPos.buf)
 		_hash_dropbuf(rel, so->hashso_bucket_buf);
 	so->hashso_bucket_buf = InvalidBuffer;
 
 	/* release pin we hold on primary bucket page  of bucket being split */
 	if (BufferIsValid(so->hashso_split_bucket_buf) &&
-		so->hashso_split_bucket_buf != so->hashso_curbuf)
+		so->hashso_split_bucket_buf != so->currPos.buf)
 		_hash_dropbuf(rel, so->hashso_split_bucket_buf);
 	so->hashso_split_bucket_buf = InvalidBuffer;
 
 	/* release any pin we still hold */
-	if (BufferIsValid(so->hashso_curbuf))
-		_hash_dropbuf(rel, so->hashso_curbuf);
-	so->hashso_curbuf = InvalidBuffer;
+	if (BufferIsValid(so->currPos.buf))
+		_hash_dropbuf(rel, so->currPos.buf);
+	so->currPos.buf = InvalidBuffer;
 
 	/* reset split scan */
 	so->hashso_buc_populated = false;
@@ -368,12 +359,12 @@ _hash_init(Relation rel, double num_tuples, ForkNumber forkNum)
 	data_width = sizeof(uint32);
 	item_width = MAXALIGN(sizeof(IndexTupleData)) + MAXALIGN(data_width) +
 		sizeof(ItemIdData);		/* include the line pointer */
-	ffactor = RelationGetTargetPageUsage(rel, HASH_DEFAULT_FILLFACTOR) / item_width;
+	ffactor = HashGetTargetPageUsage(rel) / item_width;
 	/* keep to a sane range */
 	if (ffactor < 10)
 		ffactor = 10;
 
-	procid = index_getprocid(rel, 1, HASHPROC);
+	procid = index_getprocid(rel, 1, HASHSTANDARD_PROC);
 
 	/*
 	 * We initialize the metapage, the first N bucket pages, and the first
@@ -403,7 +394,7 @@ _hash_init(Relation rel, double num_tuples, ForkNumber forkNum)
 
 		XLogBeginInsert();
 		XLogRegisterData((char *) &xlrec, SizeOfHashInitMetaPage);
-		XLogRegisterBuffer(0, metabuf, REGBUF_WILL_INIT);
+		XLogRegisterBuffer(0, metabuf, REGBUF_WILL_INIT | REGBUF_STANDARD);
 
 		recptr = XLogInsert(RM_HASH_ID, XLOG_HASH_INIT_META_PAGE);
 
@@ -512,13 +503,13 @@ _hash_init_metabuffer(Buffer buf, double num_tuples, RegProcedure procid,
 	double		dnumbuckets;
 	uint32		num_buckets;
 	uint32		spare_index;
-	uint32		i;
+	uint32		lshift;
 
 	/*
 	 * Choose the number of initial bucket pages to match the fill factor
 	 * given the estimated number of tuples.  We round up the result to the
 	 * total number of buckets which has to be allocated before using its
-	 * _hashm_spare element. However always force at least 2 bucket pages. The
+	 * hashm_spares element. However always force at least 2 bucket pages. The
 	 * upper limit is determined by considerations explained in
 	 * _hash_expandtable().
 	 */
@@ -552,15 +543,12 @@ _hash_init_metabuffer(Buffer buf, double num_tuples, RegProcedure procid,
 	metap->hashm_nmaps = 0;
 	metap->hashm_ffactor = ffactor;
 	metap->hashm_bsize = HashGetMaxBitmapSize(page);
+
 	/* find largest bitmap array size that will fit in page size */
-	for (i = _hash_log2(metap->hashm_bsize); i > 0; --i)
-	{
-		if ((1 << i) <= metap->hashm_bsize)
-			break;
-	}
-	Assert(i > 0);
-	metap->hashm_bmsize = 1 << i;
-	metap->hashm_bmshift = i + BYTE_TO_BIT;
+	lshift = pg_leftmost_one_pos32(metap->hashm_bsize);
+	Assert(lshift > 0);
+	metap->hashm_bmsize = 1 << lshift;
+	metap->hashm_bmshift = lshift + BYTE_TO_BIT;
 	Assert((1 << BMPG_SHIFT(metap)) == (BMPG_MASK(metap) + 1));
 
 	/*
@@ -580,7 +568,7 @@ _hash_init_metabuffer(Buffer buf, double num_tuples, RegProcedure procid,
 	 * Set highmask as next immediate ((2 ^ x) - 1), which should be
 	 * sufficient to cover num_buckets.
 	 */
-	metap->hashm_highmask = (1 << (_hash_log2(num_buckets + 1))) - 1;
+	metap->hashm_highmask = pg_nextpower2_32(num_buckets + 1) - 1;
 	metap->hashm_lowmask = (metap->hashm_highmask >> 1);
 
 	MemSet(metap->hashm_spares, 0, sizeof(metap->hashm_spares));
@@ -592,8 +580,9 @@ _hash_init_metabuffer(Buffer buf, double num_tuples, RegProcedure procid,
 	metap->hashm_firstfree = 0;
 
 	/*
-	 * Set pd_lower just past the end of the metadata.  This is to log full
-	 * page image of metapage in xloginsert.c.
+	 * Set pd_lower just past the end of the metadata.  This is essential,
+	 * because without doing so, metadata will be lost if xlog.c compresses
+	 * the page.
 	 */
 	((PageHeader) page)->pd_lower =
 		((char *) metap + sizeof(HashMetaPageData)) - (char *) page;
@@ -668,9 +657,9 @@ restart_expand:
 	 *
 	 * Ideally we'd allow bucket numbers up to UINT_MAX-1 (no higher because
 	 * the calculation maxbucket+1 mustn't overflow).  Currently we restrict
-	 * to half that because of overflow looping in _hash_log2() and
-	 * insufficient space in hashm_spares[].  It's moot anyway because an
-	 * index with 2^32 buckets would certainly overflow BlockNumber and hence
+	 * to half that to prevent failure of pg_ceil_log2_32() and insufficient
+	 * space in hashm_spares[].  It's moot anyway because an index with 2^32
+	 * buckets would certainly overflow BlockNumber and hence
 	 * _hash_alloc_buckets() would fail, but if we supported buckets smaller
 	 * than a disk block then this would be an independent constraint.
 	 *
@@ -991,7 +980,7 @@ fail:
  * for the purpose.  OTOH, adding a splitpoint is a very infrequent operation,
  * so it may not be worth worrying about.
  *
- * Returns TRUE if successful, or FALSE if allocation failed due to
+ * Returns true if successful, or false if allocation failed due to
  * BlockNumber overflow.
  */
 static bool
@@ -1107,6 +1096,11 @@ _hash_splitbucket(Relation rel,
 	npage = BufferGetPage(nbuf);
 	nopaque = (HashPageOpaque) PageGetSpecialPointer(npage);
 
+	/* Copy the predicate locks from old bucket to new bucket. */
+	PredicateLockPageSplit(rel,
+						   BufferGetBlockNumber(bucket_obuf),
+						   BufferGetBlockNumber(bucket_nbuf));
+
 	/*
 	 * Partition the tuples in the old bucket between the old bucket and the
 	 * new bucket, advancing along the old bucket's overflow bucket chain and
@@ -1173,7 +1167,7 @@ _hash_splitbucket(Relation rel,
 				 * the current page in the new bucket, we must allocate a new
 				 * overflow page and place the tuple on that page instead.
 				 */
-				itemsz = IndexTupleDSize(*new_itup);
+				itemsz = IndexTupleSize(new_itup);
 				itemsz = MAXALIGN(itemsz);
 
 				if (PageGetFreeSpaceForMultipleTuples(npage, nitups + 1) < (all_tups_size + itemsz))
@@ -1513,7 +1507,7 @@ _hash_getcachedmetap(Relation rel, Buffer *metabuf, bool force_refresh)
 		 * It's important that we don't set rd_amcache to an invalid value.
 		 * Either MemoryContextAlloc or _hash_getbuf could fail, so don't
 		 * install a pointer to the newly-allocated storage in the actual
-		 * relcache entry until both have succeeeded.
+		 * relcache entry until both have succeeded.
 		 */
 		if (rel->rd_amcache == NULL)
 			cache = MemoryContextAlloc(rel->rd_indexcxt,

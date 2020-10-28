@@ -2,7 +2,7 @@
  *
  *	  Utility functions for conversion procs.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -115,7 +115,7 @@ mic2latin(const unsigned char *mic, unsigned char *p, int len,
 		}
 		else
 		{
-			int			l = pg_mic_mblen(mic);
+			int			l = pg_mule_mblen(mic);
 
 			if (len < l)
 				report_invalid_encoding(PG_MULE_INTERNAL, (const char *) mic,
@@ -131,51 +131,6 @@ mic2latin(const unsigned char *mic, unsigned char *p, int len,
 	*p = '\0';
 }
 
-
-/*
- * ASCII ---> MIC
- *
- * While ordinarily SQL_ASCII encoding is forgiving of high-bit-set
- * characters, here we must take a hard line because we don't know
- * the appropriate MIC equivalent.
- */
-void
-pg_ascii2mic(const unsigned char *l, unsigned char *p, int len)
-{
-	int			c1;
-
-	while (len > 0)
-	{
-		c1 = *l;
-		if (c1 == 0 || IS_HIGHBIT_SET(c1))
-			report_invalid_encoding(PG_SQL_ASCII, (const char *) l, len);
-		*p++ = c1;
-		l++;
-		len--;
-	}
-	*p = '\0';
-}
-
-/*
- * MIC ---> ASCII
- */
-void
-pg_mic2ascii(const unsigned char *mic, unsigned char *p, int len)
-{
-	int			c1;
-
-	while (len > 0)
-	{
-		c1 = *mic;
-		if (c1 == 0 || IS_HIGHBIT_SET(c1))
-			report_untranslatable_char(PG_MULE_INTERNAL, PG_SQL_ASCII,
-									   (const char *) mic, len);
-		*p++ = c1;
-		mic++;
-		len--;
-	}
-	*p = '\0';
-}
 
 /*
  * latin2mic_with_table: a generic single byte charset encoding
@@ -262,7 +217,7 @@ mic2latin_with_table(const unsigned char *mic,
 		}
 		else
 		{
-			int			l = pg_mic_mblen(mic);
+			int			l = pg_mule_mblen(mic);
 
 			if (len < l)
 				report_invalid_encoding(PG_MULE_INTERNAL, (const char *) mic,

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>pg_standby</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="prev" href="contrib-prog-server.html" title="G.2. Server Applications" /><link rel="next" href="external-projects.html" title="Appendix H. External Projects" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center"><span xmlns="http://www.w3.org/1999/xhtml" class="application">pg_standby</span></th></tr><tr><td width="10%" align="left"><a accesskey="p" href="contrib-prog-server.html" title="G.2. Server Applications">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="contrib-prog-server.html" title="G.2. Server Applications">Up</a></td><th width="60%" align="center">G.2. Server Applications</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="external-projects.html" title="Appendix H. External Projects">Next</a></td></tr></table><hr></hr></div><div class="refentry" id="PGSTANDBY"><div class="titlepage"></div><a id="id-1.11.8.5.3.1" class="indexterm"></a><div class="refnamediv"><h2><span class="refentrytitle"><span class="application">pg_standby</span></span></h2><p>pg_standby — supports the creation of a <span class="productname">PostgreSQL</span> warm standby server</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p id="id-1.11.8.5.3.4.1"><code class="command">pg_standby</code> [<em class="replaceable"><code>option</code></em>...]  <em class="replaceable"><code>archivelocation</code></em>   <em class="replaceable"><code>nextwalfile</code></em>   <em class="replaceable"><code>walfilepath</code></em>  [<em class="replaceable"><code>restartwalfile</code></em>]</p></div></div><div class="refsect1" id="id-1.11.8.5.3.5"><h2>Description</h2><p>
+  <span class="application">pg_standby</span> supports creation of a <span class="quote">“<span class="quote">warm standby</span>”</span>
+  database server.  It is designed to be a production-ready program, as well
+  as a customizable template should you require specific modifications.
+ </p><p>
+  <span class="application">pg_standby</span> is designed to be a waiting
+  <code class="varname">restore_command</code>, which is needed to turn a standard
+  archive recovery into a warm standby operation.  Other
+  configuration is required as well, all of which is described in the main
+  server manual (see <a class="xref" href="warm-standby.html" title="26.2. Log-Shipping Standby Servers">Section 26.2</a>).
+ </p><p>
+   To configure a standby
+   server to use <span class="application">pg_standby</span>, put this into its
+   <code class="filename">postgresql.conf</code> configuration file:
+</p><pre class="programlisting">
+restore_command = 'pg_standby <em class="replaceable"><code>archiveDir</code></em> %f %p %r'
+</pre><p>
+   where <em class="replaceable"><code>archiveDir</code></em> is the directory from which WAL segment
+   files should be restored.
+  </p><p>
+   If <em class="replaceable"><code>restartwalfile</code></em> is specified, normally by using the
+   <code class="literal">%r</code> macro, then all WAL files logically preceding this
+   file will be removed from <em class="replaceable"><code>archivelocation</code></em>. This minimizes
+   the number of files that need to be retained, while preserving
+   crash-restart capability.  Use of this parameter is appropriate if the
+   <em class="replaceable"><code>archivelocation</code></em> is a transient staging area for this
+   particular standby server, but <span class="emphasis"><em>not</em></span> when the
+   <em class="replaceable"><code>archivelocation</code></em> is intended as a long-term WAL archive area.
+  </p><p>
+   <span class="application">pg_standby</span> assumes that
+   <em class="replaceable"><code>archivelocation</code></em> is a directory readable by the
+   server-owning user.  If <em class="replaceable"><code>restartwalfile</code></em> (or <code class="literal">-k</code>)
+   is specified,
+   the <em class="replaceable"><code>archivelocation</code></em> directory must be writable too.
+  </p><p>
+   There are two ways to fail over to a <span class="quote">“<span class="quote">warm standby</span>”</span> database server
+   when the master server fails:
+
+   </p><div class="variablelist"><dl class="variablelist"><dt><span class="term">Smart Failover</span></dt><dd><p>
+       In smart failover, the server is brought up after applying all WAL
+       files available in the archive. This results in zero data loss, even if
+       the standby server has fallen behind, but if there is a lot of
+       unapplied WAL it can be a long time before the standby server becomes
+       ready. To trigger a smart failover, create a trigger file containing
+       the word <code class="literal">smart</code>, or just create it and leave it empty.
+      </p></dd><dt><span class="term">Fast Failover</span></dt><dd><p>
+       In fast failover, the server is brought up immediately. Any WAL files
+       in the archive that have not yet been applied will be ignored, and
+       all transactions in those files are lost. To trigger a fast failover,
+       create a trigger file and write the word <code class="literal">fast</code> into it.
+       <span class="application">pg_standby</span> can also be configured to execute a fast
+       failover automatically if no new WAL file appears within a defined
+       interval.
+      </p></dd></dl></div><p>
+  </p></div><div class="refsect1" id="id-1.11.8.5.3.6"><h2>Options</h2><p>
+    <span class="application">pg_standby</span> accepts the following command-line arguments:
+
+    </p><div class="variablelist"><dl class="variablelist"><dt><span class="term"><code class="option">-c</code></span></dt><dd><p>
+        Use <code class="literal">cp</code> or <code class="literal">copy</code> command to restore WAL files
+        from archive.  This is the only supported behavior so this option is useless.
+       </p></dd><dt><span class="term"><code class="option">-d</code></span></dt><dd><p>
+        Print lots of debug logging output on <code class="filename">stderr</code>.
+       </p></dd><dt><span class="term"><code class="option">-k</code></span></dt><dd><p>
+        Remove files from <em class="replaceable"><code>archivelocation</code></em> so that
+        no more than this many WAL files before the current one are kept in the
+        archive.  Zero (the default) means not to remove any files from
+        <em class="replaceable"><code>archivelocation</code></em>.
+        This parameter will be silently ignored if
+        <em class="replaceable"><code>restartwalfile</code></em> is specified, since that
+        specification method is more accurate in determining the correct
+        archive cut-off point.
+        Use of this parameter is <span class="emphasis"><em>deprecated</em></span> as of
+        <span class="productname">PostgreSQL</span> 8.3; it is safer and more efficient to
+        specify a <em class="replaceable"><code>restartwalfile</code></em> parameter.  A too
+        small setting could result in removal of files that are still needed
+        for a restart of the standby server, while a too large setting wastes
+        archive space.
+       </p></dd><dt><span class="term"><code class="option">-r</code> <em class="replaceable"><code>maxretries</code></em></span></dt><dd><p>
+        Set the maximum number of times to retry the copy command if
+        it fails (default 3). After each failure, we wait for
+        <em class="replaceable"><code>sleeptime</code></em> * <em class="replaceable"><code>num_retries</code></em>
+        so that the wait time increases progressively.  So by default,
+        we will wait 5 secs, 10 secs, then 15 secs before reporting
+        the failure back to the standby server. This will be
+        interpreted as end of recovery and the standby will come
+        up fully as a result.
+       </p></dd><dt><span class="term"><code class="option">-s</code> <em class="replaceable"><code>sleeptime</code></em></span></dt><dd><p>
+        Set the number of seconds (up to 60, default 5) to sleep between
+        tests to see if the WAL file to be restored is available in
+        the archive yet.  The default setting is not necessarily
+        recommended; consult <a class="xref" href="warm-standby.html" title="26.2. Log-Shipping Standby Servers">Section 26.2</a> for discussion.
+       </p></dd><dt><span class="term"><code class="option">-t</code> <em class="replaceable"><code>triggerfile</code></em></span></dt><dd><p>
+        Specify a trigger file whose presence should cause failover.
+        It is recommended that you use a structured file name to
+        avoid confusion as to which server is being triggered
+        when multiple servers exist on the same system; for example
+        <code class="filename">/tmp/pgsql.trigger.5432</code>.
+       </p></dd><dt><span class="term"><code class="option">-V</code><br /></span><span class="term"><code class="option">--version</code></span></dt><dd><p>
+        Print the <span class="application">pg_standby</span> version and exit.
+       </p></dd><dt><span class="term"><code class="option">-w</code> <em class="replaceable"><code>maxwaittime</code></em></span></dt><dd><p>
+        Set the maximum number of seconds to wait for the next WAL file,
+        after which a fast failover will be performed.
+        A setting of zero (the default) means wait forever.
+        The default setting is not necessarily recommended;
+        consult <a class="xref" href="warm-standby.html" title="26.2. Log-Shipping Standby Servers">Section 26.2</a> for discussion.
+       </p></dd><dt><span class="term"><code class="option">-?</code><br /></span><span class="term"><code class="option">--help</code></span></dt><dd><p>
+        Show help about <span class="application">pg_standby</span> command line
+        arguments, and exit.
+       </p></dd></dl></div><p>
+   </p></div><div class="refsect1" id="id-1.11.8.5.3.7"><h2>Notes</h2><p>
+   <span class="application">pg_standby</span> is designed to work with
+   <span class="productname">PostgreSQL</span> 8.2 and later.
+  </p><p>
+   <span class="productname">PostgreSQL</span> 8.3 provides the <code class="literal">%r</code> macro,
+   which is designed to let <span class="application">pg_standby</span> know the
+   last file it needs to keep.  With <span class="productname">PostgreSQL</span> 8.2, the
+   <code class="literal">-k</code> option must be used if archive cleanup is
+   required.  This option remains available in 8.3, but its use is deprecated.
+  </p><p>
+   <span class="productname">PostgreSQL</span> 8.4 provides the
+   <code class="varname">recovery_end_command</code> option.  Without this option
+   a leftover trigger file can be hazardous.
+  </p><p>
+   <span class="application">pg_standby</span> is written in C and has an
+   easy-to-modify source code, with specifically designated sections to modify
+   for your own needs
+  </p></div><div class="refsect1" id="id-1.11.8.5.3.8"><h2>Examples</h2><p>On Linux or Unix systems, you might use:
+
+</p><pre class="programlisting">
+archive_command = 'cp %p .../archive/%f'
+
+restore_command = 'pg_standby -d -s 2 -t /tmp/pgsql.trigger.5442 .../archive %f %p %r 2&gt;&gt;standby.log'
+
+recovery_end_command = 'rm -f /tmp/pgsql.trigger.5442'
+</pre><p>
+   where the archive directory is physically located on the standby server,
+   so that the <code class="varname">archive_command</code> is accessing it across NFS,
+   but the files are local to the standby (enabling use of <code class="literal">ln</code>).
+   This will:
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+     produce debugging output in <code class="filename">standby.log</code>
+    </p></li><li class="listitem"><p>
+     sleep for 2 seconds between checks for next WAL file availability
+    </p></li><li class="listitem"><p>
+     stop waiting only when a trigger file called
+     <code class="filename">/tmp/pgsql.trigger.5442</code> appears,
+     and perform failover according to its content
+    </p></li><li class="listitem"><p>
+     remove the trigger file when recovery ends
+    </p></li><li class="listitem"><p>
+     remove no-longer-needed files from the archive directory
+    </p></li></ul></div><p>
+  </p><p>On Windows, you might use:
+
+</p><pre class="programlisting">
+archive_command = 'copy %p ...\\archive\\%f'
+
+restore_command = 'pg_standby -d -s 5 -t C:\pgsql.trigger.5442 ...\archive %f %p %r 2&gt;&gt;standby.log'
+
+recovery_end_command = 'del C:\pgsql.trigger.5442'
+</pre><p>
+   Note that backslashes need to be doubled in the
+   <code class="varname">archive_command</code>, but <span class="emphasis"><em>not</em></span> in the
+   <code class="varname">restore_command</code> or <code class="varname">recovery_end_command</code>.
+   This will:
+  </p><div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p>
+     use the <code class="literal">copy</code> command to restore WAL files from archive
+    </p></li><li class="listitem"><p>
+     produce debugging output in <code class="filename">standby.log</code>
+    </p></li><li class="listitem"><p>
+     sleep for 5 seconds between checks for next WAL file availability
+    </p></li><li class="listitem"><p>
+     stop waiting only when a trigger file called
+     <code class="filename">C:\pgsql.trigger.5442</code> appears,
+     and perform failover according to its content
+    </p></li><li class="listitem"><p>
+     remove the trigger file when recovery ends
+    </p></li><li class="listitem"><p>
+     remove no-longer-needed files from the archive directory
+    </p></li></ul></div><p>
+  </p><p>
+   The <code class="literal">copy</code> command on Windows sets the final file size
+   before the file is completely copied, which would ordinarily confuse
+   <span class="application">pg_standby</span>.  Therefore
+   <span class="application">pg_standby</span> waits <em class="replaceable"><code>sleeptime</code></em>
+   seconds once it sees the proper file size.  GNUWin32's <code class="literal">cp</code>
+   sets the file size only after the file copy is complete.
+  </p><p>
+   Since the Windows example uses <code class="literal">copy</code> at both ends, either
+   or both servers might be accessing the archive directory across the
+   network.
+  </p></div><div class="refsect1" id="id-1.11.8.5.3.9"><h2>Author</h2><p>
+   Simon Riggs <code class="email">&lt;<a class="email" href="mailto:simon@2ndquadrant.com">simon@2ndquadrant.com</a>&gt;</code>
+  </p></div><div class="refsect1" id="id-1.11.8.5.3.10"><h2>See Also</h2><span class="simplelist"><a class="xref" href="pgarchivecleanup.html" title="pg_archivecleanup"><span class="refentrytitle"><span class="application">pg_archivecleanup</span></span></a></span></div></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="contrib-prog-server.html" title="G.2. Server Applications">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="contrib-prog-server.html" title="G.2. Server Applications">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="external-projects.html" title="Appendix H. External Projects">Next</a></td></tr><tr><td width="40%" align="left" valign="top">G.2. Server Applications </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="40%" align="right" valign="top"> Appendix H. External Projects</td></tr></table></div></body></html>

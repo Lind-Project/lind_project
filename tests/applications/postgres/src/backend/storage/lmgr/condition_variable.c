@@ -8,7 +8,7 @@
  *	  interrupted, unlike LWLock waits.  Condition variables are safe
  *	  to use within dynamic shared memory segments.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * src/backend/storage/lmgr/condition_variable.c
@@ -19,6 +19,7 @@
 #include "postgres.h"
 
 #include "miscadmin.h"
+#include "portability/instr_time.h"
 #include "storage/condition_variable.h"
 #include "storage/ipc.h"
 #include "storage/proc.h"
@@ -43,11 +44,18 @@ ConditionVariableInit(ConditionVariable *cv)
 }
 
 /*
- * Prepare to wait on a given condition variable.  This can optionally be
- * called before entering a test/sleep loop.  Alternatively, the call to
- * ConditionVariablePrepareToSleep can be omitted.  The only advantage of
- * calling ConditionVariablePrepareToSleep is that it avoids an initial
- * double-test of the user's predicate in the case that we need to wait.
+ * Prepare to wait on a given condition variable.
+ *
+ * This can optionally be called before entering a test/sleep loop.
+ * Doing so is more efficient if we'll need to sleep at least once.
+ * However, if the first test of the exit condition is likely to succeed,
+ * it's more efficient to omit the ConditionVariablePrepareToSleep call.
+ * See comments in ConditionVariableSleep for more detail.
+ *
+ * Caution: "before entering the loop" means you *must* test the exit
+ * condition between calling ConditionVariablePrepareToSleep and calling
+ * ConditionVariableSleep.  If that is inconvenient, omit calling
+ * ConditionVariablePrepareToSleep.
  */
 void
 ConditionVariablePrepareToSleep(ConditionVariable *cv)
@@ -65,7 +73,7 @@ ConditionVariablePrepareToSleep(ConditionVariable *cv)
 		new_event_set = CreateWaitEventSet(TopMemoryContext, 2);
 		AddWaitEventToSet(new_event_set, WL_LATCH_SET, PGINVALID_SOCKET,
 						  MyLatch, NULL);
-		AddWaitEventToSet(new_event_set, WL_POSTMASTER_DEATH, PGINVALID_SOCKET,
+		AddWaitEventToSet(new_event_set, WL_EXIT_ON_PM_DEATH, PGINVALID_SOCKET,
 						  NULL, NULL);
 		/* Don't set cv_wait_event_set until we have a correct WES. */
 		cv_wait_event_set = new_event_set;
@@ -85,49 +93,60 @@ ConditionVariablePrepareToSleep(ConditionVariable *cv)
 	/* Record the condition variable on which we will sleep. */
 	cv_sleep_target = cv;
 
-	/*
-	 * Reset my latch before adding myself to the queue and before entering
-	 * the caller's predicate loop.
-	 */
-	ResetLatch(MyLatch);
-
 	/* Add myself to the wait queue. */
 	SpinLockAcquire(&cv->mutex);
-	if (!proclist_contains(&cv->wakeup, pgprocno, cvWaitLink))
-		proclist_push_tail(&cv->wakeup, pgprocno, cvWaitLink);
+	proclist_push_tail(&cv->wakeup, pgprocno, cvWaitLink);
 	SpinLockRelease(&cv->mutex);
 }
 
-/*--------------------------------------------------------------------------
- * Wait for the given condition variable to be signaled.  This should be
- * called in a predicate loop that tests for a specific exit condition and
- * otherwise sleeps, like so:
+/*
+ * Wait for the given condition variable to be signaled.
  *
- *	 ConditionVariablePrepareToSleep(cv); [optional]
+ * This should be called in a predicate loop that tests for a specific exit
+ * condition and otherwise sleeps, like so:
+ *
+ *	 ConditionVariablePrepareToSleep(cv);  // optional
  *	 while (condition for which we are waiting is not true)
  *		 ConditionVariableSleep(cv, wait_event_info);
  *	 ConditionVariableCancelSleep();
  *
- * Supply a value from one of the WaitEventXXX enums defined in pgstat.h to
- * control the contents of pg_stat_activity's wait_event_type and wait_event
- * columns while waiting.
- *-------------------------------------------------------------------------*/
+ * wait_event_info should be a value from one of the WaitEventXXX enums
+ * defined in pgstat.h.  This controls the contents of pg_stat_activity's
+ * wait_event_type and wait_event columns while waiting.
+ */
 void
 ConditionVariableSleep(ConditionVariable *cv, uint32 wait_event_info)
 {
-	WaitEvent	event;
-	bool		done = false;
+	(void) ConditionVariableTimedSleep(cv, -1 /* no timeout */ ,
+									   wait_event_info);
+}
+
+/*
+ * Wait for a condition variable to be signaled or a timeout to be reached.
+ *
+ * Returns true when timeout expires, otherwise returns false.
+ *
+ * See ConditionVariableSleep() for general usage.
+ */
+bool
+ConditionVariableTimedSleep(ConditionVariable *cv, long timeout,
+							uint32 wait_event_info)
+{
+	long		cur_timeout = -1;
+	instr_time	start_time;
+	instr_time	cur_time;
 
 	/*
 	 * If the caller didn't prepare to sleep explicitly, then do so now and
 	 * return immediately.  The caller's predicate loop should immediately
-	 * call again if its exit condition is not yet met.  This initial spurious
-	 * return can be avoided by calling ConditionVariablePrepareToSleep(cv)
+	 * call again if its exit condition is not yet met.  This will result in
+	 * the exit condition being tested twice before we first sleep.  The extra
+	 * test can be prevented by calling ConditionVariablePrepareToSleep(cv)
 	 * first.  Whether it's worth doing that depends on whether you expect the
-	 * condition to be met initially, in which case skipping the prepare
-	 * allows you to skip manipulation of the wait list, or not met initially,
-	 * in which case preparing first allows you to skip a spurious test of the
-	 * caller's exit condition.
+	 * exit condition to be met initially, in which case skipping the prepare
+	 * is recommended because it avoids manipulations of the wait list, or not
+	 * met initially, in which case preparing first is better because it
+	 * avoids one extra test of the exit condition.
 	 *
 	 * If we are currently prepared to sleep on some other CV, we just cancel
 	 * that and prepare this one; see ConditionVariablePrepareToSleep.
@@ -135,40 +154,51 @@ ConditionVariableSleep(ConditionVariable *cv, uint32 wait_event_info)
 	if (cv_sleep_target != cv)
 	{
 		ConditionVariablePrepareToSleep(cv);
-		return;
+		return false;
 	}
 
-	while (!done)
+	/*
+	 * Record the current time so that we can calculate the remaining timeout
+	 * if we are woken up spuriously.
+	 */
+	if (timeout >= 0)
 	{
-		CHECK_FOR_INTERRUPTS();
+		INSTR_TIME_SET_CURRENT(start_time);
+		Assert(timeout >= 0 && timeout <= INT_MAX);
+		cur_timeout = timeout;
+	}
+
+	while (true)
+	{
+		WaitEvent	event;
+		bool		done = false;
 
 		/*
 		 * Wait for latch to be set.  (If we're awakened for some other
 		 * reason, the code below will cope anyway.)
 		 */
-		WaitEventSetWait(cv_wait_event_set, -1, &event, 1, wait_event_info);
+		(void) WaitEventSetWait(cv_wait_event_set, cur_timeout, &event, 1,
+								wait_event_info);
 
-		if (event.events & WL_POSTMASTER_DEATH)
-		{
-			/*
-			 * Emergency bailout if postmaster has died.  This is to avoid the
-			 * necessity for manual cleanup of all postmaster children.
-			 */
-			exit(1);
-		}
-
-		/* Reset latch before testing whether we can return. */
+		/* Reset latch before examining the state of the wait list. */
 		ResetLatch(MyLatch);
+
+		CHECK_FOR_INTERRUPTS();
 
 		/*
 		 * If this process has been taken out of the wait list, then we know
-		 * that is has been signaled by ConditionVariableSignal.  We put it
-		 * back into the wait list, so we don't miss any further signals while
-		 * the caller's loop checks its condition.  If it hasn't been taken
-		 * out of the wait list, then the latch must have been set by
-		 * something other than ConditionVariableSignal; though we don't
-		 * guarantee not to return spuriously, we'll avoid these obvious
-		 * cases.
+		 * that it has been signaled by ConditionVariableSignal (or
+		 * ConditionVariableBroadcast), so we should return to the caller. But
+		 * that doesn't guarantee that the exit condition is met, only that we
+		 * ought to check it.  So we must put the process back into the wait
+		 * list, to ensure we don't miss any additional wakeup occurring while
+		 * the caller checks its exit condition.  We can take ourselves out of
+		 * the wait list only when the caller calls
+		 * ConditionVariableCancelSleep.
+		 *
+		 * If we're still in the wait list, then the latch must have been set
+		 * by something other than ConditionVariableSignal; though we don't
+		 * guarantee not to return spuriously, we'll avoid this obvious case.
 		 */
 		SpinLockAcquire(&cv->mutex);
 		if (!proclist_contains(&cv->wakeup, MyProc->pgprocno, cvWaitLink))
@@ -177,18 +207,39 @@ ConditionVariableSleep(ConditionVariable *cv, uint32 wait_event_info)
 			proclist_push_tail(&cv->wakeup, MyProc->pgprocno, cvWaitLink);
 		}
 		SpinLockRelease(&cv->mutex);
+
+		/* We were signaled, so return */
+		if (done)
+			return false;
+
+		/* If we're not done, update cur_timeout for next iteration */
+		if (timeout >= 0)
+		{
+			INSTR_TIME_SET_CURRENT(cur_time);
+			INSTR_TIME_SUBTRACT(cur_time, start_time);
+			cur_timeout = timeout - (long) INSTR_TIME_GET_MILLISEC(cur_time);
+
+			/* Have we crossed the timeout threshold? */
+			if (cur_timeout <= 0)
+				return true;
+		}
 	}
 }
 
 /*
- * Cancel any pending sleep operation.  We just need to remove ourselves
- * from the wait queue of any condition variable for which we have previously
- * prepared a sleep.
+ * Cancel any pending sleep operation.
+ *
+ * We just need to remove ourselves from the wait queue of any condition
+ * variable for which we have previously prepared a sleep.
+ *
+ * Do nothing if nothing is pending; this allows this function to be called
+ * during transaction abort to clean up any unfinished CV sleep.
  */
 void
 ConditionVariableCancelSleep(void)
 {
 	ConditionVariable *cv = cv_sleep_target;
+	bool		signaled = false;
 
 	if (cv == NULL)
 		return;
@@ -196,17 +247,30 @@ ConditionVariableCancelSleep(void)
 	SpinLockAcquire(&cv->mutex);
 	if (proclist_contains(&cv->wakeup, MyProc->pgprocno, cvWaitLink))
 		proclist_delete(&cv->wakeup, MyProc->pgprocno, cvWaitLink);
+	else
+		signaled = true;
 	SpinLockRelease(&cv->mutex);
+
+	/*
+	 * If we've received a signal, pass it on to another waiting process, if
+	 * there is one.  Otherwise a call to ConditionVariableSignal() might get
+	 * lost, despite there being another process ready to handle it.
+	 */
+	if (signaled)
+		ConditionVariableSignal(cv);
 
 	cv_sleep_target = NULL;
 }
 
 /*
- * Wake up one sleeping process, assuming there is at least one.
+ * Wake up the oldest process sleeping on the CV, if there is any.
  *
- * The return value indicates whether or not we woke somebody up.
+ * Note: it's difficult to tell whether this has any real effect: we know
+ * whether we took an entry off the list, but the entry might only be a
+ * sentinel.  Hence, think twice before proposing that this should return
+ * a flag telling whether it woke somebody.
  */
-bool
+void
 ConditionVariableSignal(ConditionVariable *cv)
 {
 	PGPROC	   *proc = NULL;
@@ -219,24 +283,19 @@ ConditionVariableSignal(ConditionVariable *cv)
 
 	/* If we found someone sleeping, set their latch to wake them up. */
 	if (proc != NULL)
-	{
 		SetLatch(&proc->procLatch);
-		return true;
-	}
-
-	/* No sleeping processes. */
-	return false;
 }
 
 /*
- * Wake up all sleeping processes.
+ * Wake up all processes sleeping on the given CV.
  *
- * The return value indicates the number of processes we woke.
+ * This guarantees to wake all processes that were sleeping on the CV
+ * at time of call, but processes that add themselves to the list mid-call
+ * will typically not get awakened.
  */
-int
+void
 ConditionVariableBroadcast(ConditionVariable *cv)
 {
-	int			nwoken = 0;
 	int			pgprocno = MyProc->pgprocno;
 	PGPROC	   *proc = NULL;
 	bool		have_sentinel = false;
@@ -287,10 +346,7 @@ ConditionVariableBroadcast(ConditionVariable *cv)
 
 	/* Awaken first waiter, if there was one. */
 	if (proc != NULL)
-	{
 		SetLatch(&proc->procLatch);
-		++nwoken;
-	}
 
 	while (have_sentinel)
 	{
@@ -314,11 +370,6 @@ ConditionVariableBroadcast(ConditionVariable *cv)
 		SpinLockRelease(&cv->mutex);
 
 		if (proc != NULL && proc != MyProc)
-		{
 			SetLatch(&proc->procLatch);
-			++nwoken;
-		}
 	}
-
-	return nwoken;
 }

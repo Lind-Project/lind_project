@@ -3,18 +3,15 @@
  *
  *	Postgres-version-specific routines
  *
- *	Copyright (c) 2010-2017, PostgreSQL Global Development Group
+ *	Copyright (c) 2010-2020, PostgreSQL Global Development Group
  *	src/bin/pg_upgrade/version.c
  */
 
 #include "postgres_fe.h"
 
-#include "pg_upgrade.h"
-
-#include "catalog/pg_class.h"
+#include "catalog/pg_class_d.h"
 #include "fe_utils/string_utils.h"
-
-
+#include "pg_upgrade.h"
 
 /*
  * new_9_0_populate_pg_largeobject_metadata()
@@ -159,7 +156,7 @@ check_for_data_type_usage(ClusterInfo *cluster, const char *typename,
 						  "				  a.atttypid = x.oid ",
 						  typename);
 
-		/* Ranges came in in 9.2 */
+		/* Ranges were introduced in 9.2 */
 		if (GET_MAJOR_VERSION(cluster->major_version) >= 902)
 			appendPQExpBuffer(&querybuf,
 							  "			UNION ALL "
@@ -400,6 +397,38 @@ old_9_6_invalidate_hash_indexes(ClusterInfo *cluster, bool check_mode)
 				   "when executed by psql by the database superuser will recreate all invalid\n"
 				   "indexes; until then, none of these indexes will be used.\n\n",
 				   output_path);
+	}
+	else
+		check_ok();
+}
+
+/*
+ * old_11_check_for_sql_identifier_data_type_usage()
+ *	11 -> 12
+ *	In 12, the sql_identifier data type was switched from name to varchar,
+ *	which does affect the storage (name is by-ref, but not varlena). This
+ *	means user tables using sql_identifier for columns are broken because
+ *	the on-disk format is different.
+ */
+void
+old_11_check_for_sql_identifier_data_type_usage(ClusterInfo *cluster)
+{
+	char		output_path[MAXPGPATH];
+
+	prep_status("Checking for invalid \"sql_identifier\" user columns");
+
+	snprintf(output_path, sizeof(output_path), "tables_using_sql_identifier.txt");
+
+	if (check_for_data_type_usage(cluster, "information_schema.sql_identifier",
+								  output_path))
+	{
+		pg_log(PG_REPORT, "fatal\n");
+		pg_fatal("Your installation contains the \"sql_identifier\" data type in user tables\n"
+				 "and/or indexes.  The on-disk format for this data type has changed, so this\n"
+				 "cluster cannot currently be upgraded.  You can remove the problem tables or\n"
+				 "change the data type to \"name\" and restart the upgrade.\n"
+				 "A list of the problem columns is in the file:\n"
+				 "    %s\n\n", output_path);
 	}
 	else
 		check_ok();

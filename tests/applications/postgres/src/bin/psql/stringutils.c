@@ -1,7 +1,7 @@
 /*
  * psql - the PostgreSQL interactive terminal
  *
- * Copyright (c) 2000-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2000-2020, PostgreSQL Global Development Group
  *
  * src/bin/psql/stringutils.c
  */
@@ -27,8 +27,8 @@
  * delim -		set of non-whitespace separator characters (or NULL)
  * quote -		set of characters that can quote a token (NULL if none)
  * escape -		character that can quote quotes (0 if none)
- * e_strings -	if TRUE, treat E'...' syntax as a valid token
- * del_quotes - if TRUE, strip quotes from the returned token, else return
+ * e_strings -	if true, treat E'...' syntax as a valid token
+ * del_quotes - if true, strip quotes from the returned token, else return
  *				it exactly as found in the string
  * encoding -	the active character-set encoding
  *
@@ -39,7 +39,7 @@
  * a single quote character in the data.  If escape isn't 0, then escape
  * followed by anything (except \0) is a data character too.
  *
- * The combination of e_strings and del_quotes both TRUE is not currently
+ * The combination of e_strings and del_quotes both true is not currently
  * handled.  This could be fixed but it's not needed anywhere at the moment.
  *
  * Note that the string s is _not_ overwritten in this implementation.
@@ -282,6 +282,7 @@ strip_quotes(char *source, char quote, char escape, int encoding)
  * entails_quote -	any of these present?  need outer quotes
  * quote -			doubled within string, affixed to both ends
  * escape -			doubled within string
+ * force_quote -	if true, quote the output even if it doesn't "need" it
  * encoding -		the active character-set encoding
  *
  * Do not use this as a substitute for PQescapeStringConn().  Use it for
@@ -289,12 +290,13 @@ strip_quotes(char *source, char quote, char escape, int encoding)
  */
 char *
 quote_if_needed(const char *source, const char *entails_quote,
-				char quote, char escape, int encoding)
+				char quote, char escape, bool force_quote,
+				int encoding)
 {
 	const char *src;
 	char	   *ret;
 	char	   *dst;
-	bool		need_quotes = false;
+	bool		need_quotes = force_quote;
 
 	Assert(source != NULL);
 	Assert(quote != '\0');

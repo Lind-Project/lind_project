@@ -4,7 +4,7 @@
  *	  Support routines for scanning Values lists
  *	  ("VALUES (...), (...), ..." in rangetable).
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -25,6 +25,7 @@
 
 #include "executor/executor.h"
 #include "executor/nodeValuesscan.h"
+#include "jit/jit.h"
 #include "optimizer/clauses.h"
 #include "utils/expandeddatum.h"
 
@@ -90,7 +91,6 @@ ValuesNext(ValuesScanState *node)
 		MemoryContext oldContext;
 		Datum	   *values;
 		bool	   *isnull;
-		Form_pg_attribute *att;
 		ListCell   *lc;
 		int			resind;
 
@@ -121,6 +121,10 @@ ValuesNext(ValuesScanState *node)
 			 * anything in this transient state linking into permanent state.
 			 * The only expression type that might wish to do so is a SubPlan,
 			 * and we already checked that there aren't any.
+			 *
+			 * Note that passing parent = NULL also disables JIT compilation
+			 * of the expressions, which is a win, because they're only going
+			 * to be used once under normal circumstances.
 			 */
 			exprstatelist = ExecInitExprList(exprlist, NULL);
 		}
@@ -134,12 +138,13 @@ ValuesNext(ValuesScanState *node)
 		 */
 		values = slot->tts_values;
 		isnull = slot->tts_isnull;
-		att = slot->tts_tupleDescriptor->attrs;
 
 		resind = 0;
 		foreach(lc, exprstatelist)
 		{
 			ExprState  *estate = (ExprState *) lfirst(lc);
+			Form_pg_attribute attr = TupleDescAttr(slot->tts_tupleDescriptor,
+												   resind);
 
 			values[resind] = ExecEvalExpr(estate,
 										  econtext,
@@ -153,7 +158,7 @@ ValuesNext(ValuesScanState *node)
 			 */
 			values[resind] = MakeExpandedObjectReadOnly(values[resind],
 														isnull[resind],
-														att[resind]->attlen);
+														attr->attlen);
 
 			resind++;
 		}
@@ -240,23 +245,22 @@ ExecInitValuesScan(ValuesScan *node, EState *estate, int eflags)
 	ExecAssignExprContext(estate, planstate);
 
 	/*
-	 * tuple table initialization
+	 * Get info about values list, initialize scan slot with it.
 	 */
-	ExecInitResultTupleSlot(estate, &scanstate->ss.ps);
-	ExecInitScanTupleSlot(estate, &scanstate->ss);
+	tupdesc = ExecTypeFromExprList((List *) linitial(node->values_lists));
+	ExecInitScanTupleSlot(estate, &scanstate->ss, tupdesc, &TTSOpsVirtual);
+
+	/*
+	 * Initialize result type and projection.
+	 */
+	ExecInitResultTypeTL(&scanstate->ss.ps);
+	ExecAssignScanProjectionInfo(&scanstate->ss);
 
 	/*
 	 * initialize child expressions
 	 */
 	scanstate->ss.ps.qual =
 		ExecInitQual(node->scan.plan.qual, (PlanState *) scanstate);
-
-	/*
-	 * get info about values list
-	 */
-	tupdesc = ExecTypeFromExprList((List *) linitial(node->values_lists));
-
-	ExecAssignScanType(&scanstate->ss, tupdesc);
 
 	/*
 	 * Other node-specific setup
@@ -292,17 +296,25 @@ ExecInitValuesScan(ValuesScan *node, EState *estate, int eflags)
 		if (estate->es_subplanstates &&
 			contain_subplans((Node *) exprs))
 		{
+			int			saved_jit_flags;
+
+			/*
+			 * As these expressions are only used once, disable JIT for them.
+			 * This is worthwhile because it's common to insert significant
+			 * amounts of data via VALUES().  Note that this doesn't prevent
+			 * use of JIT *within* a subplan, since that's initialized
+			 * separately; this just affects the upper-level subexpressions.
+			 */
+			saved_jit_flags = estate->es_jit_flags;
+			estate->es_jit_flags = PGJIT_NONE;
+
 			scanstate->exprstatelists[i] = ExecInitExprList(exprs,
 															&scanstate->ss.ps);
+
+			estate->es_jit_flags = saved_jit_flags;
 		}
 		i++;
 	}
-
-	/*
-	 * Initialize result tuple type and projection info.
-	 */
-	ExecAssignResultTypeFromTL(&scanstate->ss.ps);
-	ExecAssignScanProjectionInfo(&scanstate->ss);
 
 	return scanstate;
 }
@@ -326,7 +338,8 @@ ExecEndValuesScan(ValuesScanState *node)
 	/*
 	 * clean out the tuple table
 	 */
-	ExecClearTuple(node->ss.ps.ps_ResultTupleSlot);
+	if (node->ss.ps.ps_ResultTupleSlot)
+		ExecClearTuple(node->ss.ps.ps_ResultTupleSlot);
 	ExecClearTuple(node->ss.ss_ScanTupleSlot);
 }
 
@@ -339,7 +352,8 @@ ExecEndValuesScan(ValuesScanState *node)
 void
 ExecReScanValuesScan(ValuesScanState *node)
 {
-	ExecClearTuple(node->ss.ps.ps_ResultTupleSlot);
+	if (node->ss.ps.ps_ResultTupleSlot)
+		ExecClearTuple(node->ss.ps.ps_ResultTupleSlot);
 
 	ExecScanReScan(&node->ss);
 

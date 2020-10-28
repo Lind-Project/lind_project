@@ -7,15 +7,10 @@
 #include "postgres.h"
 
 #include "mb/pg_wchar.h"
-#include "utils/memutils.h"
-#include "utils/palloc.h"
-
-#include "plpython.h"
-
-#include "plpy_util.h"
-
 #include "plpy_elog.h"
-
+#include "plpy_util.h"
+#include "plpython.h"
+#include "utils/memutils.h"
 
 /*
  * Convert a Python unicode object to a Python string/bytes object in
@@ -85,7 +80,7 @@ PLyUnicode_Bytes(PyObject *unicode)
  * function.  The result is palloc'ed.
  *
  * Note that this function is disguised as PyString_AsString() when
- * using Python 3.  That function retuns a pointer into the internal
+ * using Python 3.  That function returns a pointer into the internal
  * memory of the argument, which isn't exactly the interface of this
  * function.  But in either case you get a rather short-lived
  * reference that you ought to better leave alone.

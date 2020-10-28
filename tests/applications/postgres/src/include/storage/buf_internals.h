@@ -5,7 +5,7 @@
  *	  strategy.
  *
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * src/include/storage/buf_internals.h
@@ -15,16 +15,15 @@
 #ifndef BUFMGR_INTERNALS_H
 #define BUFMGR_INTERNALS_H
 
+#include "port/atomics.h"
 #include "storage/buf.h"
 #include "storage/bufmgr.h"
 #include "storage/latch.h"
 #include "storage/lwlock.h"
 #include "storage/shmem.h"
 #include "storage/smgr.h"
-#include "port/atomics.h"
 #include "storage/spin.h"
 #include "utils/relcache.h"
-
 
 /*
  * Buffer state is a single 32-bit variable where following data is combined.
@@ -52,7 +51,7 @@
 /*
  * Flags for buffer descriptors
  *
- * Note: TAG_VALID essentially means that there is a buffer hashtable
+ * Note: BM_TAG_VALID essentially means that there is a buffer hashtable
  * entry associated with the buffer's tag.
  */
 #define BM_LOCKED				(1U << 22)	/* buffer header is locked */
@@ -204,7 +203,7 @@ typedef struct BufferDesc
  * Note that local buffer descriptors aren't forced to be aligned - as there's
  * no concurrent access to those it's unlikely to be beneficial.
  *
- * We use 64bit as the cache line size here, because that's the most common
+ * We use a 64-byte cache line size here, because that's the most common
  * size. Making it bigger would be a waste of memory. Even if running on a
  * platform with either 32 or 128 byte line sizes, it's good to align to
  * boundaries and avoid false sharing.
@@ -307,16 +306,17 @@ extern void ScheduleBufferTagForWriteback(WritebackContext *context, BufferTag *
 
 /* freelist.c */
 extern BufferDesc *StrategyGetBuffer(BufferAccessStrategy strategy,
-				  uint32 *buf_state);
+									 uint32 *buf_state);
 extern void StrategyFreeBuffer(BufferDesc *buf);
 extern bool StrategyRejectBuffer(BufferAccessStrategy strategy,
-					 BufferDesc *buf);
+								 BufferDesc *buf);
 
 extern int	StrategySyncStart(uint32 *complete_passes, uint32 *num_buf_alloc);
 extern void StrategyNotifyBgWriter(int bgwprocno);
 
 extern Size StrategyShmemSize(void);
 extern void StrategyInitialize(bool init);
+extern bool have_free_buffer(void);
 
 /* buf_table.c */
 extern Size BufTableShmemSize(int size);
@@ -327,13 +327,14 @@ extern int	BufTableInsert(BufferTag *tagPtr, uint32 hashcode, int buf_id);
 extern void BufTableDelete(BufferTag *tagPtr, uint32 hashcode);
 
 /* localbuf.c */
-extern void LocalPrefetchBuffer(SMgrRelation smgr, ForkNumber forkNum,
-					BlockNumber blockNum);
+extern PrefetchBufferResult PrefetchLocalBuffer(SMgrRelation smgr,
+												ForkNumber forkNum,
+												BlockNumber blockNum);
 extern BufferDesc *LocalBufferAlloc(SMgrRelation smgr, ForkNumber forkNum,
-				 BlockNumber blockNum, bool *foundPtr);
+									BlockNumber blockNum, bool *foundPtr);
 extern void MarkLocalBufferDirty(Buffer buffer);
 extern void DropRelFileNodeLocalBuffers(RelFileNode rnode, ForkNumber forkNum,
-							BlockNumber firstDelBlock);
+										BlockNumber firstDelBlock);
 extern void DropRelFileNodeAllLocalBuffers(RelFileNode rnode);
 extern void AtEOXact_LocalBuffers(bool isCommit);
 

@@ -3,7 +3,7 @@
  * jsonb_util.c
  *	  converting between Jsonb and JsonbValues, and iterating.
  *
- * Copyright (c) 2014-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2014-2020, PostgreSQL Global Development Group
  *
  *
  * IDENTIFICATION
@@ -13,10 +13,14 @@
  */
 #include "postgres.h"
 
-#include "access/hash.h"
 #include "catalog/pg_collation.h"
+#include "catalog/pg_type.h"
+#include "common/hashfn.h"
+#include "common/jsonapi.h"
 #include "miscadmin.h"
 #include "utils/builtins.h"
+#include "utils/datetime.h"
+#include "utils/json.h"
 #include "utils/jsonb.h"
 #include "utils/memutils.h"
 #include "utils/varlena.h"
@@ -34,8 +38,8 @@
 #define JSONB_MAX_PAIRS (Min(MaxAllocSize / sizeof(JsonbPair), JB_CMASK))
 
 static void fillJsonbValue(JsonbContainer *container, int index,
-			   char *base_addr, uint32 offset,
-			   JsonbValue *result);
+						   char *base_addr, uint32 offset,
+						   JsonbValue *result);
 static bool equalsJsonbScalarValue(JsonbValue *a, JsonbValue *b);
 static int	compareJsonbScalarValue(JsonbValue *a, JsonbValue *b);
 static Jsonb *convertToJsonb(JsonbValue *val);
@@ -56,11 +60,13 @@ static void appendKey(JsonbParseState *pstate, JsonbValue *scalarVal);
 static void appendValue(JsonbParseState *pstate, JsonbValue *scalarVal);
 static void appendElement(JsonbParseState *pstate, JsonbValue *scalarVal);
 static int	lengthCompareJsonbStringValue(const void *a, const void *b);
+static int	lengthCompareJsonbString(const char *val1, int len1,
+									 const char *val2, int len2);
 static int	lengthCompareJsonbPair(const void *a, const void *b, void *arg);
 static void uniqueifyJsonbObject(JsonbValue *object);
 static JsonbValue *pushJsonbValueScalar(JsonbParseState **pstate,
-					 JsonbIteratorToken seq,
-					 JsonbValue *scalarVal);
+										JsonbIteratorToken seq,
+										JsonbValue *scalarVal);
 
 /*
  * Turn an in-memory JsonbValue into a Jsonb for on-disk storage.
@@ -242,6 +248,10 @@ compareJsonbContainers(JsonbContainer *a, JsonbContainer *b)
 						break;
 					case jbvBinary:
 						elog(ERROR, "unexpected jbvBinary value");
+						break;
+					case jbvDatetime:
+						elog(ERROR, "unexpected jbvDatetime value");
+						break;
 				}
 			}
 			else
@@ -329,7 +339,6 @@ findJsonbValueFromContainer(JsonbContainer *container, uint32 flags,
 {
 	JEntry	   *children = container->children;
 	int			count = JsonContainerSize(container);
-	JsonbValue *result;
 
 	Assert((flags & ~(JB_FARRAY | JB_FOBJECT)) == 0);
 
@@ -337,10 +346,9 @@ findJsonbValueFromContainer(JsonbContainer *container, uint32 flags,
 	if (count <= 0)
 		return NULL;
 
-	result = palloc(sizeof(JsonbValue));
-
 	if ((flags & JB_FARRAY) && JsonContainerIsArray(container))
 	{
+		JsonbValue *result = palloc(sizeof(JsonbValue));
 		char	   *base_addr = (char *) (children + count);
 		uint32		offset = 0;
 		int			i;
@@ -357,56 +365,90 @@ findJsonbValueFromContainer(JsonbContainer *container, uint32 flags,
 
 			JBE_ADVANCE_OFFSET(offset, children[i]);
 		}
+
+		pfree(result);
 	}
 	else if ((flags & JB_FOBJECT) && JsonContainerIsObject(container))
 	{
-		/* Since this is an object, account for *Pairs* of Jentrys */
-		char	   *base_addr = (char *) (children + count * 2);
-		uint32		stopLow = 0,
-					stopHigh = count;
-
 		/* Object key passed by caller must be a string */
 		Assert(key->type == jbvString);
 
-		/* Binary search on object/pair keys *only* */
-		while (stopLow < stopHigh)
+		return getKeyJsonValueFromContainer(container, key->val.string.val,
+											key->val.string.len, NULL);
+	}
+
+	/* Not found */
+	return NULL;
+}
+
+/*
+ * Find value by key in Jsonb object and fetch it into 'res', which is also
+ * returned.
+ *
+ * 'res' can be passed in as NULL, in which case it's newly palloc'ed here.
+ */
+JsonbValue *
+getKeyJsonValueFromContainer(JsonbContainer *container,
+							 const char *keyVal, int keyLen, JsonbValue *res)
+{
+	JEntry	   *children = container->children;
+	int			count = JsonContainerSize(container);
+	char	   *baseAddr;
+	uint32		stopLow,
+				stopHigh;
+
+	Assert(JsonContainerIsObject(container));
+
+	/* Quick out without a palloc cycle if object is empty */
+	if (count <= 0)
+		return NULL;
+
+	/*
+	 * Binary search the container. Since we know this is an object, account
+	 * for *Pairs* of Jentrys
+	 */
+	baseAddr = (char *) (children + count * 2);
+	stopLow = 0;
+	stopHigh = count;
+	while (stopLow < stopHigh)
+	{
+		uint32		stopMiddle;
+		int			difference;
+		const char *candidateVal;
+		int			candidateLen;
+
+		stopMiddle = stopLow + (stopHigh - stopLow) / 2;
+
+		candidateVal = baseAddr + getJsonbOffset(container, stopMiddle);
+		candidateLen = getJsonbLength(container, stopMiddle);
+
+		difference = lengthCompareJsonbString(candidateVal, candidateLen,
+											  keyVal, keyLen);
+
+		if (difference == 0)
 		{
-			uint32		stopMiddle;
-			int			difference;
-			JsonbValue	candidate;
+			/* Found our key, return corresponding value */
+			int			index = stopMiddle + count;
 
-			stopMiddle = stopLow + (stopHigh - stopLow) / 2;
+			if (!res)
+				res = palloc(sizeof(JsonbValue));
 
-			candidate.type = jbvString;
-			candidate.val.string.val =
-				base_addr + getJsonbOffset(container, stopMiddle);
-			candidate.val.string.len = getJsonbLength(container, stopMiddle);
+			fillJsonbValue(container, index, baseAddr,
+						   getJsonbOffset(container, index),
+						   res);
 
-			difference = lengthCompareJsonbStringValue(&candidate, key);
-
-			if (difference == 0)
-			{
-				/* Found our key, return corresponding value */
-				int			index = stopMiddle + count;
-
-				fillJsonbValue(container, index, base_addr,
-							   getJsonbOffset(container, index),
-							   result);
-
-				return result;
-			}
+			return res;
+		}
+		else
+		{
+			if (difference < 0)
+				stopLow = stopMiddle + 1;
 			else
-			{
-				if (difference < 0)
-					stopLow = stopMiddle + 1;
-				else
-					stopHigh = stopMiddle;
-			}
+				stopHigh = stopMiddle;
 		}
 	}
 
 	/* Not found */
-	pfree(result);
 	return NULL;
 }
 
@@ -510,7 +552,7 @@ fillJsonbValue(JsonbContainer *container, int index,
  * "raw scalar" pseudo array to append it - the actual scalar should be passed
  * next and it will be added as the only member of the array.
  *
- * Values of type jvbBinary, which are rolled up arrays and objects,
+ * Values of type jbvBinary, which are rolled up arrays and objects,
  * are unpacked before being added to the result.
  */
 JsonbValue *
@@ -901,7 +943,7 @@ iteratorFromContainer(JsonbContainer *container, JsonbIterator *parent)
 {
 	JsonbIterator *it;
 
-	it = palloc(sizeof(JsonbIterator));
+	it = palloc0(sizeof(JsonbIterator));
 	it->container = container;
 	it->parent = parent;
 	it->nElems = JsonContainerSize(container);
@@ -1009,6 +1051,7 @@ JsonbDeepContains(JsonbIterator **val, JsonbIterator **mContained)
 		for (;;)
 		{
 			JsonbValue *lhsVal; /* lhsVal is from pair in lhs object */
+			JsonbValue	lhsValBuf;
 
 			rcont = JsonbIteratorNext(mContained, &vcontained, false);
 
@@ -1021,12 +1064,14 @@ JsonbDeepContains(JsonbIterator **val, JsonbIterator **mContained)
 				return true;
 
 			Assert(rcont == WJB_KEY);
+			Assert(vcontained.type == jbvString);
 
 			/* First, find value by key... */
-			lhsVal = findJsonbValueFromContainer((*val)->container,
-												 JB_FOBJECT,
-												 &vcontained);
-
+			lhsVal =
+				getKeyJsonValueFromContainer((*val)->container,
+											 vcontained.val.string.val,
+											 vcontained.val.string.len,
+											 &lhsValBuf);
 			if (!lhsVal)
 				return false;
 
@@ -1250,6 +1295,49 @@ JsonbHashScalarValue(const JsonbValue *scalarVal, uint32 *hash)
 }
 
 /*
+ * Hash a value to a 64-bit value, with a seed. Otherwise, similar to
+ * JsonbHashScalarValue.
+ */
+void
+JsonbHashScalarValueExtended(const JsonbValue *scalarVal, uint64 *hash,
+							 uint64 seed)
+{
+	uint64		tmp;
+
+	switch (scalarVal->type)
+	{
+		case jbvNull:
+			tmp = seed + 0x01;
+			break;
+		case jbvString:
+			tmp = DatumGetUInt64(hash_any_extended((const unsigned char *) scalarVal->val.string.val,
+												   scalarVal->val.string.len,
+												   seed));
+			break;
+		case jbvNumeric:
+			tmp = DatumGetUInt64(DirectFunctionCall2(hash_numeric_extended,
+													 NumericGetDatum(scalarVal->val.numeric),
+													 UInt64GetDatum(seed)));
+			break;
+		case jbvBool:
+			if (seed)
+				tmp = DatumGetUInt64(DirectFunctionCall2(hashcharextended,
+														 BoolGetDatum(scalarVal->val.boolean),
+														 UInt64GetDatum(seed)));
+			else
+				tmp = scalarVal->val.boolean ? 0x02 : 0x04;
+
+			break;
+		default:
+			elog(ERROR, "invalid jsonb scalar type");
+			break;
+	}
+
+	*hash = ROTATE_HIGH_AND_LOW_32BITS(*hash);
+	*hash ^= tmp;
+}
+
+/*
  * Are two scalar JsonbValues of the same type a and b equal?
  */
 static bool
@@ -1275,7 +1363,7 @@ equalsJsonbScalarValue(JsonbValue *aScalar, JsonbValue *bScalar)
 		}
 	}
 	elog(ERROR, "jsonb scalar type mismatch");
-	return -1;
+	return false;
 }
 
 /*
@@ -1320,7 +1408,7 @@ compareJsonbScalarValue(JsonbValue *aScalar, JsonbValue *bScalar)
 
 
 /*
- * Functions for manipulating the resizeable buffer used by convertJsonb and
+ * Functions for manipulating the resizable buffer used by convertJsonb and
  * its subroutines.
  */
 
@@ -1698,6 +1786,22 @@ convertJsonbScalar(StringInfo buffer, JEntry *jentry, JsonbValue *scalarVal)
 				JENTRY_ISBOOL_TRUE : JENTRY_ISBOOL_FALSE;
 			break;
 
+		case jbvDatetime:
+			{
+				char		buf[MAXDATELEN + 1];
+				size_t		len;
+
+				JsonEncodeDateTime(buf,
+								   scalarVal->val.datetime.value,
+								   scalarVal->val.datetime.typid,
+								   &scalarVal->val.datetime.tz);
+				len = strlen(buf);
+				appendToBuffer(buffer, buf, len);
+
+				*jentry = len;
+			}
+			break;
+
 		default:
 			elog(ERROR, "invalid jsonb scalar type");
 	}
@@ -1720,21 +1824,27 @@ lengthCompareJsonbStringValue(const void *a, const void *b)
 {
 	const JsonbValue *va = (const JsonbValue *) a;
 	const JsonbValue *vb = (const JsonbValue *) b;
-	int			res;
 
 	Assert(va->type == jbvString);
 	Assert(vb->type == jbvString);
 
-	if (va->val.string.len == vb->val.string.len)
-	{
-		res = memcmp(va->val.string.val, vb->val.string.val, va->val.string.len);
-	}
-	else
-	{
-		res = (va->val.string.len > vb->val.string.len) ? 1 : -1;
-	}
+	return lengthCompareJsonbString(va->val.string.val, va->val.string.len,
+									vb->val.string.val, vb->val.string.len);
+}
 
-	return res;
+/*
+ * Subroutine for lengthCompareJsonbStringValue
+ *
+ * This is also useful separately to implement binary search on
+ * JsonbContainers.
+ */
+static int
+lengthCompareJsonbString(const char *val1, int len1, const char *val2, int len2)
+{
+	if (len1 == len2)
+		return memcmp(val1, val2, len1);
+	else
+		return len1 > len2 ? 1 : -1;
 }
 
 /*

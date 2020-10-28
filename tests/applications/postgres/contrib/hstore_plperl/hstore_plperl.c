@@ -1,11 +1,9 @@
 #include "postgres.h"
 
-#undef _
-
 #include "fmgr.h"
+#include "hstore/hstore.h"
 #include "plperl.h"
 #include "plperl_helpers.h"
-#include "hstore.h"
 
 PG_MODULE_MAGIC;
 
@@ -68,7 +66,7 @@ Datum
 hstore_to_plperl(PG_FUNCTION_ARGS)
 {
 	dTHX;
-	HStore	   *in = PG_GETARG_HS(0);
+	HStore	   *in = PG_GETARG_HSTORE_P(0);
 	int			i;
 	int			count = HS_COUNT(in);
 	char	   *base = STRPTR(in);
@@ -118,7 +116,7 @@ plperl_to_hstore(PG_FUNCTION_ARGS)
 	if (SvTYPE(in) != SVt_PVHV)
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 (errmsg("cannot transform non-hash Perl value to hstore"))));
+				 errmsg("cannot transform non-hash Perl value to hstore")));
 	hv = (HV *) in;
 
 	pcount = hv_iterinit(hv);

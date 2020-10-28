@@ -315,17 +315,17 @@ set up for recursive handling of subqueries
   preprocess target list for non-SELECT queries
   handle UNION/INTERSECT/EXCEPT, GROUP BY, HAVING, aggregates,
 	ORDER BY, DISTINCT, LIMIT
---query_planner()
+---query_planner()
    make list of base relations used in query
    split up the qual into restrictions (a=1) and joins (b=c)
    find qual clauses that enable merge and hash joins
 ----make_one_rel()
-     set_base_rel_pathlist()
+     set_base_rel_pathlists()
       find seqscan and all index paths for each base relation
       find selectivity of columns used in joins
      make_rel_from_joinlist()
       hand off join subproblems to a plugin, GEQO, or standard_join_search()
------standard_join_search()
+------standard_join_search()
       call join_search_one_level() for each level of join tree needed
       join_search_one_level():
         For each joinrel of the prior level, do make_rels_by_clause_joins()
@@ -361,7 +361,16 @@ RelOptInfo      - a relation or joined relations
                    join clauses)
 
  Path           - every way to generate a RelOptInfo(sequential,index,joins)
-  SeqScan       - represents a sequential scan plan
+  A plain Path node can represent several simple plans, per its pathtype:
+    T_SeqScan   - sequential scan
+    T_SampleScan - tablesample scan
+    T_FunctionScan - function-in-FROM scan
+    T_TableFuncScan - table function scan
+    T_ValuesScan - VALUES scan
+    T_CteScan   - CTE (WITH) scan
+    T_NamedTuplestoreScan - ENR scan
+    T_WorkTableScan - scan worktable of a recursive CTE
+    T_Result    - childless Result plan node (used for FROM-less SELECT)
   IndexPath     - index scan
   BitmapHeapPath - top of a bitmapped index scan
   TidPath       - scan by CTID
@@ -370,7 +379,7 @@ RelOptInfo      - a relation or joined relations
   CustomPath    - for custom scan providers
   AppendPath    - append multiple subpaths together
   MergeAppendPath - merge multiple subpaths, preserving their common sort order
-  ResultPath    - a childless Result plan node (used for FROM-less SELECT)
+  GroupResultPath - childless Result plan node (used for degenerate grouping)
   MaterialPath  - a Material plan node
   UniquePath    - remove duplicate rows (either by hashing or sorting)
   GatherPath    - collect the results of parallel workers
@@ -565,10 +574,12 @@ of scanning the relation and the resulting ordering of the tuples.
 Sequential scan Paths have NIL pathkeys, indicating no known ordering.
 Index scans have Path.pathkeys that represent the chosen index's ordering,
 if any.  A single-key index would create a single-PathKey list, while a
-multi-column index generates a list with one element per index column.
-(Actually, since an index can be scanned either forward or backward, there
-are two possible sort orders and two possible PathKey lists it can
-generate.)
+multi-column index generates a list with one element per key index column.
+Non-key columns specified in the INCLUDE clause of covering indexes don't
+have corresponding PathKeys in the list, because the have no influence on
+index ordering.  (Actually, since an index can be scanned either forward or
+backward, there are two possible sort orders and two possible PathKey lists
+it can generate.)
 
 Note that a bitmap scan has NIL pathkeys since we can say nothing about
 the overall order of its result.  Also, an indexscan on an unordered type
@@ -998,6 +1009,7 @@ considered useful for each step.  Currently, we may create these types of
 additional RelOptInfos during upper-level planning:
 
 UPPERREL_SETOP		result of UNION/INTERSECT/EXCEPT, if any
+UPPERREL_PARTIAL_GROUP_AGG	result of partial grouping/aggregation, if any
 UPPERREL_GROUP_AGG	result of grouping/aggregation, if any
 UPPERREL_WINDOW		result of window functions, if any
 UPPERREL_DISTINCT	result of "SELECT DISTINCT", if any
@@ -1075,3 +1087,70 @@ be desirable to postpone the Gather stage until as near to the top of the
 plan as possible.  Expanding the range of cases in which more work can be
 pushed below the Gather (and costing them accurately) is likely to keep us
 busy for a long time to come.
+
+Partitionwise joins
+-------------------
+
+A join between two similarly partitioned tables can be broken down into joins
+between their matching partitions if there exists an equi-join condition
+between the partition keys of the joining tables. The equi-join between
+partition keys implies that all join partners for a given row in one
+partitioned table must be in the corresponding partition of the other
+partitioned table. Because of this the join between partitioned tables to be
+broken into joins between the matching partitions. The resultant join is
+partitioned in the same way as the joining relations, thus allowing an N-way
+join between similarly partitioned tables having equi-join condition between
+their partition keys to be broken down into N-way joins between their matching
+partitions. This technique of breaking down a join between partitioned tables
+into joins between their partitions is called partitionwise join. We will use
+term "partitioned relation" for either a partitioned table or a join between
+compatibly partitioned tables.
+
+Even if the joining relations don't have exactly the same partition bounds,
+partitionwise join can still be applied by using an advanced
+partition-matching algorithm.  For both the joining relations, the algorithm
+checks whether every partition of one joining relation only matches one
+partition of the other joining relation at most.  In such a case the join
+between the joining relations can be broken down into joins between the
+matching partitions.  The join relation can then be considered partitioned.
+The algorithm produces the pairs of the matching partitions, plus the
+partition bounds for the join relation, to allow partitionwise join for
+computing the join.  The algorithm is implemented in partition_bounds_merge().
+For an N-way join relation considered partitioned this way, not every pair of
+joining relations can use partitionwise join.  For example:
+
+	(A leftjoin B on (Pab)) innerjoin C on (Pac)
+
+where A, B, and C are partitioned tables, and A has an extra partition
+compared to B and C.  When considering partitionwise join for the join {A B},
+the extra partition of A doesn't have a matching partition on the nullable
+side, which is the case that the current implementation of partitionwise join
+can't handle.  So {A B} is not considered partitioned, and the pair of {A B}
+and C considered for the 3-way join can't use partitionwise join.  On the
+other hand, the pair of {A C} and B can use partitionwise join because {A C}
+is considered partitioned by eliminating the extra partition (see identity 1
+on outer join reordering).  Whether an N-way join can use partitionwise join
+is determined based on the first pair of joining relations that are both
+partitioned and can use partitionwise join.
+
+The partitioning properties of a partitioned relation are stored in its
+RelOptInfo.  The information about data types of partition keys are stored in
+PartitionSchemeData structure. The planner maintains a list of canonical
+partition schemes (distinct PartitionSchemeData objects) so that RelOptInfo of
+any two partitioned relations with same partitioning scheme point to the same
+PartitionSchemeData object.  This reduces memory consumed by
+PartitionSchemeData objects and makes it easy to compare the partition schemes
+of joining relations.
+
+Partitionwise aggregates/grouping
+---------------------------------
+
+If the GROUP BY clause contains all of the partition keys, all the rows
+that belong to a given group must come from a single partition; therefore,
+aggregation can be done completely separately for each partition. Otherwise,
+partial aggregates can be computed for each partition, and then finalized
+after appending the results from the individual partitions.  This technique of
+breaking down aggregation or grouping over a partitioned relation into
+aggregation or grouping over its partitions is called partitionwise
+aggregation.  Especially when the partition keys match the GROUP BY clause,
+this can be significantly faster than the regular method.

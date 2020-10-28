@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>21.5. Default Roles</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="prev" href="role-removal.html" title="21.4. Dropping Roles" /><link rel="next" href="perm-functions.html" title="21.6. Function Security" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">21.5. Default Roles</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="role-removal.html" title="21.4. Dropping Roles">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="user-manag.html" title="Chapter 21. Database Roles">Up</a></td><th width="60%" align="center">Chapter 21. Database Roles</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="perm-functions.html" title="21.6. Function Security">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="DEFAULT-ROLES"><div class="titlepage"><div><div><h2 class="title" style="clear: both">21.5. Default Roles</h2></div></div></div><a id="id-1.6.8.9.2" class="indexterm"></a><p>
+   <span class="productname">PostgreSQL</span> provides a set of default roles
+   which provide access to certain, commonly needed, privileged capabilities
+   and information.  Administrators can GRANT these roles to users and/or
+   other roles in their environment, providing those users with access to
+   the specified capabilities and information.
+  </p><p>
+   The default roles are described in <a class="xref" href="default-roles.html#DEFAULT-ROLES-TABLE" title="Table 21.1. Default Roles">Table 21.1</a>.
+   Note that the specific permissions for each of the default roles may
+   change in the future as additional capabilities are added.  Administrators
+   should monitor the release notes for changes.
+  </p><div class="table" id="DEFAULT-ROLES-TABLE"><p class="title"><strong>Table 21.1. Default Roles</strong></p><div class="table-contents"><table class="table" summary="Default Roles" border="1"><colgroup><col class="col1" /><col class="col2" /></colgroup><thead><tr><th>Role</th><th>Allowed Access</th></tr></thead><tbody><tr><td>pg_read_all_settings</td><td>Read all configuration variables, even those normally visible only to
+       superusers.</td></tr><tr><td>pg_read_all_stats</td><td>Read all pg_stat_* views and use various statistics related extensions,
+       even those normally visible only to superusers.</td></tr><tr><td>pg_stat_scan_tables</td><td>Execute monitoring functions that may take <code class="literal">ACCESS SHARE</code> locks on tables,
+       potentially for a long time.</td></tr><tr><td>pg_monitor</td><td>Read/execute various monitoring views and functions.
+       This role is a member of <code class="literal">pg_read_all_settings</code>,
+       <code class="literal">pg_read_all_stats</code> and
+       <code class="literal">pg_stat_scan_tables</code>.</td></tr><tr><td>pg_signal_backend</td><td>Signal another backend to cancel a query or terminate its session.</td></tr><tr><td>pg_read_server_files</td><td>Allow reading files from any location the database can access on the server with COPY and
+       other file-access functions.</td></tr><tr><td>pg_write_server_files</td><td>Allow writing to files in any location the database can access on the server with COPY and
+       other file-access functions.</td></tr><tr><td>pg_execute_server_program</td><td>Allow executing programs on the database server as the user the database runs as with
+       COPY and other functions which allow executing a server-side program.</td></tr></tbody></table></div></div><br class="table-break" /><p>
+  The <code class="literal">pg_monitor</code>, <code class="literal">pg_read_all_settings</code>,
+  <code class="literal">pg_read_all_stats</code> and <code class="literal">pg_stat_scan_tables</code>
+  roles are intended to allow administrators to easily configure a role for the
+  purpose of monitoring the database server. They grant a set of common privileges
+  allowing the role to read various useful configuration settings, statistics and
+  other system information normally restricted to superusers.
+  </p><p>
+  The <code class="literal">pg_signal_backend</code> role is intended to allow
+  administrators to enable trusted, but non-superuser, roles to send signals
+  to other backends. Currently this role enables sending of signals for
+  canceling a query on another backend or terminating its session. A user
+  granted this role cannot however send signals to a backend owned by a
+  superuser.  See <a class="xref" href="functions-admin.html#FUNCTIONS-ADMIN-SIGNAL" title="9.27.2. Server Signaling Functions">Section 9.27.2</a>.
+  </p><p>
+  The <code class="literal">pg_read_server_files</code>, <code class="literal">pg_write_server_files</code> and
+  <code class="literal">pg_execute_server_program</code> roles are intended to allow administrators to have
+  trusted, but non-superuser, roles which are able to access files and run programs on the
+  database server as the user the database runs as.  As these roles are able to access any file on
+  the server file system, they bypass all database-level permission checks when accessing files
+  directly and they could be used to gain superuser-level access, therefore
+  great care should be taken when granting these roles to users.
+  </p><p>
+  Care should be taken when granting these roles to ensure they are only used where
+  needed and with the understanding that these roles grant access to privileged
+  information.
+  </p><p>
+   Administrators can grant access to these roles to users using the
+   <a class="xref" href="sql-grant.html" title="GRANT"><span class="refentrytitle">GRANT</span></a> command, for example:
+
+</p><pre class="programlisting">
+GRANT pg_signal_backend TO admin_user;
+</pre><p>
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="role-removal.html" title="21.4. Dropping Roles">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="user-manag.html" title="Chapter 21. Database Roles">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="perm-functions.html" title="21.6. Function Security">Next</a></td></tr><tr><td width="40%" align="left" valign="top">21.4. Dropping Roles </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 21.6. Function Security</td></tr></table></div></body></html>

@@ -27,8 +27,8 @@ NAME = plperl
 
 OBJS = plperl.o SPI.o Util.o $(WIN32RES)
 
-DATA = plperl.control plperl--1.0.sql plperl--unpackaged--1.0.sql \
-       plperlu.control plperlu--1.0.sql plperlu--unpackaged--1.0.sql
+DATA = plperl.control plperl--1.0.sql \
+       plperlu.control plperlu--1.0.sql
 
 PERLCHUNKS = plc_perlboot.pl plc_trusted.pl
 
@@ -55,8 +55,10 @@ endif # win32
 
 SHLIB_LINK = $(perl_embed_ldflags)
 
-REGRESS_OPTS = --dbname=$(PL_TESTDB) --load-extension=plperl  --load-extension=plperlu
-REGRESS = plperl plperl_lc plperl_trigger plperl_shared plperl_elog plperl_util plperl_init plperlu plperl_array
+REGRESS_OPTS = --dbname=$(PL_TESTDB)
+REGRESS = plperl_setup plperl plperl_lc plperl_trigger plperl_shared \
+	plperl_elog plperl_util plperl_init plperlu plperl_array \
+	plperl_call plperl_transaction
 # if Perl can support two interpreters in one backend,
 # test plperl-and-plperlu cases
 ifneq ($(PERL),)
@@ -82,13 +84,14 @@ perlchunks.h: $(PERLCHUNKS)
 
 all: all-lib
 
-SPI.c: SPI.xs plperl_helpers.h
+%.c: %.xs
 	@if [ x"$(perl_privlibexp)" = x"" ]; then echo "configure switch --with-perl was not specified."; exit 1; fi
+# xsubpp -output option is required for coverage+vpath, but requires Perl 5.9.3
+ifeq ($(enable_coverage)$(vpath_build),yesyes)
+	$(PERL) $(XSUBPPDIR)/ExtUtils/xsubpp -typemap $(perl_privlibexp)/ExtUtils/typemap -output $@ $<
+else
 	$(PERL) $(XSUBPPDIR)/ExtUtils/xsubpp -typemap $(perl_privlibexp)/ExtUtils/typemap $< >$@
-
-Util.c: Util.xs plperl_helpers.h
-	@if [ x"$(perl_privlibexp)" = x"" ]; then echo "configure switch --with-perl was not specified."; exit 1; fi
-	$(PERL) $(XSUBPPDIR)/ExtUtils/xsubpp -typemap $(perl_privlibexp)/ExtUtils/typemap $< >$@
+endif
 
 
 install: all install-lib install-data
@@ -100,7 +103,7 @@ uninstall: uninstall-lib uninstall-data
 
 install-data: installdirs
 	$(INSTALL_DATA) $(addprefix $(srcdir)/, $(DATA)) '$(DESTDIR)$(datadir)/extension/'
-	$(INSTALL_DATA) $(srcdir)/plperl.h $(srcdir)/ppport.h '$(DESTDIR)$(includedir_server)'
+	$(INSTALL_DATA) $(srcdir)/plperl.h $(srcdir)/ppport.h $(srcdir)/plperl_helpers.h '$(DESTDIR)$(includedir_server)'
 
 uninstall-data:
 	rm -f $(addprefix '$(DESTDIR)$(datadir)/extension'/, $(notdir $(DATA)))

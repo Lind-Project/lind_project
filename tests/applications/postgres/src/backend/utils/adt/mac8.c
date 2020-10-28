@@ -11,7 +11,7 @@
  * The following code is written with the assumption that the OUI field
  * size is 24 bits.
  *
- * Portions Copyright (c) 1998-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1998-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *		  src/backend/utils/adt/mac8.c
@@ -21,7 +21,7 @@
 
 #include "postgres.h"
 
-#include "access/hash.h"
+#include "common/hashfn.h"
 #include "libpq/pqformat.h"
 #include "utils/builtins.h"
 #include "utils/inet.h"
@@ -35,7 +35,7 @@
 #define lobits(addr) \
   ((unsigned long)(((addr)->e<<24) | ((addr)->f<<16) | ((addr)->g<<8) | ((addr)->h)))
 
-static unsigned char hex2_to_uchar(const unsigned char *str, const unsigned char *ptr);
+static unsigned char hex2_to_uchar(const unsigned char *ptr, const unsigned char *str);
 
 static const signed char hexlookup[128] = {
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -405,6 +405,15 @@ hashmacaddr8(PG_FUNCTION_ARGS)
 	macaddr8   *key = PG_GETARG_MACADDR8_P(0);
 
 	return hash_any((unsigned char *) key, sizeof(macaddr8));
+}
+
+Datum
+hashmacaddr8extended(PG_FUNCTION_ARGS)
+{
+	macaddr8   *key = PG_GETARG_MACADDR8_P(0);
+
+	return hash_any_extended((unsigned char *) key, sizeof(macaddr8),
+							 PG_GETARG_INT64(1));
 }
 
 /*

@@ -9,7 +9,7 @@
  * though.)
  *
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  *
  *
  * IDENTIFICATION
@@ -19,17 +19,16 @@
  */
 #include "postgres.h"
 
-#include <signal.h>
-#include <unistd.h>
-
 #include "access/xlog.h"
 #include "libpq/pqsignal.h"
 #include "miscadmin.h"
 #include "pgstat.h"
+#include "postmaster/interrupt.h"
 #include "postmaster/startup.h"
 #include "storage/ipc.h"
 #include "storage/latch.h"
 #include "storage/pmsignal.h"
+#include "storage/procsignal.h"
 #include "storage/standby.h"
 #include "utils/guc.h"
 #include "utils/timeout.h"
@@ -40,7 +39,7 @@
  */
 static volatile sig_atomic_t got_SIGHUP = false;
 static volatile sig_atomic_t shutdown_requested = false;
-static volatile sig_atomic_t promote_triggered = false;
+static volatile sig_atomic_t promote_signaled = false;
 
 /*
  * Flag set when executing a restore command, to tell SIGTERM signal handler
@@ -49,8 +48,6 @@ static volatile sig_atomic_t promote_triggered = false;
 static volatile sig_atomic_t in_restore_command = false;
 
 /* Signal handlers */
-static void startupproc_quickdie(SIGNAL_ARGS);
-static void StartupProcSigUsr1Handler(SIGNAL_ARGS);
 static void StartupProcTriggerHandler(SIGNAL_ARGS);
 static void StartupProcSigHupHandler(SIGNAL_ARGS);
 
@@ -60,51 +57,13 @@ static void StartupProcSigHupHandler(SIGNAL_ARGS);
  * --------------------------------
  */
 
-/*
- * startupproc_quickdie() occurs when signalled SIGQUIT by the postmaster.
- *
- * Some backend has bought the farm,
- * so we need to stop what we're doing and exit.
- */
-static void
-startupproc_quickdie(SIGNAL_ARGS)
-{
-	/*
-	 * We DO NOT want to run proc_exit() or atexit() callbacks -- we're here
-	 * because shared memory may be corrupted, so we don't want to try to
-	 * clean up our transaction.  Just nail the windows shut and get out of
-	 * town.  The callbacks wouldn't be safe to run from a signal handler,
-	 * anyway.
-	 *
-	 * Note we do _exit(2) not _exit(0).  This is to force the postmaster into
-	 * a system reset cycle if someone sends a manual SIGQUIT to a random
-	 * backend.  This is necessary precisely because we don't clean up our
-	 * shared memory state.  (The "dead man switch" mechanism in pmsignal.c
-	 * should ensure the postmaster sees this as a crash, too, but no harm in
-	 * being doubly sure.)
-	 */
-	_exit(2);
-}
-
-
-/* SIGUSR1: let latch facility handle the signal */
-static void
-StartupProcSigUsr1Handler(SIGNAL_ARGS)
-{
-	int			save_errno = errno;
-
-	latch_sigusr1_handler();
-
-	errno = save_errno;
-}
-
 /* SIGUSR2: set flag to finish recovery */
 static void
 StartupProcTriggerHandler(SIGNAL_ARGS)
 {
 	int			save_errno = errno;
 
-	promote_triggered = true;
+	promote_signaled = true;
 	WakeupRecovery();
 
 	errno = save_errno;
@@ -137,17 +96,51 @@ StartupProcShutdownHandler(SIGNAL_ARGS)
 	errno = save_errno;
 }
 
-/* Handle SIGHUP and SIGTERM signals of startup process */
+/*
+ * Re-read the config file.
+ *
+ * If one of the critical walreceiver options has changed, flag xlog.c
+ * to restart it.
+ */
+static void
+StartupRereadConfig(void)
+{
+	char	   *conninfo = pstrdup(PrimaryConnInfo);
+	char	   *slotname = pstrdup(PrimarySlotName);
+	bool		tempSlot = wal_receiver_create_temp_slot;
+	bool		conninfoChanged;
+	bool		slotnameChanged;
+	bool		tempSlotChanged = false;
+
+	ProcessConfigFile(PGC_SIGHUP);
+
+	conninfoChanged = strcmp(conninfo, PrimaryConnInfo) != 0;
+	slotnameChanged = strcmp(slotname, PrimarySlotName) != 0;
+
+	/*
+	 * wal_receiver_create_temp_slot is used only when we have no slot
+	 * configured.  We do not need to track this change if it has no effect.
+	 */
+	if (!slotnameChanged && strcmp(PrimarySlotName, "") == 0)
+		tempSlotChanged = tempSlot != wal_receiver_create_temp_slot;
+	pfree(conninfo);
+	pfree(slotname);
+
+	if (conninfoChanged || slotnameChanged || tempSlotChanged)
+		StartupRequestWalReceiverRestart();
+}
+
+/* Handle various signals that might be sent to the startup process */
 void
 HandleStartupProcInterrupts(void)
 {
 	/*
-	 * Check if we were requested to re-read config file.
+	 * Process any requests or signals received recently.
 	 */
 	if (got_SIGHUP)
 	{
 		got_SIGHUP = false;
-		ProcessConfigFile(PGC_SIGHUP);
+		StartupRereadConfig();
 	}
 
 	/*
@@ -162,6 +155,10 @@ HandleStartupProcInterrupts(void)
 	 */
 	if (IsUnderPostmaster && !PostmasterIsAlive())
 		exit(1);
+
+	/* Process barrier events */
+	if (ProcSignalBarrierPending)
+		ProcessProcSignalBarrier();
 }
 
 
@@ -178,20 +175,16 @@ StartupProcessMain(void)
 	pqsignal(SIGHUP, StartupProcSigHupHandler); /* reload config file */
 	pqsignal(SIGINT, SIG_IGN);	/* ignore query cancel */
 	pqsignal(SIGTERM, StartupProcShutdownHandler);	/* request shutdown */
-	pqsignal(SIGQUIT, startupproc_quickdie);	/* hard crash time */
+	pqsignal(SIGQUIT, SignalHandlerForCrashExit);
 	InitializeTimeouts();		/* establishes SIGALRM handler */
 	pqsignal(SIGPIPE, SIG_IGN);
-	pqsignal(SIGUSR1, StartupProcSigUsr1Handler);
+	pqsignal(SIGUSR1, procsignal_sigusr1_handler);
 	pqsignal(SIGUSR2, StartupProcTriggerHandler);
 
 	/*
 	 * Reset some signals that are accepted by postmaster but not here
 	 */
 	pqsignal(SIGCHLD, SIG_DFL);
-	pqsignal(SIGTTIN, SIG_DFL);
-	pqsignal(SIGTTOU, SIG_DFL);
-	pqsignal(SIGCONT, SIG_DFL);
-	pqsignal(SIGWINCH, SIG_DFL);
 
 	/*
 	 * Register timeouts needed for standby mode
@@ -238,13 +231,13 @@ PostRestoreCommand(void)
 }
 
 bool
-IsPromoteTriggered(void)
+IsPromoteSignaled(void)
 {
-	return promote_triggered;
+	return promote_signaled;
 }
 
 void
-ResetPromoteTriggered(void)
+ResetPromoteSignaled(void)
 {
-	promote_triggered = false;
+	promote_signaled = false;
 }

@@ -16,7 +16,7 @@
  * writing is the INET type, where IPv6 values cannot be merged with IPv4
  * values.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -82,9 +82,9 @@ typedef struct InclusionOpaque
 } InclusionOpaque;
 
 static FmgrInfo *inclusion_get_procinfo(BrinDesc *bdesc, uint16 attno,
-					   uint16 procnum);
+										uint16 procnum);
 static FmgrInfo *inclusion_get_strategy_procinfo(BrinDesc *bdesc, uint16 attno,
-								Oid subtype, uint16 strategynum);
+												 Oid subtype, uint16 strategynum);
 
 
 /*
@@ -161,7 +161,7 @@ brin_inclusion_add_value(PG_FUNCTION_ARGS)
 	}
 
 	attno = column->bv_attno;
-	attr = bdesc->bd_tupdesc->attrs[attno - 1];
+	attr = TupleDescAttr(bdesc->bd_tupdesc, attno - 1);
 
 	/*
 	 * If the recorded value is null, copy the new value (which we know to be
@@ -438,7 +438,7 @@ brin_inclusion_consistent(PG_FUNCTION_ARGS)
 			 * It is straightforward to support the equality strategies with
 			 * the contains operator.  Generally, inequality strategies do not
 			 * make much sense for the types which will be used with the
-			 * inclusion BRIN family of opclasses, but is possible to
+			 * inclusion BRIN family of opclasses, but it is possible to
 			 * implement them with logical negation of the left-of and
 			 * right-of operators.
 			 *
@@ -526,7 +526,7 @@ brin_inclusion_union(PG_FUNCTION_ARGS)
 		PG_RETURN_VOID();
 
 	attno = col_a->bv_attno;
-	attr = bdesc->bd_tupdesc->attrs[attno - 1];
+	attr = TupleDescAttr(bdesc->bd_tupdesc, attno - 1);
 
 	/*
 	 * Adjust "allnulls".  If A doesn't have values, just copy the values from
@@ -691,7 +691,7 @@ inclusion_get_strategy_procinfo(BrinDesc *bdesc, uint16 attno, Oid subtype,
 		bool		isNull;
 
 		opfamily = bdesc->bd_index->rd_opfamily[attno - 1];
-		attr = bdesc->bd_tupdesc->attrs[attno - 1];
+		attr = TupleDescAttr(bdesc->bd_tupdesc, attno - 1);
 		tuple = SearchSysCache4(AMOPSTRATEGY, ObjectIdGetDatum(opfamily),
 								ObjectIdGetDatum(attr->atttypid),
 								ObjectIdGetDatum(subtype),

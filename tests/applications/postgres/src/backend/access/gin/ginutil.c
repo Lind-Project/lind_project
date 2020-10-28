@@ -4,7 +4,7 @@
  *	  Utility routines for the Postgres inverted index access method.
  *
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -20,9 +20,11 @@
 #include "access/xloginsert.h"
 #include "catalog/pg_collation.h"
 #include "catalog/pg_type.h"
+#include "commands/vacuum.h"
 #include "miscadmin.h"
 #include "storage/indexfsm.h"
 #include "storage/lmgr.h"
+#include "storage/predicate.h"
 #include "utils/builtins.h"
 #include "utils/index_selfuncs.h"
 #include "utils/typcache.h"
@@ -39,6 +41,7 @@ ginhandler(PG_FUNCTION_ARGS)
 
 	amroutine->amstrategies = 0;
 	amroutine->amsupport = GINNProcs;
+	amroutine->amoptsprocnum = GIN_OPTIONS_PROC;
 	amroutine->amcanorder = false;
 	amroutine->amcanorderbyop = false;
 	amroutine->amcanbackward = false;
@@ -49,8 +52,12 @@ ginhandler(PG_FUNCTION_ARGS)
 	amroutine->amsearchnulls = false;
 	amroutine->amstorage = true;
 	amroutine->amclusterable = false;
-	amroutine->ampredlocks = false;
+	amroutine->ampredlocks = true;
 	amroutine->amcanparallel = false;
+	amroutine->amcaninclude = false;
+	amroutine->amusemaintenanceworkmem = true;
+	amroutine->amparallelvacuumoptions =
+		VACUUM_OPTION_PARALLEL_BULKDEL | VACUUM_OPTION_PARALLEL_CLEANUP;
 	amroutine->amkeytype = InvalidOid;
 
 	amroutine->ambuild = ginbuild;
@@ -62,6 +69,7 @@ ginhandler(PG_FUNCTION_ARGS)
 	amroutine->amcostestimate = gincostestimate;
 	amroutine->amoptions = ginoptions;
 	amroutine->amproperty = NULL;
+	amroutine->ambuildphasename = NULL;
 	amroutine->amvalidate = ginvalidate;
 	amroutine->ambeginscan = ginbeginscan;
 	amroutine->amrescan = ginrescan;
@@ -96,20 +104,22 @@ initGinState(GinState *state, Relation index)
 
 	for (i = 0; i < origTupdesc->natts; i++)
 	{
+		Form_pg_attribute attr = TupleDescAttr(origTupdesc, i);
+
 		if (state->oneCol)
 			state->tupdesc[i] = state->origTupdesc;
 		else
 		{
-			state->tupdesc[i] = CreateTemplateTupleDesc(2, false);
+			state->tupdesc[i] = CreateTemplateTupleDesc(2);
 
 			TupleDescInitEntry(state->tupdesc[i], (AttrNumber) 1, NULL,
 							   INT2OID, -1, 0);
 			TupleDescInitEntry(state->tupdesc[i], (AttrNumber) 2, NULL,
-							   origTupdesc->attrs[i]->atttypid,
-							   origTupdesc->attrs[i]->atttypmod,
-							   origTupdesc->attrs[i]->attndims);
+							   attr->atttypid,
+							   attr->atttypmod,
+							   attr->attndims);
 			TupleDescInitEntryCollation(state->tupdesc[i], (AttrNumber) 2,
-										origTupdesc->attrs[i]->attcollation);
+										attr->attcollation);
 		}
 
 		/*
@@ -126,13 +136,13 @@ initGinState(GinState *state, Relation index)
 		{
 			TypeCacheEntry *typentry;
 
-			typentry = lookup_type_cache(origTupdesc->attrs[i]->atttypid,
+			typentry = lookup_type_cache(attr->atttypid,
 										 TYPECACHE_CMP_PROC_FINFO);
 			if (!OidIsValid(typentry->cmp_proc_finfo.fn_oid))
 				ereport(ERROR,
 						(errcode(ERRCODE_UNDEFINED_FUNCTION),
 						 errmsg("could not identify a comparison function for type %s",
-								format_type_be(origTupdesc->attrs[i]->atttypid))));
+								format_type_be(attr->atttypid))));
 			fmgr_info_copy(&(state->compareFn[i]),
 						   &(typentry->cmp_proc_finfo),
 						   CurrentMemoryContext);
@@ -367,6 +377,14 @@ GinInitMetabuffer(Buffer b)
 	metadata->nDataPages = 0;
 	metadata->nEntries = 0;
 	metadata->ginVersion = GIN_CURRENT_VERSION;
+
+	/*
+	 * Set pd_lower just past the end of the metadata.  This is essential,
+	 * because without doing so, metadata will be lost if xlog.c compresses
+	 * the page.
+	 */
+	((PageHeader) page)->pd_lower =
+		((char *) metadata + sizeof(GinMetaPageData)) - (char *) page;
 }
 
 /*
@@ -514,19 +532,10 @@ ginExtractEntries(GinState *ginstate, OffsetNumber attnum,
 
 	/*
 	 * If the extractValueFn didn't create a nullFlags array, create one,
-	 * assuming that everything's non-null.  Otherwise, run through the array
-	 * and make sure each value is exactly 0 or 1; this ensures binary
-	 * compatibility with the GinNullCategory representation.
+	 * assuming that everything's non-null.
 	 */
 	if (nullFlags == NULL)
 		nullFlags = (bool *) palloc0(*nentries * sizeof(bool));
-	else
-	{
-		for (i = 0; i < *nentries; i++)
-			nullFlags[i] = (nullFlags[i] ? true : false);
-	}
-	/* now we can use the nullFlags as category codes */
-	*categories = (GinNullCategory *) nullFlags;
 
 	/*
 	 * If there's more than one key, sort and unique-ify.
@@ -585,36 +594,29 @@ ginExtractEntries(GinState *ginstate, OffsetNumber attnum,
 		pfree(keydata);
 	}
 
+	/*
+	 * Create GinNullCategory representation from nullFlags.
+	 */
+	*categories = (GinNullCategory *) palloc0(*nentries * sizeof(GinNullCategory));
+	for (i = 0; i < *nentries; i++)
+		(*categories)[i] = (nullFlags[i] ? GIN_CAT_NULL_KEY : GIN_CAT_NORM_KEY);
+
 	return entries;
 }
 
 bytea *
 ginoptions(Datum reloptions, bool validate)
 {
-	relopt_value *options;
-	GinOptions *rdopts;
-	int			numoptions;
 	static const relopt_parse_elt tab[] = {
 		{"fastupdate", RELOPT_TYPE_BOOL, offsetof(GinOptions, useFastUpdate)},
 		{"gin_pending_list_limit", RELOPT_TYPE_INT, offsetof(GinOptions,
 															 pendingListCleanupSize)}
 	};
 
-	options = parseRelOptions(reloptions, validate, RELOPT_KIND_GIN,
-							  &numoptions);
-
-	/* if none set, we're done */
-	if (numoptions == 0)
-		return NULL;
-
-	rdopts = allocateReloptStruct(sizeof(GinOptions), options, numoptions);
-
-	fillRelOptions((void *) rdopts, sizeof(GinOptions), options, numoptions,
-				   validate, tab, lengthof(tab));
-
-	pfree(options);
-
-	return (bytea *) rdopts;
+	return (bytea *) build_reloptions(reloptions, validate,
+									  RELOPT_KIND_GIN,
+									  sizeof(GinOptions),
+									  tab, lengthof(tab));
 }
 
 /*
@@ -651,7 +653,7 @@ ginGetStats(Relation index, GinStatsData *stats)
  * Note: nPendingPages and ginVersion are *not* copied over
  */
 void
-ginUpdateStats(Relation index, const GinStatsData *stats)
+ginUpdateStats(Relation index, const GinStatsData *stats, bool is_build)
 {
 	Buffer		metabuffer;
 	Page		metapage;
@@ -669,9 +671,19 @@ ginUpdateStats(Relation index, const GinStatsData *stats)
 	metadata->nDataPages = stats->nDataPages;
 	metadata->nEntries = stats->nEntries;
 
+	/*
+	 * Set pd_lower just past the end of the metadata.  This is essential,
+	 * because without doing so, metadata will be lost if xlog.c compresses
+	 * the page.  (We must do this here because pre-v11 versions of PG did not
+	 * set the metapage's pd_lower correctly, so a pg_upgraded index might
+	 * contain the wrong value.)
+	 */
+	((PageHeader) metapage)->pd_lower =
+		((char *) metadata + sizeof(GinMetaPageData)) - (char *) metapage;
+
 	MarkBufferDirty(metabuffer);
 
-	if (RelationNeedsWAL(index))
+	if (RelationNeedsWAL(index) && !is_build)
 	{
 		XLogRecPtr	recptr;
 		ginxlogUpdateMeta data;
@@ -683,7 +695,7 @@ ginUpdateStats(Relation index, const GinStatsData *stats)
 
 		XLogBeginInsert();
 		XLogRegisterData((char *) &data, sizeof(ginxlogUpdateMeta));
-		XLogRegisterBuffer(0, metabuffer, REGBUF_WILL_INIT);
+		XLogRegisterBuffer(0, metabuffer, REGBUF_WILL_INIT | REGBUF_STANDARD);
 
 		recptr = XLogInsert(RM_GIN_ID, XLOG_GIN_UPDATE_META_PAGE);
 		PageSetLSN(metapage, recptr);

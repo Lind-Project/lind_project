@@ -4,7 +4,7 @@
  *	  local buffer manager. Fast buffer manager for temporary tables,
  *	  which never need to be WAL-logged or checkpointed, etc.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994-5, Regents of the University of California
  *
  *
@@ -54,17 +54,17 @@ static Block GetLocalBufferStorage(void);
 
 
 /*
- * LocalPrefetchBuffer -
+ * PrefetchLocalBuffer -
  *	  initiate asynchronous read of a block of a relation
  *
  * Do PrefetchBuffer's work for temporary relations.
  * No-op if prefetching isn't compiled in.
  */
-void
-LocalPrefetchBuffer(SMgrRelation smgr, ForkNumber forkNum,
+PrefetchBufferResult
+PrefetchLocalBuffer(SMgrRelation smgr, ForkNumber forkNum,
 					BlockNumber blockNum)
 {
-#ifdef USE_PREFETCH
+	PrefetchBufferResult result = {InvalidBuffer, false};
 	BufferTag	newTag;			/* identity of requested block */
 	LocalBufferLookupEnt *hresult;
 
@@ -81,12 +81,18 @@ LocalPrefetchBuffer(SMgrRelation smgr, ForkNumber forkNum,
 	if (hresult)
 	{
 		/* Yes, so nothing to do */
-		return;
+		result.recent_buffer = -hresult->id - 1;
+	}
+	else
+	{
+#ifdef USE_PREFETCH
+		/* Not in buffers, so initiate prefetch */
+		smgrprefetch(smgr, forkNum, blockNum);
+		result.initiated_io = true;
+#endif							/* USE_PREFETCH */
 	}
 
-	/* Not in buffers, so initiate prefetch */
-	smgrprefetch(smgr, forkNum, blockNum);
-#endif							/* USE_PREFETCH */
+	return result;
 }
 
 
@@ -145,11 +151,11 @@ LocalBufferAlloc(SMgrRelation smgr, ForkNumber forkNum, BlockNumber blockNum,
 		ResourceOwnerRememberBuffer(CurrentResourceOwner,
 									BufferDescriptorGetBuffer(bufHdr));
 		if (buf_state & BM_VALID)
-			*foundPtr = TRUE;
+			*foundPtr = true;
 		else
 		{
 			/* Previous read attempt must have failed; try again */
-			*foundPtr = FALSE;
+			*foundPtr = false;
 		}
 		return bufHdr;
 	}
@@ -268,7 +274,7 @@ LocalBufferAlloc(SMgrRelation smgr, ForkNumber forkNum, BlockNumber blockNum,
 	buf_state += BUF_USAGECOUNT_ONE;
 	pg_atomic_unlocked_write_u32(&bufHdr->state, buf_state);
 
-	*foundPtr = FALSE;
+	*foundPtr = false;
 	return bufHdr;
 }
 
@@ -361,7 +367,7 @@ DropRelFileNodeLocalBuffers(RelFileNode rnode, ForkNumber forkNum,
  *		This function removes from the buffer pool all pages of all forks
  *		of the specified relation.
  *
- *		See DropRelFileNodeAllBuffers in bufmgr.c for more notes.
+ *		See DropRelFileNodesAllBuffers in bufmgr.c for more notes.
  */
 void
 DropRelFileNodeAllLocalBuffers(RelFileNode rnode)
@@ -537,7 +543,7 @@ GetLocalBufferStorage(void)
 /*
  * CheckForLocalBufferLeaks - ensure this backend holds no local buffer pins
  *
- * This is just like CheckBufferLeaks(), but for local buffers.
+ * This is just like CheckForBufferLeaks(), but for local buffers.
  */
 static void
 CheckForLocalBufferLeaks(void)

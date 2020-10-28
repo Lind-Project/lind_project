@@ -49,10 +49,6 @@ TRUNCATE TIMESTAMPTZ_TBL;
 INSERT INTO TIMESTAMPTZ_TBL VALUES ('-infinity');
 INSERT INTO TIMESTAMPTZ_TBL VALUES ('infinity');
 INSERT INTO TIMESTAMPTZ_TBL VALUES ('epoch');
--- Obsolete special values
-INSERT INTO TIMESTAMPTZ_TBL VALUES ('invalid');
-INSERT INTO TIMESTAMPTZ_TBL VALUES ('undefined');
-INSERT INTO TIMESTAMPTZ_TBL VALUES ('current');
 
 -- Postgres v6.0 standard output format
 INSERT INTO TIMESTAMPTZ_TBL VALUES ('Mon Feb 10 17:32:01 1997 PST');
@@ -193,6 +189,10 @@ SELECT '' AS "54", d1 - timestamp with time zone '1997-01-02' AS diff
 
 SELECT '' AS date_trunc_week, date_trunc( 'week', timestamp with time zone '2004-02-29 15:44:17.71393' ) AS week_trunc;
 
+SELECT '' AS date_trunc_at_tz, date_trunc('day', timestamp with time zone '2001-02-16 20:38:40+00', 'Australia/Sydney') as sydney_trunc;  -- zone name
+SELECT '' AS date_trunc_at_tz, date_trunc('day', timestamp with time zone '2001-02-16 20:38:40+00', 'GMT') as gmt_trunc;  -- fixed-offset abbreviation
+SELECT '' AS date_trunc_at_tz, date_trunc('day', timestamp with time zone '2001-02-16 20:38:40+00', 'VET') as vet_trunc;  -- variable-offset abbreviation
+
 -- Test casting within a BETWEEN qualifier
 SELECT '' AS "54", d1 - timestamp with time zone '1997-01-02' AS diff
   FROM TIMESTAMPTZ_TBL
@@ -263,21 +263,33 @@ SELECT '' AS to_char_10, to_char(d1, 'IYYY IYY IY I IW IDDD ID')
 SELECT '' AS to_char_11, to_char(d1, 'FMIYYY FMIYY FMIY FMI FMIW FMIDDD FMID')
    FROM TIMESTAMPTZ_TBL;
 
--- Check OF with various zone offsets, particularly fractional hours
+SELECT '' AS to_char_12, to_char(d, 'FF1 FF2 FF3 FF4 FF5 FF6  ff1 ff2 ff3 ff4 ff5 ff6  MS US')
+   FROM (VALUES
+       ('2018-11-02 12:34:56'::timestamptz),
+       ('2018-11-02 12:34:56.78'),
+       ('2018-11-02 12:34:56.78901'),
+       ('2018-11-02 12:34:56.78901234')
+   ) d(d);
+
+-- Check OF, TZH, TZM with various zone offsets, particularly fractional hours
 SET timezone = '00:00';
-SELECT to_char(now(), 'OF');
+SELECT to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 SET timezone = '+02:00';
-SELECT to_char(now(), 'OF');
+SELECT to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 SET timezone = '-13:00';
-SELECT to_char(now(), 'OF');
+SELECT to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 SET timezone = '-00:30';
-SELECT to_char(now(), 'OF');
+SELECT to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 SET timezone = '00:30';
-SELECT to_char(now(), 'OF');
+SELECT to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 SET timezone = '-04:30';
-SELECT to_char(now(), 'OF');
+SELECT to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 SET timezone = '04:30';
-SELECT to_char(now(), 'OF');
+SELECT to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
+SET timezone = '-04:15';
+SELECT to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
+SET timezone = '04:15';
+SELECT to_char(now(), 'OF') as "OF", to_char(now(), 'TZH:TZM') as "TZH:TZM";
 RESET timezone;
 
 CREATE TABLE TIMESTAMPTZ_TST (a int , b timestamptz);

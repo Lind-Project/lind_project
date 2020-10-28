@@ -1,12 +1,14 @@
 /* src/interfaces/ecpg/pgtypeslib/numeric.c */
 
 #include "postgres_fe.h"
+
 #include <ctype.h>
 #include <float.h>
 #include <limits.h>
 
-#include "extern.h"
 #include "pgtypes_error.h"
+#include "pgtypes_numeric.h"
+#include "pgtypeslib_extern.h"
 
 #define Max(x, y)				((x) > (y) ? (x) : (y))
 #define Min(x, y)				((x) < (y) ? (x) : (y))
@@ -20,89 +22,6 @@
 						  free(buf); \
 		  } while (0)
 
-#include "pgtypes_numeric.h"
-
-#if 0
-/* ----------
- * apply_typmod() -
- *
- *	Do bounds checking and rounding according to the attributes
- *	typmod field.
- * ----------
- */
-static int
-apply_typmod(numeric *var, long typmod)
-{
-	int			precision;
-	int			scale;
-	int			maxweight;
-	int			i;
-
-	/* Do nothing if we have a default typmod (-1) */
-	if (typmod < (long) (VARHDRSZ))
-		return (0);
-
-	typmod -= VARHDRSZ;
-	precision = (typmod >> 16) & 0xffff;
-	scale = typmod & 0xffff;
-	maxweight = precision - scale;
-
-	/* Round to target scale */
-	i = scale + var->weight + 1;
-	if (i >= 0 && var->ndigits > i)
-	{
-		int			carry = (var->digits[i] > 4) ? 1 : 0;
-
-		var->ndigits = i;
-
-		while (carry)
-		{
-			carry += var->digits[--i];
-			var->digits[i] = carry % 10;
-			carry /= 10;
-		}
-
-		if (i < 0)
-		{
-			var->digits--;
-			var->ndigits++;
-			var->weight++;
-		}
-	}
-	else
-		var->ndigits = Max(0, Min(i, var->ndigits));
-
-	/*
-	 * Check for overflow - note we can't do this before rounding, because
-	 * rounding could raise the weight.  Also note that the var's weight could
-	 * be inflated by leading zeroes, which will be stripped before storage
-	 * but perhaps might not have been yet. In any case, we must recognize a
-	 * true zero, whose weight doesn't mean anything.
-	 */
-	if (var->weight >= maxweight)
-	{
-		/* Determine true weight; and check for all-zero result */
-		int			tweight = var->weight;
-
-		for (i = 0; i < var->ndigits; i++)
-		{
-			if (var->digits[i])
-				break;
-			tweight--;
-		}
-
-		if (tweight >= maxweight && i < var->ndigits)
-		{
-			errno = PGTYPES_NUM_OVERFLOW;
-			return -1;
-		}
-	}
-
-	var->rscale = scale;
-	var->dscale = scale;
-	return (0);
-}
-#endif
 
 /* ----------
  *	alloc_var() -
@@ -162,7 +81,7 @@ PGTYPESdecimal_new(void)
 static int
 set_var_from_str(char *str, char **ptr, numeric *dest)
 {
-	bool		have_dp = FALSE;
+	bool		have_dp = false;
 	int			i = 0;
 
 	errno = 0;
@@ -214,7 +133,7 @@ set_var_from_str(char *str, char **ptr, numeric *dest)
 
 	if (*(*ptr) == '.')
 	{
-		have_dp = TRUE;
+		have_dp = true;
 		(*ptr)++;
 	}
 
@@ -241,7 +160,7 @@ set_var_from_str(char *str, char **ptr, numeric *dest)
 				errno = PGTYPES_NUM_BAD_NUMERIC;
 				return -1;
 			}
-			have_dp = TRUE;
+			have_dp = true;
 			(*ptr)++;
 		}
 		else
@@ -296,7 +215,7 @@ set_var_from_str(char *str, char **ptr, numeric *dest)
 		dest->weight = 0;
 
 	dest->rscale = dest->dscale;
-	return (0);
+	return 0;
 }
 
 
@@ -412,16 +331,16 @@ PGTYPESnumeric_from_asc(char *str, char **endptr)
 	char	  **ptr = (endptr != NULL) ? endptr : &realptr;
 
 	if (!value)
-		return (NULL);
+		return NULL;
 
 	ret = set_var_from_str(str, ptr, value);
 	if (ret)
 	{
 		PGTYPESnumeric_free(value);
-		return (NULL);
+		return NULL;
 	}
 
-	return (value);
+	return value;
 }
 
 char *
@@ -445,7 +364,7 @@ PGTYPESnumeric_to_asc(numeric *num, int dscale)
 	/* get_str_from_var may change its argument */
 	s = get_str_from_var(numcopy, dscale);
 	PGTYPESnumeric_free(numcopy);
-	return (s);
+	return s;
 }
 
 /* ----------

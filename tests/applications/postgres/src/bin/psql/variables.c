@@ -1,15 +1,15 @@
 /*
  * psql - the PostgreSQL interactive terminal
  *
- * Copyright (c) 2000-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2000-2020, PostgreSQL Global Development Group
  *
  * src/bin/psql/variables.c
  */
 #include "postgres_fe.h"
 
 #include "common.h"
+#include "common/logging.h"
 #include "variables.h"
-
 
 /*
  * Check whether a variable's name is allowed.
@@ -136,8 +136,8 @@ ParseVariableBool(const char *value, const char *name, bool *result)
 	{
 		/* string is not recognized; don't clobber *result */
 		if (name)
-			psql_error("unrecognized value \"%s\" for \"%s\": Boolean expected\n",
-					   value, name);
+			pg_log_error("unrecognized value \"%s\" for \"%s\": Boolean expected",
+						 value, name);
 		valid = false;
 	}
 	return valid;
@@ -173,8 +173,8 @@ ParseVariableNum(const char *value, const char *name, int *result)
 	{
 		/* string is not recognized; don't clobber *result */
 		if (name)
-			psql_error("invalid value \"%s\" for \"%s\": integer expected\n",
-					   value, name);
+			pg_log_error("invalid value \"%s\" for \"%s\": integer expected",
+						 value, name);
 		return false;
 	}
 }
@@ -221,7 +221,7 @@ SetVariable(VariableSpace space, const char *name, const char *value)
 		/* Deletion of non-existent variable is not an error */
 		if (!value)
 			return true;
-		psql_error("invalid variable name: \"%s\"\n", name);
+		pg_log_error("invalid variable name: \"%s\"", name);
 		return false;
 	}
 
@@ -246,10 +246,10 @@ SetVariable(VariableSpace space, const char *name, const char *value)
 			bool		confirmed;
 
 			if (current->substitute_hook)
-				new_value = (*current->substitute_hook) (new_value);
+				new_value = current->substitute_hook(new_value);
 
 			if (current->assign_hook)
-				confirmed = (*current->assign_hook) (new_value);
+				confirmed = current->assign_hook(new_value);
 			else
 				confirmed = true;
 
@@ -390,6 +390,7 @@ DeleteVariable(VariableSpace space, const char *name)
 void
 PsqlVarEnumError(const char *name, const char *value, const char *suggestions)
 {
-	psql_error("unrecognized value \"%s\" for \"%s\"\nAvailable values are: %s.\n",
-			   value, name, suggestions);
+	pg_log_error("unrecognized value \"%s\" for \"%s\"\n"
+				 "Available values are: %s.",
+				 value, name, suggestions);
 }

@@ -3,7 +3,7 @@
  * blinsert.c
  *		Bloom index build and insert functions.
  *
- * Copyright (c) 2016-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2016-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *	  contrib/bloom/blinsert.c
@@ -14,6 +14,8 @@
 
 #include "access/genam.h"
 #include "access/generic_xlog.h"
+#include "access/tableam.h"
+#include "bloom.h"
 #include "catalog/index.h"
 #include "miscadmin.h"
 #include "storage/bufmgr.h"
@@ -21,8 +23,6 @@
 #include "storage/smgr.h"
 #include "utils/memutils.h"
 #include "utils/rel.h"
-
-#include "bloom.h"
 
 PG_MODULE_MAGIC;
 
@@ -69,10 +69,10 @@ initCachedPage(BloomBuildState *buildstate)
 }
 
 /*
- * Per-tuple callback from IndexBuildHeapScan.
+ * Per-tuple callback for table_index_build_scan.
  */
 static void
-bloomBuildCallback(Relation index, HeapTuple htup, Datum *values,
+bloomBuildCallback(Relation index, ItemPointer tid, Datum *values,
 				   bool *isnull, bool tupleIsAlive, void *state)
 {
 	BloomBuildState *buildstate = (BloomBuildState *) state;
@@ -81,7 +81,7 @@ bloomBuildCallback(Relation index, HeapTuple htup, Datum *values,
 
 	oldCtx = MemoryContextSwitchTo(buildstate->tmpCtx);
 
-	itup = BloomFormTuple(&buildstate->blstate, &htup->t_self, values, isnull);
+	itup = BloomFormTuple(&buildstate->blstate, tid, values, isnull);
 
 	/* Try to add next item to cached page */
 	if (BloomPageAddItem(&buildstate->blstate, buildstate->data.data, itup))
@@ -141,8 +141,9 @@ blbuild(Relation heap, Relation index, IndexInfo *indexInfo)
 	initCachedPage(&buildstate);
 
 	/* Do the heap scan */
-	reltuples = IndexBuildHeapScan(heap, index, indexInfo, true,
-								   bloomBuildCallback, (void *) &buildstate);
+	reltuples = table_index_build_scan(heap, index, indexInfo, true, true,
+									   bloomBuildCallback, (void *) &buildstate,
+									   NULL);
 
 	/* Flush last page if needed (it will be, unless heap was empty) */
 	if (buildstate.count > 0)
@@ -180,7 +181,7 @@ blbuildempty(Relation index)
 	smgrwrite(index->rd_smgr, INIT_FORKNUM, BLOOM_METAPAGE_BLKNO,
 			  (char *) metapage, true);
 	log_newpage(&index->rd_smgr->smgr_rnode.node, INIT_FORKNUM,
-				BLOOM_METAPAGE_BLKNO, metapage, false);
+				BLOOM_METAPAGE_BLKNO, metapage, true);
 
 	/*
 	 * An immediate sync is required even if we xlog'd the page, because the

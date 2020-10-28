@@ -13,11 +13,10 @@
 #endif
 
 #include "datatype/timestamp.h"
-#include "libpq-fe.h"
-#include "pqexpbuffer.h"
-#include "pg_getopt.h"
-
 #include "isolationtester.h"
+#include "libpq-fe.h"
+#include "pg_getopt.h"
+#include "pqexpbuffer.h"
 
 #define PREP_WAITING "isolationtester_waiting"
 
@@ -31,9 +30,6 @@ static int *backend_pids = NULL;
 static const char **backend_pid_strs = NULL;
 static int	nconns = 0;
 
-/* In dry run only output permutations to be run by the tester. */
-static int	dry_run = false;
-
 /* Maximum time to wait before giving up on a step (in usec) */
 static int64 max_step_wait = 300 * USECS_PER_SEC;
 
@@ -41,7 +37,7 @@ static int64 max_step_wait = 300 * USECS_PER_SEC;
 static void run_testspec(TestSpec *testspec);
 static void run_all_permutations(TestSpec *testspec);
 static void run_all_permutations_recurse(TestSpec *testspec, int nsteps,
-							 Step **steps);
+										 Step **steps);
 static void run_named_permutations(TestSpec *testspec);
 static void run_permutation(TestSpec *testspec, int nsteps, Step **steps);
 
@@ -56,15 +52,14 @@ static void printResultSet(PGresult *res);
 static void isotesterNoticeProcessor(void *arg, const char *message);
 static void blackholeNoticeProcessor(void *arg, const char *message);
 
-/* close all connections and exit */
 static void
-exit_nicely(void)
+disconnect_atexit(void)
 {
 	int			i;
 
 	for (i = 0; i < nconns; i++)
-		PQfinish(conns[i]);
-	exit(1);
+		if (conns[i])
+			PQfinish(conns[i]);
 }
 
 int
@@ -82,18 +77,15 @@ main(int argc, char **argv)
 	int			nallsteps;
 	Step	  **allsteps;
 
-	while ((opt = getopt(argc, argv, "nV")) != -1)
+	while ((opt = getopt(argc, argv, "V")) != -1)
 	{
 		switch (opt)
 		{
-			case 'n':
-				dry_run = true;
-				break;
 			case 'V':
 				puts("isolationtester (PostgreSQL) " PG_VERSION);
 				exit(0);
 			default:
-				fprintf(stderr, "Usage: isolationtester [-n] [CONNINFO]\n");
+				fprintf(stderr, "Usage: isolationtester [CONNINFO]\n");
 				return EXIT_FAILURE;
 		}
 	}
@@ -154,18 +146,8 @@ main(int argc, char **argv)
 		{
 			fprintf(stderr, "duplicate step name: %s\n",
 					testspec->allsteps[i]->name);
-			exit_nicely();
+			exit(1);
 		}
-	}
-
-	/*
-	 * In dry-run mode, just print the permutations that would be run, and
-	 * exit.
-	 */
-	if (dry_run)
-	{
-		run_testspec(testspec);
-		return 0;
 	}
 
 	printf("Parsed test spec with %d sessions\n", testspec->nsessions);
@@ -178,6 +160,7 @@ main(int argc, char **argv)
 	conns = (PGconn **) pg_malloc0(nconns * sizeof(PGconn *));
 	backend_pids = pg_malloc0(nconns * sizeof(*backend_pids));
 	backend_pid_strs = pg_malloc0(nconns * sizeof(*backend_pid_strs));
+	atexit(disconnect_atexit);
 
 	for (i = 0; i < nconns; i++)
 	{
@@ -186,7 +169,7 @@ main(int argc, char **argv)
 		{
 			fprintf(stderr, "Connection %d to database failed: %s",
 					i, PQerrorMessage(conns[i]));
-			exit_nicely();
+			exit(1);
 		}
 
 		/*
@@ -241,7 +224,7 @@ main(int argc, char **argv)
 	{
 		fprintf(stderr, "prepare of lock wait query failed: %s",
 				PQerrorMessage(conns[0]));
-		exit_nicely();
+		exit(1);
 	}
 	PQclear(res);
 	termPQExpBuffer(&wait_query);
@@ -252,9 +235,6 @@ main(int argc, char **argv)
 	 */
 	run_testspec(testspec);
 
-	/* Clean up and exit */
-	for (i = 0; i < nconns; i++)
-		PQfinish(conns[i]);
 	return 0;
 }
 
@@ -267,10 +247,23 @@ static int *piles;
 static void
 run_testspec(TestSpec *testspec)
 {
+	int			i;
+
 	if (testspec->permutations)
 		run_named_permutations(testspec);
 	else
 		run_all_permutations(testspec);
+
+	/*
+	 * Verify that all steps have been used, complaining about anything
+	 * defined but not used.
+	 */
+	for (i = 0; i < testspec->nallsteps; i++)
+	{
+		if (!testspec->allsteps[i]->used)
+			fprintf(stderr, "unused step name: %s\n",
+					testspec->allsteps[i]->name);
+	}
 }
 
 /*
@@ -362,7 +355,7 @@ run_named_permutations(TestSpec *testspec)
 			{
 				fprintf(stderr, "undefined step \"%s\" specified in permutation\n",
 						p->stepnames[j]);
-				exit_nicely();
+				exit(1);
 			}
 			steps[j] = *this;
 		}
@@ -465,25 +458,16 @@ run_permutation(TestSpec *testspec, int nsteps, Step **steps)
 	Step	  **waiting;
 	Step	  **errorstep;
 
-	/*
-	 * In dry run mode, just display the permutation in the same format used
-	 * by spec files, and return.
-	 */
-	if (dry_run)
-	{
-		printf("permutation");
-		for (i = 0; i < nsteps; i++)
-			printf(" \"%s\"", steps[i]->name);
-		printf("\n");
-		return;
-	}
-
 	waiting = pg_malloc(sizeof(Step *) * testspec->nsessions);
 	errorstep = pg_malloc(sizeof(Step *) * testspec->nsessions);
 
 	printf("\nstarting permutation:");
 	for (i = 0; i < nsteps; i++)
+	{
+		/* Track the permutation as in-use */
+		steps[i]->used = true;
 		printf(" %s", steps[i]->name);
+	}
 	printf("\n");
 
 	/* Perform setup */
@@ -497,7 +481,7 @@ run_permutation(TestSpec *testspec, int nsteps, Step **steps)
 		else if (PQresultStatus(res) != PGRES_COMMAND_OK)
 		{
 			fprintf(stderr, "setup failed: %s", PQerrorMessage(conns[0]));
-			exit_nicely();
+			exit(1);
 		}
 		PQclear(res);
 	}
@@ -517,7 +501,7 @@ run_permutation(TestSpec *testspec, int nsteps, Step **steps)
 				fprintf(stderr, "setup of session %s failed: %s",
 						testspec->sessions[i]->name,
 						PQerrorMessage(conns[i + 1]));
-				exit_nicely();
+				exit(1);
 			}
 			PQclear(res);
 		}
@@ -600,7 +584,7 @@ run_permutation(TestSpec *testspec, int nsteps, Step **steps)
 		{
 			fprintf(stdout, "failed to send query for step %s: %s\n",
 					step->name, PQerrorMessage(conn));
-			exit_nicely();
+			exit(1);
 		}
 
 		/* Try to complete this step without blocking.  */
@@ -713,7 +697,7 @@ try_complete_step(TestSpec *testspec, Step *step, int flags)
 	if (sock < 0)
 	{
 		fprintf(stderr, "invalid socket: %s", PQerrorMessage(conn));
-		exit_nicely();
+		exit(1);
 	}
 
 	gettimeofday(&start_time, NULL);
@@ -731,7 +715,7 @@ try_complete_step(TestSpec *testspec, Step *step, int flags)
 			if (errno == EINTR)
 				continue;
 			fprintf(stderr, "select failed: %s\n", strerror(errno));
-			exit_nicely();
+			exit(1);
 		}
 		else if (ret == 0)		/* select() timeout: check for lock wait */
 		{
@@ -751,7 +735,7 @@ try_complete_step(TestSpec *testspec, Step *step, int flags)
 				{
 					fprintf(stderr, "lock wait query failed: %s",
 							PQerrorMessage(conns[0]));
-					exit_nicely();
+					exit(1);
 				}
 				waiting = ((PQgetvalue(res, 0, 0))[0] == 't');
 				PQclear(res);
@@ -838,14 +822,14 @@ try_complete_step(TestSpec *testspec, Step *step, int flags)
 			{
 				fprintf(stderr, "step %s timed out after %d seconds\n",
 						step->name, (int) (td / USECS_PER_SEC));
-				exit_nicely();
+				exit(1);
 			}
 		}
 		else if (!PQconsumeInput(conn)) /* select(): data available */
 		{
 			fprintf(stderr, "PQconsumeInput failed: %s\n",
 					PQerrorMessage(conn));
-			exit_nicely();
+			exit(1);
 		}
 	}
 
@@ -901,9 +885,8 @@ try_complete_step(TestSpec *testspec, Step *step, int flags)
 		/* Try to identify which session it came from */
 		const char *sendername = NULL;
 		char		pidstring[32];
-		int			i;
 
-		for (i = 0; i < testspec->nsessions; i++)
+		for (int i = 0; i < testspec->nsessions; i++)
 		{
 			if (notify->be_pid == backend_pids[i + 1])
 			{
