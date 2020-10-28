@@ -3,7 +3,7 @@
  * objectaddress.c
  *	  functions for working with ObjectAddresses
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -15,8 +15,11 @@
 
 #include "postgres.h"
 
+#include "access/genam.h"
 #include "access/htup_details.h"
+#include "access/relation.h"
 #include "access/sysattr.h"
+#include "access/table.h"
 #include "catalog/catalog.h"
 #include "catalog/indexing.h"
 #include "catalog/objectaddress.h"
@@ -26,13 +29,13 @@
 #include "catalog/pg_attrdef.h"
 #include "catalog/pg_authid.h"
 #include "catalog/pg_cast.h"
-#include "catalog/pg_default_acl.h"
-#include "catalog/pg_event_trigger.h"
 #include "catalog/pg_collation.h"
 #include "catalog/pg_constraint.h"
-#include "catalog/pg_constraint_fn.h"
 #include "catalog/pg_conversion.h"
 #include "catalog/pg_database.h"
+#include "catalog/pg_default_acl.h"
+#include "catalog/pg_enum.h"
+#include "catalog/pg_event_trigger.h"
 #include "catalog/pg_extension.h"
 #include "catalog/pg_foreign_data_wrapper.h"
 #include "catalog/pg_foreign_server.h"
@@ -41,10 +44,10 @@
 #include "catalog/pg_largeobject_metadata.h"
 #include "catalog/pg_namespace.h"
 #include "catalog/pg_opclass.h"
-#include "catalog/pg_opfamily.h"
 #include "catalog/pg_operator.h"
-#include "catalog/pg_proc.h"
+#include "catalog/pg_opfamily.h"
 #include "catalog/pg_policy.h"
+#include "catalog/pg_proc.h"
 #include "catalog/pg_publication.h"
 #include "catalog/pg_publication_rel.h"
 #include "catalog/pg_rewrite.h"
@@ -69,22 +72,22 @@
 #include "commands/trigger.h"
 #include "foreign/foreign.h"
 #include "funcapi.h"
-#include "libpq/be-fsstubs.h"
 #include "miscadmin.h"
 #include "nodes/makefuncs.h"
 #include "parser/parse_func.h"
 #include "parser/parse_oper.h"
 #include "parser/parse_type.h"
 #include "rewrite/rewriteSupport.h"
+#include "storage/large_object.h"
 #include "storage/lmgr.h"
 #include "storage/sinval.h"
+#include "utils/acl.h"
 #include "utils/builtins.h"
 #include "utils/fmgroids.h"
 #include "utils/lsyscache.h"
 #include "utils/memutils.h"
 #include "utils/regproc.h"
 #include "utils/syscache.h"
-#include "utils/tqual.h"
 
 /*
  * ObjectProperty
@@ -100,11 +103,12 @@ typedef struct
 	int			name_catcache_id;	/* id of catcache on (name,namespace), or
 									 * (name) if the object does not live in a
 									 * namespace */
+	AttrNumber	attnum_oid;		/* attribute number of oid column */
 	AttrNumber	attnum_name;	/* attnum of name field */
 	AttrNumber	attnum_namespace;	/* attnum of namespace field */
 	AttrNumber	attnum_owner;	/* attnum of owner field */
 	AttrNumber	attnum_acl;		/* attnum of acl field */
-	AclObjectKind acl_kind;		/* ACL_KIND_* of this object type */
+	ObjectType	objtype;		/* OBJECT_* of this object type */
 	bool		is_nsp_name_unique; /* can the nsp/name combination (or name
 									 * alone, if there's no namespace) be
 									 * considered a unique identifier for an
@@ -118,6 +122,7 @@ static const ObjectPropertyType ObjectProperty[] =
 		AmOidIndexId,
 		AMOID,
 		AMNAME,
+		Anum_pg_am_oid,
 		Anum_pg_am_amname,
 		InvalidAttrNumber,
 		InvalidAttrNumber,
@@ -130,6 +135,7 @@ static const ObjectPropertyType ObjectProperty[] =
 		CastOidIndexId,
 		-1,
 		-1,
+		Anum_pg_cast_oid,
 		InvalidAttrNumber,
 		InvalidAttrNumber,
 		InvalidAttrNumber,
@@ -142,11 +148,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		CollationOidIndexId,
 		COLLOID,
 		-1,						/* COLLNAMEENCNSP also takes encoding */
+		Anum_pg_collation_oid,
 		Anum_pg_collation_collname,
 		Anum_pg_collation_collnamespace,
 		Anum_pg_collation_collowner,
 		InvalidAttrNumber,
-		ACL_KIND_COLLATION,
+		OBJECT_COLLATION,
 		true
 	},
 	{
@@ -154,6 +161,7 @@ static const ObjectPropertyType ObjectProperty[] =
 		ConstraintOidIndexId,
 		CONSTROID,
 		-1,
+		Anum_pg_constraint_oid,
 		Anum_pg_constraint_conname,
 		Anum_pg_constraint_connamespace,
 		InvalidAttrNumber,
@@ -166,11 +174,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		ConversionOidIndexId,
 		CONVOID,
 		CONNAMENSP,
+		Anum_pg_conversion_oid,
 		Anum_pg_conversion_conname,
 		Anum_pg_conversion_connamespace,
 		Anum_pg_conversion_conowner,
 		InvalidAttrNumber,
-		ACL_KIND_CONVERSION,
+		OBJECT_CONVERSION,
 		true
 	},
 	{
@@ -178,11 +187,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		DatabaseOidIndexId,
 		DATABASEOID,
 		-1,
+		Anum_pg_database_oid,
 		Anum_pg_database_datname,
 		InvalidAttrNumber,
 		Anum_pg_database_datdba,
 		Anum_pg_database_datacl,
-		ACL_KIND_DATABASE,
+		OBJECT_DATABASE,
 		true
 	},
 	{
@@ -190,11 +200,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		ExtensionOidIndexId,
 		-1,
 		-1,
+		Anum_pg_extension_oid,
 		Anum_pg_extension_extname,
 		InvalidAttrNumber,		/* extension doesn't belong to extnamespace */
 		Anum_pg_extension_extowner,
 		InvalidAttrNumber,
-		ACL_KIND_EXTENSION,
+		OBJECT_EXTENSION,
 		true
 	},
 	{
@@ -202,11 +213,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		ForeignDataWrapperOidIndexId,
 		FOREIGNDATAWRAPPEROID,
 		FOREIGNDATAWRAPPERNAME,
+		Anum_pg_foreign_data_wrapper_oid,
 		Anum_pg_foreign_data_wrapper_fdwname,
 		InvalidAttrNumber,
 		Anum_pg_foreign_data_wrapper_fdwowner,
 		Anum_pg_foreign_data_wrapper_fdwacl,
-		ACL_KIND_FDW,
+		OBJECT_FDW,
 		true
 	},
 	{
@@ -214,11 +226,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		ForeignServerOidIndexId,
 		FOREIGNSERVEROID,
 		FOREIGNSERVERNAME,
+		Anum_pg_foreign_server_oid,
 		Anum_pg_foreign_server_srvname,
 		InvalidAttrNumber,
 		Anum_pg_foreign_server_srvowner,
 		Anum_pg_foreign_server_srvacl,
-		ACL_KIND_FOREIGN_SERVER,
+		OBJECT_FOREIGN_SERVER,
 		true
 	},
 	{
@@ -226,11 +239,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		ProcedureOidIndexId,
 		PROCOID,
 		-1,						/* PROCNAMEARGSNSP also takes argument types */
+		Anum_pg_proc_oid,
 		Anum_pg_proc_proname,
 		Anum_pg_proc_pronamespace,
 		Anum_pg_proc_proowner,
 		Anum_pg_proc_proacl,
-		ACL_KIND_PROC,
+		OBJECT_FUNCTION,
 		false
 	},
 	{
@@ -238,11 +252,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		LanguageOidIndexId,
 		LANGOID,
 		LANGNAME,
+		Anum_pg_language_oid,
 		Anum_pg_language_lanname,
 		InvalidAttrNumber,
 		Anum_pg_language_lanowner,
 		Anum_pg_language_lanacl,
-		ACL_KIND_LANGUAGE,
+		OBJECT_LANGUAGE,
 		true
 	},
 	{
@@ -250,11 +265,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		LargeObjectMetadataOidIndexId,
 		-1,
 		-1,
+		Anum_pg_largeobject_metadata_oid,
 		InvalidAttrNumber,
 		InvalidAttrNumber,
 		Anum_pg_largeobject_metadata_lomowner,
 		Anum_pg_largeobject_metadata_lomacl,
-		ACL_KIND_LARGEOBJECT,
+		OBJECT_LARGEOBJECT,
 		false
 	},
 	{
@@ -262,11 +278,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		OpclassOidIndexId,
 		CLAOID,
 		-1,						/* CLAAMNAMENSP also takes opcmethod */
+		Anum_pg_opclass_oid,
 		Anum_pg_opclass_opcname,
 		Anum_pg_opclass_opcnamespace,
 		Anum_pg_opclass_opcowner,
 		InvalidAttrNumber,
-		ACL_KIND_OPCLASS,
+		OBJECT_OPCLASS,
 		true
 	},
 	{
@@ -274,11 +291,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		OperatorOidIndexId,
 		OPEROID,
 		-1,						/* OPERNAMENSP also takes left and right type */
+		Anum_pg_operator_oid,
 		Anum_pg_operator_oprname,
 		Anum_pg_operator_oprnamespace,
 		Anum_pg_operator_oprowner,
 		InvalidAttrNumber,
-		ACL_KIND_OPER,
+		OBJECT_OPERATOR,
 		false
 	},
 	{
@@ -286,11 +304,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		OpfamilyOidIndexId,
 		OPFAMILYOID,
 		-1,						/* OPFAMILYAMNAMENSP also takes opfmethod */
+		Anum_pg_opfamily_oid,
 		Anum_pg_opfamily_opfname,
 		Anum_pg_opfamily_opfnamespace,
 		Anum_pg_opfamily_opfowner,
 		InvalidAttrNumber,
-		ACL_KIND_OPFAMILY,
+		OBJECT_OPFAMILY,
 		true
 	},
 	{
@@ -298,6 +317,7 @@ static const ObjectPropertyType ObjectProperty[] =
 		AuthIdOidIndexId,
 		AUTHOID,
 		AUTHNAME,
+		Anum_pg_authid_oid,
 		Anum_pg_authid_rolname,
 		InvalidAttrNumber,
 		InvalidAttrNumber,
@@ -310,6 +330,7 @@ static const ObjectPropertyType ObjectProperty[] =
 		RewriteOidIndexId,
 		-1,
 		-1,
+		Anum_pg_rewrite_oid,
 		Anum_pg_rewrite_rulename,
 		InvalidAttrNumber,
 		InvalidAttrNumber,
@@ -322,11 +343,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		NamespaceOidIndexId,
 		NAMESPACEOID,
 		NAMESPACENAME,
+		Anum_pg_namespace_oid,
 		Anum_pg_namespace_nspname,
 		InvalidAttrNumber,
 		Anum_pg_namespace_nspowner,
 		Anum_pg_namespace_nspacl,
-		ACL_KIND_NAMESPACE,
+		OBJECT_SCHEMA,
 		true
 	},
 	{
@@ -334,11 +356,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		ClassOidIndexId,
 		RELOID,
 		RELNAMENSP,
+		Anum_pg_class_oid,
 		Anum_pg_class_relname,
 		Anum_pg_class_relnamespace,
 		Anum_pg_class_relowner,
 		Anum_pg_class_relacl,
-		ACL_KIND_CLASS,
+		OBJECT_TABLE,
 		true
 	},
 	{
@@ -346,24 +369,27 @@ static const ObjectPropertyType ObjectProperty[] =
 		TablespaceOidIndexId,
 		TABLESPACEOID,
 		-1,
+		Anum_pg_tablespace_oid,
 		Anum_pg_tablespace_spcname,
 		InvalidAttrNumber,
 		Anum_pg_tablespace_spcowner,
 		Anum_pg_tablespace_spcacl,
-		ACL_KIND_TABLESPACE,
+		OBJECT_TABLESPACE,
 		true
 	},
 	{
 		TransformRelationId,
 		TransformOidIndexId,
 		TRFOID,
-		InvalidAttrNumber
+		InvalidAttrNumber,
+		Anum_pg_transform_oid
 	},
 	{
 		TriggerRelationId,
 		TriggerOidIndexId,
 		-1,
 		-1,
+		Anum_pg_trigger_oid,
 		Anum_pg_trigger_tgname,
 		InvalidAttrNumber,
 		InvalidAttrNumber,
@@ -376,6 +402,7 @@ static const ObjectPropertyType ObjectProperty[] =
 		PolicyOidIndexId,
 		-1,
 		-1,
+		Anum_pg_policy_oid,
 		Anum_pg_policy_polname,
 		InvalidAttrNumber,
 		InvalidAttrNumber,
@@ -388,11 +415,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		EventTriggerOidIndexId,
 		EVENTTRIGGEROID,
 		EVENTTRIGGERNAME,
+		Anum_pg_event_trigger_oid,
 		Anum_pg_event_trigger_evtname,
 		InvalidAttrNumber,
 		Anum_pg_event_trigger_evtowner,
 		InvalidAttrNumber,
-		ACL_KIND_EVENT_TRIGGER,
+		OBJECT_EVENT_TRIGGER,
 		true
 	},
 	{
@@ -400,11 +428,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		TSConfigOidIndexId,
 		TSCONFIGOID,
 		TSCONFIGNAMENSP,
+		Anum_pg_ts_config_oid,
 		Anum_pg_ts_config_cfgname,
 		Anum_pg_ts_config_cfgnamespace,
 		Anum_pg_ts_config_cfgowner,
 		InvalidAttrNumber,
-		ACL_KIND_TSCONFIGURATION,
+		OBJECT_TSCONFIGURATION,
 		true
 	},
 	{
@@ -412,11 +441,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		TSDictionaryOidIndexId,
 		TSDICTOID,
 		TSDICTNAMENSP,
+		Anum_pg_ts_dict_oid,
 		Anum_pg_ts_dict_dictname,
 		Anum_pg_ts_dict_dictnamespace,
 		Anum_pg_ts_dict_dictowner,
 		InvalidAttrNumber,
-		ACL_KIND_TSDICTIONARY,
+		OBJECT_TSDICTIONARY,
 		true
 	},
 	{
@@ -424,6 +454,7 @@ static const ObjectPropertyType ObjectProperty[] =
 		TSParserOidIndexId,
 		TSPARSEROID,
 		TSPARSERNAMENSP,
+		Anum_pg_ts_parser_oid,
 		Anum_pg_ts_parser_prsname,
 		Anum_pg_ts_parser_prsnamespace,
 		InvalidAttrNumber,
@@ -436,6 +467,7 @@ static const ObjectPropertyType ObjectProperty[] =
 		TSTemplateOidIndexId,
 		TSTEMPLATEOID,
 		TSTEMPLATENAMENSP,
+		Anum_pg_ts_template_oid,
 		Anum_pg_ts_template_tmplname,
 		Anum_pg_ts_template_tmplnamespace,
 		InvalidAttrNumber,
@@ -448,11 +480,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		TypeOidIndexId,
 		TYPEOID,
 		TYPENAMENSP,
+		Anum_pg_type_oid,
 		Anum_pg_type_typname,
 		Anum_pg_type_typnamespace,
 		Anum_pg_type_typowner,
 		Anum_pg_type_typacl,
-		ACL_KIND_TYPE,
+		OBJECT_TYPE,
 		true
 	},
 	{
@@ -460,11 +493,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		PublicationObjectIndexId,
 		PUBLICATIONOID,
 		PUBLICATIONNAME,
+		Anum_pg_publication_oid,
 		Anum_pg_publication_pubname,
 		InvalidAttrNumber,
 		Anum_pg_publication_pubowner,
 		InvalidAttrNumber,
-		ACL_KIND_PUBLICATION,
+		OBJECT_PUBLICATION,
 		true
 	},
 	{
@@ -472,11 +506,12 @@ static const ObjectPropertyType ObjectProperty[] =
 		SubscriptionObjectIndexId,
 		SUBSCRIPTIONOID,
 		SUBSCRIPTIONNAME,
+		Anum_pg_subscription_oid,
 		Anum_pg_subscription_subname,
 		InvalidAttrNumber,
 		Anum_pg_subscription_subowner,
 		InvalidAttrNumber,
-		ACL_KIND_SUBSCRIPTION,
+		OBJECT_SUBSCRIPTION,
 		true
 	},
 	{
@@ -484,18 +519,19 @@ static const ObjectPropertyType ObjectProperty[] =
 		StatisticExtOidIndexId,
 		STATEXTOID,
 		STATEXTNAMENSP,
+		Anum_pg_statistic_ext_oid,
 		Anum_pg_statistic_ext_stxname,
 		Anum_pg_statistic_ext_stxnamespace,
 		Anum_pg_statistic_ext_stxowner,
 		InvalidAttrNumber,		/* no ACL (same as relation) */
-		ACL_KIND_STATISTICS,
+		OBJECT_STATISTIC_EXT,
 		true
 	}
 };
 
 /*
  * This struct maps the string object types as returned by
- * getObjectTypeDescription into ObjType enum values.  Note that some enum
+ * getObjectTypeDescription into ObjectType enum values.  Note that some enum
  * values can be obtained by different names, and that some string object types
  * do not have corresponding values in the output enum.  The user of this map
  * must be careful to test for invalid values being returned.
@@ -565,6 +601,9 @@ static const struct object_type_map
 	},
 	{
 		"function", OBJECT_FUNCTION
+	},
+	{
+		"procedure", OBJECT_PROCEDURE
 	},
 	/* OCLASS_TYPE */
 	{
@@ -723,38 +762,38 @@ const ObjectAddress InvalidObjectAddress =
 };
 
 static ObjectAddress get_object_address_unqualified(ObjectType objtype,
-							   Value *strval, bool missing_ok);
+													Value *strval, bool missing_ok);
 static ObjectAddress get_relation_by_qualified_name(ObjectType objtype,
-							   List *object, Relation *relp,
-							   LOCKMODE lockmode, bool missing_ok);
+													List *object, Relation *relp,
+													LOCKMODE lockmode, bool missing_ok);
 static ObjectAddress get_object_address_relobject(ObjectType objtype,
-							 List *object, Relation *relp, bool missing_ok);
+												  List *object, Relation *relp, bool missing_ok);
 static ObjectAddress get_object_address_attribute(ObjectType objtype,
-							 List *object, Relation *relp,
-							 LOCKMODE lockmode, bool missing_ok);
+												  List *object, Relation *relp,
+												  LOCKMODE lockmode, bool missing_ok);
 static ObjectAddress get_object_address_attrdef(ObjectType objtype,
-						   List *object, Relation *relp, LOCKMODE lockmode,
-						   bool missing_ok);
+												List *object, Relation *relp, LOCKMODE lockmode,
+												bool missing_ok);
 static ObjectAddress get_object_address_type(ObjectType objtype,
-						TypeName *typename, bool missing_ok);
+											 TypeName *typename, bool missing_ok);
 static ObjectAddress get_object_address_opcf(ObjectType objtype, List *object,
-						bool missing_ok);
+											 bool missing_ok);
 static ObjectAddress get_object_address_opf_member(ObjectType objtype,
-							  List *object, bool missing_ok);
+												   List *object, bool missing_ok);
 
 static ObjectAddress get_object_address_usermapping(List *object,
-							   bool missing_ok);
+													bool missing_ok);
 static ObjectAddress get_object_address_publication_rel(List *object,
-								   Relation *relp,
-								   bool missing_ok);
+														Relation *relp,
+														bool missing_ok);
 static ObjectAddress get_object_address_defacl(List *object,
-						  bool missing_ok);
+											   bool missing_ok);
 static const ObjectPropertyType *get_object_property_data(Oid class_id);
 
 static void getRelationDescription(StringInfo buffer, Oid relid);
 static void getOpFamilyDescription(StringInfo buffer, Oid opfid);
 static void getRelationTypeDescription(StringInfo buffer, Oid relid,
-						   int32 objectSubId);
+									   int32 objectSubId);
 static void getProcedureTypeDescription(StringInfo buffer, Oid procid);
 static void getConstraintTypeDescription(StringInfo buffer, Oid constroid);
 static void getOpFamilyIdentity(StringInfo buffer, Oid opfid, List **object);
@@ -884,13 +923,11 @@ get_object_address(ObjectType objtype, Node *object,
 				address = get_object_address_type(objtype, castNode(TypeName, object), missing_ok);
 				break;
 			case OBJECT_AGGREGATE:
-				address.classId = ProcedureRelationId;
-				address.objectId = LookupAggWithArgs(castNode(ObjectWithArgs, object), missing_ok);
-				address.objectSubId = 0;
-				break;
 			case OBJECT_FUNCTION:
+			case OBJECT_PROCEDURE:
+			case OBJECT_ROUTINE:
 				address.classId = ProcedureRelationId;
-				address.objectId = LookupFuncWithArgs(castNode(ObjectWithArgs, object), missing_ok);
+				address.objectId = LookupFuncWithArgs(objtype, castNode(ObjectWithArgs, object), missing_ok);
 				address.objectSubId = 0;
 				break;
 			case OBJECT_OPERATOR:
@@ -1216,7 +1253,8 @@ get_relation_by_qualified_name(ObjectType objtype, List *object,
 	switch (objtype)
 	{
 		case OBJECT_INDEX:
-			if (relation->rd_rel->relkind != RELKIND_INDEX)
+			if (relation->rd_rel->relkind != RELKIND_INDEX &&
+				relation->rd_rel->relkind != RELKIND_PARTITIONED_INDEX)
 				ereport(ERROR,
 						(errcode(ERRCODE_WRONG_OBJECT_TYPE),
 						 errmsg("\"%s\" is not an index",
@@ -1300,9 +1338,9 @@ get_object_address_relobject(ObjectType objtype, List *object,
 
 	/* Extract relation name and open relation. */
 	relname = list_truncate(list_copy(object), nnames - 1);
-	relation = heap_openrv_extended(makeRangeVarFromNameList(relname),
-									AccessShareLock,
-									missing_ok);
+	relation = table_openrv_extended(makeRangeVarFromNameList(relname),
+									 AccessShareLock,
+									 missing_ok);
 
 	reloid = relation ? RelationGetRelid(relation) : InvalidOid;
 
@@ -1342,7 +1380,7 @@ get_object_address_relobject(ObjectType objtype, List *object,
 	if (!OidIsValid(address.objectId))
 	{
 		if (relation != NULL)
-			heap_close(relation, AccessShareLock);
+			table_close(relation, AccessShareLock);
 
 		relation = NULL;		/* department of accident prevention */
 		return address;
@@ -1458,7 +1496,11 @@ get_object_address_attrdef(ObjectType objtype, List *object,
 		scan = systable_beginscan(attrdef, AttrDefaultIndexId, true,
 								  NULL, 2, keys);
 		if (HeapTupleIsValid(tup = systable_getnext(scan)))
-			defoid = HeapTupleGetOid(tup);
+		{
+			Form_pg_attrdef atdform = (Form_pg_attrdef) GETSTRUCT(tup);
+
+			defoid = atdform->oid;
+		}
 
 		systable_endscan(scan);
 		relation_close(attrdef, AccessShareLock);
@@ -1591,6 +1633,8 @@ get_object_address_opf_member(ObjectType objtype,
 	famaddr = get_object_address_opcf(OBJECT_OPFAMILY, copy, false);
 
 	/* find out left/right type names and OIDs */
+	typenames[0] = typenames[1] = NULL;
+	typeoids[0] = typeoids[1] = InvalidOid;
 	i = 0;
 	foreach(cell, lsecond(object))
 	{
@@ -1630,7 +1674,7 @@ get_object_address_opf_member(ObjectType objtype,
 				}
 				else
 				{
-					address.objectId = HeapTupleGetOid(tp);
+					address.objectId = ((Form_pg_amop) GETSTRUCT(tp))->oid;
 					ReleaseSysCache(tp);
 				}
 			}
@@ -1661,7 +1705,7 @@ get_object_address_opf_member(ObjectType objtype,
 				}
 				else
 				{
-					address.objectId = HeapTupleGetOid(tp);
+					address.objectId = ((Form_pg_amproc) GETSTRUCT(tp))->oid;
 					ReleaseSysCache(tp);
 				}
 			}
@@ -1708,7 +1752,7 @@ get_object_address_usermapping(List *object, bool missing_ok)
 								username, servername)));
 			return address;
 		}
-		userid = HeapTupleGetOid(tp);
+		userid = ((Form_pg_authid) GETSTRUCT(tp))->oid;
 		ReleaseSysCache(tp);
 	}
 
@@ -1735,7 +1779,7 @@ get_object_address_usermapping(List *object, bool missing_ok)
 		return address;
 	}
 
-	address.objectId = HeapTupleGetOid(tp);
+	address.objectId = ((Form_pg_user_mapping) GETSTRUCT(tp))->oid;
 
 	ReleaseSysCache(tp);
 
@@ -1778,7 +1822,7 @@ get_object_address_publication_rel(List *object,
 
 	/* Find the publication relation mapping in syscache. */
 	address.objectId =
-		GetSysCacheOid2(PUBLICATIONRELMAP,
+		GetSysCacheOid2(PUBLICATIONRELMAP, Anum_pg_publication_rel_oid,
 						ObjectIdGetDatum(RelationGetRelid(relation)),
 						ObjectIdGetDatum(pub->oid));
 	if (!OidIsValid(address.objectId))
@@ -1865,7 +1909,7 @@ get_object_address_defacl(List *object, bool missing_ok)
 						 CStringGetDatum(username));
 	if (!HeapTupleIsValid(tp))
 		goto not_found;
-	userid = HeapTupleGetOid(tp);
+	userid = ((Form_pg_authid) GETSTRUCT(tp))->oid;
 	ReleaseSysCache(tp);
 
 	/*
@@ -1889,7 +1933,7 @@ get_object_address_defacl(List *object, bool missing_ok)
 	if (!HeapTupleIsValid(tp))
 		goto not_found;
 
-	address.objectId = HeapTupleGetOid(tp);
+	address.objectId = ((Form_pg_default_acl) GETSTRUCT(tp))->oid;
 	ReleaseSysCache(tp);
 
 	return address;
@@ -1924,7 +1968,7 @@ textarray_to_strvaluelist(ArrayType *arr)
 	List	   *list = NIL;
 	int			i;
 
-	deconstruct_array(arr, TEXTOID, -1, false, 'i',
+	deconstruct_array(arr, TEXTOID, -1, false, TYPALIGN_INT,
 					  &elems, &nulls, &nelems);
 
 	for (i = 0; i < nelems; i++)
@@ -1981,7 +2025,7 @@ pg_get_object_address(PG_FUNCTION_ARGS)
 		bool	   *nulls;
 		int			nelems;
 
-		deconstruct_array(namearr, TEXTOID, -1, false, 'i',
+		deconstruct_array(namearr, TEXTOID, -1, false, TYPALIGN_INT,
 						  &elems, &nulls, &nelems);
 		if (nelems != 1)
 			ereport(ERROR,
@@ -1999,7 +2043,7 @@ pg_get_object_address(PG_FUNCTION_ARGS)
 		bool	   *nulls;
 		int			nelems;
 
-		deconstruct_array(namearr, TEXTOID, -1, false, 'i',
+		deconstruct_array(namearr, TEXTOID, -1, false, TYPALIGN_INT,
 						  &elems, &nulls, &nelems);
 		if (nelems != 1)
 			ereport(ERROR,
@@ -2025,6 +2069,8 @@ pg_get_object_address(PG_FUNCTION_ARGS)
 	 */
 	if (type == OBJECT_AGGREGATE ||
 		type == OBJECT_FUNCTION ||
+		type == OBJECT_PROCEDURE ||
+		type == OBJECT_ROUTINE ||
 		type == OBJECT_OPERATOR ||
 		type == OBJECT_CAST ||
 		type == OBJECT_AMOP ||
@@ -2036,7 +2082,7 @@ pg_get_object_address(PG_FUNCTION_ARGS)
 		int			nelems;
 		int			i;
 
-		deconstruct_array(argsarr, TEXTOID, -1, false, 'i',
+		deconstruct_array(argsarr, TEXTOID, -1, false, TYPALIGN_INT,
 						  &elems, &nulls, &nelems);
 
 		args = NIL;
@@ -2057,8 +2103,8 @@ pg_get_object_address(PG_FUNCTION_ARGS)
 	}
 
 	/*
-	 * get_object_address is pretty sensitive to the length its input lists;
-	 * check that they're what it wants.
+	 * get_object_address is pretty sensitive to the length of its input
+	 * lists; check that they're what it wants.
 	 */
 	switch (type)
 	{
@@ -2087,6 +2133,7 @@ pg_get_object_address(PG_FUNCTION_ARGS)
 						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 						 errmsg("name list length must be at least %d", 3)));
 			/* fall through to check args length */
+			/* FALLTHROUGH */
 		case OBJECT_OPERATOR:
 			if (list_length(args) != 2)
 				ereport(ERROR,
@@ -2168,6 +2215,8 @@ pg_get_object_address(PG_FUNCTION_ARGS)
 			objnode = (Node *) list_make2(name, args);
 			break;
 		case OBJECT_FUNCTION:
+		case OBJECT_PROCEDURE:
+		case OBJECT_ROUTINE:
 		case OBJECT_AGGREGATE:
 		case OBJECT_OPERATOR:
 			{
@@ -2194,7 +2243,7 @@ pg_get_object_address(PG_FUNCTION_ARGS)
 	if (relation)
 		relation_close(relation, AccessShareLock);
 
-	tupdesc = CreateTemplateTupleDesc(3, false);
+	tupdesc = CreateTemplateTupleDesc(3);
 	TupleDescInitEntry(tupdesc, (AttrNumber) 1, "classid",
 					   OIDOID, -1, 0);
 	TupleDescInitEntry(tupdesc, (AttrNumber) 2, "objid",
@@ -2236,12 +2285,12 @@ check_object_ownership(Oid roleid, ObjectType objtype, ObjectAddress address,
 		case OBJECT_POLICY:
 		case OBJECT_TABCONSTRAINT:
 			if (!pg_class_ownercheck(RelationGetRelid(relation), roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_CLASS,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   RelationGetRelationName(relation));
 			break;
 		case OBJECT_DATABASE:
 			if (!pg_database_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_DATABASE,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   strVal((Value *) object));
 			break;
 		case OBJECT_TYPE:
@@ -2275,63 +2324,65 @@ check_object_ownership(Oid roleid, ObjectType objtype, ObjectAddress address,
 			break;
 		case OBJECT_AGGREGATE:
 		case OBJECT_FUNCTION:
+		case OBJECT_PROCEDURE:
+		case OBJECT_ROUTINE:
 			if (!pg_proc_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_PROC,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   NameListToString((castNode(ObjectWithArgs, object))->objname));
 			break;
 		case OBJECT_OPERATOR:
 			if (!pg_oper_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_OPER,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   NameListToString((castNode(ObjectWithArgs, object))->objname));
 			break;
 		case OBJECT_SCHEMA:
 			if (!pg_namespace_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_NAMESPACE,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   strVal((Value *) object));
 			break;
 		case OBJECT_COLLATION:
 			if (!pg_collation_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_COLLATION,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   NameListToString(castNode(List, object)));
 			break;
 		case OBJECT_CONVERSION:
 			if (!pg_conversion_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_CONVERSION,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   NameListToString(castNode(List, object)));
 			break;
 		case OBJECT_EXTENSION:
 			if (!pg_extension_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_EXTENSION,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   strVal((Value *) object));
 			break;
 		case OBJECT_FDW:
 			if (!pg_foreign_data_wrapper_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_FDW,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   strVal((Value *) object));
 			break;
 		case OBJECT_FOREIGN_SERVER:
 			if (!pg_foreign_server_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_FOREIGN_SERVER,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   strVal((Value *) object));
 			break;
 		case OBJECT_EVENT_TRIGGER:
 			if (!pg_event_trigger_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_EVENT_TRIGGER,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   strVal((Value *) object));
 			break;
 		case OBJECT_LANGUAGE:
 			if (!pg_language_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_LANGUAGE,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   strVal((Value *) object));
 			break;
 		case OBJECT_OPCLASS:
 			if (!pg_opclass_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_OPCLASS,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   NameListToString(castNode(List, object)));
 			break;
 		case OBJECT_OPFAMILY:
 			if (!pg_opfamily_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_OPFAMILY,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   NameListToString(castNode(List, object)));
 			break;
 		case OBJECT_LARGEOBJECT:
@@ -2361,12 +2412,12 @@ check_object_ownership(Oid roleid, ObjectType objtype, ObjectAddress address,
 			break;
 		case OBJECT_PUBLICATION:
 			if (!pg_publication_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_PUBLICATION,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   strVal((Value *) object));
 			break;
 		case OBJECT_SUBSCRIPTION:
 			if (!pg_subscription_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_SUBSCRIPTION,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   strVal((Value *) object));
 			break;
 		case OBJECT_TRANSFORM:
@@ -2380,17 +2431,17 @@ check_object_ownership(Oid roleid, ObjectType objtype, ObjectAddress address,
 			break;
 		case OBJECT_TABLESPACE:
 			if (!pg_tablespace_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_TABLESPACE,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   strVal((Value *) object));
 			break;
 		case OBJECT_TSDICTIONARY:
 			if (!pg_ts_dict_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_TSDICTIONARY,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   NameListToString(castNode(List, object)));
 			break;
 		case OBJECT_TSCONFIGURATION:
 			if (!pg_ts_config_ownercheck(address.objectId, roleid))
-				aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_TSCONFIGURATION,
+				aclcheck_error(ACLCHECK_NOT_OWNER, objtype,
 							   NameListToString(castNode(List, object)));
 			break;
 		case OBJECT_ROLE:
@@ -2523,6 +2574,14 @@ get_object_catcache_name(Oid class_id)
 }
 
 AttrNumber
+get_object_attnum_oid(Oid class_id)
+{
+	const ObjectPropertyType *prop = get_object_property_data(class_id);
+
+	return prop->attnum_oid;
+}
+
+AttrNumber
 get_object_attnum_name(Oid class_id)
 {
 	const ObjectPropertyType *prop = get_object_property_data(class_id);
@@ -2554,12 +2613,29 @@ get_object_attnum_acl(Oid class_id)
 	return prop->attnum_acl;
 }
 
-AclObjectKind
-get_object_aclkind(Oid class_id)
+/*
+ * get_object_type
+ *
+ * Return the object type associated with a given object.  This routine
+ * is primarily used to determine the object type to mention in ACL check
+ * error messages, so it's desirable for it to avoid failing.
+ */
+ObjectType
+get_object_type(Oid class_id, Oid object_id)
 {
 	const ObjectPropertyType *prop = get_object_property_data(class_id);
 
-	return prop->acl_kind;
+	if (prop->objtype == OBJECT_TABLE)
+	{
+		/*
+		 * If the property data says it's a table, dig a little deeper to get
+		 * the real relation kind, so that callers can produce more precise
+		 * error messages.
+		 */
+		return get_relkind_objtype(get_rel_relkind(object_id));
+	}
+	else
+		return prop->objtype;
 }
 
 bool
@@ -2627,7 +2703,7 @@ get_object_property_data(Oid class_id)
  * We try a syscache first, if available.
  */
 HeapTuple
-get_catalog_object_by_oid(Relation catalog, Oid objectId)
+get_catalog_object_by_oid(Relation catalog, AttrNumber oidcol, Oid objectId)
 {
 	HeapTuple	tuple;
 	Oid			classId = RelationGetRelid(catalog);
@@ -2648,7 +2724,7 @@ get_catalog_object_by_oid(Relation catalog, Oid objectId)
 		Assert(OidIsValid(oidIndexId));
 
 		ScanKeyInit(&skey,
-					ObjectIdAttributeNumber,
+					oidcol,
 					BTEqualStrategyNumber, F_OIDEQ,
 					ObjectIdGetDatum(objectId));
 
@@ -2683,11 +2759,23 @@ getObjectDescription(const ObjectAddress *object)
 	switch (getObjectClass(object))
 	{
 		case OCLASS_CLASS:
-			getRelationDescription(&buffer, object->objectId);
-			if (object->objectSubId != 0)
-				appendStringInfo(&buffer, _(" column %s"),
-								 get_relid_attribute_name(object->objectId,
-														  object->objectSubId));
+			if (object->objectSubId == 0)
+				getRelationDescription(&buffer, object->objectId);
+			else
+			{
+				/* column, not whole relation */
+				StringInfoData rel;
+
+				initStringInfo(&rel);
+				getRelationDescription(&rel, object->objectId);
+				/* translator: second %s is, e.g., "table %s" */
+				appendStringInfo(&buffer, _("column %s of %s"),
+								 get_attname(object->objectId,
+											 object->objectSubId,
+											 false),
+								 rel.data);
+				pfree(rel.data);
+			}
 			break;
 
 		case OCLASS_PROC:
@@ -2708,10 +2796,10 @@ getObjectDescription(const ObjectAddress *object)
 				HeapTuple	tup;
 				Form_pg_cast castForm;
 
-				castDesc = heap_open(CastRelationId, AccessShareLock);
+				castDesc = table_open(CastRelationId, AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_cast_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -2731,7 +2819,7 @@ getObjectDescription(const ObjectAddress *object)
 								 format_type_be(castForm->casttarget));
 
 				systable_endscan(rcscan);
-				heap_close(castDesc, AccessShareLock);
+				table_close(castDesc, AccessShareLock);
 				break;
 			}
 
@@ -2779,6 +2867,7 @@ getObjectDescription(const ObjectAddress *object)
 
 					initStringInfo(&rel);
 					getRelationDescription(&rel, con->conrelid);
+					/* translator: second %s is, e.g., "table %s" */
 					appendStringInfo(&buffer, _("constraint %s on %s"),
 									 NameStr(con->conname), rel.data);
 					pfree(rel.data);
@@ -2828,10 +2917,10 @@ getObjectDescription(const ObjectAddress *object)
 				Form_pg_attrdef attrdef;
 				ObjectAddress colobject;
 
-				attrdefDesc = heap_open(AttrDefaultRelationId, AccessShareLock);
+				attrdefDesc = table_open(AttrDefaultRelationId, AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_attrdef_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -2850,11 +2939,12 @@ getObjectDescription(const ObjectAddress *object)
 				colobject.objectId = attrdef->adrelid;
 				colobject.objectSubId = attrdef->adnum;
 
-				appendStringInfo(&buffer, _("default for %s"),
+				/* translator: %s is typically "column %s of table %s" */
+				appendStringInfo(&buffer, _("default value for %s"),
 								 getObjectDescription(&colobject));
 
 				systable_endscan(adscan);
-				heap_close(attrdefDesc, AccessShareLock);
+				table_close(attrdefDesc, AccessShareLock);
 				break;
 			}
 
@@ -2939,11 +3029,11 @@ getObjectDescription(const ObjectAddress *object)
 				Form_pg_amop amopForm;
 				StringInfoData opfam;
 
-				amopDesc = heap_open(AccessMethodOperatorRelationId,
-									 AccessShareLock);
+				amopDesc = table_open(AccessMethodOperatorRelationId,
+									  AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_amop_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -2976,7 +3066,7 @@ getObjectDescription(const ObjectAddress *object)
 				pfree(opfam.data);
 
 				systable_endscan(amscan);
-				heap_close(amopDesc, AccessShareLock);
+				table_close(amopDesc, AccessShareLock);
 				break;
 			}
 
@@ -2989,11 +3079,11 @@ getObjectDescription(const ObjectAddress *object)
 				Form_pg_amproc amprocForm;
 				StringInfoData opfam;
 
-				amprocDesc = heap_open(AccessMethodProcedureRelationId,
-									   AccessShareLock);
+				amprocDesc = table_open(AccessMethodProcedureRelationId,
+										AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_amproc_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -3026,7 +3116,7 @@ getObjectDescription(const ObjectAddress *object)
 				pfree(opfam.data);
 
 				systable_endscan(amscan);
-				heap_close(amprocDesc, AccessShareLock);
+				table_close(amprocDesc, AccessShareLock);
 				break;
 			}
 
@@ -3037,11 +3127,12 @@ getObjectDescription(const ObjectAddress *object)
 				SysScanDesc rcscan;
 				HeapTuple	tup;
 				Form_pg_rewrite rule;
+				StringInfoData rel;
 
-				ruleDesc = heap_open(RewriteRelationId, AccessShareLock);
+				ruleDesc = table_open(RewriteRelationId, AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_rewrite_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -3053,15 +3144,17 @@ getObjectDescription(const ObjectAddress *object)
 				if (!HeapTupleIsValid(tup))
 					elog(ERROR, "could not find tuple for rule %u",
 						 object->objectId);
-
 				rule = (Form_pg_rewrite) GETSTRUCT(tup);
 
-				appendStringInfo(&buffer, _("rule %s on "),
-								 NameStr(rule->rulename));
-				getRelationDescription(&buffer, rule->ev_class);
+				initStringInfo(&rel);
+				getRelationDescription(&rel, rule->ev_class);
 
+				/* translator: second %s is, e.g., "table %s" */
+				appendStringInfo(&buffer, _("rule %s on %s"),
+								 NameStr(rule->rulename), rel.data);
+				pfree(rel.data);
 				systable_endscan(rcscan);
-				heap_close(ruleDesc, AccessShareLock);
+				table_close(ruleDesc, AccessShareLock);
 				break;
 			}
 
@@ -3072,11 +3165,12 @@ getObjectDescription(const ObjectAddress *object)
 				SysScanDesc tgscan;
 				HeapTuple	tup;
 				Form_pg_trigger trig;
+				StringInfoData rel;
 
-				trigDesc = heap_open(TriggerRelationId, AccessShareLock);
+				trigDesc = table_open(TriggerRelationId, AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_trigger_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -3088,15 +3182,17 @@ getObjectDescription(const ObjectAddress *object)
 				if (!HeapTupleIsValid(tup))
 					elog(ERROR, "could not find tuple for trigger %u",
 						 object->objectId);
-
 				trig = (Form_pg_trigger) GETSTRUCT(tup);
 
-				appendStringInfo(&buffer, _("trigger %s on "),
-								 NameStr(trig->tgname));
-				getRelationDescription(&buffer, trig->tgrelid);
+				initStringInfo(&rel);
+				getRelationDescription(&rel, trig->tgrelid);
 
+				/* translator: second %s is, e.g., "table %s" */
+				appendStringInfo(&buffer, _("trigger %s on %s"),
+								 NameStr(trig->tgname), rel.data);
+				pfree(rel.data);
 				systable_endscan(tgscan);
-				heap_close(trigDesc, AccessShareLock);
+				table_close(trigDesc, AccessShareLock);
 				break;
 			}
 
@@ -3328,11 +3424,13 @@ getObjectDescription(const ObjectAddress *object)
 				SysScanDesc rcscan;
 				HeapTuple	tup;
 				Form_pg_default_acl defacl;
+				char	   *rolename;
+				char	   *nspname;
 
-				defaclrel = heap_open(DefaultAclRelationId, AccessShareLock);
+				defaclrel = table_open(DefaultAclRelationId, AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_default_acl_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -3347,50 +3445,76 @@ getObjectDescription(const ObjectAddress *object)
 
 				defacl = (Form_pg_default_acl) GETSTRUCT(tup);
 
+				rolename = GetUserNameFromId(defacl->defaclrole, false);
+
+				if (OidIsValid(defacl->defaclnamespace))
+					nspname = get_namespace_name(defacl->defaclnamespace);
+				else
+					nspname = NULL;
+
 				switch (defacl->defaclobjtype)
 				{
 					case DEFACLOBJ_RELATION:
-						appendStringInfo(&buffer,
-										 _("default privileges on new relations belonging to role %s"),
-										 GetUserNameFromId(defacl->defaclrole, false));
+						if (nspname)
+							appendStringInfo(&buffer,
+											 _("default privileges on new relations belonging to role %s in schema %s"),
+											 rolename, nspname);
+						else
+							appendStringInfo(&buffer,
+											 _("default privileges on new relations belonging to role %s"),
+											 rolename);
 						break;
 					case DEFACLOBJ_SEQUENCE:
-						appendStringInfo(&buffer,
-										 _("default privileges on new sequences belonging to role %s"),
-										 GetUserNameFromId(defacl->defaclrole, false));
+						if (nspname)
+							appendStringInfo(&buffer,
+											 _("default privileges on new sequences belonging to role %s in schema %s"),
+											 rolename, nspname);
+						else
+							appendStringInfo(&buffer,
+											 _("default privileges on new sequences belonging to role %s"),
+											 rolename);
 						break;
 					case DEFACLOBJ_FUNCTION:
-						appendStringInfo(&buffer,
-										 _("default privileges on new functions belonging to role %s"),
-										 GetUserNameFromId(defacl->defaclrole, false));
+						if (nspname)
+							appendStringInfo(&buffer,
+											 _("default privileges on new functions belonging to role %s in schema %s"),
+											 rolename, nspname);
+						else
+							appendStringInfo(&buffer,
+											 _("default privileges on new functions belonging to role %s"),
+											 rolename);
 						break;
 					case DEFACLOBJ_TYPE:
-						appendStringInfo(&buffer,
-										 _("default privileges on new types belonging to role %s"),
-										 GetUserNameFromId(defacl->defaclrole, false));
+						if (nspname)
+							appendStringInfo(&buffer,
+											 _("default privileges on new types belonging to role %s in schema %s"),
+											 rolename, nspname);
+						else
+							appendStringInfo(&buffer,
+											 _("default privileges on new types belonging to role %s"),
+											 rolename);
 						break;
 					case DEFACLOBJ_NAMESPACE:
+						Assert(!nspname);
 						appendStringInfo(&buffer,
 										 _("default privileges on new schemas belonging to role %s"),
-										 GetUserNameFromId(defacl->defaclrole, false));
+										 rolename);
 						break;
 					default:
 						/* shouldn't get here */
-						appendStringInfo(&buffer,
-										 _("default privileges belonging to role %s"),
-										 GetUserNameFromId(defacl->defaclrole, false));
+						if (nspname)
+							appendStringInfo(&buffer,
+											 _("default privileges belonging to role %s in schema %s"),
+											 rolename, nspname);
+						else
+							appendStringInfo(&buffer,
+											 _("default privileges belonging to role %s"),
+											 rolename);
 						break;
 				}
 
-				if (OidIsValid(defacl->defaclnamespace))
-				{
-					appendStringInfo(&buffer,
-									 _(" in schema %s"),
-									 get_namespace_name(defacl->defaclnamespace));
-				}
-
 				systable_endscan(rcscan);
-				heap_close(defaclrel, AccessShareLock);
+				table_close(defaclrel, AccessShareLock);
 				break;
 			}
 
@@ -3428,11 +3552,12 @@ getObjectDescription(const ObjectAddress *object)
 				SysScanDesc sscan;
 				HeapTuple	tuple;
 				Form_pg_policy form_policy;
+				StringInfoData rel;
 
-				policy_rel = heap_open(PolicyRelationId, AccessShareLock);
+				policy_rel = table_open(PolicyRelationId, AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_policy_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -3444,22 +3569,25 @@ getObjectDescription(const ObjectAddress *object)
 				if (!HeapTupleIsValid(tuple))
 					elog(ERROR, "could not find tuple for policy %u",
 						 object->objectId);
-
 				form_policy = (Form_pg_policy) GETSTRUCT(tuple);
 
-				appendStringInfo(&buffer, _("policy %s on "),
-								 NameStr(form_policy->polname));
-				getRelationDescription(&buffer, form_policy->polrelid);
+				initStringInfo(&rel);
+				getRelationDescription(&rel, form_policy->polrelid);
 
+				/* translator: second %s is, e.g., "table %s" */
+				appendStringInfo(&buffer, _("policy %s on %s"),
+								 NameStr(form_policy->polname), rel.data);
+				pfree(rel.data);
 				systable_endscan(sscan);
-				heap_close(policy_rel, AccessShareLock);
+				table_close(policy_rel, AccessShareLock);
 				break;
 			}
 
 		case OCLASS_PUBLICATION:
 			{
 				appendStringInfo(&buffer, _("publication %s"),
-								 get_publication_name(object->objectId));
+								 get_publication_name(object->objectId,
+													  false));
 				break;
 			}
 
@@ -3477,7 +3605,7 @@ getObjectDescription(const ObjectAddress *object)
 						 object->objectId);
 
 				prform = (Form_pg_publication_rel) GETSTRUCT(tup);
-				pubname = get_publication_name(prform->prpubid);
+				pubname = get_publication_name(prform->prpubid, false);
 
 				initStringInfo(&rel);
 				getRelationDescription(&rel, prform->prrelid);
@@ -3493,7 +3621,8 @@ getObjectDescription(const ObjectAddress *object)
 		case OCLASS_SUBSCRIPTION:
 			{
 				appendStringInfo(&buffer, _("subscription %s"),
-								 get_subscription_name(object->objectId));
+								 get_subscription_name(object->objectId,
+													   false));
 				break;
 			}
 
@@ -3577,6 +3706,7 @@ getRelationDescription(StringInfo buffer, Oid relid)
 							 relname);
 			break;
 		case RELKIND_INDEX:
+		case RELKIND_PARTITIONED_INDEX:
 			appendStringInfo(buffer, _("index %s"),
 							 relname);
 			break;
@@ -3701,7 +3831,7 @@ pg_identify_object(PG_FUNCTION_ARGS)
 	 * Construct a tuple descriptor for the result row.  This must match this
 	 * function's pg_proc entry!
 	 */
-	tupdesc = CreateTemplateTupleDesc(4, false);
+	tupdesc = CreateTemplateTupleDesc(4);
 	TupleDescInitEntry(tupdesc, (AttrNumber) 1, "type",
 					   TEXTOID, -1, 0);
 	TupleDescInitEntry(tupdesc, (AttrNumber) 2, "schema",
@@ -3716,9 +3846,11 @@ pg_identify_object(PG_FUNCTION_ARGS)
 	if (is_objectclass_supported(address.classId))
 	{
 		HeapTuple	objtup;
-		Relation	catalog = heap_open(address.classId, AccessShareLock);
+		Relation	catalog = table_open(address.classId, AccessShareLock);
 
-		objtup = get_catalog_object_by_oid(catalog, address.objectId);
+		objtup = get_catalog_object_by_oid(catalog,
+										   get_object_attnum_oid(address.classId),
+										   address.objectId);
 		if (objtup != NULL)
 		{
 			bool		isnull;
@@ -3756,7 +3888,7 @@ pg_identify_object(PG_FUNCTION_ARGS)
 			}
 		}
 
-		heap_close(catalog, AccessShareLock);
+		table_close(catalog, AccessShareLock);
 	}
 
 	/* object type */
@@ -3818,7 +3950,7 @@ pg_identify_object_as_address(PG_FUNCTION_ARGS)
 	 * Construct a tuple descriptor for the result row.  This must match this
 	 * function's pg_proc entry!
 	 */
-	tupdesc = CreateTemplateTupleDesc(3, false);
+	tupdesc = CreateTemplateTupleDesc(3);
 	TupleDescInitEntry(tupdesc, (AttrNumber) 1, "type",
 					   TEXTOID, -1, 0);
 	TupleDescInitEntry(tupdesc, (AttrNumber) 2, "object_names",
@@ -4054,6 +4186,7 @@ getRelationTypeDescription(StringInfo buffer, Oid relid, int32 objectSubId)
 			appendStringInfoString(buffer, "table");
 			break;
 		case RELKIND_INDEX:
+		case RELKIND_PARTITIONED_INDEX:
 			appendStringInfoString(buffer, "index");
 			break;
 		case RELKIND_SEQUENCE:
@@ -4096,8 +4229,9 @@ getConstraintTypeDescription(StringInfo buffer, Oid constroid)
 	HeapTuple	constrTup;
 	Form_pg_constraint constrForm;
 
-	constrRel = heap_open(ConstraintRelationId, AccessShareLock);
-	constrTup = get_catalog_object_by_oid(constrRel, constroid);
+	constrRel = table_open(ConstraintRelationId, AccessShareLock);
+	constrTup = get_catalog_object_by_oid(constrRel, Anum_pg_constraint_oid,
+										  constroid);
 	if (!HeapTupleIsValid(constrTup))
 		elog(ERROR, "cache lookup failed for constraint %u", constroid);
 
@@ -4108,9 +4242,9 @@ getConstraintTypeDescription(StringInfo buffer, Oid constroid)
 	else if (OidIsValid(constrForm->contypid))
 		appendStringInfoString(buffer, "domain constraint");
 	else
-		elog(ERROR, "invalid constraint %u", HeapTupleGetOid(constrTup));
+		elog(ERROR, "invalid constraint %u", constrForm->oid);
 
-	heap_close(constrRel, AccessShareLock);
+	table_close(constrRel, AccessShareLock);
 }
 
 /*
@@ -4128,9 +4262,11 @@ getProcedureTypeDescription(StringInfo buffer, Oid procid)
 		elog(ERROR, "cache lookup failed for procedure %u", procid);
 	procForm = (Form_pg_proc) GETSTRUCT(procTup);
 
-	if (procForm->proisagg)
+	if (procForm->prokind == PROKIND_AGGREGATE)
 		appendStringInfoString(buffer, "aggregate");
-	else
+	else if (procForm->prokind == PROKIND_PROCEDURE)
+		appendStringInfoString(buffer, "procedure");
+	else						/* function or window function */
 		appendStringInfoString(buffer, "function");
 
 	ReleaseSysCache(procTup);
@@ -4185,8 +4321,8 @@ getObjectIdentityParts(const ObjectAddress *object,
 			{
 				char	   *attr;
 
-				attr = get_relid_attribute_name(object->objectId,
-												object->objectSubId);
+				attr = get_attname(object->objectId, object->objectSubId,
+								   false);
 				appendStringInfo(&buffer, ".%s", quote_identifier(attr));
 				if (objname)
 					*objname = lappend(*objname, attr);
@@ -4217,9 +4353,10 @@ getObjectIdentityParts(const ObjectAddress *object,
 				HeapTuple	tup;
 				Form_pg_cast castForm;
 
-				castRel = heap_open(CastRelationId, AccessShareLock);
+				castRel = table_open(CastRelationId, AccessShareLock);
 
-				tup = get_catalog_object_by_oid(castRel, object->objectId);
+				tup = get_catalog_object_by_oid(castRel, Anum_pg_cast_oid,
+												object->objectId);
 
 				if (!HeapTupleIsValid(tup))
 					elog(ERROR, "could not find tuple for cast %u",
@@ -4237,7 +4374,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 					*objargs = list_make1(format_type_be_qualified(castForm->casttarget));
 				}
 
-				heap_close(castRel, AccessShareLock);
+				table_close(castRel, AccessShareLock);
 				break;
 			}
 
@@ -4338,10 +4475,10 @@ getObjectIdentityParts(const ObjectAddress *object,
 				Form_pg_attrdef attrdef;
 				ObjectAddress colobject;
 
-				attrdefDesc = heap_open(AttrDefaultRelationId, AccessShareLock);
+				attrdefDesc = table_open(AttrDefaultRelationId, AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_attrdef_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -4365,7 +4502,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 														objname, objargs));
 
 				systable_endscan(adscan);
-				heap_close(attrdefDesc, AccessShareLock);
+				table_close(attrdefDesc, AccessShareLock);
 				break;
 			}
 
@@ -4467,11 +4604,11 @@ getObjectIdentityParts(const ObjectAddress *object,
 				char	   *ltype;
 				char	   *rtype;
 
-				amopDesc = heap_open(AccessMethodOperatorRelationId,
-									 AccessShareLock);
+				amopDesc = table_open(AccessMethodOperatorRelationId,
+									  AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_amop_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -4506,7 +4643,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 				pfree(opfam.data);
 
 				systable_endscan(amscan);
-				heap_close(amopDesc, AccessShareLock);
+				table_close(amopDesc, AccessShareLock);
 				break;
 			}
 
@@ -4521,11 +4658,11 @@ getObjectIdentityParts(const ObjectAddress *object,
 				char	   *ltype;
 				char	   *rtype;
 
-				amprocDesc = heap_open(AccessMethodProcedureRelationId,
-									   AccessShareLock);
+				amprocDesc = table_open(AccessMethodProcedureRelationId,
+										AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_amproc_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -4560,7 +4697,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 				pfree(opfam.data);
 
 				systable_endscan(amscan);
-				heap_close(amprocDesc, AccessShareLock);
+				table_close(amprocDesc, AccessShareLock);
 				break;
 			}
 
@@ -4570,9 +4707,10 @@ getObjectIdentityParts(const ObjectAddress *object,
 				HeapTuple	tup;
 				Form_pg_rewrite rule;
 
-				ruleDesc = heap_open(RewriteRelationId, AccessShareLock);
+				ruleDesc = table_open(RewriteRelationId, AccessShareLock);
 
-				tup = get_catalog_object_by_oid(ruleDesc, object->objectId);
+				tup = get_catalog_object_by_oid(ruleDesc, Anum_pg_rewrite_oid,
+												object->objectId);
 
 				if (!HeapTupleIsValid(tup))
 					elog(ERROR, "could not find tuple for rule %u",
@@ -4586,7 +4724,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 				if (objname)
 					*objname = lappend(*objname, pstrdup(NameStr(rule->rulename)));
 
-				heap_close(ruleDesc, AccessShareLock);
+				table_close(ruleDesc, AccessShareLock);
 				break;
 			}
 
@@ -4596,9 +4734,10 @@ getObjectIdentityParts(const ObjectAddress *object,
 				HeapTuple	tup;
 				Form_pg_trigger trig;
 
-				trigDesc = heap_open(TriggerRelationId, AccessShareLock);
+				trigDesc = table_open(TriggerRelationId, AccessShareLock);
 
-				tup = get_catalog_object_by_oid(trigDesc, object->objectId);
+				tup = get_catalog_object_by_oid(trigDesc, Anum_pg_trigger_oid,
+												object->objectId);
 
 				if (!HeapTupleIsValid(tup))
 					elog(ERROR, "could not find tuple for trigger %u",
@@ -4612,7 +4751,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 				if (objname)
 					*objname = lappend(*objname, pstrdup(NameStr(trig->tgname)));
 
-				heap_close(trigDesc, AccessShareLock);
+				table_close(trigDesc, AccessShareLock);
 				break;
 			}
 
@@ -4857,10 +4996,10 @@ getObjectIdentityParts(const ObjectAddress *object,
 				char	   *schema;
 				char	   *username;
 
-				defaclrel = heap_open(DefaultAclRelationId, AccessShareLock);
+				defaclrel = table_open(DefaultAclRelationId, AccessShareLock);
 
 				ScanKeyInit(&skey[0],
-							ObjectIdAttributeNumber,
+							Anum_pg_default_acl_oid,
 							BTEqualStrategyNumber, F_OIDEQ,
 							ObjectIdGetDatum(object->objectId));
 
@@ -4923,7 +5062,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 				}
 
 				systable_endscan(rcscan);
-				heap_close(defaclrel, AccessShareLock);
+				table_close(defaclrel, AccessShareLock);
 				break;
 			}
 
@@ -4968,9 +5107,10 @@ getObjectIdentityParts(const ObjectAddress *object,
 				HeapTuple	tup;
 				Form_pg_policy policy;
 
-				polDesc = heap_open(PolicyRelationId, AccessShareLock);
+				polDesc = table_open(PolicyRelationId, AccessShareLock);
 
-				tup = get_catalog_object_by_oid(polDesc, object->objectId);
+				tup = get_catalog_object_by_oid(polDesc, Anum_pg_policy_oid,
+												object->objectId);
 
 				if (!HeapTupleIsValid(tup))
 					elog(ERROR, "could not find tuple for policy %u",
@@ -4984,7 +5124,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 				if (objname)
 					*objname = lappend(*objname, pstrdup(NameStr(policy->polname)));
 
-				heap_close(polDesc, AccessShareLock);
+				table_close(polDesc, AccessShareLock);
 				break;
 			}
 
@@ -4992,7 +5132,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 			{
 				char	   *pubname;
 
-				pubname = get_publication_name(object->objectId);
+				pubname = get_publication_name(object->objectId, false);
 				appendStringInfoString(&buffer,
 									   quote_identifier(pubname));
 				if (objname)
@@ -5013,7 +5153,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 						 object->objectId);
 
 				prform = (Form_pg_publication_rel) GETSTRUCT(tup);
-				pubname = get_publication_name(prform->prpubid);
+				pubname = get_publication_name(prform->prpubid, false);
 
 				getRelationIdentity(&buffer, prform->prrelid, objname);
 				appendStringInfo(&buffer, " in publication %s", pubname);
@@ -5029,7 +5169,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 			{
 				char	   *subname;
 
-				subname = get_subscription_name(object->objectId);
+				subname = get_subscription_name(object->objectId, false);
 				appendStringInfoString(&buffer,
 									   quote_identifier(subname));
 				if (objname)
@@ -5045,9 +5185,11 @@ getObjectIdentityParts(const ObjectAddress *object,
 				char	   *transformLang;
 				char	   *transformType;
 
-				transformDesc = heap_open(TransformRelationId, AccessShareLock);
+				transformDesc = table_open(TransformRelationId, AccessShareLock);
 
-				tup = get_catalog_object_by_oid(transformDesc, object->objectId);
+				tup = get_catalog_object_by_oid(transformDesc,
+												Anum_pg_transform_oid,
+												object->objectId);
 
 				if (!HeapTupleIsValid(tup))
 					elog(ERROR, "could not find tuple for transform %u",
@@ -5067,7 +5209,7 @@ getObjectIdentityParts(const ObjectAddress *object,
 					*objargs = list_make1(pstrdup(transformLang));
 				}
 
-				heap_close(transformDesc, AccessShareLock);
+				table_close(transformDesc, AccessShareLock);
 			}
 			break;
 
@@ -5152,7 +5294,7 @@ getRelationIdentity(StringInfo buffer, Oid relid, List **object)
 }
 
 /*
- * Auxiliary function to return a TEXT array out of a list of C-strings.
+ * Auxiliary function to build a TEXT array out of a list of C-strings.
  */
 ArrayType *
 strlist_to_textarray(List *list)
@@ -5166,13 +5308,15 @@ strlist_to_textarray(List *list)
 	MemoryContext oldcxt;
 	int			lb[1];
 
+	/* Work in a temp context; easier than individually pfree'ing the Datums */
 	memcxt = AllocSetContextCreate(CurrentMemoryContext,
 								   "strlist to array",
 								   ALLOCSET_DEFAULT_SIZES);
 	oldcxt = MemoryContextSwitchTo(memcxt);
 
-	datums = palloc(sizeof(text *) * list_length(list));
+	datums = (Datum *) palloc(sizeof(Datum) * list_length(list));
 	nulls = palloc(sizeof(bool) * list_length(list));
+
 	foreach(cell, list)
 	{
 		char	   *name = lfirst(cell);
@@ -5183,15 +5327,53 @@ strlist_to_textarray(List *list)
 			datums[j++] = CStringGetTextDatum(name);
 		}
 		else
-			nulls[j++] = true;
+			nulls[j] = true;
 	}
 
 	MemoryContextSwitchTo(oldcxt);
 
 	lb[0] = 1;
 	arr = construct_md_array(datums, nulls, 1, &j,
-							 lb, TEXTOID, -1, false, 'i');
+							 lb, TEXTOID, -1, false, TYPALIGN_INT);
+
 	MemoryContextDelete(memcxt);
 
 	return arr;
+}
+
+/*
+ * get_relkind_objtype
+ *
+ * Return the object type for the relkind given by the caller.
+ *
+ * If an unexpected relkind is passed, we say OBJECT_TABLE rather than
+ * failing.  That's because this is mostly used for generating error messages
+ * for failed ACL checks on relations, and we'd rather produce a generic
+ * message saying "table" than fail entirely.
+ */
+ObjectType
+get_relkind_objtype(char relkind)
+{
+	switch (relkind)
+	{
+		case RELKIND_RELATION:
+		case RELKIND_PARTITIONED_TABLE:
+			return OBJECT_TABLE;
+		case RELKIND_INDEX:
+		case RELKIND_PARTITIONED_INDEX:
+			return OBJECT_INDEX;
+		case RELKIND_SEQUENCE:
+			return OBJECT_SEQUENCE;
+		case RELKIND_VIEW:
+			return OBJECT_VIEW;
+		case RELKIND_MATVIEW:
+			return OBJECT_MATVIEW;
+		case RELKIND_FOREIGN_TABLE:
+			return OBJECT_FOREIGN_TABLE;
+		case RELKIND_TOASTVALUE:
+			return OBJECT_TABLE;
+		default:
+			/* Per above, don't raise an error */
+			return OBJECT_TABLE;
+	}
 }

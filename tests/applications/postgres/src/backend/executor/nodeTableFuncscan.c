@@ -3,7 +3,7 @@
  * nodeTableFuncscan.c
  *	  Support routines for scanning RangeTableFunc (XMLTABLE like functions).
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -22,16 +22,15 @@
  */
 #include "postgres.h"
 
-#include "nodes/execnodes.h"
 #include "executor/executor.h"
 #include "executor/nodeTableFuncscan.h"
 #include "executor/tablefunc.h"
 #include "miscadmin.h"
+#include "nodes/execnodes.h"
 #include "utils/builtins.h"
 #include "utils/lsyscache.h"
 #include "utils/memutils.h"
 #include "utils/xml.h"
-
 
 static TupleTableSlot *TableFuncNext(TableFuncScanState *node);
 static bool TableFuncRecheck(TableFuncScanState *node, TupleTableSlot *slot);
@@ -140,32 +139,27 @@ ExecInitTableFuncScan(TableFuncScan *node, EState *estate, int eflags)
 	ExecAssignExprContext(estate, &scanstate->ss.ps);
 
 	/*
-	 * initialize child expressions
-	 */
-	scanstate->ss.ps.qual =
-		ExecInitQual(node->scan.plan.qual, &scanstate->ss.ps);
-
-	/*
-	 * tuple table initialization
-	 */
-	ExecInitResultTupleSlot(estate, &scanstate->ss.ps);
-	ExecInitScanTupleSlot(estate, &scanstate->ss);
-
-	/*
 	 * initialize source tuple type
 	 */
 	tupdesc = BuildDescFromLists(tf->colnames,
 								 tf->coltypes,
 								 tf->coltypmods,
 								 tf->colcollations);
-
-	ExecAssignScanType(&scanstate->ss, tupdesc);
+	/* and the corresponding scan slot */
+	ExecInitScanTupleSlot(estate, &scanstate->ss, tupdesc,
+						  &TTSOpsMinimalTuple);
 
 	/*
-	 * Initialize result tuple type and projection info.
+	 * Initialize result type and projection.
 	 */
-	ExecAssignResultTypeFromTL(&scanstate->ss.ps);
+	ExecInitResultTypeTL(&scanstate->ss.ps);
 	ExecAssignScanProjectionInfo(&scanstate->ss);
+
+	/*
+	 * initialize child expressions
+	 */
+	scanstate->ss.ps.qual =
+		ExecInitQual(node->scan.plan.qual, &scanstate->ss.ps);
 
 	/* Only XMLTABLE is supported currently */
 	scanstate->routine = &XmlTableRoutine;
@@ -202,7 +196,7 @@ ExecInitTableFuncScan(TableFuncScan *node, EState *estate, int eflags)
 	{
 		Oid			in_funcid;
 
-		getTypeInputInfo(tupdesc->attrs[i]->atttypid,
+		getTypeInputInfo(TupleDescAttr(tupdesc, i)->atttypid,
 						 &in_funcid, &scanstate->typioparams[i]);
 		fmgr_info(in_funcid, &scanstate->in_functions[i]);
 	}
@@ -227,7 +221,8 @@ ExecEndTableFuncScan(TableFuncScanState *node)
 	/*
 	 * clean out the tuple table
 	 */
-	ExecClearTuple(node->ss.ps.ps_ResultTupleSlot);
+	if (node->ss.ps.ps_ResultTupleSlot)
+		ExecClearTuple(node->ss.ps.ps_ResultTupleSlot);
 	ExecClearTuple(node->ss.ss_ScanTupleSlot);
 
 	/*
@@ -249,7 +244,8 @@ ExecReScanTableFuncScan(TableFuncScanState *node)
 {
 	Bitmapset  *chgparam = node->ss.ps.chgParam;
 
-	ExecClearTuple(node->ss.ps.ps_ResultTupleSlot);
+	if (node->ss.ps.ps_ResultTupleSlot)
+		ExecClearTuple(node->ss.ps.ps_ResultTupleSlot);
 	ExecScanReScan(&node->ss);
 
 	/*
@@ -339,8 +335,6 @@ tfuncFetchRows(TableFuncScanState *tstate, ExprContext *econtext)
 
 	MemoryContextSwitchTo(oldcxt);
 	MemoryContextReset(tstate->perTableCxt);
-
-	return;
 }
 
 /*
@@ -406,6 +400,7 @@ tfuncInitialize(TableFuncScanState *tstate, ExprContext *econtext, Datum doc)
 	foreach(lc1, tstate->colexprs)
 	{
 		char	   *colfilter;
+		Form_pg_attribute att = TupleDescAttr(tupdesc, colno);
 
 		if (colno != ordinalitycol)
 		{
@@ -419,11 +414,11 @@ tfuncInitialize(TableFuncScanState *tstate, ExprContext *econtext, Datum doc)
 							(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 							 errmsg("column filter expression must not be null"),
 							 errdetail("Filter for column \"%s\" is null.",
-									   NameStr(tupdesc->attrs[colno]->attname))));
+									   NameStr(att->attname))));
 				colfilter = TextDatumGetCString(value);
 			}
 			else
-				colfilter = NameStr(tupdesc->attrs[colno]->attname);
+				colfilter = NameStr(att->attname);
 
 			routine->SetColumnFilter(tstate, colfilter, colno);
 		}
@@ -476,6 +471,8 @@ tfuncLoadRows(TableFuncScanState *tstate, ExprContext *econtext)
 		 */
 		for (colno = 0; colno < natts; colno++)
 		{
+			Form_pg_attribute att = TupleDescAttr(tupdesc, colno);
+
 			if (colno == ordinalitycol)
 			{
 				/* Fast path for ordinality column */
@@ -488,8 +485,8 @@ tfuncLoadRows(TableFuncScanState *tstate, ExprContext *econtext)
 
 				values[colno] = routine->GetValue(tstate,
 												  colno,
-												  tupdesc->attrs[colno]->atttypid,
-												  tupdesc->attrs[colno]->atttypmod,
+												  att->atttypid,
+												  att->atttypmod,
 												  &isnull);
 
 				/* No value?  Evaluate and apply the default, if any */
@@ -507,14 +504,14 @@ tfuncLoadRows(TableFuncScanState *tstate, ExprContext *econtext)
 					ereport(ERROR,
 							(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 							 errmsg("null is not allowed in column \"%s\"",
-									NameStr(tupdesc->attrs[colno]->attname))));
+									NameStr(att->attname))));
 
 				nulls[colno] = isnull;
 			}
 
 			/* advance list of default expressions */
 			if (cell != NULL)
-				cell = lnext(cell);
+				cell = lnext(tstate->coldefexprs, cell);
 		}
 
 		tuplestore_putvalues(tstate->tupstore, tupdesc, values, nulls);

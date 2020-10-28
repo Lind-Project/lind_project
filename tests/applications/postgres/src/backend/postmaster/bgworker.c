@@ -2,7 +2,7 @@
  * bgworker.c
  *		POSTGRES pluggable background workers implementation
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *	  src/backend/postmaster/bgworker.c
@@ -12,14 +12,13 @@
 
 #include "postgres.h"
 
-#include <unistd.h>
-
-#include "libpq/pqsignal.h"
 #include "access/parallel.h"
+#include "libpq/pqsignal.h"
 #include "miscadmin.h"
 #include "pgstat.h"
 #include "port/atomics.h"
 #include "postmaster/bgworker_internals.h"
+#include "postmaster/interrupt.h"
 #include "postmaster/postmaster.h"
 #include "replication/logicallauncher.h"
 #include "replication/logicalworker.h"
@@ -344,6 +343,8 @@ BackgroundWorkerStateChange(void)
 		 */
 		ascii_safe_strlcpy(rw->rw_worker.bgw_name,
 						   slot->worker.bgw_name, BGW_MAXLEN);
+		ascii_safe_strlcpy(rw->rw_worker.bgw_type,
+						   slot->worker.bgw_type, BGW_MAXLEN);
 		ascii_safe_strlcpy(rw->rw_worker.bgw_library_name,
 						   slot->worker.bgw_library_name, BGW_MAXLEN);
 		ascii_safe_strlcpy(rw->rw_worker.bgw_function_name,
@@ -523,7 +524,7 @@ ResetBackgroundWorkerCrashTimes(void)
 		if (rw->rw_worker.bgw_restart_time == BGW_NEVER_RESTART)
 		{
 			/*
-			 * Workers marked BGW_NVER_RESTART shouldn't get relaunched after
+			 * Workers marked BGW_NEVER_RESTART shouldn't get relaunched after
 			 * the crash, so forget about them.  (If we wait until after the
 			 * crash to forget about them, and they are parallel workers,
 			 * parallel_terminate_count will get incremented after we've
@@ -630,27 +631,13 @@ SanityCheckBackgroundWorker(BackgroundWorker *worker, int elevel)
 		return false;
 	}
 
-	return true;
-}
-
-static void
-bgworker_quickdie(SIGNAL_ARGS)
-{
 	/*
-	 * We DO NOT want to run proc_exit() or atexit() callbacks -- we're here
-	 * because shared memory may be corrupted, so we don't want to try to
-	 * clean up our transaction.  Just nail the windows shut and get out of
-	 * town.  The callbacks wouldn't be safe to run from a signal handler,
-	 * anyway.
-	 *
-	 * Note we do _exit(2) not _exit(0).  This is to force the postmaster into
-	 * a system reset cycle if someone sends a manual SIGQUIT to a random
-	 * backend.  This is necessary precisely because we don't clean up our
-	 * shared memory state.  (The "dead man switch" mechanism in pmsignal.c
-	 * should ensure the postmaster sees this as a crash, too, but no harm in
-	 * being doubly sure.)
+	 * If bgw_type is not filled in, use bgw_name.
 	 */
-	_exit(2);
+	if (strcmp(worker->bgw_type, "") == 0)
+		strcpy(worker->bgw_type, worker->bgw_name);
+
+	return true;
 }
 
 /*
@@ -664,7 +651,7 @@ bgworker_die(SIGNAL_ARGS)
 	ereport(FATAL,
 			(errcode(ERRCODE_ADMIN_SHUTDOWN),
 			 errmsg("terminating background worker \"%s\" due to administrator command",
-					MyBgworkerEntry->bgw_name)));
+					MyBgworkerEntry->bgw_type)));
 }
 
 /*
@@ -693,7 +680,6 @@ void
 StartBackgroundWorker(void)
 {
 	sigjmp_buf	local_sigjmp_buf;
-	char		buf[MAXPGPATH];
 	BackgroundWorker *worker = MyBgworkerEntry;
 	bgworker_main_type entrypt;
 
@@ -702,9 +688,8 @@ StartBackgroundWorker(void)
 
 	IsBackgroundWorker = true;
 
-	/* Identify myself via ps */
-	snprintf(buf, MAXPGPATH, "bgworker: %s", worker->bgw_name);
-	init_ps_display(buf, "", "", "");
+	MyBackendType = B_BG_WORKER;
+	init_ps_display(worker->bgw_name);
 
 	/*
 	 * If we're not supposed to have shared memory access, then detach from
@@ -748,7 +733,7 @@ StartBackgroundWorker(void)
 	pqsignal(SIGTERM, bgworker_die);
 	pqsignal(SIGHUP, SIG_IGN);
 
-	pqsignal(SIGQUIT, bgworker_quickdie);
+	pqsignal(SIGQUIT, SignalHandlerForCrashExit);
 	InitializeTimeouts();		/* establishes SIGALRM handler */
 
 	pqsignal(SIGPIPE, SIG_IGN);
@@ -758,7 +743,7 @@ StartBackgroundWorker(void)
 	/*
 	 * If an exception is encountered, processing resumes here.
 	 *
-	 * See notes in postgres.c about the design of this coding.
+	 * We just need to clean up, report the error, and go away.
 	 */
 	if (sigsetjmp(local_sigjmp_buf, 1) != 0)
 	{
@@ -768,7 +753,14 @@ StartBackgroundWorker(void)
 		/* Prevent interrupts while cleaning up */
 		HOLD_INTERRUPTS();
 
-		/* Report the error to the server log */
+		/*
+		 * sigsetjmp will have blocked all signals, but we may need to accept
+		 * signals while communicating with our parallel leader.  Once we've
+		 * done HOLD_INTERRUPTS() it should be safe to unblock signals.
+		 */
+		BackgroundWorkerUnblockSignals();
+
+		/* Report the error to the parallel leader and the server log */
 		EmitErrorReport();
 
 		/*
@@ -1164,7 +1156,7 @@ WaitForBackgroundWorkerShutdown(BackgroundWorkerHandle *handle)
  * Instruct the postmaster to terminate a background worker.
  *
  * Note that it's safe to do this without regard to whether the worker is
- * still running, or even if the worker may already have existed and been
+ * still running, or even if the worker may already have exited and been
  * unregistered.
  */
 void
@@ -1232,4 +1224,41 @@ LookupBackgroundWorkerFunction(const char *libraryname, const char *funcname)
 	/* Otherwise load from external library. */
 	return (bgworker_main_type)
 		load_external_function(libraryname, funcname, true, NULL);
+}
+
+/*
+ * Given a PID, get the bgw_type of the background worker.  Returns NULL if
+ * not a valid background worker.
+ *
+ * The return value is in static memory belonging to this function, so it has
+ * to be used before calling this function again.  This is so that the caller
+ * doesn't have to worry about the background worker locking protocol.
+ */
+const char *
+GetBackgroundWorkerTypeByPid(pid_t pid)
+{
+	int			slotno;
+	bool		found = false;
+	static char result[BGW_MAXLEN];
+
+	LWLockAcquire(BackgroundWorkerLock, LW_SHARED);
+
+	for (slotno = 0; slotno < BackgroundWorkerData->total_slots; slotno++)
+	{
+		BackgroundWorkerSlot *slot = &BackgroundWorkerData->slot[slotno];
+
+		if (slot->pid > 0 && slot->pid == pid)
+		{
+			strcpy(result, slot->worker.bgw_type);
+			found = true;
+			break;
+		}
+	}
+
+	LWLockRelease(BackgroundWorkerLock);
+
+	if (!found)
+		return NULL;
+
+	return result;
 }

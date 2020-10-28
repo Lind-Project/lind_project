@@ -2,16 +2,15 @@
  *
  * filemap.h
  *
- * Copyright (c) 2013-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2013-2020, PostgreSQL Global Development Group
  *-------------------------------------------------------------------------
  */
 #ifndef FILEMAP_H
 #define FILEMAP_H
 
-#include "storage/relfilenode.h"
-#include "storage/block.h"
-
 #include "datapagemap.h"
+#include "storage/block.h"
+#include "storage/relfilenode.h"
 
 /*
  * For every file found in the local or remote system, we have a file entry
@@ -95,11 +94,11 @@ extern void print_filemap(void);
 
 /* Functions for populating the filemap */
 extern void process_source_file(const char *path, file_type_t type,
-					size_t newsize, const char *link_target);
+								size_t newsize, const char *link_target);
 extern void process_target_file(const char *path, file_type_t type,
-					size_t newsize, const char *link_target);
+								size_t newsize, const char *link_target);
 extern void process_block_change(ForkNumber forknum, RelFileNode rnode,
-					 BlockNumber blkno);
+								 BlockNumber blkno);
 extern void filemap_finalize(void);
 
 #endif							/* FILEMAP_H */

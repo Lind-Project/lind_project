@@ -2,7 +2,7 @@
 #
 # Makefile for src/backend/utils/mb/Unicode
 #
-# Copyright (c) 2001-2017, PostgreSQL Global Development Group
+# Copyright (c) 2001-2020, PostgreSQL Global Development Group
 #
 # src/backend/utils/mb/Unicode/Makefile
 #
@@ -73,40 +73,40 @@ GENERICTEXTS = $(ISO8859TEXTS) $(WINTEXTS) \
 all: $(MAPS)
 
 $(GENERICMAPS): UCS_to_most.pl $(GENERICTEXTS)
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 johab_to_utf8.map utf8_to_johab.map: UCS_to_JOHAB.pl JOHAB.TXT
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 uhc_to_utf8.map utf8_to_uhc.map: UCS_to_UHC.pl windows-949-2000.xml
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 euc_jp_to_utf8.map utf8_to_euc_jp.map: UCS_to_EUC_JP.pl CP932.TXT JIS0212.TXT
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 euc_cn_to_utf8.map utf8_to_euc_cn.map: UCS_to_EUC_CN.pl gb-18030-2000.xml
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 euc_kr_to_utf8.map utf8_to_euc_kr.map: UCS_to_EUC_KR.pl KSX1001.TXT
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 euc_tw_to_utf8.map utf8_to_euc_tw.map: UCS_to_EUC_TW.pl CNS11643.TXT
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 sjis_to_utf8.map utf8_to_sjis.map: UCS_to_SJIS.pl CP932.TXT
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 gb18030_to_utf8.map utf8_to_gb18030.map: UCS_to_GB18030.pl gb-18030-2000.xml
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 big5_to_utf8.map utf8_to_big5.map: UCS_to_BIG5.pl BIG5.TXT CP950.TXT
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 euc_jis_2004_to_utf8.map utf8_to_euc_jis_2004.map: UCS_to_EUC_JIS_2004.pl euc-jis-2004-std.txt
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 shift_jis_2004_to_utf8.map utf8_to_shift_jis_2004.map: UCS_to_SHIFT_JIS_2004.pl sjis-0213-2004-std.txt
-	$(PERL) $<
+	$(PERL) -I $(srcdir) $<
 
 distclean: clean
 	rm -f $(TEXTS)
@@ -115,11 +115,8 @@ maintainer-clean: distclean
 	rm -f $(MAPS)
 
 
-DOWNLOAD = wget -O $@ --no-use-server-timestamps
-#DOWNLOAD = curl -o $@
-
 BIG5.TXT CNS11643.TXT:
-	$(DOWNLOAD) http://ftp.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/OTHER/$(@F)
+	$(DOWNLOAD) https://www.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/OTHER/$(@F)
 
 euc-jis-2004-std.txt sjis-0213-2004-std.txt:
 	$(DOWNLOAD) http://x0213.org/codetable/$(@F)
@@ -131,19 +128,19 @@ GB2312.TXT:
 	$(DOWNLOAD) 'http://trac.greenstone.org/browser/trunk/gsdl/unicode/MAPPINGS/EASTASIA/GB/GB2312.TXT?rev=1842&format=txt'
 
 JIS0212.TXT:
-	$(DOWNLOAD) http://ftp.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/$(@F)
+	$(DOWNLOAD) https://www.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/$(@F)
 
 JOHAB.TXT KSX1001.TXT:
-	$(DOWNLOAD) http://ftp.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/KSC/$(@F)
+	$(DOWNLOAD) https://www.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/KSC/$(@F)
 
 KOI8-R.TXT KOI8-U.TXT:
-	$(DOWNLOAD) http://ftp.unicode.org/Public/MAPPINGS/VENDORS/MISC/$(@F)
+	$(DOWNLOAD) https://www.unicode.org/Public/MAPPINGS/VENDORS/MISC/$(@F)
 
 $(ISO8859TEXTS):
-	$(DOWNLOAD) http://ftp.unicode.org/Public/MAPPINGS/ISO8859/$(@F)
+	$(DOWNLOAD) https://www.unicode.org/Public/MAPPINGS/ISO8859/$(@F)
 
 $(filter-out CP8%,$(WINTEXTS)) CP932.TXT CP950.TXT:
-	$(DOWNLOAD) http://ftp.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/$(@F)
+	$(DOWNLOAD) https://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/$(@F)
 
 $(filter CP8%,$(WINTEXTS)):
-	$(DOWNLOAD) http://ftp.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/$(@F)
+	$(DOWNLOAD) https://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/$(@F)

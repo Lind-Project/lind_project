@@ -5,10 +5,10 @@
 
 #include <limits.h>
 
-#include "access/gist.h"
-#include "access/stratnum.h"
-
 #include "_int.h"
+#include "access/gist.h"
+#include "access/reloptions.h"
+#include "access/stratnum.h"
 
 #define GETENTRY(vec,pos) ((ArrayType *) DatumGetPointer((vec)->vector[(pos)].key))
 
@@ -33,12 +33,13 @@ PG_FUNCTION_INFO_V1(g_int_penalty);
 PG_FUNCTION_INFO_V1(g_int_picksplit);
 PG_FUNCTION_INFO_V1(g_int_union);
 PG_FUNCTION_INFO_V1(g_int_same);
+PG_FUNCTION_INFO_V1(g_int_options);
 
 
 /*
 ** The GiST Consistent method for _intments
 ** Should return false if for all data items x below entry,
-** the predicate x op query == FALSE, where op is the oper
+** the predicate x op query == false, where op is the oper
 ** corresponding to strategy in the pg_amop table.
 */
 Datum
@@ -105,7 +106,7 @@ g_int_consistent(PG_FUNCTION_ARGS)
 			}
 			break;
 		default:
-			retval = FALSE;
+			retval = false;
 	}
 	pfree(query);
 	PG_RETURN_BOOL(retval);
@@ -157,6 +158,7 @@ g_int_compress(PG_FUNCTION_ARGS)
 	GISTENTRY  *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
 	GISTENTRY  *retval;
 	ArrayType  *r;
+	int			num_ranges = G_INT_GET_NUMRANGES();
 	int			len,
 				lenr;
 	int		   *dr;
@@ -171,13 +173,13 @@ g_int_compress(PG_FUNCTION_ARGS)
 		CHECKARRVALID(r);
 		PREPAREARR(r);
 
-		if (ARRNELEMS(r) >= 2 * MAXNUMRANGE)
+		if (ARRNELEMS(r) >= 2 * num_ranges)
 			elog(NOTICE, "input array is too big (%d maximum allowed, %d current), use gist__intbig_ops opclass instead",
-				 2 * MAXNUMRANGE - 1, ARRNELEMS(r));
+				 2 * num_ranges - 1, ARRNELEMS(r));
 
 		retval = palloc(sizeof(GISTENTRY));
 		gistentryinit(*retval, PointerGetDatum(r),
-					  entry->rel, entry->page, entry->offset, FALSE);
+					  entry->rel, entry->page, entry->offset, false);
 
 		PG_RETURN_POINTER(retval);
 	}
@@ -196,7 +198,7 @@ g_int_compress(PG_FUNCTION_ARGS)
 		PG_RETURN_POINTER(entry);
 	}
 
-	if ((len = ARRNELEMS(r)) >= 2 * MAXNUMRANGE)
+	if ((len = ARRNELEMS(r)) >= 2 * num_ranges)
 	{							/* compress */
 		if (r == (ArrayType *) DatumGetPointer(entry->key))
 			r = DatumGetArrayTypePCopy(entry->key);
@@ -209,7 +211,7 @@ g_int_compress(PG_FUNCTION_ARGS)
 		 * "lenr" is the number of ranges we must eventually remove by
 		 * merging, we must be careful to remove no more than this number.
 		 */
-		lenr = len - MAXNUMRANGE;
+		lenr = len - num_ranges;
 
 		/*
 		 * Initially assume we can merge consecutive ints into a range. but we
@@ -217,41 +219,44 @@ g_int_compress(PG_FUNCTION_ARGS)
 		 */
 		for (j = i = len - 1; i > 0 && lenr > 0; i--, j--)
 		{
-			int		r_end = dr[i];
-			int		r_start = r_end;
-			while (i > 0 && lenr > 0 && dr[i-1] == r_start - 1)
+			int			r_end = dr[i];
+			int			r_start = r_end;
+
+			while (i > 0 && lenr > 0 && dr[i - 1] == r_start - 1)
 				--r_start, --i, --lenr;
-			dr[2*j] = r_start;
-			dr[2*j+1] = r_end;
+			dr[2 * j] = r_start;
+			dr[2 * j + 1] = r_end;
 		}
 		/* just copy the rest, if any, as trivial ranges */
 		for (; i >= 0; i--, j--)
-			dr[2*j] = dr[2*j + 1] = dr[i];
+			dr[2 * j] = dr[2 * j + 1] = dr[i];
 
 		if (++j)
 		{
 			/*
 			 * shunt everything down to start at the right place
 			 */
-			memmove((void *) &dr[0], (void *) &dr[2*j], 2*(len - j) * sizeof(int32));
+			memmove((void *) &dr[0], (void *) &dr[2 * j], 2 * (len - j) * sizeof(int32));
 		}
+
 		/*
 		 * make "len" be number of array elements, not ranges
 		 */
-		len = 2*(len - j);
+		len = 2 * (len - j);
 		cand = 1;
-		while (len > MAXNUMRANGE * 2)
+		while (len > num_ranges * 2)
 		{
 			min = PG_INT64_MAX;
 			for (i = 2; i < len; i += 2)
-				if (min > ((int64)dr[i] - (int64)dr[i - 1]))
+				if (min > ((int64) dr[i] - (int64) dr[i - 1]))
 				{
-					min = ((int64)dr[i] - (int64)dr[i - 1]);
+					min = ((int64) dr[i] - (int64) dr[i - 1]);
 					cand = i;
 				}
 			memmove((void *) &dr[cand - 1], (void *) &dr[cand + 1], (len - cand - 1) * sizeof(int32));
 			len -= 2;
 		}
+
 		/*
 		 * check sparseness of result
 		 */
@@ -263,7 +268,7 @@ g_int_compress(PG_FUNCTION_ARGS)
 		r = resize_intArrayType(r, len);
 		retval = palloc(sizeof(GISTENTRY));
 		gistentryinit(*retval, PointerGetDatum(r),
-					  entry->rel, entry->page, entry->offset, FALSE);
+					  entry->rel, entry->page, entry->offset, false);
 		PG_RETURN_POINTER(retval);
 	}
 	else
@@ -276,6 +281,7 @@ g_int_decompress(PG_FUNCTION_ARGS)
 	GISTENTRY  *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
 	GISTENTRY  *retval;
 	ArrayType  *r;
+	int			num_ranges = G_INT_GET_NUMRANGES();
 	int		   *dr,
 				lenr;
 	ArrayType  *in;
@@ -293,7 +299,7 @@ g_int_decompress(PG_FUNCTION_ARGS)
 		{
 			retval = palloc(sizeof(GISTENTRY));
 			gistentryinit(*retval, PointerGetDatum(in),
-						  entry->rel, entry->page, entry->offset, FALSE);
+						  entry->rel, entry->page, entry->offset, false);
 			PG_RETURN_POINTER(retval);
 		}
 
@@ -302,13 +308,13 @@ g_int_decompress(PG_FUNCTION_ARGS)
 
 	lenin = ARRNELEMS(in);
 
-	if (lenin < 2 * MAXNUMRANGE)
+	if (lenin < 2 * num_ranges)
 	{							/* not compressed value */
 		if (in != (ArrayType *) DatumGetPointer(entry->key))
 		{
 			retval = palloc(sizeof(GISTENTRY));
 			gistentryinit(*retval, PointerGetDatum(in),
-						  entry->rel, entry->page, entry->offset, FALSE);
+						  entry->rel, entry->page, entry->offset, false);
 
 			PG_RETURN_POINTER(retval);
 		}
@@ -333,7 +339,7 @@ g_int_decompress(PG_FUNCTION_ARGS)
 		pfree(in);
 	retval = palloc(sizeof(GISTENTRY));
 	gistentryinit(*retval, PointerGetDatum(r),
-				  entry->rel, entry->page, entry->offset, FALSE);
+				  entry->rel, entry->page, entry->offset, false);
 
 	PG_RETURN_POINTER(retval);
 }
@@ -381,14 +387,14 @@ g_int_same(PG_FUNCTION_ARGS)
 		*result = false;
 		PG_RETURN_POINTER(result);
 	}
-	*result = TRUE;
+	*result = true;
 	da = ARRPTR(a);
 	db = ARRPTR(b);
 	while (n--)
 	{
 		if (*da++ != *db++)
 		{
-			*result = FALSE;
+			*result = false;
 			break;
 		}
 	}
@@ -601,4 +607,18 @@ g_int_picksplit(PG_FUNCTION_ARGS)
 	v->spl_rdatum = PointerGetDatum(datum_r);
 
 	PG_RETURN_POINTER(v);
+}
+
+Datum
+g_int_options(PG_FUNCTION_ARGS)
+{
+	local_relopts *relopts = (local_relopts *) PG_GETARG_POINTER(0);
+
+	init_local_reloptions(relopts, sizeof(GISTIntArrayOptions));
+	add_local_int_reloption(relopts, "numranges",
+							"number of ranges for compression",
+							G_INT_NUMRANGES_DEFAULT, 1, G_INT_NUMRANGES_MAX,
+							offsetof(GISTIntArrayOptions, num_ranges));
+
+	PG_RETURN_VOID();
 }

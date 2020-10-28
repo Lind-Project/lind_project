@@ -3,16 +3,15 @@
  *
  *	database server functions
  *
- *	Copyright (c) 2010-2017, PostgreSQL Global Development Group
+ *	Copyright (c) 2010-2020, PostgreSQL Global Development Group
  *	src/bin/pg_upgrade/server.c
  */
 
 #include "postgres_fe.h"
 
-#include "fe_utils/connect.h"
+#include "common/connect.h"
 #include "fe_utils/string_utils.h"
 #include "pg_upgrade.h"
-
 
 static PGconn *get_db_conn(ClusterInfo *cluster, const char *db_name);
 
@@ -165,7 +164,7 @@ get_major_server_version(ClusterInfo *cluster)
 	snprintf(ver_filename, sizeof(ver_filename), "%s/PG_VERSION",
 			 cluster->pgdata);
 	if ((version_fd = fopen(ver_filename, "r")) == NULL)
-		pg_fatal("could not open version file \"%s\"\n", ver_filename);
+		pg_fatal("could not open version file \"%s\": %m\n", ver_filename);
 
 	if (fscanf(version_fd, "%63s", cluster->major_version_str) == 0 ||
 		sscanf(cluster->major_version_str, "%d.%d", &v1, &v2) < 1)
@@ -211,7 +210,7 @@ start_postmaster(ClusterInfo *cluster, bool report_and_exit_on_error)
 
 	socket_string[0] = '\0';
 
-#ifdef HAVE_UNIX_SOCKETS
+#if defined(HAVE_UNIX_SOCKETS) && !defined(WIN32)
 	/* prevent TCP/IP connections, restrict socket access */
 	strcat(socket_string,
 		   " -c listen_addresses='' -c unix_socket_permissions=0700");
@@ -312,8 +311,8 @@ start_postmaster(ClusterInfo *cluster, bool report_and_exit_on_error)
 
 	/*
 	 * If pg_ctl failed, and the connection didn't fail, and
-	 * report_and_exit_on_error is enabled, fail now.  This
-	 * could happen if the server was already running.
+	 * report_and_exit_on_error is enabled, fail now.  This could happen if
+	 * the server was already running.
 	 */
 	if (!pg_ctl_return)
 	{

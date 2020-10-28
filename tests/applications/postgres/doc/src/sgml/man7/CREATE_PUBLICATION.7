@@ -1,0 +1,185 @@
+'\" t
+.\"     Title: CREATE PUBLICATION
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 2020
+.\"    Manual: PostgreSQL 13.0 Documentation
+.\"    Source: PostgreSQL 13.0
+.\"  Language: English
+.\"
+.TH "CREATE PUBLICATION" "7" "2020" "PostgreSQL 13.0" "PostgreSQL 13.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+CREATE_PUBLICATION \- define a new publication
+.SH "SYNOPSIS"
+.sp
+.nf
+CREATE PUBLICATION \fIname\fR
+    [ FOR TABLE [ ONLY ] \fItable_name\fR [ * ] [, \&.\&.\&.]
+      | FOR ALL TABLES ]
+    [ WITH ( \fIpublication_parameter\fR [= \fIvalue\fR] [, \&.\&.\&. ] ) ]
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBCREATE PUBLICATION\fR
+adds a new publication into the current database\&. The publication name must be distinct from the name of any existing publication in the current database\&.
+.PP
+A publication is essentially a group of tables whose data changes are intended to be replicated through logical replication\&. See
+Section\ \&30.1
+for details about how publications fit into the logical replication setup\&.
+.SH "PARAMETERS"
+.PP
+\fIname\fR
+.RS 4
+The name of the new publication\&.
+.RE
+.PP
+FOR TABLE
+.RS 4
+Specifies a list of tables to add to the publication\&. If
+ONLY
+is specified before the table name, only that table is added to the publication\&. If
+ONLY
+is not specified, the table and all its descendant tables (if any) are added\&. Optionally,
+*
+can be specified after the table name to explicitly indicate that descendant tables are included\&. This does not apply to a partitioned table, however\&. The partitions of a partitioned table are always implicitly considered part of the publication, so they are never explicitly added to the publication\&.
+.sp
+Only persistent base tables and partitioned tables can be part of a publication\&. Temporary tables, unlogged tables, foreign tables, materialized views, and regular views cannot be part of a publication\&.
+.sp
+When a partitioned table is added to a publication, all of its existing and future partitions are implicitly considered to be part of the publication\&. So, even operations that are performed directly on a partition are also published via publications that its ancestors are part of\&.
+.RE
+.PP
+FOR ALL TABLES
+.RS 4
+Marks the publication as one that replicates changes for all tables in the database, including tables created in the future\&.
+.RE
+.PP
+WITH ( \fIpublication_parameter\fR [= \fIvalue\fR] [, \&.\&.\&. ] )
+.RS 4
+This clause specifies optional parameters for a publication\&. The following parameters are supported:
+.PP
+publish (string)
+.RS 4
+This parameter determines which DML operations will be published by the new publication to the subscribers\&. The value is comma\-separated list of operations\&. The allowed operations are
+insert,
+update,
+delete, and
+truncate\&. The default is to publish all actions, and so the default value for this option is
+\*(Aqinsert, update, delete, truncate\*(Aq\&.
+.RE
+.PP
+publish_via_partition_root (boolean)
+.RS 4
+This parameter determines whether changes in a partitioned table (or on its partitions) contained in the publication will be published using the identity and schema of the partitioned table rather than that of the individual partitions that are actually changed; the latter is the default\&. Enabling this allows the changes to be replicated into a non\-partitioned table or a partitioned table consisting of a different set of partitions\&.
+.sp
+If this is enabled,
+TRUNCATE
+operations performed directly on partitions are not replicated\&.
+.RE
+.RE
+.SH "NOTES"
+.PP
+If neither
+FOR TABLE
+nor
+FOR ALL TABLES
+is specified, then the publication starts out with an empty set of tables\&. That is useful if tables are to be added later\&.
+.PP
+The creation of a publication does not start replication\&. It only defines a grouping and filtering logic for future subscribers\&.
+.PP
+To create a publication, the invoking user must have the
+CREATE
+privilege for the current database\&. (Of course, superusers bypass this check\&.)
+.PP
+To add a table to a publication, the invoking user must have ownership rights on the table\&. The
+\fBFOR ALL TABLES\fR
+clause requires the invoking user to be a superuser\&.
+.PP
+The tables added to a publication that publishes
+\fBUPDATE\fR
+and/or
+\fBDELETE\fR
+operations must have
+REPLICA IDENTITY
+defined\&. Otherwise those operations will be disallowed on those tables\&.
+.PP
+For an
+\fBINSERT \&.\&.\&. ON CONFLICT\fR
+command, the publication will publish the operation that actually results from the command\&. So depending of the outcome, it may be published as either
+\fBINSERT\fR
+or
+\fBUPDATE\fR, or it may not be published at all\&.
+.PP
+\fBCOPY \&.\&.\&. FROM\fR
+commands are published as
+\fBINSERT\fR
+operations\&.
+.PP
+DDL
+operations are not published\&.
+.SH "EXAMPLES"
+.PP
+Create a publication that publishes all changes in two tables:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE PUBLICATION mypublication FOR TABLE users, departments;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a publication that publishes all changes in all tables:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE PUBLICATION alltables FOR ALL TABLES;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a publication that only publishes
+\fBINSERT\fR
+operations in one table:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE PUBLICATION insert_only FOR TABLE mydata
+    WITH (publish = \*(Aqinsert\*(Aq);
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+\fBCREATE PUBLICATION\fR
+is a
+PostgreSQL
+extension\&.
+.SH "SEE ALSO"
+ALTER PUBLICATION (\fBALTER_PUBLICATION\fR(7)), DROP PUBLICATION (\fBDROP_PUBLICATION\fR(7))

@@ -3,7 +3,7 @@
  * parse_type.c
  *		handle type operations for parser
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -19,16 +19,15 @@
 #include "catalog/pg_type.h"
 #include "lib/stringinfo.h"
 #include "nodes/makefuncs.h"
-#include "parser/parser.h"
 #include "parser/parse_type.h"
+#include "parser/parser.h"
 #include "utils/array.h"
 #include "utils/builtins.h"
 #include "utils/lsyscache.h"
 #include "utils/syscache.h"
 
-
 static int32 typenameTypeMod(ParseState *pstate, const TypeName *typeName,
-				Type typ);
+							 Type typ);
 
 
 /*
@@ -179,7 +178,7 @@ LookupTypeNameExtended(ParseState *pstate,
 
 			namespaceId = LookupExplicitNamespace(schemaname, missing_ok);
 			if (OidIsValid(namespaceId))
-				typoid = GetSysCacheOid2(TYPENAMENSP,
+				typoid = GetSysCacheOid2(TYPENAMENSP, Anum_pg_type_oid,
 										 PointerGetDatum(typname),
 										 ObjectIdGetDatum(namespaceId));
 			else
@@ -248,7 +247,7 @@ LookupTypeNameOid(ParseState *pstate, const TypeName *typeName, bool missing_ok)
 		return InvalidOid;
 	}
 
-	typoid = HeapTupleGetOid(tup);
+	typoid = ((Form_pg_type) GETSTRUCT(tup))->oid;
 	ReleaseSysCache(tup);
 
 	return typoid;
@@ -295,7 +294,7 @@ typenameTypeId(ParseState *pstate, const TypeName *typeName)
 	Type		tup;
 
 	tup = typenameType(pstate, typeName, NULL);
-	typoid = HeapTupleGetOid(tup);
+	typoid = ((Form_pg_type) GETSTRUCT(tup))->oid;
 	ReleaseSysCache(tup);
 
 	return typoid;
@@ -314,7 +313,7 @@ typenameTypeIdAndMod(ParseState *pstate, const TypeName *typeName,
 	Type		tup;
 
 	tup = typenameType(pstate, typeName, typmod_p);
-	*typeid_p = HeapTupleGetOid(tup);
+	*typeid_p = ((Form_pg_type) GETSTRUCT(tup))->oid;
 	ReleaseSysCache(tup);
 }
 
@@ -410,7 +409,7 @@ typenameTypeMod(ParseState *pstate, const TypeName *typeName, Type typ)
 
 	/* hardwired knowledge about cstring's representation details here */
 	arrtypmod = construct_array(datums, n, CSTRINGOID,
-								-2, false, 'c');
+								-2, false, TYPALIGN_CHAR);
 
 	/* arrange to report location if type's typmodin function fails */
 	setup_parser_errposition_callback(&pcbstate, pstate, typeName->location);
@@ -590,7 +589,7 @@ typeTypeId(Type tp)
 {
 	if (tp == NULL)				/* probably useless */
 		elog(ERROR, "typeTypeId() called with NULL type struct");
-	return HeapTupleGetOid(tp);
+	return ((Form_pg_type) GETSTRUCT(tp))->oid;
 }
 
 /* given type (as type struct), return the length of type */
@@ -659,7 +658,10 @@ stringTypeDatum(Type tp, char *string, int32 atttypmod)
 	return OidInputFunctionCall(typinput, string, typioparam, atttypmod);
 }
 
-/* given a typeid, return the type's typrelid (associated relation, if any) */
+/*
+ * Given a typeid, return the type's typrelid (associated relation), if any.
+ * Returns InvalidOid if type is not a composite type.
+ */
 Oid
 typeidTypeRelid(Oid type_id)
 {
@@ -670,8 +672,39 @@ typeidTypeRelid(Oid type_id)
 	typeTuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(type_id));
 	if (!HeapTupleIsValid(typeTuple))
 		elog(ERROR, "cache lookup failed for type %u", type_id);
-
 	type = (Form_pg_type) GETSTRUCT(typeTuple);
+	result = type->typrelid;
+	ReleaseSysCache(typeTuple);
+	return result;
+}
+
+/*
+ * Given a typeid, return the type's typrelid (associated relation), if any.
+ * Returns InvalidOid if type is not a composite type or a domain over one.
+ * This is the same as typeidTypeRelid(getBaseType(type_id)), but faster.
+ */
+Oid
+typeOrDomainTypeRelid(Oid type_id)
+{
+	HeapTuple	typeTuple;
+	Form_pg_type type;
+	Oid			result;
+
+	for (;;)
+	{
+		typeTuple = SearchSysCache1(TYPEOID, ObjectIdGetDatum(type_id));
+		if (!HeapTupleIsValid(typeTuple))
+			elog(ERROR, "cache lookup failed for type %u", type_id);
+		type = (Form_pg_type) GETSTRUCT(typeTuple);
+		if (type->typtype != TYPTYPE_DOMAIN)
+		{
+			/* Not a domain, so done looking through domains */
+			break;
+		}
+		/* It is a domain, so examine the base type instead */
+		type_id = type->typbasetype;
+		ReleaseSysCache(typeTuple);
+	}
 	result = type->typrelid;
 	ReleaseSysCache(typeTuple);
 	return result;
@@ -723,7 +756,7 @@ typeStringToTypeName(const char *str)
 	 * Setup error traceback support in case of ereport() during parse
 	 */
 	ptserrcontext.callback = pts_error_callback;
-	ptserrcontext.arg = (void *) str;
+	ptserrcontext.arg = unconstify(char *, str);
 	ptserrcontext.previous = error_context_stack;
 	error_context_stack = &ptserrcontext;
 
@@ -816,13 +849,15 @@ parseTypeString(const char *str, Oid *typeid_p, int32 *typmod_p, bool missing_ok
 	}
 	else
 	{
-		if (!((Form_pg_type) GETSTRUCT(tup))->typisdefined)
+		Form_pg_type typ = (Form_pg_type) GETSTRUCT(tup);
+
+		if (!typ->typisdefined)
 			ereport(ERROR,
 					(errcode(ERRCODE_UNDEFINED_OBJECT),
 					 errmsg("type \"%s\" is only a shell",
 							TypeNameToString(typeName)),
 					 parser_errposition(NULL, typeName->location)));
-		*typeid_p = HeapTupleGetOid(tup);
+		*typeid_p = typ->oid;
 		ReleaseSysCache(tup);
 	}
 }

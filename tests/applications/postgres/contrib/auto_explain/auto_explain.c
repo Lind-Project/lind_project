@@ -3,7 +3,7 @@
  * auto_explain.c
  *
  *
- * Copyright (c) 2008-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2008-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *	  contrib/auto_explain/auto_explain.c
@@ -17,6 +17,7 @@
 #include "access/parallel.h"
 #include "commands/explain.h"
 #include "executor/instrument.h"
+#include "jit/jit.h"
 #include "utils/guc.h"
 
 PG_MODULE_MAGIC;
@@ -26,9 +27,12 @@ static int	auto_explain_log_min_duration = -1; /* msec or -1 */
 static bool auto_explain_log_analyze = false;
 static bool auto_explain_log_verbose = false;
 static bool auto_explain_log_buffers = false;
+static bool auto_explain_log_wal = false;
 static bool auto_explain_log_triggers = false;
 static bool auto_explain_log_timing = true;
+static bool auto_explain_log_settings = false;
 static int	auto_explain_log_format = EXPLAIN_FORMAT_TEXT;
+static int	auto_explain_log_level = LOG;
 static bool auto_explain_log_nested_statements = false;
 static double auto_explain_sample_rate = 1;
 
@@ -37,6 +41,20 @@ static const struct config_enum_entry format_options[] = {
 	{"xml", EXPLAIN_FORMAT_XML, false},
 	{"json", EXPLAIN_FORMAT_JSON, false},
 	{"yaml", EXPLAIN_FORMAT_YAML, false},
+	{NULL, 0, false}
+};
+
+static const struct config_enum_entry loglevel_options[] = {
+	{"debug5", DEBUG5, false},
+	{"debug4", DEBUG4, false},
+	{"debug3", DEBUG3, false},
+	{"debug2", DEBUG2, false},
+	{"debug1", DEBUG1, false},
+	{"debug", DEBUG2, true},
+	{"info", INFO, false},
+	{"notice", NOTICE, false},
+	{"warning", WARNING, false},
+	{"log", LOG, false},
 	{NULL, 0, false}
 };
 
@@ -62,8 +80,8 @@ void		_PG_fini(void);
 
 static void explain_ExecutorStart(QueryDesc *queryDesc, int eflags);
 static void explain_ExecutorRun(QueryDesc *queryDesc,
-					ScanDirection direction,
-					uint64 count, bool execute_once);
+								ScanDirection direction,
+								uint64 count, bool execute_once);
 static void explain_ExecutorFinish(QueryDesc *queryDesc);
 static void explain_ExecutorEnd(QueryDesc *queryDesc);
 
@@ -98,6 +116,17 @@ _PG_init(void)
 							 NULL,
 							 NULL);
 
+	DefineCustomBoolVariable("auto_explain.log_settings",
+							 "Log modified configuration parameters affecting query planning.",
+							 NULL,
+							 &auto_explain_log_settings,
+							 false,
+							 PGC_SUSET,
+							 0,
+							 NULL,
+							 NULL,
+							 NULL);
+
 	DefineCustomBoolVariable("auto_explain.log_verbose",
 							 "Use EXPLAIN VERBOSE for plan logging.",
 							 NULL,
@@ -113,6 +142,17 @@ _PG_init(void)
 							 "Log buffers usage.",
 							 NULL,
 							 &auto_explain_log_buffers,
+							 false,
+							 PGC_SUSET,
+							 0,
+							 NULL,
+							 NULL,
+							 NULL);
+
+	DefineCustomBoolVariable("auto_explain.log_wal",
+							 "Log WAL usage.",
+							 NULL,
+							 &auto_explain_log_wal,
 							 false,
 							 PGC_SUSET,
 							 0,
@@ -137,6 +177,18 @@ _PG_init(void)
 							 &auto_explain_log_format,
 							 EXPLAIN_FORMAT_TEXT,
 							 format_options,
+							 PGC_SUSET,
+							 0,
+							 NULL,
+							 NULL,
+							 NULL);
+
+	DefineCustomEnumVariable("auto_explain.log_level",
+							 "Log level for the plan.",
+							 NULL,
+							 &auto_explain_log_level,
+							 LOG,
+							 loglevel_options,
 							 PGC_SUSET,
 							 0,
 							 NULL,
@@ -240,6 +292,8 @@ explain_ExecutorStart(QueryDesc *queryDesc, int eflags)
 				queryDesc->instrument_options |= INSTRUMENT_ROWS;
 			if (auto_explain_log_buffers)
 				queryDesc->instrument_options |= INSTRUMENT_BUFFERS;
+			if (auto_explain_log_wal)
+				queryDesc->instrument_options |= INSTRUMENT_WAL;
 		}
 	}
 
@@ -280,12 +334,10 @@ explain_ExecutorRun(QueryDesc *queryDesc, ScanDirection direction,
 			prev_ExecutorRun(queryDesc, direction, count, execute_once);
 		else
 			standard_ExecutorRun(queryDesc, direction, count, execute_once);
-		nesting_level--;
 	}
-	PG_CATCH();
+	PG_FINALLY();
 	{
 		nesting_level--;
-		PG_RE_THROW();
 	}
 	PG_END_TRY();
 }
@@ -303,12 +355,10 @@ explain_ExecutorFinish(QueryDesc *queryDesc)
 			prev_ExecutorFinish(queryDesc);
 		else
 			standard_ExecutorFinish(queryDesc);
-		nesting_level--;
 	}
-	PG_CATCH();
+	PG_FINALLY();
 	{
 		nesting_level--;
-		PG_RE_THROW();
 	}
 	PG_END_TRY();
 }
@@ -338,15 +388,19 @@ explain_ExecutorEnd(QueryDesc *queryDesc)
 			es->analyze = (queryDesc->instrument_options && auto_explain_log_analyze);
 			es->verbose = auto_explain_log_verbose;
 			es->buffers = (es->analyze && auto_explain_log_buffers);
+			es->wal = (es->analyze && auto_explain_log_wal);
 			es->timing = (es->analyze && auto_explain_log_timing);
 			es->summary = es->analyze;
 			es->format = auto_explain_log_format;
+			es->settings = auto_explain_log_settings;
 
 			ExplainBeginOutput(es);
 			ExplainQueryText(es, queryDesc);
 			ExplainPrintPlan(es, queryDesc);
 			if (es->analyze && auto_explain_log_triggers)
 				ExplainPrintTriggers(es, queryDesc);
+			if (es->costs)
+				ExplainPrintJITSummary(es, queryDesc);
 			ExplainEndOutput(es);
 
 			/* Remove last line break */
@@ -366,7 +420,7 @@ explain_ExecutorEnd(QueryDesc *queryDesc)
 			 * reported.  This isn't ideal but trying to do it here would
 			 * often result in duplication.
 			 */
-			ereport(LOG,
+			ereport(auto_explain_log_level,
 					(errmsg("duration: %.3f ms  plan:\n%s",
 							msec, es->str->data),
 					 errhidestmt(true)));

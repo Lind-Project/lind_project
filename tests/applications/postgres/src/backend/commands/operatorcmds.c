@@ -4,7 +4,7 @@
  *
  *	  Routines for operator manipulation commands
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -21,26 +21,22 @@
  * NOTES
  *	  These things must be defined and committed in the following order:
  *		"create function":
- *				input/output, recv/send procedures
+ *				input/output, recv/send functions
  *		"create type":
  *				type
  *		"create operator":
  *				operators
  *
- *		Most of the parse-tree manipulation routines are defined in
- *		commands/manip.c.
- *
  *-------------------------------------------------------------------------
  */
 #include "postgres.h"
 
-#include "access/heapam.h"
 #include "access/htup_details.h"
+#include "access/table.h"
 #include "catalog/dependency.h"
 #include "catalog/indexing.h"
 #include "catalog/objectaccess.h"
 #include "catalog/pg_operator.h"
-#include "catalog/pg_operator_fn.h"
 #include "catalog/pg_type.h"
 #include "commands/alter.h"
 #include "commands/defrem.h"
@@ -48,6 +44,7 @@
 #include "parser/parse_func.h"
 #include "parser/parse_oper.h"
 #include "parser/parse_type.h"
+#include "utils/acl.h"
 #include "utils/builtins.h"
 #include "utils/lsyscache.h"
 #include "utils/rel.h"
@@ -80,8 +77,8 @@ DefineOperator(List *names, List *parameters)
 	Oid			rettype;
 	List	   *commutatorName = NIL;	/* optional commutator operator name */
 	List	   *negatorName = NIL;	/* optional negator operator name */
-	List	   *restrictionName = NIL;	/* optional restrict. sel. procedure */
-	List	   *joinName = NIL; /* optional join sel. procedure */
+	List	   *restrictionName = NIL;	/* optional restrict. sel. function */
+	List	   *joinName = NIL; /* optional join sel. function */
 	Oid			functionOid;	/* functions converted to OID */
 	Oid			restrictionOid;
 	Oid			joinOid;
@@ -95,7 +92,7 @@ DefineOperator(List *names, List *parameters)
 	/* Check we have creation rights in target namespace */
 	aclresult = pg_namespace_aclcheck(oprNamespace, GetUserId(), ACL_CREATE);
 	if (aclresult != ACLCHECK_OK)
-		aclcheck_error(aclresult, ACL_KIND_NAMESPACE,
+		aclcheck_error(aclresult, OBJECT_SCHEMA,
 					   get_namespace_name(oprNamespace));
 
 	/*
@@ -105,7 +102,7 @@ DefineOperator(List *names, List *parameters)
 	{
 		DefElem    *defel = (DefElem *) lfirst(pl);
 
-		if (pg_strcasecmp(defel->defname, "leftarg") == 0)
+		if (strcmp(defel->defname, "leftarg") == 0)
 		{
 			typeName1 = defGetTypeName(defel);
 			if (typeName1->setof)
@@ -113,7 +110,7 @@ DefineOperator(List *names, List *parameters)
 						(errcode(ERRCODE_INVALID_FUNCTION_DEFINITION),
 						 errmsg("SETOF type not allowed for operator argument")));
 		}
-		else if (pg_strcasecmp(defel->defname, "rightarg") == 0)
+		else if (strcmp(defel->defname, "rightarg") == 0)
 		{
 			typeName2 = defGetTypeName(defel);
 			if (typeName2->setof)
@@ -121,28 +118,31 @@ DefineOperator(List *names, List *parameters)
 						(errcode(ERRCODE_INVALID_FUNCTION_DEFINITION),
 						 errmsg("SETOF type not allowed for operator argument")));
 		}
-		else if (pg_strcasecmp(defel->defname, "procedure") == 0)
+		/* "function" and "procedure" are equivalent here */
+		else if (strcmp(defel->defname, "function") == 0)
 			functionName = defGetQualifiedName(defel);
-		else if (pg_strcasecmp(defel->defname, "commutator") == 0)
+		else if (strcmp(defel->defname, "procedure") == 0)
+			functionName = defGetQualifiedName(defel);
+		else if (strcmp(defel->defname, "commutator") == 0)
 			commutatorName = defGetQualifiedName(defel);
-		else if (pg_strcasecmp(defel->defname, "negator") == 0)
+		else if (strcmp(defel->defname, "negator") == 0)
 			negatorName = defGetQualifiedName(defel);
-		else if (pg_strcasecmp(defel->defname, "restrict") == 0)
+		else if (strcmp(defel->defname, "restrict") == 0)
 			restrictionName = defGetQualifiedName(defel);
-		else if (pg_strcasecmp(defel->defname, "join") == 0)
+		else if (strcmp(defel->defname, "join") == 0)
 			joinName = defGetQualifiedName(defel);
-		else if (pg_strcasecmp(defel->defname, "hashes") == 0)
+		else if (strcmp(defel->defname, "hashes") == 0)
 			canHash = defGetBoolean(defel);
-		else if (pg_strcasecmp(defel->defname, "merges") == 0)
+		else if (strcmp(defel->defname, "merges") == 0)
 			canMerge = defGetBoolean(defel);
 		/* These obsolete options are taken as meaning canMerge */
-		else if (pg_strcasecmp(defel->defname, "sort1") == 0)
+		else if (strcmp(defel->defname, "sort1") == 0)
 			canMerge = true;
-		else if (pg_strcasecmp(defel->defname, "sort2") == 0)
+		else if (strcmp(defel->defname, "sort2") == 0)
 			canMerge = true;
-		else if (pg_strcasecmp(defel->defname, "ltcmp") == 0)
+		else if (strcmp(defel->defname, "ltcmp") == 0)
 			canMerge = true;
-		else if (pg_strcasecmp(defel->defname, "gtcmp") == 0)
+		else if (strcmp(defel->defname, "gtcmp") == 0)
 			canMerge = true;
 		else
 		{
@@ -160,7 +160,7 @@ DefineOperator(List *names, List *parameters)
 	if (functionName == NIL)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_FUNCTION_DEFINITION),
-				 errmsg("operator procedure must be specified")));
+				 errmsg("operator function must be specified")));
 
 	/* Transform type names to type OIDs */
 	if (typeName1)
@@ -215,7 +215,7 @@ DefineOperator(List *names, List *parameters)
 	 */
 	aclresult = pg_proc_aclcheck(functionOid, GetUserId(), ACL_EXECUTE);
 	if (aclresult != ACLCHECK_OK)
-		aclcheck_error(aclresult, ACL_KIND_PROC,
+		aclcheck_error(aclresult, OBJECT_FUNCTION,
 					   NameListToString(functionName));
 
 	rettype = get_func_rettype(functionOid);
@@ -246,8 +246,8 @@ DefineOperator(List *names, List *parameters)
 					   functionOid, /* function for operator */
 					   commutatorName,	/* optional commutator operator name */
 					   negatorName, /* optional negator operator name */
-					   restrictionOid,	/* optional restrict. sel. procedure */
-					   joinOid, /* optional join sel. procedure name */
+					   restrictionOid,	/* optional restrict. sel. function */
+					   joinOid, /* optional join sel. function name */
 					   canMerge,	/* operator merges */
 					   canHash);	/* operator hashes */
 }
@@ -281,7 +281,7 @@ ValidateRestrictionEstimator(List *restrictionName)
 	/* Require EXECUTE rights for the estimator */
 	aclresult = pg_proc_aclcheck(restrictionOid, GetUserId(), ACL_EXECUTE);
 	if (aclresult != ACLCHECK_OK)
-		aclcheck_error(aclresult, ACL_KIND_PROC,
+		aclcheck_error(aclresult, OBJECT_FUNCTION,
 					   NameListToString(restrictionName));
 
 	return restrictionOid;
@@ -339,7 +339,7 @@ ValidateJoinEstimator(List *joinName)
 	/* Require EXECUTE rights for the estimator */
 	aclresult = pg_proc_aclcheck(joinOid, GetUserId(), ACL_EXECUTE);
 	if (aclresult != ACLCHECK_OK)
-		aclcheck_error(aclresult, ACL_KIND_PROC,
+		aclcheck_error(aclresult, OBJECT_FUNCTION,
 					   NameListToString(joinName));
 
 	return joinOid;
@@ -355,7 +355,7 @@ RemoveOperatorById(Oid operOid)
 	HeapTuple	tup;
 	Form_pg_operator op;
 
-	relation = heap_open(OperatorRelationId, RowExclusiveLock);
+	relation = table_open(OperatorRelationId, RowExclusiveLock);
 
 	tup = SearchSysCache1(OPEROID, ObjectIdGetDatum(operOid));
 	if (!HeapTupleIsValid(tup)) /* should not happen */
@@ -384,7 +384,7 @@ RemoveOperatorById(Oid operOid)
 
 	ReleaseSysCache(tup);
 
-	heap_close(relation, RowExclusiveLock);
+	table_close(relation, RowExclusiveLock);
 }
 
 /*
@@ -406,18 +406,18 @@ AlterOperator(AlterOperatorStmt *stmt)
 	Datum		values[Natts_pg_operator];
 	bool		nulls[Natts_pg_operator];
 	bool		replaces[Natts_pg_operator];
-	List	   *restrictionName = NIL;	/* optional restrict. sel. procedure */
+	List	   *restrictionName = NIL;	/* optional restrict. sel. function */
 	bool		updateRestriction = false;
 	Oid			restrictionOid;
-	List	   *joinName = NIL; /* optional join sel. procedure */
+	List	   *joinName = NIL; /* optional join sel. function */
 	bool		updateJoin = false;
 	Oid			joinOid;
 
 	/* Look up the operator */
 	oprId = LookupOperWithArgs(stmt->opername, false);
-	catalog = heap_open(OperatorRelationId, RowExclusiveLock);
+	catalog = table_open(OperatorRelationId, RowExclusiveLock);
 	tup = SearchSysCacheCopy1(OPEROID, ObjectIdGetDatum(oprId));
-	if (tup == NULL)
+	if (!HeapTupleIsValid(tup))
 		elog(ERROR, "cache lookup failed for operator %u", oprId);
 	oprForm = (Form_pg_operator) GETSTRUCT(tup);
 
@@ -432,12 +432,12 @@ AlterOperator(AlterOperatorStmt *stmt)
 		else
 			param = defGetQualifiedName(defel);
 
-		if (pg_strcasecmp(defel->defname, "restrict") == 0)
+		if (strcmp(defel->defname, "restrict") == 0)
 		{
 			restrictionName = param;
 			updateRestriction = true;
 		}
-		else if (pg_strcasecmp(defel->defname, "join") == 0)
+		else if (strcmp(defel->defname, "join") == 0)
 		{
 			joinName = param;
 			updateJoin = true;
@@ -447,13 +447,14 @@ AlterOperator(AlterOperatorStmt *stmt)
 		 * The rest of the options that CREATE accepts cannot be changed.
 		 * Check for them so that we can give a meaningful error message.
 		 */
-		else if (pg_strcasecmp(defel->defname, "leftarg") == 0 ||
-				 pg_strcasecmp(defel->defname, "rightarg") == 0 ||
-				 pg_strcasecmp(defel->defname, "procedure") == 0 ||
-				 pg_strcasecmp(defel->defname, "commutator") == 0 ||
-				 pg_strcasecmp(defel->defname, "negator") == 0 ||
-				 pg_strcasecmp(defel->defname, "hashes") == 0 ||
-				 pg_strcasecmp(defel->defname, "merges") == 0)
+		else if (strcmp(defel->defname, "leftarg") == 0 ||
+				 strcmp(defel->defname, "rightarg") == 0 ||
+				 strcmp(defel->defname, "function") == 0 ||
+				 strcmp(defel->defname, "procedure") == 0 ||
+				 strcmp(defel->defname, "commutator") == 0 ||
+				 strcmp(defel->defname, "negator") == 0 ||
+				 strcmp(defel->defname, "hashes") == 0 ||
+				 strcmp(defel->defname, "merges") == 0)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_SYNTAX_ERROR),
@@ -469,7 +470,7 @@ AlterOperator(AlterOperatorStmt *stmt)
 
 	/* Check permissions. Must be owner. */
 	if (!pg_oper_ownercheck(oprId, GetUserId()))
-		aclcheck_error(ACLCHECK_NOT_OWNER, ACL_KIND_OPER,
+		aclcheck_error(ACLCHECK_NOT_OWNER, OBJECT_OPERATOR,
 					   NameStr(oprForm->oprname));
 
 	/*
@@ -533,7 +534,7 @@ AlterOperator(AlterOperatorStmt *stmt)
 
 	InvokeObjectPostAlterHook(OperatorRelationId, oprId, 0);
 
-	heap_close(catalog, NoLock);
+	table_close(catalog, NoLock);
 
 	return address;
 }

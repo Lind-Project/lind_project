@@ -3,7 +3,7 @@
  * geqo_eval.c
  *	  Routines to evaluate query trees
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * src/backend/optimizer/geqo/geqo_eval.c
@@ -40,9 +40,9 @@ typedef struct
 } Clump;
 
 static List *merge_clump(PlannerInfo *root, List *clumps, Clump *new_clump,
-			bool force);
+						 int num_gene, bool force);
 static bool desirable_join(PlannerInfo *root,
-			   RelOptInfo *outer_rel, RelOptInfo *inner_rel);
+						   RelOptInfo *outer_rel, RelOptInfo *inner_rel);
 
 
 /*
@@ -196,7 +196,7 @@ gimme_tree(PlannerInfo *root, Gene *tour, int num_gene)
 		cur_clump->size = 1;
 
 		/* Merge it into the clumps list, using only desirable joins */
-		clumps = merge_clump(root, clumps, cur_clump, false);
+		clumps = merge_clump(root, clumps, cur_clump, num_gene, false);
 	}
 
 	if (list_length(clumps) > 1)
@@ -210,7 +210,7 @@ gimme_tree(PlannerInfo *root, Gene *tour, int num_gene)
 		{
 			Clump	   *clump = (Clump *) lfirst(lc);
 
-			fclumps = merge_clump(root, fclumps, clump, true);
+			fclumps = merge_clump(root, fclumps, clump, num_gene, true);
 		}
 		clumps = fclumps;
 	}
@@ -235,13 +235,13 @@ gimme_tree(PlannerInfo *root, Gene *tour, int num_gene)
  * "desirable" joins.
  */
 static List *
-merge_clump(PlannerInfo *root, List *clumps, Clump *new_clump, bool force)
+merge_clump(PlannerInfo *root, List *clumps, Clump *new_clump, int num_gene,
+			bool force)
 {
-	ListCell   *prev;
 	ListCell   *lc;
+	int			pos;
 
 	/* Look for a clump that new_clump can join to */
-	prev = NULL;
 	foreach(lc, clumps)
 	{
 		Clump	   *old_clump = (Clump *) lfirst(lc);
@@ -264,8 +264,17 @@ merge_clump(PlannerInfo *root, List *clumps, Clump *new_clump, bool force)
 			/* Keep searching if join order is not valid */
 			if (joinrel)
 			{
-				/* Create GatherPaths for any useful partial paths for rel */
-				generate_gather_paths(root, joinrel);
+				/* Create paths for partitionwise joins. */
+				generate_partitionwise_join_paths(root, joinrel);
+
+				/*
+				 * Except for the topmost scan/join rel, consider gathering
+				 * partial paths.  We'll do the same for the topmost scan/join
+				 * rel once we know the final targetlist (see
+				 * grouping_planner).
+				 */
+				if (old_clump->size + new_clump->size < num_gene)
+					generate_useful_gather_paths(root, joinrel, false);
 
 				/* Find and save the cheapest paths for this joinrel */
 				set_cheapest(joinrel);
@@ -276,17 +285,16 @@ merge_clump(PlannerInfo *root, List *clumps, Clump *new_clump, bool force)
 				pfree(new_clump);
 
 				/* Remove old_clump from list */
-				clumps = list_delete_cell(clumps, lc, prev);
+				clumps = foreach_delete_current(clumps, lc);
 
 				/*
 				 * Recursively try to merge the enlarged old_clump with
 				 * others.  When no further merge is possible, we'll reinsert
 				 * it into the list.
 				 */
-				return merge_clump(root, clumps, old_clump, force);
+				return merge_clump(root, clumps, old_clump, num_gene, force);
 			}
 		}
-		prev = lc;
 	}
 
 	/*
@@ -297,21 +305,15 @@ merge_clump(PlannerInfo *root, List *clumps, Clump *new_clump, bool force)
 	if (clumps == NIL || new_clump->size == 1)
 		return lappend(clumps, new_clump);
 
-	/* Check if it belongs at the front */
-	lc = list_head(clumps);
-	if (new_clump->size > ((Clump *) lfirst(lc))->size)
-		return lcons(new_clump, clumps);
-
 	/* Else search for the place to insert it */
-	for (;;)
+	for (pos = 0; pos < list_length(clumps); pos++)
 	{
-		ListCell   *nxt = lnext(lc);
+		Clump	   *old_clump = (Clump *) list_nth(clumps, pos);
 
-		if (nxt == NULL || new_clump->size > ((Clump *) lfirst(nxt))->size)
-			break;				/* it belongs after 'lc', before 'nxt' */
-		lc = nxt;
+		if (new_clump->size > old_clump->size)
+			break;				/* new_clump belongs before old_clump */
 	}
-	lappend_cell(clumps, lc, new_clump);
+	clumps = list_insert_nth(clumps, pos, new_clump);
 
 	return clumps;
 }

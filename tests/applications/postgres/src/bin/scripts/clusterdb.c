@@ -2,7 +2,7 @@
  *
  * clusterdb
  *
- * Portions Copyright (c) 2002-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 2002-2020, PostgreSQL Global Development Group
  *
  * src/bin/scripts/clusterdb.c
  *
@@ -11,18 +11,20 @@
 
 #include "postgres_fe.h"
 #include "common.h"
+#include "common/logging.h"
+#include "fe_utils/cancel.h"
 #include "fe_utils/simple_list.h"
 #include "fe_utils/string_utils.h"
 
 
 static void cluster_one_database(const char *dbname, bool verbose, const char *table,
-					 const char *host, const char *port,
-					 const char *username, enum trivalue prompt_password,
-					 const char *progname, bool echo);
+								 const char *host, const char *port,
+								 const char *username, enum trivalue prompt_password,
+								 const char *progname, bool echo);
 static void cluster_all_databases(bool verbose, const char *maintenance_db,
-					  const char *host, const char *port,
-					  const char *username, enum trivalue prompt_password,
-					  const char *progname, bool echo, bool quiet);
+								  const char *host, const char *port,
+								  const char *username, enum trivalue prompt_password,
+								  const char *progname, bool echo, bool quiet);
 
 static void help(const char *progname);
 
@@ -62,6 +64,7 @@ main(int argc, char *argv[])
 	bool		verbose = false;
 	SimpleStringList tables = {NULL, NULL};
 
+	pg_logging_init(argv[0]);
 	progname = get_progname(argv[0]);
 	set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("pgscripts"));
 
@@ -125,27 +128,25 @@ main(int argc, char *argv[])
 
 	if (optind < argc)
 	{
-		fprintf(stderr, _("%s: too many command-line arguments (first is \"%s\")\n"),
-				progname, argv[optind]);
+		pg_log_error("too many command-line arguments (first is \"%s\")",
+					 argv[optind]);
 		fprintf(stderr, _("Try \"%s --help\" for more information.\n"), progname);
 		exit(1);
 	}
 
-	setup_cancel_handler();
+	setup_cancel_handler(NULL);
 
 	if (alldb)
 	{
 		if (dbname)
 		{
-			fprintf(stderr, _("%s: cannot cluster all databases and a specific one at the same time\n"),
-					progname);
+			pg_log_error("cannot cluster all databases and a specific one at the same time");
 			exit(1);
 		}
 
 		if (tables.head != NULL)
 		{
-			fprintf(stderr, _("%s: cannot cluster specific table(s) in all databases\n"),
-					progname);
+			pg_log_error("cannot cluster specific table(s) in all databases");
 			exit(1);
 		}
 
@@ -206,18 +207,18 @@ cluster_one_database(const char *dbname, bool verbose, const char *table,
 	if (table)
 	{
 		appendPQExpBufferChar(&sql, ' ');
-		appendQualifiedRelation(&sql, table, conn, progname, echo);
+		appendQualifiedRelation(&sql, table, conn, echo);
 	}
 	appendPQExpBufferChar(&sql, ';');
 
 	if (!executeMaintenanceCommand(conn, sql.data, echo))
 	{
 		if (table)
-			fprintf(stderr, _("%s: clustering of table \"%s\" in database \"%s\" failed: %s"),
-					progname, table, PQdb(conn), PQerrorMessage(conn));
+			pg_log_error("clustering of table \"%s\" in database \"%s\" failed: %s",
+						 table, PQdb(conn), PQerrorMessage(conn));
 		else
-			fprintf(stderr, _("%s: clustering of database \"%s\" failed: %s"),
-					progname, PQdb(conn), PQerrorMessage(conn));
+			pg_log_error("clustering of database \"%s\" failed: %s",
+						 PQdb(conn), PQerrorMessage(conn));
 		PQfinish(conn);
 		exit(1);
 	}
@@ -239,7 +240,7 @@ cluster_all_databases(bool verbose, const char *maintenance_db,
 
 	conn = connectMaintenanceDatabase(maintenance_db, host, port, username,
 									  prompt_password, progname, echo);
-	result = executeQuery(conn, "SELECT datname FROM pg_database WHERE datallowconn ORDER BY 1;", progname, echo);
+	result = executeQuery(conn, "SELECT datname FROM pg_database WHERE datallowconn ORDER BY 1;", echo);
 	PQfinish(conn);
 
 	initPQExpBuffer(&connstr);
@@ -254,7 +255,7 @@ cluster_all_databases(bool verbose, const char *maintenance_db,
 		}
 
 		resetPQExpBuffer(&connstr);
-		appendPQExpBuffer(&connstr, "dbname=");
+		appendPQExpBufferStr(&connstr, "dbname=");
 		appendConnStrVal(&connstr, dbname);
 
 		cluster_one_database(connstr.data, verbose, NULL,
@@ -290,5 +291,6 @@ help(const char *progname)
 	printf(_("  -W, --password            force password prompt\n"));
 	printf(_("  --maintenance-db=DBNAME   alternate maintenance database\n"));
 	printf(_("\nRead the description of the SQL command CLUSTER for details.\n"));
-	printf(_("\nReport bugs to <pgsql-bugs@postgresql.org>.\n"));
+	printf(_("\nReport bugs to <%s>.\n"), PACKAGE_BUGREPORT);
+	printf(_("%s home page: <%s>\n"), PACKAGE_NAME, PACKAGE_URL);
 }

@@ -4,12 +4,12 @@
 #ifndef __BTREE_UTILS_NUM_H__
 #define __BTREE_UTILS_NUM_H__
 
-#include "btree_gist.h"
-#include "access/gist.h"
-#include "utils/rel.h"
-
 #include <math.h>
 #include <float.h>
+
+#include "access/gist.h"
+#include "btree_gist.h"
+#include "utils/rel.h"
 
 typedef char GBT_NUMKEY;
 
@@ -89,8 +89,6 @@ typedef struct
 
 #define GET_FLOAT_DISTANCE(t, arg1, arg2)	Abs( ((float8) *((const t *) (arg1))) - ((float8) *((const t *) (arg2))) )
 
-#define SAMESIGN(a,b)	(((a) < 0) == ((b) < 0))
-
 /*
  * check to see if a float4/8 val has underflowed or overflowed
  * borrowed from src/backend/utils/adt/float.c
@@ -112,26 +110,26 @@ do {															\
 extern Interval *abs_interval(Interval *a);
 
 extern bool gbt_num_consistent(const GBT_NUMKEY_R *key, const void *query,
-				   const StrategyNumber *strategy, bool is_leaf,
-				   const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
+							   const StrategyNumber *strategy, bool is_leaf,
+							   const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
 
 extern float8 gbt_num_distance(const GBT_NUMKEY_R *key, const void *query,
-				 bool is_leaf, const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
+							   bool is_leaf, const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
 
 extern GIST_SPLITVEC *gbt_num_picksplit(const GistEntryVector *entryvec, GIST_SPLITVEC *v,
-				  const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
+										const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
 
 extern GISTENTRY *gbt_num_compress(GISTENTRY *entry, const gbtree_ninfo *tinfo);
 
 extern GISTENTRY *gbt_num_fetch(GISTENTRY *entry, const gbtree_ninfo *tinfo);
 
 extern void *gbt_num_union(GBT_NUMKEY *out, const GistEntryVector *entryvec,
-			  const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
+						   const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
 
 extern bool gbt_num_same(const GBT_NUMKEY *a, const GBT_NUMKEY *b,
-			 const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
+						 const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
 
 extern void gbt_num_bin_union(Datum *u, GBT_NUMKEY *e,
-				  const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
+							  const gbtree_ninfo *tinfo, FmgrInfo *flinfo);
 
 #endif

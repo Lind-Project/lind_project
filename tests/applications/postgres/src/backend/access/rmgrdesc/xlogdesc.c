@@ -3,7 +3,7 @@
  * xlogdesc.c
  *	  rmgr descriptor routines for access/transam/xlog.c
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -14,6 +14,7 @@
  */
 #include "postgres.h"
 
+#include "access/transam.h"
 #include "access/xlog.h"
 #include "access/xlog_internal.h"
 #include "catalog/pg_control.h"
@@ -52,7 +53,8 @@ xlog_desc(StringInfo buf, XLogReaderState *record)
 						 checkpoint->ThisTimeLineID,
 						 checkpoint->PrevTimeLineID,
 						 checkpoint->fullPageWrites ? "true" : "false",
-						 checkpoint->nextXidEpoch, checkpoint->nextXid,
+						 EpochFromFullTransactionId(checkpoint->nextFullXid),
+						 XidFromFullTransactionId(checkpoint->nextFullXid),
 						 checkpoint->nextOid,
 						 checkpoint->nextMulti,
 						 checkpoint->nextMultiOffset,
@@ -78,8 +80,7 @@ xlog_desc(StringInfo buf, XLogReaderState *record)
 
 		appendStringInfoString(buf, xlrec->rp_name);
 	}
-	else if (info == XLOG_FPI || info == XLOG_FPI_FOR_HINT ||
-			 info == XLOG_FPI_MULTI)
+	else if (info == XLOG_FPI || info == XLOG_FPI_FOR_HINT)
 	{
 		/* no further information to print */
 	}
@@ -111,11 +112,12 @@ xlog_desc(StringInfo buf, XLogReaderState *record)
 		}
 
 		appendStringInfo(buf, "max_connections=%d max_worker_processes=%d "
-						 "max_prepared_xacts=%d max_locks_per_xact=%d "
-						 "wal_level=%s wal_log_hints=%s "
-						 "track_commit_timestamp=%s",
+						 "max_wal_senders=%d max_prepared_xacts=%d "
+						 "max_locks_per_xact=%d wal_level=%s "
+						 "wal_log_hints=%s track_commit_timestamp=%s",
 						 xlrec.MaxConnections,
 						 xlrec.max_worker_processes,
+						 xlrec.max_wal_senders,
 						 xlrec.max_prepared_xacts,
 						 xlrec.max_locks_per_xact,
 						 wal_level_str,
@@ -182,9 +184,6 @@ xlog_identify(uint8 info)
 			break;
 		case XLOG_FPI_FOR_HINT:
 			id = "FPI_FOR_HINT";
-			break;
-		case XLOG_FPI_MULTI:
-			id = "FPI_MULTI";
 			break;
 	}
 

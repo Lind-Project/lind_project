@@ -21,17 +21,25 @@
   dropped from a future version of this module.
  </para>
 
+ <para>
+  This module is considered <quote>trusted</quote>, that is, it can be
+  installed by non-superusers who have <literal>CREATE</literal> privilege
+  on the current database.
+ </para>
+
  <sect2>
   <title>Data Types</title>
 
   <para>
-   <xref linkend="isn-datatypes"> shows the data types provided by
+   <xref linkend="isn-datatypes"/> shows the data types provided by
    the <filename>isn</filename> module.
   </para>
 
   <table id="isn-datatypes">
    <title><filename>isn</filename> Data Types</title>
    <tgroup cols="2">
+    <colspec colname="col1" colwidth="1*"/>
+    <colspec colname="col2" colwidth="2*"/>
     <thead>
      <row>
       <entry>Data Type</entry>
@@ -123,7 +131,7 @@
    </listitem>
    <listitem>
     <para>UPC numbers are a subset of the EAN13 numbers (they are basically
-    EAN13 without the first <literal>0</> digit).</para>
+    EAN13 without the first <literal>0</literal> digit).</para>
    </listitem>
    <listitem>
     <para>All UPC, ISBN, ISMN and ISSN numbers can be represented as EAN13
@@ -139,7 +147,7 @@
   </para>
 
   <para>
-   The <type>ISBN</>, <type>ISMN</>, and <type>ISSN</> types will display the
+   The <type>ISBN</type>, <type>ISMN</type>, and <type>ISSN</type> types will display the
    short version of the number (ISxN 10) whenever it's possible, and will show
    ISxN 13 format for numbers that do not fit in the short version.
    The <type>EAN13</type>, <type>ISBN13</type>, <type>ISMN13</type> and
@@ -152,7 +160,7 @@
   <title>Casts</title>
 
   <para>
-   The <filename>isn</> module provides the following pairs of type casts:
+   The <filename>isn</filename> module provides the following pairs of type casts:
   </para>
 
   <itemizedlist>
@@ -209,7 +217,7 @@
   </itemizedlist>
 
   <para>
-   When casting from <type>EAN13</> to another type, there is a run-time
+   When casting from <type>EAN13</type> to another type, there is a run-time
    check that the value is within the domain of the other type, and an error
    is thrown if not.  The other casts are simply relabelings that will
    always succeed.
@@ -220,47 +228,72 @@
   <title>Functions and Operators</title>
 
   <para>
-   The <filename>isn</> module provides the standard comparison operators,
+   The <filename>isn</filename> module provides the standard comparison operators,
    plus B-tree and hash indexing support for all these data types.  In
-   addition there are several specialized functions; shown in <xref linkend="isn-functions">.
+   addition there are several specialized functions; shown in <xref linkend="isn-functions"/>.
    In this table,
-   <type>isn</> means any one of the module's data types.
+   <type>isn</type> means any one of the module's data types.
   </para>
 
   <table id="isn-functions">
-   <title><filename>isn</> Functions</title>
-   <tgroup cols="3">
-    <thead>
-     <row>
-      <entry>Function</entry>
-      <entry>Returns</entry>
-      <entry>Description</entry>
-     </row>
-    </thead>
+   <title><filename>isn</filename> Functions</title>
+    <tgroup cols="1">
+     <thead>
+      <row>
+       <entry role="func_table_entry"><para role="func_signature">
+        Function
+       </para>
+       <para>
+        Description
+       </para></entry>
+      </row>
+     </thead>
 
-    <tbody>
-     <row>
-      <entry><function>isn_weak(boolean)</function><indexterm><primary>isn_weak</primary></indexterm></entry>
-      <entry><type>boolean</type></entry>
-      <entry>Sets the weak input mode (returns new setting)</entry>
-     </row>
-     <row>
-      <entry><function>isn_weak()</function></entry>
-      <entry><type>boolean</type></entry>
-      <entry>Gets the current status of the weak mode</entry>
-     </row>
-     <row>
-      <entry><function>make_valid(isn)</function><indexterm><primary>make_valid</primary></indexterm></entry>
-      <entry><type>isn</type></entry>
-      <entry>Validates an invalid number (clears the invalid flag)</entry>
-     </row>
-     <row>
-      <entry><function>is_valid(isn)</function><indexterm><primary>is_valid</primary></indexterm></entry>
-      <entry><type>boolean</type></entry>
-      <entry>Checks for the presence of the invalid flag</entry>
-     </row>
-    </tbody>
-   </tgroup>
+     <tbody>
+      <row>
+       <entry role="func_table_entry"><para role="func_signature">
+        <indexterm><primary>isn_weak</primary></indexterm>
+        <function>isn_weak</function> ( <type>boolean</type> )
+        <returnvalue>boolean</returnvalue>
+       </para>
+       <para>
+        Sets the weak input mode, and returns new setting.
+       </para></entry>
+      </row>
+
+      <row>
+       <entry role="func_table_entry"><para role="func_signature">
+        <function>isn_weak</function> ()
+        <returnvalue>boolean</returnvalue>
+       </para>
+       <para>
+        Returns the current status of the weak mode.
+       </para></entry>
+      </row>
+
+      <row>
+       <entry role="func_table_entry"><para role="func_signature">
+        <indexterm><primary>make_valid</primary></indexterm>
+        <function>make_valid</function> ( <type>isn</type> )
+        <returnvalue>isn</returnvalue>
+       </para>
+       <para>
+        Validates an invalid number (clears the invalid flag).
+       </para></entry>
+      </row>
+
+      <row>
+       <entry role="func_table_entry"><para role="func_signature">
+        <indexterm><primary>is_valid</primary></indexterm>
+        <function>is_valid</function> ( <type>isn</type> )
+        <returnvalue>boolean</returnvalue>
+       </para>
+       <para>
+        Checks for the presence of the invalid flag.
+       </para></entry>
+      </row>
+     </tbody>
+    </tgroup>
   </table>
 
   <para>
@@ -285,21 +318,21 @@
   <para>
    When you insert invalid numbers in a table using the weak mode, the number
    will be inserted with the corrected check digit, but it will be displayed
-   with an exclamation mark (<literal>!</>) at the end, for example
-   <literal>0-11-000322-5!</>.  This invalid marker can be checked with
-   the <function>is_valid</> function and cleared with the
-   <function>make_valid</> function.
+   with an exclamation mark (<literal>!</literal>) at the end, for example
+   <literal>0-11-000322-5!</literal>.  This invalid marker can be checked with
+   the <function>is_valid</function> function and cleared with the
+   <function>make_valid</function> function.
   </para>
 
   <para>
    You can also force the insertion of invalid numbers even when not in the
-   weak mode, by appending the <literal>!</> character at the end of the
+   weak mode, by appending the <literal>!</literal> character at the end of the
    number.
   </para>
 
   <para>
    Another special feature is that during input, you can write
-   <literal>?</> in place of the check digit, and the correct check digit
+   <literal>?</literal> in place of the check digit, and the correct check digit
    will be inserted automatically.
   </para>
  </sect2>
@@ -363,11 +396,11 @@ SELECT isbn13(id) FROM test;
 
    The prefixes used for hyphenation were also compiled from:
    <itemizedlist>
-    <listitem><para><ulink url="http://www.gs1.org/productssolutions/idkeys/support/prefix_list.html"></ulink></para></listitem>
-    <listitem><para><ulink url="http://en.wikipedia.org/wiki/List_of_ISBN_identifier_groups"></ulink></para></listitem>
+    <listitem><para><ulink url="https://www.gs1.org/standards/id-keys"></ulink></para></listitem>
+    <listitem><para><ulink url="https://en.wikipedia.org/wiki/List_of_ISBN_identifier_groups"></ulink></para></listitem>
     <listitem><para><ulink url="https://www.isbn-international.org/content/isbn-users-manual"></ulink></para></listitem>
-    <listitem><para><ulink url="http://en.wikipedia.org/wiki/International_Standard_Music_Number"></ulink></para></listitem>
-    <listitem><para><ulink url="http://www.ismn-international.org/ranges.html"></ulink></para></listitem>
+    <listitem><para><ulink url="https://en.wikipedia.org/wiki/International_Standard_Music_Number"></ulink></para></listitem>
+    <listitem><para><ulink url="https://www.ismn-international.org/ranges.html"></ulink></para></listitem>
    </itemizedlist>
 
    Care was taken during the creation of the algorithms and they
@@ -379,12 +412,12 @@ SELECT isbn13(id) FROM test;
  <sect2>
   <title>Author</title>
   <para>
-   Germ&aacute;n M&eacute;ndez Bravo (Kronuz), 2004 - 2006
+   Germ&aacute;n M&eacute;ndez Bravo (Kronuz), 2004&ndash;2006
   </para>
 
   <para>
    This module was inspired by Garrett A. Wollman's
-   <filename>isbn_issn</> code.
+   <filename>isbn_issn</filename> code.
   </para>
  </sect2>
 

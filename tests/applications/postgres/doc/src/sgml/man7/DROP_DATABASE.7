@@ -1,0 +1,86 @@
+'\" t
+.\"     Title: DROP DATABASE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 2020
+.\"    Manual: PostgreSQL 13.0 Documentation
+.\"    Source: PostgreSQL 13.0
+.\"  Language: English
+.\"
+.TH "DROP DATABASE" "7" "2020" "PostgreSQL 13.0" "PostgreSQL 13.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+DROP_DATABASE \- remove a database
+.SH "SYNOPSIS"
+.sp
+.nf
+DROP DATABASE [ IF EXISTS ] \fIname\fR [ [ WITH ] ( \fIoption\fR [, \&.\&.\&.] ) ]
+
+where \fIoption\fR can be:
+
+    FORCE
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBDROP DATABASE\fR
+drops a database\&. It removes the catalog entries for the database and deletes the directory containing the data\&. It can only be executed by the database owner\&. It cannot be executed while you are connected to the target database\&. (Connect to
+postgres
+or any other database to issue this command\&.) Also, if anyone else is connected to the target database, this command will fail unless you use the
+FORCE
+option described below\&.
+.PP
+\fBDROP DATABASE\fR
+cannot be undone\&. Use it with care!
+.SH "PARAMETERS"
+.PP
+IF EXISTS
+.RS 4
+Do not throw an error if the database does not exist\&. A notice is issued in this case\&.
+.RE
+.PP
+\fIname\fR
+.RS 4
+The name of the database to remove\&.
+.RE
+.PP
+FORCE
+.RS 4
+Attempt to terminate all existing connections to the target database\&. It doesn\*(Aqt terminate if prepared transactions, active logical replication slots or subscriptions are present in the target database\&.
+.sp
+This will fail if the current user has no permissions to terminate other connections\&. Required permissions are the same as with
+pg_terminate_backend, described in
+Section\ \&9.27.2\&. This will also fail if we are not able to terminate connections\&.
+.RE
+.SH "NOTES"
+.PP
+\fBDROP DATABASE\fR
+cannot be executed inside a transaction block\&.
+.PP
+This command cannot be executed while connected to the target database\&. Thus, it might be more convenient to use the program
+\fBdropdb\fR(1)
+instead, which is a wrapper around this command\&.
+.SH "COMPATIBILITY"
+.PP
+There is no
+\fBDROP DATABASE\fR
+statement in the SQL standard\&.
+.SH "SEE ALSO"
+CREATE DATABASE (\fBCREATE_DATABASE\fR(7))

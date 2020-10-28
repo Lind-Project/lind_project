@@ -31,12 +31,11 @@
 
 #include "postgres.h"
 
-#include "px.h"
-
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
 
+#include "px.h"
 #include "utils/memutils.h"
 #include "utils/resowner.h"
 
@@ -408,7 +407,7 @@ gen_ossl_encrypt(PX_Cipher *c, const uint8 *data, unsigned dlen,
 /* Blowfish */
 
 /*
- * Check if strong crypto is supported. Some openssl installations
+ * Check if strong crypto is supported. Some OpenSSL installations
  * support only short keys and unfortunately BF_set_key does not return any
  * error value. This function tests if is possible to use strong key.
  */

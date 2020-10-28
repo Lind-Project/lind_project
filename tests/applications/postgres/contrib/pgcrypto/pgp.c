@@ -31,8 +31,8 @@
 
 #include "postgres.h"
 
-#include "px.h"
 #include "pgp.h"
+#include "px.h"
 
 /*
  * Defaults.
@@ -54,7 +54,6 @@ struct digest_info
 {
 	const char *name;
 	int			code;
-	const char *int_name;
 };
 
 struct cipher_info

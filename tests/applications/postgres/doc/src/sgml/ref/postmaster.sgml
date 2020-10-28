@@ -15,14 +15,14 @@ PostgreSQL documentation
  </refmeta>
 
  <refnamediv>
-  <refname id="postmaster-ref">postmaster</refname>
+  <refname>postmaster</refname>
   <refpurpose><productname>PostgreSQL</productname> database server</refpurpose>
  </refnamediv>
 
  <refsynopsisdiv>
   <cmdsynopsis>
    <command>postmaster</command>
-   <arg rep="repeat"><replaceable>option</></arg>
+   <arg rep="repeat"><replaceable>option</replaceable></arg>
   </cmdsynopsis>
  </refsynopsisdiv>
 
@@ -38,7 +38,7 @@ PostgreSQL documentation
   <title>See Also</title>
 
   <para>
-   <xref linkend="app-postgres">
+   <xref linkend="app-postgres"/>
   </para>
  </refsect1>
 </refentry>

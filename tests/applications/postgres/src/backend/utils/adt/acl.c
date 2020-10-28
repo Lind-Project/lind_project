@@ -3,7 +3,7 @@
  * acl.c
  *	  Basic access control list data structures manipulation routines.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -19,17 +19,20 @@
 #include "access/htup_details.h"
 #include "catalog/catalog.h"
 #include "catalog/namespace.h"
-#include "catalog/pg_authid.h"
 #include "catalog/pg_auth_members.h"
-#include "catalog/pg_type.h"
+#include "catalog/pg_authid.h"
 #include "catalog/pg_class.h"
+#include "catalog/pg_type.h"
 #include "commands/dbcommands.h"
 #include "commands/proclang.h"
 #include "commands/tablespace.h"
+#include "common/hashfn.h"
 #include "foreign/foreign.h"
 #include "funcapi.h"
+#include "lib/qunique.h"
 #include "miscadmin.h"
 #include "utils/acl.h"
+#include "utils/array.h"
 #include "utils/builtins.h"
 #include "utils/catcache.h"
 #include "utils/inval.h"
@@ -37,7 +40,6 @@
 #include "utils/memutils.h"
 #include "utils/syscache.h"
 #include "utils/varlena.h"
-
 
 typedef struct
 {
@@ -85,13 +87,13 @@ static const char *aclparse(const char *s, AclItem *aip);
 static bool aclitem_match(const AclItem *a1, const AclItem *a2);
 static int	aclitemComparator(const void *arg1, const void *arg2);
 static void check_circularity(const Acl *old_acl, const AclItem *mod_aip,
-				  Oid ownerId);
+							  Oid ownerId);
 static Acl *recursive_revoke(Acl *acl, Oid grantee, AclMode revoke_privs,
-				 Oid ownerId, DropBehavior behavior);
+							 Oid ownerId, DropBehavior behavior);
 
 static AclMode convert_priv_string(text *priv_type_text);
 static AclMode convert_any_priv_string(text *priv_type_text,
-						const priv_map *privileges);
+									   const priv_map *privileges);
 
 static Oid	convert_table_name(text *tablename);
 static AclMode convert_table_priv_string(text *priv_type_text);
@@ -244,9 +246,6 @@ aclparse(const char *s, AclItem *aip)
 
 	Assert(s && aip);
 
-#ifdef ACLDEBUG
-	elog(LOG, "aclparse: input = \"%s\"", s);
-#endif
 	s = getid(s, name);
 	if (*s != '=')
 	{
@@ -355,11 +354,6 @@ aclparse(const char *s, AclItem *aip)
 	}
 
 	ACLITEM_SET_PRIVS_GOPTIONS(*aip, privs, goption);
-
-#ifdef ACLDEBUG
-	elog(LOG, "aclparse: correctly read [%u %x %x]",
-		 aip->ai_grantee, privs, goption);
-#endif
 
 	return s;
 }
@@ -717,6 +711,20 @@ hash_aclitem(PG_FUNCTION_ARGS)
 	PG_RETURN_UINT32((uint32) (a->ai_privs + a->ai_grantee + a->ai_grantor));
 }
 
+/*
+ * 64-bit hash function for aclitem.
+ *
+ * Similar to hash_aclitem, but accepts a seed and returns a uint64 value.
+ */
+Datum
+hash_aclitem_extended(PG_FUNCTION_ARGS)
+{
+	AclItem    *a = PG_GETARG_ACLITEM_P(0);
+	uint64		seed = PG_GETARG_INT64(1);
+	uint32		sum = (uint32) (a->ai_privs + a->ai_grantee + a->ai_grantor);
+
+	return (seed == 0) ? UInt64GetDatum(sum) : hash_uint32_extended(sum, seed);
+}
 
 /*
  * acldefault()  --- create an ACL describing default access permissions
@@ -730,7 +738,7 @@ hash_aclitem(PG_FUNCTION_ARGS)
  * absence of any pg_default_acl entry.
  */
 Acl *
-acldefault(GrantObjectType objtype, Oid ownerId)
+acldefault(ObjectType objtype, Oid ownerId)
 {
 	AclMode		world_default;
 	AclMode		owner_default;
@@ -740,56 +748,56 @@ acldefault(GrantObjectType objtype, Oid ownerId)
 
 	switch (objtype)
 	{
-		case ACL_OBJECT_COLUMN:
+		case OBJECT_COLUMN:
 			/* by default, columns have no extra privileges */
 			world_default = ACL_NO_RIGHTS;
 			owner_default = ACL_NO_RIGHTS;
 			break;
-		case ACL_OBJECT_RELATION:
+		case OBJECT_TABLE:
 			world_default = ACL_NO_RIGHTS;
 			owner_default = ACL_ALL_RIGHTS_RELATION;
 			break;
-		case ACL_OBJECT_SEQUENCE:
+		case OBJECT_SEQUENCE:
 			world_default = ACL_NO_RIGHTS;
 			owner_default = ACL_ALL_RIGHTS_SEQUENCE;
 			break;
-		case ACL_OBJECT_DATABASE:
+		case OBJECT_DATABASE:
 			/* for backwards compatibility, grant some rights by default */
 			world_default = ACL_CREATE_TEMP | ACL_CONNECT;
 			owner_default = ACL_ALL_RIGHTS_DATABASE;
 			break;
-		case ACL_OBJECT_FUNCTION:
+		case OBJECT_FUNCTION:
 			/* Grant EXECUTE by default, for now */
 			world_default = ACL_EXECUTE;
 			owner_default = ACL_ALL_RIGHTS_FUNCTION;
 			break;
-		case ACL_OBJECT_LANGUAGE:
+		case OBJECT_LANGUAGE:
 			/* Grant USAGE by default, for now */
 			world_default = ACL_USAGE;
 			owner_default = ACL_ALL_RIGHTS_LANGUAGE;
 			break;
-		case ACL_OBJECT_LARGEOBJECT:
+		case OBJECT_LARGEOBJECT:
 			world_default = ACL_NO_RIGHTS;
 			owner_default = ACL_ALL_RIGHTS_LARGEOBJECT;
 			break;
-		case ACL_OBJECT_NAMESPACE:
+		case OBJECT_SCHEMA:
 			world_default = ACL_NO_RIGHTS;
-			owner_default = ACL_ALL_RIGHTS_NAMESPACE;
+			owner_default = ACL_ALL_RIGHTS_SCHEMA;
 			break;
-		case ACL_OBJECT_TABLESPACE:
+		case OBJECT_TABLESPACE:
 			world_default = ACL_NO_RIGHTS;
 			owner_default = ACL_ALL_RIGHTS_TABLESPACE;
 			break;
-		case ACL_OBJECT_FDW:
+		case OBJECT_FDW:
 			world_default = ACL_NO_RIGHTS;
 			owner_default = ACL_ALL_RIGHTS_FDW;
 			break;
-		case ACL_OBJECT_FOREIGN_SERVER:
+		case OBJECT_FOREIGN_SERVER:
 			world_default = ACL_NO_RIGHTS;
 			owner_default = ACL_ALL_RIGHTS_FOREIGN_SERVER;
 			break;
-		case ACL_OBJECT_DOMAIN:
-		case ACL_OBJECT_TYPE:
+		case OBJECT_DOMAIN:
+		case OBJECT_TYPE:
 			world_default = ACL_USAGE;
 			owner_default = ACL_ALL_RIGHTS_TYPE;
 			break;
@@ -840,53 +848,52 @@ acldefault(GrantObjectType objtype, Oid ownerId)
 
 /*
  * SQL-accessible version of acldefault().  Hackish mapping from "char" type to
- * ACL_OBJECT_* values, but it's only used in the information schema, not
- * documented for general use.
+ * OBJECT_* values.
  */
 Datum
 acldefault_sql(PG_FUNCTION_ARGS)
 {
 	char		objtypec = PG_GETARG_CHAR(0);
 	Oid			owner = PG_GETARG_OID(1);
-	GrantObjectType objtype = 0;
+	ObjectType	objtype = 0;
 
 	switch (objtypec)
 	{
 		case 'c':
-			objtype = ACL_OBJECT_COLUMN;
+			objtype = OBJECT_COLUMN;
 			break;
 		case 'r':
-			objtype = ACL_OBJECT_RELATION;
+			objtype = OBJECT_TABLE;
 			break;
 		case 's':
-			objtype = ACL_OBJECT_SEQUENCE;
+			objtype = OBJECT_SEQUENCE;
 			break;
 		case 'd':
-			objtype = ACL_OBJECT_DATABASE;
+			objtype = OBJECT_DATABASE;
 			break;
 		case 'f':
-			objtype = ACL_OBJECT_FUNCTION;
+			objtype = OBJECT_FUNCTION;
 			break;
 		case 'l':
-			objtype = ACL_OBJECT_LANGUAGE;
+			objtype = OBJECT_LANGUAGE;
 			break;
 		case 'L':
-			objtype = ACL_OBJECT_LARGEOBJECT;
+			objtype = OBJECT_LARGEOBJECT;
 			break;
 		case 'n':
-			objtype = ACL_OBJECT_NAMESPACE;
+			objtype = OBJECT_SCHEMA;
 			break;
 		case 't':
-			objtype = ACL_OBJECT_TABLESPACE;
+			objtype = OBJECT_TABLESPACE;
 			break;
 		case 'F':
-			objtype = ACL_OBJECT_FDW;
+			objtype = OBJECT_FDW;
 			break;
 		case 'S':
-			objtype = ACL_OBJECT_FOREIGN_SERVER;
+			objtype = OBJECT_FOREIGN_SERVER;
 			break;
 		case 'T':
-			objtype = ACL_OBJECT_TYPE;
+			objtype = OBJECT_TYPE;
 			break;
 		default:
 			elog(ERROR, "unrecognized objtype abbreviation: %c", objtypec);
@@ -1460,8 +1467,7 @@ aclmembers(const Acl *acl, Oid **roleids)
 	Oid		   *list;
 	const AclItem *acldat;
 	int			i,
-				j,
-				k;
+				j;
 
 	if (acl == NULL || ACL_NUM(acl) == 0)
 	{
@@ -1493,21 +1499,14 @@ aclmembers(const Acl *acl, Oid **roleids)
 	/* Sort the array */
 	qsort(list, j, sizeof(Oid), oid_cmp);
 
-	/* Remove duplicates from the array */
-	k = 0;
-	for (i = 1; i < j; i++)
-	{
-		if (list[k] != list[i])
-			list[++k] = list[i];
-	}
-
 	/*
 	 * We could repalloc the array down to minimum size, but it's hardly worth
 	 * it since it's only transient memory.
 	 */
 	*roleids = list;
 
-	return k + 1;
+	/* Remove duplicates from the array */
+	return qunique(list, j, sizeof(Oid), oid_cmp);
 }
 
 
@@ -1749,7 +1748,7 @@ aclexplode(PG_FUNCTION_ARGS)
 		 * build tupdesc for result tuples (matches out parameters in pg_proc
 		 * entry)
 		 */
-		tupdesc = CreateTemplateTupleDesc(4, false);
+		tupdesc = CreateTemplateTupleDesc(4);
 		TupleDescInitEntry(tupdesc, (AttrNumber) 1, "grantor",
 						   OIDOID, -1, 0);
 		TupleDescInitEntry(tupdesc, (AttrNumber) 2, "grantee",
@@ -5177,7 +5176,8 @@ get_role_oid(const char *rolname, bool missing_ok)
 {
 	Oid			oid;
 
-	oid = GetSysCacheOid1(AUTHNAME, CStringGetDatum(rolname));
+	oid = GetSysCacheOid1(AUTHNAME, Anum_pg_authid_oid,
+						  CStringGetDatum(rolname));
 	if (!OidIsValid(oid) && !missing_ok)
 		ereport(ERROR,
 				(errcode(ERRCODE_UNDEFINED_OBJECT),
@@ -5276,6 +5276,7 @@ get_rolespec_tuple(const RoleSpec *role)
 					(errcode(ERRCODE_UNDEFINED_OBJECT),
 					 errmsg("role \"%s\" does not exist", "public")));
 			tuple = NULL;		/* make compiler happy */
+			break;
 
 		default:
 			elog(ERROR, "unexpected role type %d", role->roletype);

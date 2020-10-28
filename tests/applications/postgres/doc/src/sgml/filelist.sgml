@@ -42,12 +42,12 @@
 <!ENTITY manage-ag     SYSTEM "manage-ag.sgml">
 <!ENTITY monitoring    SYSTEM "monitoring.sgml">
 <!ENTITY regress       SYSTEM "regress.sgml">
-<!ENTITY recovery-config SYSTEM "recovery-config.sgml">
 <!ENTITY runtime       SYSTEM "runtime.sgml">
 <!ENTITY config        SYSTEM "config.sgml">
 <!ENTITY user-manag    SYSTEM "user-manag.sgml">
 <!ENTITY wal           SYSTEM "wal.sgml">
 <!ENTITY logical-replication    SYSTEM "logical-replication.sgml">
+<!ENTITY jit    SYSTEM "jit.sgml">
 
 <!-- programmer's guide -->
 <!ENTITY bgworker   SYSTEM "bgworker.sgml">
@@ -83,11 +83,13 @@
 <!ENTITY bki        SYSTEM "bki.sgml">
 <!ENTITY catalogs   SYSTEM "catalogs.sgml">
 <!ENTITY geqo       SYSTEM "geqo.sgml">
+<!ENTITY btree      SYSTEM "btree.sgml">
 <!ENTITY gist       SYSTEM "gist.sgml">
 <!ENTITY spgist     SYSTEM "spgist.sgml">
 <!ENTITY gin        SYSTEM "gin.sgml">
 <!ENTITY brin       SYSTEM "brin.sgml">
 <!ENTITY planstats    SYSTEM "planstats.sgml">
+<!ENTITY tableam    SYSTEM "tableam.sgml">
 <!ENTITY indexam    SYSTEM "indexam.sgml">
 <!ENTITY nls        SYSTEM "nls.sgml">
 <!ENTITY plhandler  SYSTEM "plhandler.sgml">
@@ -100,6 +102,7 @@
 <!ENTITY storage    SYSTEM "storage.sgml">
 <!ENTITY tablesample-method SYSTEM "tablesample-method.sgml">
 <!ENTITY generic-wal SYSTEM "generic-wal.sgml">
+<!ENTITY backup-manifest SYSTEM "backup-manifest.sgml">
 
 <!-- contrib information -->
 <!ENTITY contrib         SYSTEM "contrib.sgml">
@@ -110,7 +113,6 @@
 <!ENTITY bloom           SYSTEM "bloom.sgml">
 <!ENTITY btree-gin       SYSTEM "btree-gin.sgml">
 <!ENTITY btree-gist      SYSTEM "btree-gist.sgml">
-<!ENTITY chkpass         SYSTEM "chkpass.sgml">
 <!ENTITY citext          SYSTEM "citext.sgml">
 <!ENTITY cube            SYSTEM "cube.sgml">
 <!ENTITY dblink          SYSTEM "dblink.sgml">
@@ -157,7 +159,6 @@
 <!ENTITY xml2            SYSTEM "xml2.sgml">
 
 <!-- appendixes -->
-<!ENTITY contacts   SYSTEM "contacts.sgml">
 <!ENTITY datetime   SYSTEM "datetime.sgml">
 <!ENTITY docguide   SYSTEM "docguide.sgml">
 <!ENTITY errcodes   SYSTEM "errcodes.sgml">
@@ -166,23 +167,18 @@
 <!ENTITY sourcerepo SYSTEM "sourcerepo.sgml">
 
 <!ENTITY release    SYSTEM "release.sgml">
-<!ENTITY release-10     SYSTEM "release-10.sgml">
+<!ENTITY release-13     SYSTEM "release-13.sgml">
 
+<!ENTITY limits     SYSTEM "limits.sgml">
 <!ENTITY acronyms   SYSTEM "acronyms.sgml">
+<!ENTITY glossary   SYSTEM "glossary.sgml">
+<!ENTITY color      SYSTEM "color.sgml">
 
 <!ENTITY features-supported   SYSTEM "features-supported.sgml">
 <!ENTITY features-unsupported SYSTEM "features-unsupported.sgml">
 
 <!ENTITY errcodes-table SYSTEM "errcodes-table.sgml">
+<!ENTITY keywords-table SYSTEM "keywords-table.sgml">
 
 <!-- back matter -->
 <!ENTITY biblio     SYSTEM "biblio.sgml">
-
-<!--
- Some parts of the documentation are also source for some plain-text
- files used during installation.  To selectively ignore or include
- some parts (e.g., external xref's) when generating these files we use
- these parameter entities.  See also standalone-install.sgml.
- -->
-<!ENTITY % standalone-ignore  "INCLUDE">
-<!ENTITY % standalone-include "IGNORE">

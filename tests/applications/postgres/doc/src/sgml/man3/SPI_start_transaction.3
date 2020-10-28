@@ -1,0 +1,46 @@
+'\" t
+.\"     Title: SPI_start_transaction
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 2020
+.\"    Manual: PostgreSQL 13.0 Documentation
+.\"    Source: PostgreSQL 13.0
+.\"  Language: English
+.\"
+.TH "SPI_START_TRANSACTION" "3" "2020" "PostgreSQL 13.0" "PostgreSQL 13.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+SPI_start_transaction \- start a new transaction
+.SH "SYNOPSIS"
+.sp
+.nf
+void SPI_start_transaction(void)
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBSPI_start_transaction\fR
+starts a new transaction\&. It can only be called after
+\fBSPI_commit\fR
+or
+\fBSPI_rollback\fR, as there is no transaction active at that point\&. Normally, when an SPI\-using procedure is called, there is already a transaction active, so attempting to start another one before closing out the current one will result in an error\&.
+.PP
+This function can only be executed if the SPI connection has been set as nonatomic in the call to
+\fBSPI_connect_ext\fR\&.

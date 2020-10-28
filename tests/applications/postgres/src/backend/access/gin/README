@@ -163,7 +163,7 @@ algorithms.
 
 * The posting list can be accessed with GinGetPosting(itup)
 
-* If GinITupIsCompressed(itup), the posting list is stored in compressed
+* If GinItupIsCompressed(itup), the posting list is stored in compressed
   format. Otherwise it is just an array of ItemPointers. New tuples are always
   stored in compressed format, uncompressed items can be present if the
   database was migrated from 9.3 or earlier version.
@@ -299,7 +299,7 @@ is stored in the higher bits. That requires 43 bits in total, which
 conveniently fits in at most 6 bytes.
 
 A compressed posting list is passed around and stored on disk in a
-PackedPostingList struct. The first item in the list is stored uncompressed
+GinPostingList struct. The first item in the list is stored uncompressed
 as a regular ItemPointerData, followed by the length of the list in bytes,
 followed by the packed items.
 
@@ -413,7 +413,7 @@ leftmost leaf of the tree.
 Deletion algorithm keeps exclusive locks on left siblings of pages comprising
 currently investigated path.  Thus, if current page is to be removed, all
 required pages to remove both downlink and rightlink are already locked.  That
-evades potential right to left page locking order, which could deadlock with
+avoids potential right to left page locking order, which could deadlock with
 concurrent stepping right.
 
 A search concurrent to page deletion might already have read a pointer to the
@@ -472,6 +472,40 @@ and 'j'.
 During the replay of page deletion at standby, the page's left sibling, the
 target page, and its parent, are locked in that order.  This order guarantees
 no deadlock with concurrent reads.
+
+Predicate Locking
+-----------------
+
+GIN supports predicate locking, for serializable snapshot isolation.
+A predicate locks represent that a scan has scanned a range of values.  They
+are not concerned with physical pages as such, but the logical key values.
+A predicate lock on a page covers the key range that would belong on that
+page, whether or not there are any matching tuples there currently.  In other
+words, a predicate lock on an index page covers the "gaps" between the index
+tuples.  To minimize false positives, predicate locks are acquired at the
+finest level possible.
+
+* Like in the B-tree index, it is enough to lock only leaf pages, because all
+  insertions happen at the leaf level.
+
+* In an equality search (i.e. not a partial match search), if a key entry has
+  a posting tree, we lock the posting tree root page, to represent a lock on
+  just that key entry.  Otherwise, we lock the entry tree page.  We also lock
+  the entry tree page if no match is found, to lock the "gap" where the entry
+  would've been, had there been one.
+
+* In a partial match search, we lock all the entry leaf pages that we scan,
+  in addition to locks on posting tree roots, to represent the "gaps" between
+  values.
+
+* In addition to the locks on entry leaf pages and posting tree roots, all
+  scans grab a lock the metapage.  This is to interlock with insertions to
+  the fast update pending list.  An insertion to the pending list can really
+  belong anywhere in the tree, and the lock on the metapage represents that.
+
+The interlock for fastupdate pending lists means that with fastupdate=on,
+we effectively always grab a full-index lock, so you could get a lot of false
+positives.
 
 Compatibility
 -------------

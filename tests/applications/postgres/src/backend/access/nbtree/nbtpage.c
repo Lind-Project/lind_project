@@ -4,7 +4,7 @@
  *	  BTree-specific page management code for the Postgres btree access
  *	  method.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -24,6 +24,7 @@
 
 #include "access/nbtree.h"
 #include "access/nbtxlog.h"
+#include "access/tableam.h"
 #include "access/transam.h"
 #include "access/xlog.h"
 #include "access/xloginsert.h"
@@ -33,20 +34,31 @@
 #include "storage/predicate.h"
 #include "utils/snapmgr.h"
 
-static bool _bt_mark_page_halfdead(Relation rel, Buffer buf, BTStack stack);
-static bool _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf,
-						 bool *rightsib_empty);
-static bool _bt_lock_branch_parent(Relation rel, BlockNumber child,
-					   BTStack stack, Buffer *topparent, OffsetNumber *topoff,
-					   BlockNumber *target, BlockNumber *rightsib);
+static BTMetaPageData *_bt_getmeta(Relation rel, Buffer metabuf);
 static void _bt_log_reuse_page(Relation rel, BlockNumber blkno,
-				   TransactionId latestRemovedXid);
+							   TransactionId latestRemovedXid);
+static TransactionId _bt_xid_horizon(Relation rel, Relation heapRel, Page page,
+									 OffsetNumber *deletable, int ndeletable);
+static bool _bt_mark_page_halfdead(Relation rel, Buffer leafbuf,
+								   BTStack stack);
+static bool _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf,
+									 BlockNumber scanblkno,
+									 bool *rightsib_empty,
+									 TransactionId *oldestBtpoXact,
+									 uint32 *ndeleted);
+static bool _bt_lock_subtree_parent(Relation rel, BlockNumber child,
+									BTStack stack,
+									Buffer *subtreeparent,
+									OffsetNumber *poffset,
+									BlockNumber *topparent,
+									BlockNumber *topparentrightsib);
 
 /*
  *	_bt_initmetapage() -- Fill a page buffer with a correct metapage image
  */
 void
-_bt_initmetapage(Page page, BlockNumber rootbknum, uint32 level)
+_bt_initmetapage(Page page, BlockNumber rootbknum, uint32 level,
+				 bool allequalimage)
 {
 	BTMetaPageData *metad;
 	BTPageOpaque metaopaque;
@@ -60,16 +72,173 @@ _bt_initmetapage(Page page, BlockNumber rootbknum, uint32 level)
 	metad->btm_level = level;
 	metad->btm_fastroot = rootbknum;
 	metad->btm_fastlevel = level;
+	metad->btm_oldest_btpo_xact = InvalidTransactionId;
+	metad->btm_last_cleanup_num_heap_tuples = -1.0;
+	metad->btm_allequalimage = allequalimage;
 
 	metaopaque = (BTPageOpaque) PageGetSpecialPointer(page);
 	metaopaque->btpo_flags = BTP_META;
 
 	/*
-	 * Set pd_lower just past the end of the metadata.  This is not essential
-	 * but it makes the page look compressible to xlog.c.
+	 * Set pd_lower just past the end of the metadata.  This is essential,
+	 * because without doing so, metadata will be lost if xlog.c compresses
+	 * the page.
 	 */
 	((PageHeader) page)->pd_lower =
 		((char *) metad + sizeof(BTMetaPageData)) - (char *) page;
+}
+
+/*
+ *	_bt_upgrademetapage() -- Upgrade a meta-page from an old format to version
+ *		3, the last version that can be updated without broadly affecting
+ *		on-disk compatibility.  (A REINDEX is required to upgrade to v4.)
+ *
+ *		This routine does purely in-memory image upgrade.  Caller is
+ *		responsible for locking, WAL-logging etc.
+ */
+void
+_bt_upgrademetapage(Page page)
+{
+	BTMetaPageData *metad;
+	BTPageOpaque metaopaque PG_USED_FOR_ASSERTS_ONLY;
+
+	metad = BTPageGetMeta(page);
+	metaopaque = (BTPageOpaque) PageGetSpecialPointer(page);
+
+	/* It must be really a meta page of upgradable version */
+	Assert(metaopaque->btpo_flags & BTP_META);
+	Assert(metad->btm_version < BTREE_NOVAC_VERSION);
+	Assert(metad->btm_version >= BTREE_MIN_VERSION);
+
+	/* Set version number and fill extra fields added into version 3 */
+	metad->btm_version = BTREE_NOVAC_VERSION;
+	metad->btm_oldest_btpo_xact = InvalidTransactionId;
+	metad->btm_last_cleanup_num_heap_tuples = -1.0;
+	/* Only a REINDEX can set this field */
+	Assert(!metad->btm_allequalimage);
+	metad->btm_allequalimage = false;
+
+	/* Adjust pd_lower (see _bt_initmetapage() for details) */
+	((PageHeader) page)->pd_lower =
+		((char *) metad + sizeof(BTMetaPageData)) - (char *) page;
+}
+
+/*
+ * Get metadata from share-locked buffer containing metapage, while performing
+ * standard sanity checks.
+ *
+ * Callers that cache data returned here in local cache should note that an
+ * on-the-fly upgrade using _bt_upgrademetapage() can change the version field
+ * and BTREE_NOVAC_VERSION specific fields without invalidating local cache.
+ */
+static BTMetaPageData *
+_bt_getmeta(Relation rel, Buffer metabuf)
+{
+	Page		metapg;
+	BTPageOpaque metaopaque;
+	BTMetaPageData *metad;
+
+	metapg = BufferGetPage(metabuf);
+	metaopaque = (BTPageOpaque) PageGetSpecialPointer(metapg);
+	metad = BTPageGetMeta(metapg);
+
+	/* sanity-check the metapage */
+	if (!P_ISMETA(metaopaque) ||
+		metad->btm_magic != BTREE_MAGIC)
+		ereport(ERROR,
+				(errcode(ERRCODE_INDEX_CORRUPTED),
+				 errmsg("index \"%s\" is not a btree",
+						RelationGetRelationName(rel))));
+
+	if (metad->btm_version < BTREE_MIN_VERSION ||
+		metad->btm_version > BTREE_VERSION)
+		ereport(ERROR,
+				(errcode(ERRCODE_INDEX_CORRUPTED),
+				 errmsg("version mismatch in index \"%s\": file version %d, "
+						"current version %d, minimal supported version %d",
+						RelationGetRelationName(rel),
+						metad->btm_version, BTREE_VERSION, BTREE_MIN_VERSION)));
+
+	return metad;
+}
+
+/*
+ *	_bt_update_meta_cleanup_info() -- Update cleanup-related information in
+ *									  the metapage.
+ *
+ *		This routine checks if provided cleanup-related information is matching
+ *		to those written in the metapage.  On mismatch, metapage is overwritten.
+ */
+void
+_bt_update_meta_cleanup_info(Relation rel, TransactionId oldestBtpoXact,
+							 float8 numHeapTuples)
+{
+	Buffer		metabuf;
+	Page		metapg;
+	BTMetaPageData *metad;
+	bool		needsRewrite = false;
+	XLogRecPtr	recptr;
+
+	/* read the metapage and check if it needs rewrite */
+	metabuf = _bt_getbuf(rel, BTREE_METAPAGE, BT_READ);
+	metapg = BufferGetPage(metabuf);
+	metad = BTPageGetMeta(metapg);
+
+	/* outdated version of metapage always needs rewrite */
+	if (metad->btm_version < BTREE_NOVAC_VERSION)
+		needsRewrite = true;
+	else if (metad->btm_oldest_btpo_xact != oldestBtpoXact ||
+			 metad->btm_last_cleanup_num_heap_tuples != numHeapTuples)
+		needsRewrite = true;
+
+	if (!needsRewrite)
+	{
+		_bt_relbuf(rel, metabuf);
+		return;
+	}
+
+	/* trade in our read lock for a write lock */
+	LockBuffer(metabuf, BUFFER_LOCK_UNLOCK);
+	LockBuffer(metabuf, BT_WRITE);
+
+	START_CRIT_SECTION();
+
+	/* upgrade meta-page if needed */
+	if (metad->btm_version < BTREE_NOVAC_VERSION)
+		_bt_upgrademetapage(metapg);
+
+	/* update cleanup-related information */
+	metad->btm_oldest_btpo_xact = oldestBtpoXact;
+	metad->btm_last_cleanup_num_heap_tuples = numHeapTuples;
+	MarkBufferDirty(metabuf);
+
+	/* write wal record if needed */
+	if (RelationNeedsWAL(rel))
+	{
+		xl_btree_metadata md;
+
+		XLogBeginInsert();
+		XLogRegisterBuffer(0, metabuf, REGBUF_WILL_INIT | REGBUF_STANDARD);
+
+		Assert(metad->btm_version >= BTREE_NOVAC_VERSION);
+		md.version = metad->btm_version;
+		md.root = metad->btm_root;
+		md.level = metad->btm_level;
+		md.fastroot = metad->btm_fastroot;
+		md.fastlevel = metad->btm_fastlevel;
+		md.oldest_btpo_xact = oldestBtpoXact;
+		md.last_cleanup_num_heap_tuples = numHeapTuples;
+		md.allequalimage = metad->btm_allequalimage;
+
+		XLogRegisterBufData(0, (char *) &md, sizeof(xl_btree_metadata));
+
+		recptr = XLogInsert(RM_BTREE_ID, XLOG_BTREE_META_CLEANUP);
+
+		PageSetLSN(metapg, recptr);
+	}
+
+	END_CRIT_SECTION();
+	_bt_relbuf(rel, metabuf);
 }
 
 /*
@@ -77,9 +246,7 @@ _bt_initmetapage(Page page, BlockNumber rootbknum, uint32 level)
  *
  *		Since the root page can move around the btree file, we have to read
  *		its location from the metadata page, and then read the root page
- *		itself.  If no root page exists yet, we have to create one.  The
- *		standard class of race conditions exists here; I think I covered
- *		them all in the Hopi Indian rain dance of lock requests below.
+ *		itself.  If no root page exists yet, we have to create one.
  *
  *		The access type parameter (BT_READ or BT_WRITE) controls whether
  *		a new root page will be created or not.  If access = BT_READ,
@@ -104,8 +271,6 @@ Buffer
 _bt_getroot(Relation rel, int access)
 {
 	Buffer		metabuf;
-	Page		metapg;
-	BTPageOpaque metaopaque;
 	Buffer		rootbuf;
 	Page		rootpage;
 	BTPageOpaque rootopaque;
@@ -123,7 +288,10 @@ _bt_getroot(Relation rel, int access)
 		metad = (BTMetaPageData *) rel->rd_amcache;
 		/* We shouldn't have cached it if any of these fail */
 		Assert(metad->btm_magic == BTREE_MAGIC);
-		Assert(metad->btm_version == BTREE_VERSION);
+		Assert(metad->btm_version >= BTREE_MIN_VERSION);
+		Assert(metad->btm_version <= BTREE_VERSION);
+		Assert(!metad->btm_allequalimage ||
+			   metad->btm_version > BTREE_NOVAC_VERSION);
 		Assert(metad->btm_root != P_NONE);
 
 		rootblkno = metad->btm_fastroot;
@@ -157,28 +325,13 @@ _bt_getroot(Relation rel, int access)
 	}
 
 	metabuf = _bt_getbuf(rel, BTREE_METAPAGE, BT_READ);
-	metapg = BufferGetPage(metabuf);
-	metaopaque = (BTPageOpaque) PageGetSpecialPointer(metapg);
-	metad = BTPageGetMeta(metapg);
-
-	/* sanity-check the metapage */
-	if (!(metaopaque->btpo_flags & BTP_META) ||
-		metad->btm_magic != BTREE_MAGIC)
-		ereport(ERROR,
-				(errcode(ERRCODE_INDEX_CORRUPTED),
-				 errmsg("index \"%s\" is not a btree",
-						RelationGetRelationName(rel))));
-
-	if (metad->btm_version != BTREE_VERSION)
-		ereport(ERROR,
-				(errcode(ERRCODE_INDEX_CORRUPTED),
-				 errmsg("version mismatch in index \"%s\": file version %d, code version %d",
-						RelationGetRelationName(rel),
-						metad->btm_version, BTREE_VERSION)));
+	metad = _bt_getmeta(rel, metabuf);
 
 	/* if no root page initialized yet, do it */
 	if (metad->btm_root == P_NONE)
 	{
+		Page		metapg;
+
 		/* If access = BT_READ, caller doesn't want us to create root yet */
 		if (access == BT_READ)
 		{
@@ -220,14 +373,22 @@ _bt_getroot(Relation rel, int access)
 		rootopaque->btpo_flags = (BTP_LEAF | BTP_ROOT);
 		rootopaque->btpo.level = 0;
 		rootopaque->btpo_cycleid = 0;
+		/* Get raw page pointer for metapage */
+		metapg = BufferGetPage(metabuf);
 
 		/* NO ELOG(ERROR) till meta is updated */
 		START_CRIT_SECTION();
+
+		/* upgrade metapage if needed */
+		if (metad->btm_version < BTREE_NOVAC_VERSION)
+			_bt_upgrademetapage(metapg);
 
 		metad->btm_root = rootblkno;
 		metad->btm_level = 0;
 		metad->btm_fastroot = rootblkno;
 		metad->btm_fastlevel = 0;
+		metad->btm_oldest_btpo_xact = InvalidTransactionId;
+		metad->btm_last_cleanup_num_heap_tuples = -1.0;
 
 		MarkBufferDirty(rootbuf);
 		MarkBufferDirty(metabuf);
@@ -241,12 +402,17 @@ _bt_getroot(Relation rel, int access)
 
 			XLogBeginInsert();
 			XLogRegisterBuffer(0, rootbuf, REGBUF_WILL_INIT);
-			XLogRegisterBuffer(2, metabuf, REGBUF_WILL_INIT);
+			XLogRegisterBuffer(2, metabuf, REGBUF_WILL_INIT | REGBUF_STANDARD);
 
+			Assert(metad->btm_version >= BTREE_NOVAC_VERSION);
+			md.version = metad->btm_version;
 			md.root = rootblkno;
 			md.level = 0;
 			md.fastroot = rootblkno;
 			md.fastlevel = 0;
+			md.oldest_btpo_xact = InvalidTransactionId;
+			md.last_cleanup_num_heap_tuples = -1.0;
+			md.allequalimage = metad->btm_allequalimage;
 
 			XLogRegisterBufData(2, (char *) &md, sizeof(xl_btree_metadata));
 
@@ -271,7 +437,7 @@ _bt_getroot(Relation rel, int access)
 		LockBuffer(rootbuf, BUFFER_LOCK_UNLOCK);
 		LockBuffer(rootbuf, BT_READ);
 
-		/* okay, metadata is correct, release lock on it */
+		/* okay, metadata is correct, release lock on it without caching */
 		_bt_relbuf(rel, metabuf);
 	}
 	else
@@ -365,19 +531,21 @@ _bt_gettrueroot(Relation rel)
 	metaopaque = (BTPageOpaque) PageGetSpecialPointer(metapg);
 	metad = BTPageGetMeta(metapg);
 
-	if (!(metaopaque->btpo_flags & BTP_META) ||
+	if (!P_ISMETA(metaopaque) ||
 		metad->btm_magic != BTREE_MAGIC)
 		ereport(ERROR,
 				(errcode(ERRCODE_INDEX_CORRUPTED),
 				 errmsg("index \"%s\" is not a btree",
 						RelationGetRelationName(rel))));
 
-	if (metad->btm_version != BTREE_VERSION)
+	if (metad->btm_version < BTREE_MIN_VERSION ||
+		metad->btm_version > BTREE_VERSION)
 		ereport(ERROR,
 				(errcode(ERRCODE_INDEX_CORRUPTED),
-				 errmsg("version mismatch in index \"%s\": file version %d, code version %d",
+				 errmsg("version mismatch in index \"%s\": file version %d, "
+						"current version %d, minimal supported version %d",
 						RelationGetRelationName(rel),
-						metad->btm_version, BTREE_VERSION)));
+						metad->btm_version, BTREE_VERSION, BTREE_MIN_VERSION)));
 
 	/* if no root page initialized yet, fail */
 	if (metad->btm_root == P_NONE)
@@ -436,35 +604,12 @@ _bt_getrootheight(Relation rel)
 {
 	BTMetaPageData *metad;
 
-	/*
-	 * We can get what we need from the cached metapage data.  If it's not
-	 * cached yet, load it.  Sanity checks here must match _bt_getroot().
-	 */
 	if (rel->rd_amcache == NULL)
 	{
 		Buffer		metabuf;
-		Page		metapg;
-		BTPageOpaque metaopaque;
 
 		metabuf = _bt_getbuf(rel, BTREE_METAPAGE, BT_READ);
-		metapg = BufferGetPage(metabuf);
-		metaopaque = (BTPageOpaque) PageGetSpecialPointer(metapg);
-		metad = BTPageGetMeta(metapg);
-
-		/* sanity-check the metapage */
-		if (!(metaopaque->btpo_flags & BTP_META) ||
-			metad->btm_magic != BTREE_MAGIC)
-			ereport(ERROR,
-					(errcode(ERRCODE_INDEX_CORRUPTED),
-					 errmsg("index \"%s\" is not a btree",
-							RelationGetRelationName(rel))));
-
-		if (metad->btm_version != BTREE_VERSION)
-			ereport(ERROR,
-					(errcode(ERRCODE_INDEX_CORRUPTED),
-					 errmsg("version mismatch in index \"%s\": file version %d, code version %d",
-							RelationGetRelationName(rel),
-							metad->btm_version, BTREE_VERSION)));
+		metad = _bt_getmeta(rel, metabuf);
 
 		/*
 		 * If there's no root page yet, _bt_getroot() doesn't expect a cache
@@ -483,17 +628,94 @@ _bt_getrootheight(Relation rel)
 		rel->rd_amcache = MemoryContextAlloc(rel->rd_indexcxt,
 											 sizeof(BTMetaPageData));
 		memcpy(rel->rd_amcache, metad, sizeof(BTMetaPageData));
-
 		_bt_relbuf(rel, metabuf);
 	}
 
+	/* Get cached page */
 	metad = (BTMetaPageData *) rel->rd_amcache;
 	/* We shouldn't have cached it if any of these fail */
 	Assert(metad->btm_magic == BTREE_MAGIC);
-	Assert(metad->btm_version == BTREE_VERSION);
+	Assert(metad->btm_version >= BTREE_MIN_VERSION);
+	Assert(metad->btm_version <= BTREE_VERSION);
+	Assert(!metad->btm_allequalimage ||
+		   metad->btm_version > BTREE_NOVAC_VERSION);
 	Assert(metad->btm_fastroot != P_NONE);
 
 	return metad->btm_fastlevel;
+}
+
+/*
+ *	_bt_metaversion() -- Get version/status info from metapage.
+ *
+ *		Sets caller's *heapkeyspace and *allequalimage arguments using data
+ *		from the B-Tree metapage (could be locally-cached version).  This
+ *		information needs to be stashed in insertion scankey, so we provide a
+ *		single function that fetches both at once.
+ *
+ *		This is used to determine the rules that must be used to descend a
+ *		btree.  Version 4 indexes treat heap TID as a tiebreaker attribute.
+ *		pg_upgrade'd version 3 indexes need extra steps to preserve reasonable
+ *		performance when inserting a new BTScanInsert-wise duplicate tuple
+ *		among many leaf pages already full of such duplicates.
+ *
+ *		Also sets allequalimage field, which indicates whether or not it is
+ *		safe to apply deduplication.  We rely on the assumption that
+ *		btm_allequalimage will be zero'ed on heapkeyspace indexes that were
+ *		pg_upgrade'd from Postgres 12.
+ */
+void
+_bt_metaversion(Relation rel, bool *heapkeyspace, bool *allequalimage)
+{
+	BTMetaPageData *metad;
+
+	if (rel->rd_amcache == NULL)
+	{
+		Buffer		metabuf;
+
+		metabuf = _bt_getbuf(rel, BTREE_METAPAGE, BT_READ);
+		metad = _bt_getmeta(rel, metabuf);
+
+		/*
+		 * If there's no root page yet, _bt_getroot() doesn't expect a cache
+		 * to be made, so just stop here.  (XXX perhaps _bt_getroot() should
+		 * be changed to allow this case.)
+		 */
+		if (metad->btm_root == P_NONE)
+		{
+			*heapkeyspace = metad->btm_version > BTREE_NOVAC_VERSION;
+			*allequalimage = metad->btm_allequalimage;
+
+			_bt_relbuf(rel, metabuf);
+			return;
+		}
+
+		/*
+		 * Cache the metapage data for next time
+		 *
+		 * An on-the-fly version upgrade performed by _bt_upgrademetapage()
+		 * can change the nbtree version for an index without invalidating any
+		 * local cache.  This is okay because it can only happen when moving
+		 * from version 2 to version 3, both of which are !heapkeyspace
+		 * versions.
+		 */
+		rel->rd_amcache = MemoryContextAlloc(rel->rd_indexcxt,
+											 sizeof(BTMetaPageData));
+		memcpy(rel->rd_amcache, metad, sizeof(BTMetaPageData));
+		_bt_relbuf(rel, metabuf);
+	}
+
+	/* Get cached page */
+	metad = (BTMetaPageData *) rel->rd_amcache;
+	/* We shouldn't have cached it if any of these fail */
+	Assert(metad->btm_magic == BTREE_MAGIC);
+	Assert(metad->btm_version >= BTREE_MIN_VERSION);
+	Assert(metad->btm_version <= BTREE_VERSION);
+	Assert(!metad->btm_allequalimage ||
+		   metad->btm_version > BTREE_NOVAC_VERSION);
+	Assert(metad->btm_fastroot != P_NONE);
+
+	*heapkeyspace = metad->btm_version > BTREE_NOVAC_VERSION;
+	*allequalimage = metad->btm_allequalimage;
 }
 
 /*
@@ -774,39 +996,109 @@ _bt_page_recyclable(Page page)
 }
 
 /*
- * Delete item(s) from a btree page during VACUUM.
+ * Delete item(s) from a btree leaf page during VACUUM.
  *
- * This must only be used for deleting leaf items.  Deleting an item on a
- * non-leaf page has to be done as part of an atomic action that includes
- * deleting the page it points to.
+ * This routine assumes that the caller has a super-exclusive write lock on
+ * the buffer.  Also, the given deletable and updatable arrays *must* be
+ * sorted in ascending order.
  *
- * This routine assumes that the caller has pinned and locked the buffer.
- * Also, the given itemnos *must* appear in increasing order in the array.
+ * Routine deals with deleting TIDs when some (but not all) of the heap TIDs
+ * in an existing posting list item are to be removed by VACUUM.  This works
+ * by updating/overwriting an existing item with caller's new version of the
+ * item (a version that lacks the TIDs that are to be deleted).
  *
- * We record VACUUMs and b-tree deletes differently in WAL. InHotStandby
- * we need to be able to pin all of the blocks in the btree in physical
- * order when replaying the effects of a VACUUM, just as we do for the
- * original VACUUM itself. lastBlockVacuumed allows us to tell whether an
- * intermediate range of blocks has had no changes at all by VACUUM,
- * and so must be scanned anyway during replay. We always write a WAL record
- * for the last block in the index, whether or not it contained any items
- * to be removed. This allows us to scan right up to end of index to
- * ensure correct locking.
+ * We record VACUUMs and b-tree deletes differently in WAL.  Deletes must
+ * generate their own latestRemovedXid by accessing the heap directly, whereas
+ * VACUUMs rely on the initial heap scan taking care of it indirectly.  Also,
+ * only VACUUM can perform granular deletes of individual TIDs in posting list
+ * tuples.
  */
 void
 _bt_delitems_vacuum(Relation rel, Buffer buf,
-					OffsetNumber *itemnos, int nitems,
-					BlockNumber lastBlockVacuumed)
+					OffsetNumber *deletable, int ndeletable,
+					BTVacuumPosting *updatable, int nupdatable)
 {
 	Page		page = BufferGetPage(buf);
 	BTPageOpaque opaque;
+	Size		itemsz;
+	char	   *updatedbuf = NULL;
+	Size		updatedbuflen = 0;
+	OffsetNumber updatedoffsets[MaxIndexTuplesPerPage];
+
+	/* Shouldn't be called unless there's something to do */
+	Assert(ndeletable > 0 || nupdatable > 0);
+
+	for (int i = 0; i < nupdatable; i++)
+	{
+		/* Replace work area IndexTuple with updated version */
+		_bt_update_posting(updatable[i]);
+
+		/* Maintain array of updatable page offsets for WAL record */
+		updatedoffsets[i] = updatable[i]->updatedoffset;
+	}
+
+	/* XLOG stuff -- allocate and fill buffer before critical section */
+	if (nupdatable > 0 && RelationNeedsWAL(rel))
+	{
+		Size		offset = 0;
+
+		for (int i = 0; i < nupdatable; i++)
+		{
+			BTVacuumPosting vacposting = updatable[i];
+
+			itemsz = SizeOfBtreeUpdate +
+				vacposting->ndeletedtids * sizeof(uint16);
+			updatedbuflen += itemsz;
+		}
+
+		updatedbuf = palloc(updatedbuflen);
+		for (int i = 0; i < nupdatable; i++)
+		{
+			BTVacuumPosting vacposting = updatable[i];
+			xl_btree_update update;
+
+			update.ndeletedtids = vacposting->ndeletedtids;
+			memcpy(updatedbuf + offset, &update.ndeletedtids,
+				   SizeOfBtreeUpdate);
+			offset += SizeOfBtreeUpdate;
+
+			itemsz = update.ndeletedtids * sizeof(uint16);
+			memcpy(updatedbuf + offset, vacposting->deletetids, itemsz);
+			offset += itemsz;
+		}
+	}
 
 	/* No ereport(ERROR) until changes are logged */
 	START_CRIT_SECTION();
 
-	/* Fix the page */
-	if (nitems > 0)
-		PageIndexMultiDelete(page, itemnos, nitems);
+	/*
+	 * Handle posting tuple updates.
+	 *
+	 * Deliberately do this before handling simple deletes.  If we did it the
+	 * other way around (i.e. WAL record order -- simple deletes before
+	 * updates) then we'd have to make compensating changes to the 'updatable'
+	 * array of offset numbers.
+	 *
+	 * PageIndexTupleOverwrite() won't unset each item's LP_DEAD bit when it
+	 * happens to already be set.  Although we unset the BTP_HAS_GARBAGE page
+	 * level flag, unsetting individual LP_DEAD bits should still be avoided.
+	 */
+	for (int i = 0; i < nupdatable; i++)
+	{
+		OffsetNumber updatedoffset = updatedoffsets[i];
+		IndexTuple	itup;
+
+		itup = updatable[i]->itup;
+		itemsz = MAXALIGN(IndexTupleSize(itup));
+		if (!PageIndexTupleOverwrite(page, updatedoffset, (Item) itup,
+									 itemsz))
+			elog(PANIC, "failed to update partially dead item in block %u of index \"%s\"",
+				 BufferGetBlockNumber(buf), RelationGetRelationName(rel));
+	}
+
+	/* Now handle simple deletes of entire tuples */
+	if (ndeletable > 0)
+		PageIndexMultiDelete(page, deletable, ndeletable);
 
 	/*
 	 * We can clear the vacuum cycle ID since this page has certainly been
@@ -818,9 +1110,18 @@ _bt_delitems_vacuum(Relation rel, Buffer buf,
 	/*
 	 * Mark the page as not containing any LP_DEAD items.  This is not
 	 * certainly true (there might be some that have recently been marked, but
-	 * weren't included in our target-item list), but it will almost always be
-	 * true and it doesn't seem worth an additional page scan to check it.
-	 * Remember that BTP_HAS_GARBAGE is only a hint anyway.
+	 * weren't targeted by VACUUM's heap scan), but it will be true often
+	 * enough.  VACUUM does not delete items purely because they have their
+	 * LP_DEAD bit set, since doing so would necessitate explicitly logging a
+	 * latestRemovedXid cutoff (this is how _bt_delitems_delete works).
+	 *
+	 * The consequences of falsely unsetting BTP_HAS_GARBAGE should be fairly
+	 * limited, since we never falsely unset an LP_DEAD bit.  Workloads that
+	 * are particularly dependent on LP_DEAD bits being set quickly will
+	 * usually manage to set the BTP_HAS_GARBAGE flag before the page fills up
+	 * again anyway.  Furthermore, attempting a deduplication pass will remove
+	 * all LP_DEAD items, regardless of whether the BTP_HAS_GARBAGE hint bit
+	 * is set or not.
 	 */
 	opaque->btpo_flags &= ~BTP_HAS_GARBAGE;
 
@@ -832,19 +1133,23 @@ _bt_delitems_vacuum(Relation rel, Buffer buf,
 		XLogRecPtr	recptr;
 		xl_btree_vacuum xlrec_vacuum;
 
-		xlrec_vacuum.lastBlockVacuumed = lastBlockVacuumed;
+		xlrec_vacuum.ndeleted = ndeletable;
+		xlrec_vacuum.nupdated = nupdatable;
 
 		XLogBeginInsert();
 		XLogRegisterBuffer(0, buf, REGBUF_STANDARD);
 		XLogRegisterData((char *) &xlrec_vacuum, SizeOfBtreeVacuum);
 
-		/*
-		 * The target-offsets array is not in the buffer, but pretend that it
-		 * is.  When XLogInsert stores the whole buffer, the offsets array
-		 * need not be stored too.
-		 */
-		if (nitems > 0)
-			XLogRegisterBufData(0, (char *) itemnos, nitems * sizeof(OffsetNumber));
+		if (ndeletable > 0)
+			XLogRegisterBufData(0, (char *) deletable,
+								ndeletable * sizeof(OffsetNumber));
+
+		if (nupdatable > 0)
+		{
+			XLogRegisterBufData(0, (char *) updatedoffsets,
+								nupdatable * sizeof(OffsetNumber));
+			XLogRegisterBufData(0, updatedbuf, updatedbuflen);
+		}
 
 		recptr = XLogInsert(RM_BTREE_ID, XLOG_BTREE_VACUUM);
 
@@ -852,48 +1157,54 @@ _bt_delitems_vacuum(Relation rel, Buffer buf,
 	}
 
 	END_CRIT_SECTION();
+
+	/* can't leak memory here */
+	if (updatedbuf != NULL)
+		pfree(updatedbuf);
+	/* free tuples generated by calling _bt_update_posting() */
+	for (int i = 0; i < nupdatable; i++)
+		pfree(updatable[i]->itup);
 }
 
 /*
- * Delete item(s) from a btree page during single-page cleanup.
+ * Delete item(s) from a btree leaf page during single-page cleanup.
  *
- * As above, must only be used on leaf pages.
- *
- * This routine assumes that the caller has pinned and locked the buffer.
- * Also, the given itemnos *must* appear in increasing order in the array.
+ * This routine assumes that the caller has pinned and write locked the
+ * buffer.  Also, the given deletable array *must* be sorted in ascending
+ * order.
  *
  * This is nearly the same as _bt_delitems_vacuum as far as what it does to
- * the page, but the WAL logging considerations are quite different.  See
- * comments for _bt_delitems_vacuum.
+ * the page, but it needs to generate its own latestRemovedXid by accessing
+ * the heap.  This is used by the REDO routine to generate recovery conflicts.
+ * Also, it doesn't handle posting list tuples unless the entire tuple can be
+ * deleted as a whole (since there is only one LP_DEAD bit per line pointer).
  */
 void
 _bt_delitems_delete(Relation rel, Buffer buf,
-					OffsetNumber *itemnos, int nitems,
+					OffsetNumber *deletable, int ndeletable,
 					Relation heapRel)
 {
 	Page		page = BufferGetPage(buf);
 	BTPageOpaque opaque;
+	TransactionId latestRemovedXid = InvalidTransactionId;
 
 	/* Shouldn't be called unless there's something to do */
-	Assert(nitems > 0);
+	Assert(ndeletable > 0);
+
+	if (XLogStandbyInfoActive() && RelationNeedsWAL(rel))
+		latestRemovedXid =
+			_bt_xid_horizon(rel, heapRel, page, deletable, ndeletable);
 
 	/* No ereport(ERROR) until changes are logged */
 	START_CRIT_SECTION();
 
 	/* Fix the page */
-	PageIndexMultiDelete(page, itemnos, nitems);
+	PageIndexMultiDelete(page, deletable, ndeletable);
 
 	/*
 	 * Unlike _bt_delitems_vacuum, we *must not* clear the vacuum cycle ID,
-	 * because this is not called by VACUUM.
-	 */
-
-	/*
-	 * Mark the page as not containing any LP_DEAD items.  This is not
-	 * certainly true (there might be some that have recently been marked, but
-	 * weren't included in our target-item list), but it will almost always be
-	 * true and it doesn't seem worth an additional page scan to check it.
-	 * Remember that BTP_HAS_GARBAGE is only a hint anyway.
+	 * because this is not called by VACUUM.  Just clear the BTP_HAS_GARBAGE
+	 * page flag, since we deleted all items with their LP_DEAD bit set.
 	 */
 	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
 	opaque->btpo_flags &= ~BTP_HAS_GARBAGE;
@@ -906,19 +1217,20 @@ _bt_delitems_delete(Relation rel, Buffer buf,
 		XLogRecPtr	recptr;
 		xl_btree_delete xlrec_delete;
 
-		xlrec_delete.hnode = heapRel->rd_node;
-		xlrec_delete.nitems = nitems;
+		xlrec_delete.latestRemovedXid = latestRemovedXid;
+		xlrec_delete.ndeleted = ndeletable;
 
 		XLogBeginInsert();
 		XLogRegisterBuffer(0, buf, REGBUF_STANDARD);
 		XLogRegisterData((char *) &xlrec_delete, SizeOfBtreeDelete);
 
 		/*
-		 * We need the target-offsets array whether or not we store the whole
-		 * buffer, to allow us to find the latestRemovedXid on a standby
-		 * server.
+		 * The deletable array is not in the buffer, but pretend that it is.
+		 * When XLogInsert stores the whole buffer, the array need not be
+		 * stored too.
 		 */
-		XLogRegisterData((char *) itemnos, nitems * sizeof(OffsetNumber));
+		XLogRegisterBufData(0, (char *) deletable,
+							ndeletable * sizeof(OffsetNumber));
 
 		recptr = XLogInsert(RM_BTREE_ID, XLOG_BTREE_DELETE);
 
@@ -929,20 +1241,167 @@ _bt_delitems_delete(Relation rel, Buffer buf,
 }
 
 /*
- * Returns true, if the given block has the half-dead flag set.
+ * Get the latestRemovedXid from the table entries pointed to by the non-pivot
+ * tuples being deleted.
+ *
+ * This is a specialized version of index_compute_xid_horizon_for_tuples().
+ * It's needed because btree tuples don't always store table TID using the
+ * standard index tuple header field.
+ */
+static TransactionId
+_bt_xid_horizon(Relation rel, Relation heapRel, Page page,
+				OffsetNumber *deletable, int ndeletable)
+{
+	TransactionId latestRemovedXid = InvalidTransactionId;
+	int			spacenhtids;
+	int			nhtids;
+	ItemPointer htids;
+
+	/* Array will grow iff there are posting list tuples to consider */
+	spacenhtids = ndeletable;
+	nhtids = 0;
+	htids = (ItemPointer) palloc(sizeof(ItemPointerData) * spacenhtids);
+	for (int i = 0; i < ndeletable; i++)
+	{
+		ItemId		itemid;
+		IndexTuple	itup;
+
+		itemid = PageGetItemId(page, deletable[i]);
+		itup = (IndexTuple) PageGetItem(page, itemid);
+
+		Assert(ItemIdIsDead(itemid));
+		Assert(!BTreeTupleIsPivot(itup));
+
+		if (!BTreeTupleIsPosting(itup))
+		{
+			if (nhtids + 1 > spacenhtids)
+			{
+				spacenhtids *= 2;
+				htids = (ItemPointer)
+					repalloc(htids, sizeof(ItemPointerData) * spacenhtids);
+			}
+
+			Assert(ItemPointerIsValid(&itup->t_tid));
+			ItemPointerCopy(&itup->t_tid, &htids[nhtids]);
+			nhtids++;
+		}
+		else
+		{
+			int			nposting = BTreeTupleGetNPosting(itup);
+
+			if (nhtids + nposting > spacenhtids)
+			{
+				spacenhtids = Max(spacenhtids * 2, nhtids + nposting);
+				htids = (ItemPointer)
+					repalloc(htids, sizeof(ItemPointerData) * spacenhtids);
+			}
+
+			for (int j = 0; j < nposting; j++)
+			{
+				ItemPointer htid = BTreeTupleGetPostingN(itup, j);
+
+				Assert(ItemPointerIsValid(htid));
+				ItemPointerCopy(htid, &htids[nhtids]);
+				nhtids++;
+			}
+		}
+	}
+
+	Assert(nhtids >= ndeletable);
+
+	latestRemovedXid =
+		table_compute_xid_horizon_for_tuples(heapRel, htids, nhtids);
+
+	pfree(htids);
+
+	return latestRemovedXid;
+}
+
+/*
+ * Check that leftsib page (the btpo_prev of target page) is not marked with
+ * INCOMPLETE_SPLIT flag.  Used during page deletion.
+ *
+ * Returning true indicates that page flag is set in leftsib (which is
+ * definitely still the left sibling of target).  When that happens, the
+ * target doesn't have a downlink in parent, and the page deletion algorithm
+ * isn't prepared to handle that.  Deletion of the target page (or the whole
+ * subtree that contains the target page) cannot take place.
+ *
+ * Caller should not have a lock on the target page itself, since pages on the
+ * same level must always be locked left to right to avoid deadlocks.
  */
 static bool
-_bt_is_page_halfdead(Relation rel, BlockNumber blk)
+_bt_leftsib_splitflag(Relation rel, BlockNumber leftsib, BlockNumber target)
 {
 	Buffer		buf;
 	Page		page;
 	BTPageOpaque opaque;
 	bool		result;
 
-	buf = _bt_getbuf(rel, blk, BT_READ);
+	/* Easy case: No left sibling */
+	if (leftsib == P_NONE)
+		return false;
+
+	buf = _bt_getbuf(rel, leftsib, BT_READ);
 	page = BufferGetPage(buf);
 	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
 
+	/*
+	 * If the left sibling was concurrently split, so that its next-pointer
+	 * doesn't point to the current page anymore, the split that created
+	 * target must be completed.  Caller can reasonably expect that there will
+	 * be a downlink to the target page that it can relocate using its stack.
+	 * (We don't allow splitting an incompletely split page again until the
+	 * previous split has been completed.)
+	 */
+	result = (opaque->btpo_next == target && P_INCOMPLETE_SPLIT(opaque));
+	_bt_relbuf(rel, buf);
+
+	return result;
+}
+
+/*
+ * Check that leafrightsib page (the btpo_next of target leaf page) is not
+ * marked with ISHALFDEAD flag.  Used during page deletion.
+ *
+ * Returning true indicates that page flag is set in leafrightsib, so page
+ * deletion cannot go ahead.  Our caller is not prepared to deal with the case
+ * where the parent page does not have a pivot tuples whose downlink points to
+ * leafrightsib (due to an earlier interrupted VACUUM operation).  It doesn't
+ * seem worth going to the trouble of teaching our caller to deal with it.
+ * The situation will be resolved after VACUUM finishes the deletion of the
+ * half-dead page (when a future VACUUM operation reaches the target page
+ * again).
+ *
+ * _bt_leftsib_splitflag() is called for both leaf pages and internal pages.
+ * _bt_rightsib_halfdeadflag() is only called for leaf pages, though.  This is
+ * okay because of the restriction on deleting pages that are the rightmost
+ * page of their parent (i.e. that such deletions can only take place when the
+ * entire subtree must be deleted).  The leaf level check made here will apply
+ * to a right "cousin" leaf page rather than a simple right sibling leaf page
+ * in cases where caller actually goes on to attempt deleting pages that are
+ * above the leaf page.  The right cousin leaf page is representative of the
+ * left edge of the subtree to the right of the to-be-deleted subtree as a
+ * whole, which is exactly the condition that our caller cares about.
+ * (Besides, internal pages are never marked half-dead, so it isn't even
+ * possible to _directly_ assess if an internal page is part of some other
+ * to-be-deleted subtree.)
+ */
+static bool
+_bt_rightsib_halfdeadflag(Relation rel, BlockNumber leafrightsib)
+{
+	Buffer		buf;
+	Page		page;
+	BTPageOpaque opaque;
+	bool		result;
+
+	Assert(leafrightsib != P_NONE);
+
+	buf = _bt_getbuf(rel, leafrightsib, BT_READ);
+	page = BufferGetPage(buf);
+	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
+
+	Assert(P_ISLEAF(opaque) && !P_ISDELETED(opaque));
 	result = P_ISHALFDEAD(opaque);
 	_bt_relbuf(rel, buf);
 
@@ -950,177 +1409,49 @@ _bt_is_page_halfdead(Relation rel, BlockNumber blk)
 }
 
 /*
- * Subroutine to find the parent of the branch we're deleting.  This climbs
- * up the tree until it finds a page with more than one child, i.e. a page
- * that will not be totally emptied by the deletion.  The chain of pages below
- * it, with one downlink each, will form the branch that we need to delete.
+ * _bt_pagedel() -- Delete a leaf page from the b-tree, if legal to do so.
  *
- * If we cannot remove the downlink from the parent, because it's the
- * rightmost entry, returns false.  On success, *topparent and *topoff are set
- * to the buffer holding the parent, and the offset of the downlink in it.
- * *topparent is write-locked, the caller is responsible for releasing it when
- * done.  *target is set to the topmost page in the branch to-be-deleted, i.e.
- * the page whose downlink *topparent / *topoff point to, and *rightsib to its
- * right sibling.
- *
- * "child" is the leaf page we wish to delete, and "stack" is a search stack
- * leading to it (approximately).  Note that we will update the stack
- * entry(s) to reflect current downlink positions --- this is harmless and
- * indeed saves later search effort in _bt_pagedel.  The caller should
- * initialize *target and *rightsib to the leaf page and its right sibling.
- *
- * Note: it's OK to release page locks on any internal pages between the leaf
- * and *topparent, because a safe deletion can't become unsafe due to
- * concurrent activity.  An internal page can only acquire an entry if the
- * child is split, but that cannot happen as long as we hold a lock on the
- * leaf.
- */
-static bool
-_bt_lock_branch_parent(Relation rel, BlockNumber child, BTStack stack,
-					   Buffer *topparent, OffsetNumber *topoff,
-					   BlockNumber *target, BlockNumber *rightsib)
-{
-	BlockNumber parent;
-	OffsetNumber poffset,
-				maxoff;
-	Buffer		pbuf;
-	Page		page;
-	BTPageOpaque opaque;
-	BlockNumber leftsib;
-
-	/*
-	 * Locate the downlink of "child" in the parent (updating the stack entry
-	 * if needed)
-	 */
-	ItemPointerSet(&(stack->bts_btentry.t_tid), child, P_HIKEY);
-	pbuf = _bt_getstackbuf(rel, stack, BT_WRITE);
-	if (pbuf == InvalidBuffer)
-		elog(ERROR, "failed to re-find parent key in index \"%s\" for deletion target page %u",
-			 RelationGetRelationName(rel), child);
-	parent = stack->bts_blkno;
-	poffset = stack->bts_offset;
-
-	page = BufferGetPage(pbuf);
-	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
-	maxoff = PageGetMaxOffsetNumber(page);
-
-	/*
-	 * If the target is the rightmost child of its parent, then we can't
-	 * delete, unless it's also the only child.
-	 */
-	if (poffset >= maxoff)
-	{
-		/* It's rightmost child... */
-		if (poffset == P_FIRSTDATAKEY(opaque))
-		{
-			/*
-			 * It's only child, so safe if parent would itself be removable.
-			 * We have to check the parent itself, and then recurse to test
-			 * the conditions at the parent's parent.
-			 */
-			if (P_RIGHTMOST(opaque) || P_ISROOT(opaque) ||
-				P_INCOMPLETE_SPLIT(opaque))
-			{
-				_bt_relbuf(rel, pbuf);
-				return false;
-			}
-
-			*target = parent;
-			*rightsib = opaque->btpo_next;
-			leftsib = opaque->btpo_prev;
-
-			_bt_relbuf(rel, pbuf);
-
-			/*
-			 * Like in _bt_pagedel, check that the left sibling is not marked
-			 * with INCOMPLETE_SPLIT flag.  That would mean that there is no
-			 * downlink to the page to be deleted, and the page deletion
-			 * algorithm isn't prepared to handle that.
-			 */
-			if (leftsib != P_NONE)
-			{
-				Buffer		lbuf;
-				Page		lpage;
-				BTPageOpaque lopaque;
-
-				lbuf = _bt_getbuf(rel, leftsib, BT_READ);
-				lpage = BufferGetPage(lbuf);
-				lopaque = (BTPageOpaque) PageGetSpecialPointer(lpage);
-
-				/*
-				 * If the left sibling was concurrently split, so that its
-				 * next-pointer doesn't point to the current page anymore, the
-				 * split that created the current page must be completed. (We
-				 * don't allow splitting an incompletely split page again
-				 * until the previous split has been completed)
-				 */
-				if (lopaque->btpo_next == parent &&
-					P_INCOMPLETE_SPLIT(lopaque))
-				{
-					_bt_relbuf(rel, lbuf);
-					return false;
-				}
-				_bt_relbuf(rel, lbuf);
-			}
-
-			/*
-			 * Perform the same check on this internal level that
-			 * _bt_mark_page_halfdead performed on the leaf level.
-			 */
-			if (_bt_is_page_halfdead(rel, *rightsib))
-			{
-				elog(DEBUG1, "could not delete page %u because its right sibling %u is half-dead",
-					 parent, *rightsib);
-				return false;
-			}
-
-			return _bt_lock_branch_parent(rel, parent, stack->bts_parent,
-										  topparent, topoff, target, rightsib);
-		}
-		else
-		{
-			/* Unsafe to delete */
-			_bt_relbuf(rel, pbuf);
-			return false;
-		}
-	}
-	else
-	{
-		/* Not rightmost child, so safe to delete */
-		*topparent = pbuf;
-		*topoff = poffset;
-		return true;
-	}
-}
-
-/*
- * _bt_pagedel() -- Delete a page from the b-tree, if legal to do so.
- *
- * This action unlinks the page from the b-tree structure, removing all
+ * This action unlinks the leaf page from the b-tree structure, removing all
  * pointers leading to it --- but not touching its own left and right links.
  * The page cannot be physically reclaimed right away, since other processes
  * may currently be trying to follow links leading to the page; they have to
  * be allowed to use its right-link to recover.  See nbtree/README.
  *
  * On entry, the target buffer must be pinned and locked (either read or write
- * lock is OK).  This lock and pin will be dropped before exiting.
+ * lock is OK).  The page must be an empty leaf page, which may be half-dead
+ * already (a half-dead page should only be passed to us when an earlier
+ * VACUUM operation was interrupted, though).  Note in particular that caller
+ * should never pass a buffer containing an existing deleted page here.  The
+ * lock and pin on caller's buffer will be dropped before we return.
  *
  * Returns the number of pages successfully deleted (zero if page cannot
- * be deleted now; could be more than one if parent or sibling pages were
- * deleted too).
+ * be deleted now; could be more than one if parent or right sibling pages
+ * were deleted too).  Note that this does not include pages that we delete
+ * that the btvacuumscan scan has yet to reach; they'll get counted later
+ * instead.
+ *
+ * Maintains *oldestBtpoXact for any pages that get deleted.  Caller is
+ * responsible for maintaining *oldestBtpoXact in the case of pages that were
+ * deleted by a previous VACUUM.
  *
  * NOTE: this leaks memory.  Rather than trying to clean up everything
  * carefully, it's better to run it in a temp context that can be reset
  * frequently.
  */
-int
-_bt_pagedel(Relation rel, Buffer buf)
+uint32
+_bt_pagedel(Relation rel, Buffer leafbuf, TransactionId *oldestBtpoXact)
 {
-	int			ndeleted = 0;
+	uint32		ndeleted = 0;
 	BlockNumber rightsib;
 	bool		rightsib_empty;
 	Page		page;
 	BTPageOpaque opaque;
+
+	/*
+	 * Save original leafbuf block number from caller.  Only deleted blocks
+	 * that are <= scanblkno get counted in ndeleted return value.
+	 */
+	BlockNumber scanblkno = BufferGetBlockNumber(leafbuf);
 
 	/*
 	 * "stack" is a search stack leading (approximately) to the target page.
@@ -1129,20 +1460,29 @@ _bt_pagedel(Relation rel, Buffer buf)
 	 *
 	 * Also, when "stack" is not NULL, we have already checked that the
 	 * current page is not the right half of an incomplete split, i.e. the
-	 * left sibling does not have its INCOMPLETE_SPLIT flag set.
+	 * left sibling does not have its INCOMPLETE_SPLIT flag set, including
+	 * when the current target page is to the right of caller's initial page
+	 * (the scanblkno page).
 	 */
 	BTStack		stack = NULL;
 
 	for (;;)
 	{
-		page = BufferGetPage(buf);
+		page = BufferGetPage(leafbuf);
 		opaque = (BTPageOpaque) PageGetSpecialPointer(page);
 
 		/*
 		 * Internal pages are never deleted directly, only as part of deleting
-		 * the whole branch all the way down to leaf level.
+		 * the whole subtree all the way down to leaf level.
+		 *
+		 * Also check for deleted pages here.  Caller never passes us a fully
+		 * deleted page.  Only VACUUM can delete pages, so there can't have
+		 * been a concurrent deletion.  Assume that we reached any deleted
+		 * page encountered here by following a sibling link, and that the
+		 * index is corrupt.
 		 */
-		if (!P_ISLEAF(opaque))
+		Assert(!P_ISDELETED(opaque));
+		if (!P_ISLEAF(opaque) || P_ISDELETED(opaque))
 		{
 			/*
 			 * Pre-9.4 page deletion only marked internal pages as half-dead,
@@ -1161,13 +1501,23 @@ _bt_pagedel(Relation rel, Buffer buf)
 						 errmsg("index \"%s\" contains a half-dead internal page",
 								RelationGetRelationName(rel)),
 						 errhint("This can be caused by an interrupted VACUUM in version 9.3 or older, before upgrade. Please REINDEX it.")));
-			_bt_relbuf(rel, buf);
+
+			if (P_ISDELETED(opaque))
+				ereport(LOG,
+						(errcode(ERRCODE_INDEX_CORRUPTED),
+						 errmsg_internal("found deleted block %u while following right link from block %u in index \"%s\"",
+										 BufferGetBlockNumber(leafbuf),
+										 scanblkno,
+										 RelationGetRelationName(rel))));
+
+			_bt_relbuf(rel, leafbuf);
 			return ndeleted;
 		}
 
 		/*
 		 * We can never delete rightmost pages nor root pages.  While at it,
-		 * check that page is not already deleted and is empty.
+		 * check that page is empty, since it's possible that the leafbuf page
+		 * was empty a moment ago, but has since had some inserts.
 		 *
 		 * To keep the algorithm simple, we also never delete an incompletely
 		 * split page (they should be rare enough that this doesn't make any
@@ -1176,133 +1526,144 @@ _bt_pagedel(Relation rel, Buffer buf)
 		 * The INCOMPLETE_SPLIT flag on the page tells us if the page is the
 		 * left half of an incomplete split, but ensuring that it's not the
 		 * right half is more complicated.  For that, we have to check that
-		 * the left sibling doesn't have its INCOMPLETE_SPLIT flag set.  On
-		 * the first iteration, we temporarily release the lock on the current
-		 * page, and check the left sibling and also construct a search stack
-		 * to.  On subsequent iterations, we know we stepped right from a page
-		 * that passed these tests, so it's OK.
+		 * the left sibling doesn't have its INCOMPLETE_SPLIT flag set using
+		 * _bt_leftsib_splitflag().  On the first iteration, we temporarily
+		 * release the lock on scanblkno/leafbuf, check the left sibling, and
+		 * construct a search stack to scanblkno.  On subsequent iterations,
+		 * we know we stepped right from a page that passed these tests, so
+		 * it's OK.
 		 */
-		if (P_RIGHTMOST(opaque) || P_ISROOT(opaque) || P_ISDELETED(opaque) ||
+		if (P_RIGHTMOST(opaque) || P_ISROOT(opaque) ||
 			P_FIRSTDATAKEY(opaque) <= PageGetMaxOffsetNumber(page) ||
 			P_INCOMPLETE_SPLIT(opaque))
 		{
 			/* Should never fail to delete a half-dead page */
 			Assert(!P_ISHALFDEAD(opaque));
 
-			_bt_relbuf(rel, buf);
+			_bt_relbuf(rel, leafbuf);
 			return ndeleted;
 		}
 
 		/*
 		 * First, remove downlink pointing to the page (or a parent of the
-		 * page, if we are going to delete a taller branch), and mark the page
-		 * as half-dead.
+		 * page, if we are going to delete a taller subtree), and mark the
+		 * leafbuf page half-dead
 		 */
 		if (!P_ISHALFDEAD(opaque))
 		{
 			/*
 			 * We need an approximate pointer to the page's parent page.  We
-			 * use the standard search mechanism to search for the page's high
-			 * key; this will give us a link to either the current parent or
-			 * someplace to its left (if there are multiple equal high keys).
+			 * use a variant of the standard search mechanism to search for
+			 * the page's high key; this will give us a link to either the
+			 * current parent or someplace to its left (if there are multiple
+			 * equal high keys, which is possible with !heapkeyspace indexes).
 			 *
 			 * Also check if this is the right-half of an incomplete split
 			 * (see comment above).
 			 */
 			if (!stack)
 			{
-				ScanKey		itup_scankey;
+				BTScanInsert itup_key;
 				ItemId		itemid;
 				IndexTuple	targetkey;
-				Buffer		lbuf;
-				BlockNumber leftsib;
+				BlockNumber leftsib,
+							leafblkno;
+				Buffer		sleafbuf;
 
 				itemid = PageGetItemId(page, P_HIKEY);
 				targetkey = CopyIndexTuple((IndexTuple) PageGetItem(page, itemid));
 
 				leftsib = opaque->btpo_prev;
+				leafblkno = BufferGetBlockNumber(leafbuf);
 
 				/*
 				 * To avoid deadlocks, we'd better drop the leaf page lock
 				 * before going further.
 				 */
-				LockBuffer(buf, BUFFER_LOCK_UNLOCK);
+				LockBuffer(leafbuf, BUFFER_LOCK_UNLOCK);
 
 				/*
-				 * Fetch the left sibling, to check that it's not marked with
-				 * INCOMPLETE_SPLIT flag.  That would mean that the page
-				 * to-be-deleted doesn't have a downlink, and the page
-				 * deletion algorithm isn't prepared to handle that.
+				 * Check that the left sibling of leafbuf (if any) is not
+				 * marked with INCOMPLETE_SPLIT flag before proceeding
 				 */
-				if (!P_LEFTMOST(opaque))
+				Assert(leafblkno == scanblkno);
+				if (_bt_leftsib_splitflag(rel, leftsib, leafblkno))
 				{
-					BTPageOpaque lopaque;
-					Page		lpage;
-
-					lbuf = _bt_getbuf(rel, leftsib, BT_READ);
-					lpage = BufferGetPage(lbuf);
-					lopaque = (BTPageOpaque) PageGetSpecialPointer(lpage);
-
-					/*
-					 * If the left sibling is split again by another backend,
-					 * after we released the lock, we know that the first
-					 * split must have finished, because we don't allow an
-					 * incompletely-split page to be split again.  So we don't
-					 * need to walk right here.
-					 */
-					if (lopaque->btpo_next == BufferGetBlockNumber(buf) &&
-						P_INCOMPLETE_SPLIT(lopaque))
-					{
-						ReleaseBuffer(buf);
-						_bt_relbuf(rel, lbuf);
-						return ndeleted;
-					}
-					_bt_relbuf(rel, lbuf);
+					ReleaseBuffer(leafbuf);
+					return ndeleted;
 				}
 
 				/* we need an insertion scan key for the search, so build one */
-				itup_scankey = _bt_mkscankey(rel, targetkey);
-				/* find the leftmost leaf page containing this key */
-				stack = _bt_search(rel, rel->rd_rel->relnatts, itup_scankey,
-								   false, &lbuf, BT_READ, NULL);
-				/* don't need a pin on the page */
-				_bt_relbuf(rel, lbuf);
+				itup_key = _bt_mkscankey(rel, targetkey);
+				/* find the leftmost leaf page with matching pivot/high key */
+				itup_key->pivotsearch = true;
+				stack = _bt_search(rel, itup_key, &sleafbuf, BT_READ, NULL);
+				/* won't need a second lock or pin on leafbuf */
+				_bt_relbuf(rel, sleafbuf);
 
 				/*
-				 * Re-lock the leaf page, and start over, to re-check that the
-				 * page can still be deleted.
+				 * Re-lock the leaf page, and start over to use our stack
+				 * within _bt_mark_page_halfdead.  We must do it that way
+				 * because it's possible that leafbuf can no longer be
+				 * deleted.  We need to recheck.
+				 *
+				 * Note: We can't simply hold on to the sleafbuf lock instead,
+				 * because it's barely possible that sleafbuf is not the same
+				 * page as leafbuf.  This happens when leafbuf split after our
+				 * original lock was dropped, but before _bt_search finished
+				 * its descent.  We rely on the assumption that we'll find
+				 * leafbuf isn't safe to delete anymore in this scenario.
+				 * (Page deletion can cope with the stack being to the left of
+				 * leafbuf, but not to the right of leafbuf.)
 				 */
-				LockBuffer(buf, BT_WRITE);
+				LockBuffer(leafbuf, BT_WRITE);
 				continue;
 			}
 
-			if (!_bt_mark_page_halfdead(rel, buf, stack))
+			/*
+			 * See if it's safe to delete the leaf page, and determine how
+			 * many parent/internal pages above the leaf level will be
+			 * deleted.  If it's safe then _bt_mark_page_halfdead will also
+			 * perform the first phase of deletion, which includes marking the
+			 * leafbuf page half-dead.
+			 */
+			Assert(P_ISLEAF(opaque) && !P_IGNORE(opaque));
+			if (!_bt_mark_page_halfdead(rel, leafbuf, stack))
 			{
-				_bt_relbuf(rel, buf);
+				_bt_relbuf(rel, leafbuf);
 				return ndeleted;
 			}
 		}
 
 		/*
 		 * Then unlink it from its siblings.  Each call to
-		 * _bt_unlink_halfdead_page unlinks the topmost page from the branch,
-		 * making it shallower.  Iterate until the leaf page is gone.
+		 * _bt_unlink_halfdead_page unlinks the topmost page from the subtree,
+		 * making it shallower.  Iterate until the leafbuf page is deleted.
+		 *
+		 * _bt_unlink_halfdead_page should never fail, since we established
+		 * that deletion is generally safe in _bt_mark_page_halfdead.
 		 */
 		rightsib_empty = false;
+		Assert(P_ISLEAF(opaque) && P_ISHALFDEAD(opaque));
 		while (P_ISHALFDEAD(opaque))
 		{
-			/* will check for interrupts, once lock is released */
-			if (!_bt_unlink_halfdead_page(rel, buf, &rightsib_empty))
+			/* Check for interrupts in _bt_unlink_halfdead_page */
+			if (!_bt_unlink_halfdead_page(rel, leafbuf, scanblkno,
+										  &rightsib_empty, oldestBtpoXact,
+										  &ndeleted))
 			{
-				/* _bt_unlink_halfdead_page already released buffer */
+				/* _bt_unlink_halfdead_page failed, released buffer */
 				return ndeleted;
 			}
-			ndeleted++;
 		}
+
+		Assert(P_ISLEAF(opaque) && P_ISDELETED(opaque));
+		Assert(TransactionIdFollowsOrEquals(opaque->btpo.xact,
+											*oldestBtpoXact));
 
 		rightsib = opaque->btpo_next;
 
-		_bt_relbuf(rel, buf);
+		_bt_relbuf(rel, leafbuf);
 
 		/*
 		 * Check here, as calling loops will have locks held, preventing
@@ -1318,32 +1679,48 @@ _bt_pagedel(Relation rel, Buffer buf)
 		 * the only child of the parent, and could be removed. It would be
 		 * picked up by the next vacuum anyway, but might as well try to
 		 * remove it now, so loop back to process the right sibling.
+		 *
+		 * Note: This relies on the assumption that _bt_getstackbuf() will be
+		 * able to reuse our original descent stack with a different child
+		 * block (provided that the child block is to the right of the
+		 * original leaf page reached by _bt_search()). It will even update
+		 * the descent stack each time we loop around, avoiding repeated work.
 		 */
 		if (!rightsib_empty)
 			break;
 
-		buf = _bt_getbuf(rel, rightsib, BT_WRITE);
+		leafbuf = _bt_getbuf(rel, rightsib, BT_WRITE);
 	}
 
 	return ndeleted;
 }
 
 /*
- * First stage of page deletion.  Remove the downlink to the top of the
- * branch being deleted, and mark the leaf page as half-dead.
+ * First stage of page deletion.
+ *
+ * Establish the height of the to-be-deleted subtree with leafbuf at its
+ * lowest level, remove the downlink to the subtree, and mark leafbuf
+ * half-dead.  The final to-be-deleted subtree is usually just leafbuf itself,
+ * but may include additional internal pages (at most one per level of the
+ * tree below the root).
+ *
+ * Returns 'false' if leafbuf is unsafe to delete, usually because leafbuf is
+ * the rightmost child of its parent (and parent has more than one downlink).
+ * Returns 'true' when the first stage of page deletion completed
+ * successfully.
  */
 static bool
 _bt_mark_page_halfdead(Relation rel, Buffer leafbuf, BTStack stack)
 {
 	BlockNumber leafblkno;
 	BlockNumber leafrightsib;
-	BlockNumber target;
-	BlockNumber rightsib;
+	BlockNumber topparent;
+	BlockNumber topparentrightsib;
 	ItemId		itemid;
 	Page		page;
 	BTPageOpaque opaque;
-	Buffer		topparent;
-	OffsetNumber topoff;
+	Buffer		subtreeparent;
+	OffsetNumber poffset;
 	OffsetNumber nextoffset;
 	IndexTuple	itup;
 	IndexTupleData trunctuple;
@@ -1351,8 +1728,8 @@ _bt_mark_page_halfdead(Relation rel, Buffer leafbuf, BTStack stack)
 	page = BufferGetPage(leafbuf);
 	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
 
-	Assert(!P_RIGHTMOST(opaque) && !P_ISROOT(opaque) && !P_ISDELETED(opaque) &&
-		   !P_ISHALFDEAD(opaque) && P_ISLEAF(opaque) &&
+	Assert(!P_RIGHTMOST(opaque) && !P_ISROOT(opaque) &&
+		   P_ISLEAF(opaque) && !P_IGNORE(opaque) &&
 		   P_FIRSTDATAKEY(opaque) > PageGetMaxOffsetNumber(page));
 
 	/*
@@ -1365,12 +1742,10 @@ _bt_mark_page_halfdead(Relation rel, Buffer leafbuf, BTStack stack)
 	 * Before attempting to lock the parent page, check that the right sibling
 	 * is not in half-dead state.  A half-dead right sibling would have no
 	 * downlink in the parent, which would be highly confusing later when we
-	 * delete the downlink that follows the current page's downlink. (I
-	 * believe the deletion would work correctly, but it would fail the
-	 * cross-check we make that the following downlink points to the right
-	 * sibling of the delete page.)
+	 * delete the downlink.  It would fail the "right sibling of target page
+	 * is also the next child in parent page" cross-check below.
 	 */
-	if (_bt_is_page_halfdead(rel, leafrightsib))
+	if (_bt_rightsib_halfdeadflag(rel, leafrightsib))
 	{
 		elog(DEBUG1, "could not delete page %u because its right sibling %u is half-dead",
 			 leafblkno, leafrightsib);
@@ -1382,45 +1757,58 @@ _bt_mark_page_halfdead(Relation rel, Buffer leafbuf, BTStack stack)
 	 * parent, unless it is the only child --- in which case the parent has to
 	 * be deleted too, and the same condition applies recursively to it. We
 	 * have to check this condition all the way up before trying to delete,
-	 * and lock the final parent of the to-be-deleted branch.
+	 * and lock the parent of the root of the to-be-deleted subtree (the
+	 * "subtree parent").  _bt_lock_subtree_parent() locks the subtree parent
+	 * for us.  We remove the downlink to the "top parent" page (subtree root
+	 * page) from the subtree parent page below.
+	 *
+	 * Initialize topparent to be leafbuf page now.  The final to-be-deleted
+	 * subtree is often a degenerate one page subtree consisting only of the
+	 * leafbuf page.  When that happens, the leafbuf page is the final subtree
+	 * root page/top parent page.
 	 */
-	rightsib = leafrightsib;
-	target = leafblkno;
-	if (!_bt_lock_branch_parent(rel, leafblkno, stack,
-								&topparent, &topoff, &target, &rightsib))
+	topparent = leafblkno;
+	topparentrightsib = leafrightsib;
+	if (!_bt_lock_subtree_parent(rel, leafblkno, stack,
+								 &subtreeparent, &poffset,
+								 &topparent, &topparentrightsib))
 		return false;
 
 	/*
 	 * Check that the parent-page index items we're about to delete/overwrite
-	 * contain what we expect.  This can fail if the index has become corrupt
-	 * for some reason.  We want to throw any error before entering the
-	 * critical section --- otherwise it'd be a PANIC.
-	 *
-	 * The test on the target item is just an Assert because
-	 * _bt_lock_branch_parent should have guaranteed it has the expected
-	 * contents.  The test on the next-child downlink is known to sometimes
-	 * fail in the field, though.
+	 * in subtree parent page contain what we expect.  This can fail if the
+	 * index has become corrupt for some reason.  We want to throw any error
+	 * before entering the critical section --- otherwise it'd be a PANIC.
 	 */
-	page = BufferGetPage(topparent);
+	page = BufferGetPage(subtreeparent);
 	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
 
 #ifdef USE_ASSERT_CHECKING
-	itemid = PageGetItemId(page, topoff);
+
+	/*
+	 * This is just an assertion because _bt_lock_subtree_parent should have
+	 * guaranteed tuple has the expected contents
+	 */
+	itemid = PageGetItemId(page, poffset);
 	itup = (IndexTuple) PageGetItem(page, itemid);
-	Assert(ItemPointerGetBlockNumber(&(itup->t_tid)) == target);
+	Assert(BTreeTupleGetDownLink(itup) == topparent);
 #endif
 
-	nextoffset = OffsetNumberNext(topoff);
+	nextoffset = OffsetNumberNext(poffset);
 	itemid = PageGetItemId(page, nextoffset);
 	itup = (IndexTuple) PageGetItem(page, itemid);
-	if (ItemPointerGetBlockNumber(&(itup->t_tid)) != rightsib)
-		elog(ERROR, "right sibling %u of block %u is not next child %u of block %u in index \"%s\"",
-			 rightsib, target, ItemPointerGetBlockNumber(&(itup->t_tid)),
-			 BufferGetBlockNumber(topparent), RelationGetRelationName(rel));
+	if (BTreeTupleGetDownLink(itup) != topparentrightsib)
+		ereport(ERROR,
+				(errcode(ERRCODE_INDEX_CORRUPTED),
+				 errmsg_internal("right sibling %u of block %u is not next child %u of block %u in index \"%s\"",
+								 topparentrightsib, topparent,
+								 BTreeTupleGetDownLink(itup),
+								 BufferGetBlockNumber(subtreeparent),
+								 RelationGetRelationName(rel))));
 
 	/*
 	 * Any insert which would have gone on the leaf block will now go to its
-	 * right sibling.
+	 * right sibling.  In other words, the key space moves right.
 	 */
 	PredicateLockPageCombine(rel, leafblkno, leafrightsib);
 
@@ -1428,44 +1816,50 @@ _bt_mark_page_halfdead(Relation rel, Buffer leafbuf, BTStack stack)
 	START_CRIT_SECTION();
 
 	/*
-	 * Update parent.  The normal case is a tad tricky because we want to
-	 * delete the target's downlink and the *following* key.  Easiest way is
-	 * to copy the right sibling's downlink over the target downlink, and then
-	 * delete the following item.
+	 * Update parent of subtree.  We want to delete the downlink to the top
+	 * parent page/root of the subtree, and the *following* key.  Easiest way
+	 * is to copy the right sibling's downlink over the downlink that points
+	 * to top parent page, and then delete the right sibling's original pivot
+	 * tuple.
+	 *
+	 * Lanin and Shasha make the key space move left when deleting a page,
+	 * whereas the key space moves right here.  That's why we cannot simply
+	 * delete the pivot tuple with the downlink to the top parent page.  See
+	 * nbtree/README.
 	 */
-	page = BufferGetPage(topparent);
+	page = BufferGetPage(subtreeparent);
 	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
 
-	itemid = PageGetItemId(page, topoff);
+	itemid = PageGetItemId(page, poffset);
 	itup = (IndexTuple) PageGetItem(page, itemid);
-	ItemPointerSet(&(itup->t_tid), rightsib, P_HIKEY);
+	BTreeTupleSetDownLink(itup, topparentrightsib);
 
-	nextoffset = OffsetNumberNext(topoff);
+	nextoffset = OffsetNumberNext(poffset);
 	PageIndexTupleDelete(page, nextoffset);
 
 	/*
-	 * Mark the leaf page as half-dead, and stamp it with a pointer to the
-	 * highest internal page in the branch we're deleting.  We use the tid of
-	 * the high key to store it.
+	 * Mark the leaf page as half-dead, and stamp it with a link to the top
+	 * parent page.  When the leaf page is also the top parent page, the link
+	 * is set to InvalidBlockNumber.
 	 */
 	page = BufferGetPage(leafbuf);
 	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
 	opaque->btpo_flags |= BTP_HALF_DEAD;
 
-	PageIndexTupleDelete(page, P_HIKEY);
-	Assert(PageGetMaxOffsetNumber(page) == 0);
+	Assert(PageGetMaxOffsetNumber(page) == P_HIKEY);
 	MemSet(&trunctuple, 0, sizeof(IndexTupleData));
 	trunctuple.t_info = sizeof(IndexTupleData);
-	if (target != leafblkno)
-		ItemPointerSet(&trunctuple.t_tid, target, P_HIKEY);
+	if (topparent != leafblkno)
+		BTreeTupleSetTopParent(&trunctuple, topparent);
 	else
-		ItemPointerSetInvalid(&trunctuple.t_tid);
-	if (PageAddItem(page, (Item) &trunctuple, sizeof(IndexTupleData), P_HIKEY,
-					false, false) == InvalidOffsetNumber)
-		elog(ERROR, "could not add dummy high key to half-dead page");
+		BTreeTupleSetTopParent(&trunctuple, InvalidBlockNumber);
+
+	if (!PageIndexTupleOverwrite(page, P_HIKEY, (Item) &trunctuple,
+								 IndexTupleSize(&trunctuple)))
+		elog(ERROR, "could not overwrite high key in half-dead page");
 
 	/* Must mark buffers dirty before XLogInsert */
-	MarkBufferDirty(topparent);
+	MarkBufferDirty(subtreeparent);
 	MarkBufferDirty(leafbuf);
 
 	/* XLOG stuff */
@@ -1474,16 +1868,16 @@ _bt_mark_page_halfdead(Relation rel, Buffer leafbuf, BTStack stack)
 		xl_btree_mark_page_halfdead xlrec;
 		XLogRecPtr	recptr;
 
-		xlrec.poffset = topoff;
+		xlrec.poffset = poffset;
 		xlrec.leafblk = leafblkno;
-		if (target != leafblkno)
-			xlrec.topparent = target;
+		if (topparent != leafblkno)
+			xlrec.topparent = topparent;
 		else
 			xlrec.topparent = InvalidBlockNumber;
 
 		XLogBeginInsert();
 		XLogRegisterBuffer(0, leafbuf, REGBUF_WILL_INIT);
-		XLogRegisterBuffer(1, topparent, REGBUF_STANDARD);
+		XLogRegisterBuffer(1, subtreeparent, REGBUF_STANDARD);
 
 		page = BufferGetPage(leafbuf);
 		opaque = (BTPageOpaque) PageGetSpecialPointer(page);
@@ -1494,7 +1888,7 @@ _bt_mark_page_halfdead(Relation rel, Buffer leafbuf, BTStack stack)
 
 		recptr = XLogInsert(RM_BTREE_ID, XLOG_BTREE_MARK_PAGE_HALFDEAD);
 
-		page = BufferGetPage(topparent);
+		page = BufferGetPage(subtreeparent);
 		PageSetLSN(page, recptr);
 		page = BufferGetPage(leafbuf);
 		PageSetLSN(page, recptr);
@@ -1502,21 +1896,35 @@ _bt_mark_page_halfdead(Relation rel, Buffer leafbuf, BTStack stack)
 
 	END_CRIT_SECTION();
 
-	_bt_relbuf(rel, topparent);
+	_bt_relbuf(rel, subtreeparent);
 	return true;
 }
 
 /*
- * Unlink a page in a branch of half-dead pages from its siblings.
+ * Second stage of page deletion.
  *
- * If the leaf page still has a downlink pointing to it, unlinks the highest
- * parent in the to-be-deleted branch instead of the leaf page.  To get rid
- * of the whole branch, including the leaf page itself, iterate until the
- * leaf page is deleted.
+ * Unlinks a single page (in the subtree undergoing deletion) from its
+ * siblings.  Also marks the page deleted.
  *
- * Returns 'false' if the page could not be unlinked (shouldn't happen).
- * If the (new) right sibling of the page is empty, *rightsib_empty is set
- * to true.
+ * To get rid of the whole subtree, including the leaf page itself, call here
+ * until the leaf page is deleted.  The original "top parent" established in
+ * the first stage of deletion is deleted in the first call here, while the
+ * leaf page is deleted in the last call here.  Note that the leaf page itself
+ * is often the initial top parent page.
+ *
+ * Returns 'false' if the page could not be unlinked (shouldn't happen).  If
+ * the right sibling of the current target page is empty, *rightsib_empty is
+ * set to true, allowing caller to delete the target's right sibling page in
+ * passing.  Note that *rightsib_empty is only actually used by caller when
+ * target page is leafbuf, following last call here for leafbuf/the subtree
+ * containing leafbuf.  (We always set *rightsib_empty for caller, just to be
+ * consistent.)
+ *
+ * We maintain *oldestBtpoXact for pages that are deleted by the current
+ * VACUUM operation here.  This must be handled here because we conservatively
+ * assume that there needs to be a new call to ReadNewTransactionId() each
+ * time a page gets deleted.  See comments about the underlying assumption
+ * below.
  *
  * Must hold pin and lock on leafbuf at entry (read or write doesn't matter).
  * On success exit, we'll be holding pin and write lock.  On failure exit,
@@ -1524,7 +1932,9 @@ _bt_mark_page_halfdead(Relation rel, Buffer leafbuf, BTStack stack)
  * to avoid having to reacquire a lock we already released).
  */
 static bool
-_bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
+_bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, BlockNumber scanblkno,
+						 bool *rightsib_empty, TransactionId *oldestBtpoXact,
+						 uint32 *ndeleted)
 {
 	BlockNumber leafblkno = BufferGetBlockNumber(leafbuf);
 	BlockNumber leafleftsib;
@@ -1543,19 +1953,20 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 	BTPageOpaque opaque;
 	bool		rightsib_is_rightmost;
 	int			targetlevel;
-	ItemPointer leafhikey;
+	IndexTuple	leafhikey;
 	BlockNumber nextchild;
 
 	page = BufferGetPage(leafbuf);
 	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
 
-	Assert(P_ISLEAF(opaque) && P_ISHALFDEAD(opaque));
+	Assert(P_ISLEAF(opaque) && !P_ISDELETED(opaque) && P_ISHALFDEAD(opaque));
 
 	/*
 	 * Remember some information about the leaf page.
 	 */
 	itemid = PageGetItemId(page, P_HIKEY);
-	leafhikey = &((IndexTuple) PageGetItem(page, itemid))->t_tid;
+	leafhikey = (IndexTuple) PageGetItem(page, itemid);
+	target = BTreeTupleGetTopParent(leafhikey);
 	leafleftsib = opaque->btpo_prev;
 	leafrightsib = opaque->btpo_next;
 
@@ -1567,37 +1978,34 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 	 */
 	CHECK_FOR_INTERRUPTS();
 
-	/*
-	 * If the leaf page still has a parent pointing to it (or a chain of
-	 * parents), we don't unlink the leaf page yet, but the topmost remaining
-	 * parent in the branch.  Set 'target' and 'buf' to reference the page
-	 * actually being unlinked.
-	 */
-	if (ItemPointerIsValid(leafhikey))
+	/* Unlink the current top parent of the subtree */
+	if (!BlockNumberIsValid(target))
 	{
-		target = ItemPointerGetBlockNumber(leafhikey);
+		/* Target is leaf page (or leaf page is top parent, if you prefer) */
+		target = leafblkno;
+
+		buf = leafbuf;
+		leftsib = leafleftsib;
+		targetlevel = 0;
+	}
+	else
+	{
+		/* Target is the internal page taken from leaf's top parent link */
 		Assert(target != leafblkno);
 
-		/* fetch the block number of the topmost parent's left sibling */
+		/* Fetch the block number of the target's left sibling */
 		buf = _bt_getbuf(rel, target, BT_READ);
 		page = BufferGetPage(buf);
 		opaque = (BTPageOpaque) PageGetSpecialPointer(page);
 		leftsib = opaque->btpo_prev;
 		targetlevel = opaque->btpo.level;
+		Assert(targetlevel > 0);
 
 		/*
 		 * To avoid deadlocks, we'd better drop the target page lock before
 		 * going further.
 		 */
 		LockBuffer(buf, BUFFER_LOCK_UNLOCK);
-	}
-	else
-	{
-		target = leafblkno;
-
-		buf = leafbuf;
-		leftsib = leafleftsib;
-		targetlevel = 0;
 	}
 
 	/*
@@ -1660,9 +2068,9 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 		lbuf = InvalidBuffer;
 
 	/*
-	 * Next write-lock the target page itself.  It should be okay to take just
-	 * a write lock not a superexclusive lock, since no scans would stop on an
-	 * empty page.
+	 * Next write-lock the target page itself.  It's okay to take a write lock
+	 * rather than a superexclusive lock, since no scan will stop on an empty
+	 * page.
 	 */
 	LockBuffer(buf, BT_WRITE);
 	page = BufferGetPage(buf);
@@ -1674,13 +2082,14 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 	 * only one vacuum process running at a time.
 	 */
 	if (P_RIGHTMOST(opaque) || P_ISROOT(opaque) || P_ISDELETED(opaque))
-	{
 		elog(ERROR, "half-dead page changed status unexpectedly in block %u of index \"%s\"",
 			 target, RelationGetRelationName(rel));
-	}
+
 	if (opaque->btpo_prev != leftsib)
-		elog(ERROR, "left link changed unexpectedly in block %u of index \"%s\"",
-			 target, RelationGetRelationName(rel));
+		ereport(ERROR,
+				(errcode(ERRCODE_INDEX_CORRUPTED),
+				 errmsg_internal("left link changed unexpectedly in block %u of index \"%s\"",
+								 target, RelationGetRelationName(rel))));
 
 	if (target == leafblkno)
 	{
@@ -1697,9 +2106,9 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 			elog(ERROR, "half-dead page changed status unexpectedly in block %u of index \"%s\"",
 				 target, RelationGetRelationName(rel));
 
-		/* remember the next non-leaf child down in the branch. */
+		/* Remember the next non-leaf child down in the subtree */
 		itemid = PageGetItemId(page, P_FIRSTDATAKEY(opaque));
-		nextchild = ItemPointerGetBlockNumber(&((IndexTuple) PageGetItem(page, itemid))->t_tid);
+		nextchild = BTreeTupleGetDownLink((IndexTuple) PageGetItem(page, itemid));
 		if (nextchild == leafblkno)
 			nextchild = InvalidBlockNumber;
 	}
@@ -1712,10 +2121,12 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 	page = BufferGetPage(rbuf);
 	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
 	if (opaque->btpo_prev != target)
-		elog(ERROR, "right sibling's left-link doesn't match: "
-			 "block %u links to %u instead of expected %u in index \"%s\"",
-			 rightsib, opaque->btpo_prev, target,
-			 RelationGetRelationName(rel));
+		ereport(ERROR,
+				(errcode(ERRCODE_INDEX_CORRUPTED),
+				 errmsg_internal("right sibling's left-link doesn't match: "
+								 "block %u links to %u instead of expected %u in index \"%s\"",
+								 rightsib, opaque->btpo_prev, target,
+								 RelationGetRelationName(rel))));
 	rightsib_is_rightmost = P_RIGHTMOST(opaque);
 	*rightsib_empty = (P_FIRSTDATAKEY(opaque) > PageGetMaxOffsetNumber(page));
 
@@ -1724,9 +2135,6 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 	 * the rightsib is a candidate to become the new fast root. (In theory, it
 	 * might be possible to push the fast root even further down, but the odds
 	 * of doing so are slim, and the locking considerations daunting.)
-	 *
-	 * We don't support handling this in the case where the parent is becoming
-	 * half-dead, even though it theoretically could occur.
 	 *
 	 * We can safely acquire a lock on the metapage here --- see comments for
 	 * _bt_newroot().
@@ -1783,15 +2191,16 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 	/*
 	 * If we deleted a parent of the targeted leaf page, instead of the leaf
 	 * itself, update the leaf to point to the next remaining child in the
-	 * branch.
+	 * subtree.
+	 *
+	 * Note: We rely on the fact that a buffer pin on the leaf page has been
+	 * held since leafhikey was initialized.  This is safe, though only
+	 * because the page was already half-dead at that point.  The leaf page
+	 * cannot have been modified by any other backend during the period when
+	 * no lock was held.
 	 */
 	if (target != leafblkno)
-	{
-		if (nextchild == InvalidBlockNumber)
-			ItemPointerSetInvalid(leafhikey);
-		else
-			ItemPointerSet(leafhikey, nextchild, P_HIKEY);
-	}
+		BTreeTupleSetTopParent(leafhikey, nextchild);
 
 	/*
 	 * Mark the page itself deleted.  It can be recycled when all current
@@ -1805,6 +2214,7 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 	 */
 	page = BufferGetPage(buf);
 	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
+	Assert(P_ISHALFDEAD(opaque) || !P_ISLEAF(opaque));
 	opaque->btpo_flags &= ~BTP_HALF_DEAD;
 	opaque->btpo_flags |= BTP_DELETED;
 	opaque->btpo.xact = ReadNewTransactionId();
@@ -1812,6 +2222,9 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 	/* And update the metapage, if needed */
 	if (BufferIsValid(metabuf))
 	{
+		/* upgrade metapage if needed */
+		if (metad->btm_version < BTREE_NOVAC_VERSION)
+			_bt_upgrademetapage(metapg);
 		metad->btm_fastroot = rightsib;
 		metad->btm_fastlevel = targetlevel;
 		MarkBufferDirty(metabuf);
@@ -1856,12 +2269,17 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 
 		if (BufferIsValid(metabuf))
 		{
-			XLogRegisterBuffer(4, metabuf, REGBUF_WILL_INIT);
+			XLogRegisterBuffer(4, metabuf, REGBUF_WILL_INIT | REGBUF_STANDARD);
 
+			Assert(metad->btm_version >= BTREE_NOVAC_VERSION);
+			xlmeta.version = metad->btm_version;
 			xlmeta.root = metad->btm_root;
 			xlmeta.level = metad->btm_level;
 			xlmeta.fastroot = metad->btm_fastroot;
 			xlmeta.fastlevel = metad->btm_fastlevel;
+			xlmeta.oldest_btpo_xact = metad->btm_oldest_btpo_xact;
+			xlmeta.last_cleanup_num_heap_tuples = metad->btm_last_cleanup_num_heap_tuples;
+			xlmeta.allequalimage = metad->btm_allequalimage;
 
 			XLogRegisterBufData(4, (char *) &xlmeta, sizeof(xl_btree_metadata));
 			xlinfo = XLOG_BTREE_UNLINK_PAGE_META;
@@ -1902,12 +2320,163 @@ _bt_unlink_halfdead_page(Relation rel, Buffer leafbuf, bool *rightsib_empty)
 		_bt_relbuf(rel, lbuf);
 	_bt_relbuf(rel, rbuf);
 
+	if (!TransactionIdIsValid(*oldestBtpoXact) ||
+		TransactionIdPrecedes(opaque->btpo.xact, *oldestBtpoXact))
+		*oldestBtpoXact = opaque->btpo.xact;
+
 	/*
-	 * Release the target, if it was not the leaf block.  The leaf is always
-	 * kept locked.
+	 * If btvacuumscan won't revisit this page in a future btvacuumpage call
+	 * and count it as deleted then, we count it as deleted by current
+	 * btvacuumpage call
 	 */
+	if (target <= scanblkno)
+		(*ndeleted)++;
+
+	/* If the target is not leafbuf, we're done with it now -- release it */
 	if (target != leafblkno)
 		_bt_relbuf(rel, buf);
 
 	return true;
+}
+
+/*
+ * Establish how tall the to-be-deleted subtree will be during the first stage
+ * of page deletion.
+ *
+ * Caller's child argument is the block number of the page caller wants to
+ * delete (this is leafbuf's block number, except when we're called
+ * recursively).  stack is a search stack leading to it.  Note that we will
+ * update the stack entry(s) to reflect current downlink positions --- this is
+ * similar to the corresponding point in page split handling.
+ *
+ * If "first stage" caller cannot go ahead with deleting _any_ pages, returns
+ * false.  Returns true on success, in which case caller can use certain
+ * details established here to perform the first stage of deletion.  This
+ * function is the last point at which page deletion may be deemed unsafe
+ * (barring index corruption, or unexpected concurrent page deletions).
+ *
+ * We write lock the parent of the root of the to-be-deleted subtree for
+ * caller on success (i.e. we leave our lock on the *subtreeparent buffer for
+ * caller).  Caller will have to remove a downlink from *subtreeparent.  We
+ * also set a *subtreeparent offset number in *poffset, to indicate the
+ * location of the pivot tuple that contains the relevant downlink.
+ *
+ * The root of the to-be-deleted subtree is called the "top parent".  Note
+ * that the leafbuf page is often the final "top parent" page (you can think
+ * of the leafbuf page as a degenerate single page subtree when that happens).
+ * Caller should initialize *topparent to the target leafbuf page block number
+ * (while *topparentrightsib should be set to leafbuf's right sibling block
+ * number).  We will update *topparent (and *topparentrightsib) for caller
+ * here, though only when it turns out that caller will delete at least one
+ * internal page (i.e. only when caller needs to store a valid link to the top
+ * parent block in the leafbuf page using BTreeTupleSetTopParent()).
+ */
+static bool
+_bt_lock_subtree_parent(Relation rel, BlockNumber child, BTStack stack,
+						Buffer *subtreeparent, OffsetNumber *poffset,
+						BlockNumber *topparent, BlockNumber *topparentrightsib)
+{
+	BlockNumber parent,
+				leftsibparent;
+	OffsetNumber parentoffset,
+				maxoff;
+	Buffer		pbuf;
+	Page		page;
+	BTPageOpaque opaque;
+
+	/*
+	 * Locate the pivot tuple whose downlink points to "child".  Write lock
+	 * the parent page itself.
+	 */
+	pbuf = _bt_getstackbuf(rel, stack, child);
+	if (pbuf == InvalidBuffer)
+		ereport(ERROR,
+				(errcode(ERRCODE_INDEX_CORRUPTED),
+				 errmsg_internal("failed to re-find parent key in index \"%s\" for deletion target page %u",
+								 RelationGetRelationName(rel), child)));
+	parent = stack->bts_blkno;
+	parentoffset = stack->bts_offset;
+
+	page = BufferGetPage(pbuf);
+	opaque = (BTPageOpaque) PageGetSpecialPointer(page);
+	maxoff = PageGetMaxOffsetNumber(page);
+	leftsibparent = opaque->btpo_prev;
+
+	/*
+	 * _bt_getstackbuf() completes page splits on returned parent buffer when
+	 * required.
+	 *
+	 * In general it's a bad idea for VACUUM to use up more disk space, which
+	 * is why page deletion does not finish incomplete page splits most of the
+	 * time.  We allow this limited exception because the risk is much lower,
+	 * and the potential downside of not proceeding is much higher:  A single
+	 * internal page with the INCOMPLETE_SPLIT flag set might otherwise
+	 * prevent us from deleting hundreds of empty leaf pages from one level
+	 * down.
+	 */
+	Assert(!P_INCOMPLETE_SPLIT(opaque));
+
+	if (parentoffset < maxoff)
+	{
+		/*
+		 * Child is not the rightmost child in parent, so it's safe to delete
+		 * the subtree whose root/topparent is child page
+		 */
+		*subtreeparent = pbuf;
+		*poffset = parentoffset;
+		return true;
+	}
+
+	/*
+	 * Child is the rightmost child of parent.
+	 *
+	 * Since it's the rightmost child of parent, deleting the child (or
+	 * deleting the subtree whose root/topparent is the child page) is only
+	 * safe when it's also possible to delete the parent.
+	 */
+	Assert(parentoffset == maxoff);
+	if (parentoffset != P_FIRSTDATAKEY(opaque) || P_RIGHTMOST(opaque))
+	{
+		/*
+		 * Child isn't parent's only child, or parent is rightmost on its
+		 * entire level.  Definitely cannot delete any pages.
+		 */
+		_bt_relbuf(rel, pbuf);
+		return false;
+	}
+
+	/*
+	 * Now make sure that the parent deletion is itself safe by examining the
+	 * child's grandparent page.  Recurse, passing the parent page as the
+	 * child page (child's grandparent is the parent on the next level up). If
+	 * parent deletion is unsafe, then child deletion must also be unsafe (in
+	 * which case caller cannot delete any pages at all).
+	 */
+	*topparent = parent;
+	*topparentrightsib = opaque->btpo_next;
+
+	/*
+	 * Release lock on parent before recursing.
+	 *
+	 * It's OK to release page locks on parent before recursive call locks
+	 * grandparent.  An internal page can only acquire an entry if the child
+	 * is split, but that cannot happen as long as we still hold a lock on the
+	 * leafbuf page.
+	 */
+	_bt_relbuf(rel, pbuf);
+
+	/*
+	 * Before recursing, check that the left sibling of parent (if any) is not
+	 * marked with INCOMPLETE_SPLIT flag first (must do so after we drop the
+	 * parent lock).
+	 *
+	 * Note: We deliberately avoid completing incomplete splits here.
+	 */
+	if (_bt_leftsib_splitflag(rel, leftsibparent, parent))
+		return false;
+
+	/* Recurse to examine child page's grandparent page */
+	return _bt_lock_subtree_parent(rel, parent, stack->bts_parent,
+								   subtreeparent, poffset,
+								   topparent, topparentrightsib);
 }

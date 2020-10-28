@@ -786,8 +786,21 @@ SELECT '' AS to_char_24, to_char('100'::numeric, 'FM999.9');
 SELECT '' AS to_char_25, to_char('100'::numeric, 'FM999.');
 SELECT '' AS to_char_26, to_char('100'::numeric, 'FM999');
 
+-- Check parsing of literal text in a format string
+SELECT '' AS to_char_27, to_char('100'::numeric, 'foo999');
+SELECT '' AS to_char_28, to_char('100'::numeric, 'f\oo999');
+SELECT '' AS to_char_29, to_char('100'::numeric, 'f\\oo999');
+SELECT '' AS to_char_30, to_char('100'::numeric, 'f\"oo999');
+SELECT '' AS to_char_31, to_char('100'::numeric, 'f\\"oo999');
+SELECT '' AS to_char_32, to_char('100'::numeric, 'f"ool"999');
+SELECT '' AS to_char_33, to_char('100'::numeric, 'f"\ool"999');
+SELECT '' AS to_char_34, to_char('100'::numeric, 'f"\\ool"999');
+SELECT '' AS to_char_35, to_char('100'::numeric, 'f"ool\"999');
+SELECT '' AS to_char_36, to_char('100'::numeric, 'f"ool\\"999');
+
 -- TO_NUMBER()
 --
+SET lc_numeric = 'C';
 SELECT '' AS to_number_1,  to_number('-34,338,492', '99G999G999');
 SELECT '' AS to_number_2,  to_number('-34,338,492.654,878', '99G999G999D999G999');
 SELECT '' AS to_number_3,  to_number('<564646.654564>', '999999.999999PR');
@@ -801,6 +814,16 @@ SELECT '' AS to_number_10, to_number('0', '99.99');
 SELECT '' AS to_number_11, to_number('.-01', 'S99.99');
 SELECT '' AS to_number_12, to_number('.01-', '99.99S');
 SELECT '' AS to_number_13, to_number(' . 0 1-', ' 9 9 . 9 9 S');
+SELECT '' AS to_number_14, to_number('34,50','999,99');
+SELECT '' AS to_number_15, to_number('123,000','999G');
+SELECT '' AS to_number_16, to_number('123456','999G999');
+SELECT '' AS to_number_17, to_number('$1234.56','L9,999.99');
+SELECT '' AS to_number_18, to_number('$1234.56','L99,999.99');
+SELECT '' AS to_number_19, to_number('$1,234.56','L99,999.99');
+SELECT '' AS to_number_20, to_number('1234.56','L99,999.99');
+SELECT '' AS to_number_21, to_number('1,234.56','L99,999.99');
+SELECT '' AS to_number_22, to_number('42nd', '99th');
+RESET lc_numeric;
 
 --
 -- Input syntax
@@ -860,6 +883,19 @@ select div(12345678901234567890, 123);
 select div(12345678901234567890, 123) * 123 + 12345678901234567890 % 123;
 
 --
+-- Test some corner cases for square root
+--
+
+select sqrt(1.000000000000003::numeric);
+select sqrt(1.000000000000004::numeric);
+select sqrt(96627521408608.56340355805::numeric);
+select sqrt(96627521408608.56340355806::numeric);
+select sqrt(515549506212297735.073688290367::numeric);
+select sqrt(515549506212297735.073688290368::numeric);
+select sqrt(8015491789940783531003294973900306::numeric);
+select sqrt(8015491789940783531003294973900307::numeric);
+
+--
 -- Test code path for raising to integer powers
 --
 
@@ -887,6 +923,13 @@ select 0.0 ^ 0.0;
 select (-12.34) ^ 0.0;
 select 12.34 ^ 0.0;
 select 0.0 ^ 12.34;
+
+-- NaNs
+select 'NaN'::numeric ^ 'NaN'::numeric;
+select 'NaN'::numeric ^ 0;
+select 'NaN'::numeric ^ 1;
+select 0 ^ 'NaN'::numeric;
+select 1 ^ 'NaN'::numeric;
 
 -- invalid inputs
 select 0.0 ^ (-12.34);
@@ -1007,9 +1050,64 @@ select scale(-1123.12471856128);
 select scale(-13.000000000000000);
 
 --
+-- Tests for min_scale()
+--
+
+select min_scale(numeric 'NaN') is NULL; -- should be true
+select min_scale(0);                     -- no digits
+select min_scale(0.00);                  -- no digits again
+select min_scale(1.0);                   -- no scale
+select min_scale(1.1);                   -- scale 1
+select min_scale(1.12);                  -- scale 2
+select min_scale(1.123);                 -- scale 3
+select min_scale(1.1234);                -- scale 4, filled digit
+select min_scale(1.12345);               -- scale 5, 2 NDIGITS
+select min_scale(1.1000);                -- 1 pos in NDIGITS
+select min_scale(1e100);                 -- very big number
+
+--
+-- Tests for trim_scale()
+--
+
+select trim_scale(numeric 'NaN');
+select trim_scale(1.120);
+select trim_scale(0);
+select trim_scale(0.00);
+select trim_scale(1.1234500);
+select trim_scale(110123.12475871856128000);
+select trim_scale(-1123.124718561280000000);
+select trim_scale(-13.00000000000000000000);
+select trim_scale(1e100);
+
+--
 -- Tests for SUM()
 --
 
 -- cases that need carry propagation
 SELECT SUM(9999::numeric) FROM generate_series(1, 100000);
 SELECT SUM((-9999)::numeric) FROM generate_series(1, 100000);
+
+--
+-- Tests for GCD()
+--
+SELECT a, b, gcd(a, b), gcd(a, -b), gcd(-b, a), gcd(-b, -a)
+FROM (VALUES (0::numeric, 0::numeric),
+             (0::numeric, numeric 'NaN'),
+             (0::numeric, 46375::numeric),
+             (433125::numeric, 46375::numeric),
+             (43312.5::numeric, 4637.5::numeric),
+             (4331.250::numeric, 463.75000::numeric)) AS v(a, b);
+
+--
+-- Tests for LCM()
+--
+SELECT a,b, lcm(a, b), lcm(a, -b), lcm(-b, a), lcm(-b, -a)
+FROM (VALUES (0::numeric, 0::numeric),
+             (0::numeric, numeric 'NaN'),
+             (0::numeric, 13272::numeric),
+             (13272::numeric, 13272::numeric),
+             (423282::numeric, 13272::numeric),
+             (42328.2::numeric, 1327.2::numeric),
+             (4232.820::numeric, 132.72000::numeric)) AS v(a, b);
+
+SELECT lcm(9999 * (10::numeric)^131068 + (10::numeric^131068 - 1), 2); -- overflow

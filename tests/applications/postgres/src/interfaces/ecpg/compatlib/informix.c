@@ -7,14 +7,14 @@
 #include <ctype.h>
 #include <limits.h>
 
-#include <ecpgtype.h>
-#include <ecpg_informix.h>
-#include <pgtypes_error.h>
-#include <pgtypes_date.h>
-#include <pgtypes_numeric.h>
-#include <sqltypes.h>
-#include <sqlca.h>
-#include <ecpgerrno.h>
+#include "ecpg_informix.h"
+#include "ecpgerrno.h"
+#include "ecpgtype.h"
+#include "pgtypes_date.h"
+#include "pgtypes_error.h"
+#include "pgtypes_numeric.h"
+#include "sqlca.h"
+#include "sqltypes.h"
 
 /* this is also defined in ecpglib/misc.c, by defining it twice we don't have to export the symbol */
 
@@ -79,7 +79,7 @@ deccall2(decimal *arg1, decimal *arg2, int (*ptr) (numeric *, numeric *))
 	PGTYPESnumeric_free(a1);
 	PGTYPESnumeric_free(a2);
 
-	return (i);
+	return i;
 }
 
 static int
@@ -143,7 +143,7 @@ deccall3(decimal *arg1, decimal *arg2, decimal *result, int (*ptr) (numeric *, n
 	PGTYPESnumeric_free(a1);
 	PGTYPESnumeric_free(a2);
 
-	return (i);
+	return i;
 }
 
 /* we start with the numeric functions */
@@ -166,7 +166,7 @@ decadd(decimal *arg1, decimal *arg2, decimal *sum)
 int
 deccmp(decimal *arg1, decimal *arg2)
 {
-	return (deccall2(arg1, arg2, PGTYPESnumeric_cmp));
+	return deccall2(arg1, arg2, PGTYPESnumeric_cmp);
 }
 
 void
@@ -175,27 +175,8 @@ deccopy(decimal *src, decimal *target)
 	memcpy(target, src, sizeof(decimal));
 }
 
-static char *
-ecpg_strndup(const char *str, size_t len)
-{
-	size_t		real_len = strlen(str);
-	int			use_len = (int) ((real_len > len) ? len : real_len);
-
-	char	   *new = malloc(use_len + 1);
-
-	if (new)
-	{
-		memcpy(new, str, use_len);
-		new[use_len] = '\0';
-	}
-	else
-		errno = ENOMEM;
-
-	return new;
-}
-
 int
-deccvasc(char *cp, int len, decimal *np)
+deccvasc(const char *cp, int len, decimal *np)
 {
 	char	   *str;
 	int			ret = 0;
@@ -205,8 +186,8 @@ deccvasc(char *cp, int len, decimal *np)
 	if (risnull(CSTRINGTYPE, cp))
 		return 0;
 
-	str = ecpg_strndup(cp, len);	/* decimal_in always converts the complete
-									 * string */
+	str = pnstrdup(cp, len);	/* decimal_in always converts the complete
+								 * string */
 	if (!str)
 		ret = ECPG_INFORMIX_NUM_UNDERFLOW;
 	else
@@ -261,7 +242,7 @@ deccvdbl(double dbl, decimal *np)
 		result = PGTYPESnumeric_to_decimal(nres, np);
 
 	PGTYPESnumeric_free(nres);
-	return (result);
+	return result;
 }
 
 int
@@ -283,7 +264,7 @@ deccvint(int in, decimal *np)
 		result = PGTYPESnumeric_to_decimal(nres, np);
 
 	PGTYPESnumeric_free(nres);
-	return (result);
+	return result;
 }
 
 int
@@ -305,7 +286,7 @@ deccvlong(long lng, decimal *np)
 		result = PGTYPESnumeric_to_decimal(nres, np);
 
 	PGTYPESnumeric_free(nres);
-	return (result);
+	return result;
 }
 
 int
@@ -520,7 +501,7 @@ rdatestr(date d, char *str)
 *
 */
 int
-rstrdate(char *str, date * d)
+rstrdate(const char *str, date * d)
 {
 	return rdefmtdate(d, "mm/dd/yyyy", str);
 }
@@ -529,7 +510,6 @@ void
 rtoday(date * d)
 {
 	PGTYPESdate_today(d);
-	return;
 }
 
 int
@@ -545,7 +525,7 @@ rjulmdy(date d, short mdy[3])
 }
 
 int
-rdefmtdate(date * d, char *fmt, char *str)
+rdefmtdate(date * d, const char *fmt, const char *str)
 {
 	/* TODO: take care of DBCENTURY environment variable */
 	/* PGSQL functions allow all centuries */
@@ -571,7 +551,7 @@ rdefmtdate(date * d, char *fmt, char *str)
 }
 
 int
-rfmtdate(date d, char *fmt, char *str)
+rfmtdate(date d, const char *fmt, char *str)
 {
 	errno = 0;
 	if (PGTYPESdate_fmt_asc(d, fmt, str) == 0)
@@ -598,7 +578,7 @@ rmdyjul(short mdy[3], date * d)
 int
 rdayofweek(date d)
 {
-	return (PGTYPESdate_dayofweek(d));
+	return PGTYPESdate_dayofweek(d);
 }
 
 /* And the datetime stuff */
@@ -679,11 +659,6 @@ intoasc(interval * i, char *str)
 	return 0;
 }
 
-/*
- *	rfmt.c	-  description
- *	by Carsten Wolff <carsten.wolff@credativ.de>, Wed Apr 2 2003
- */
-
 static struct
 {
 	long		val;
@@ -745,9 +720,9 @@ initValue(long lng_val)
 	return 0;
 }
 
-/* return the position oft the right-most dot in some string */
+/* return the position of the right-most dot in some string */
 static int
-getRightMostDot(char *str)
+getRightMostDot(const char *str)
 {
 	size_t		len = strlen(str);
 	int			i,
@@ -765,7 +740,7 @@ getRightMostDot(char *str)
 
 /* And finally some misc functions */
 int
-rfmtlong(long lng_val, char *fmt, char *outbuf)
+rfmtlong(long lng_val, const char *fmt, char *outbuf)
 {
 	size_t		fmt_len = strlen(fmt);
 	size_t		temp_len;
@@ -811,7 +786,7 @@ rfmtlong(long lng_val, char *fmt, char *outbuf)
 	/* and fill the temp-string wit '0's up to there. */
 	dotpos = getRightMostDot(fmt);
 
-	/* start to parse the formatstring */
+	/* start to parse the format-string */
 	temp[0] = '\0';
 	k = value.digits - 1;		/* position in the value_string */
 	for (i = fmt_len - 1, j = 0; i >= 0; i--, j++)
@@ -824,7 +799,7 @@ rfmtlong(long lng_val, char *fmt, char *outbuf)
 				sign = 1;
 			if (leftalign)
 			{
-				/* can't use strncat(,,0) here, Solaris would freek out */
+				/* can't use strncat(,,0) here, Solaris would freak out */
 				if (sign)
 					if (signdone)
 					{
@@ -964,7 +939,6 @@ rupshift(char *str)
 	for (; *str != '\0'; str++)
 		if (islower((unsigned char) *str))
 			*str = toupper((unsigned char) *str);
-	return;
 }
 
 int
@@ -1047,7 +1021,7 @@ rsetnull(int t, char *ptr)
 }
 
 int
-risnull(int t, char *ptr)
+risnull(int t, const char *ptr)
 {
-	return (ECPGis_noind_null(t, ptr));
+	return ECPGis_noind_null(t, ptr);
 }

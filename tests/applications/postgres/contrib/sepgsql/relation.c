@@ -4,32 +4,31 @@
  *
  * Routines corresponding to relation/attribute objects
  *
- * Copyright (c) 2010-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2010-2020, PostgreSQL Global Development Group
  *
  * -------------------------------------------------------------------------
  */
 #include "postgres.h"
 
 #include "access/genam.h"
-#include "access/heapam.h"
 #include "access/htup_details.h"
 #include "access/sysattr.h"
-#include "catalog/indexing.h"
+#include "access/table.h"
 #include "catalog/dependency.h"
+#include "catalog/indexing.h"
 #include "catalog/pg_attribute.h"
 #include "catalog/pg_class.h"
 #include "catalog/pg_namespace.h"
 #include "commands/seclabel.h"
 #include "lib/stringinfo.h"
+#include "sepgsql.h"
 #include "utils/builtins.h"
-#include "utils/fmgroids.h"
 #include "utils/catcache.h"
+#include "utils/fmgroids.h"
 #include "utils/lsyscache.h"
 #include "utils/rel.h"
+#include "utils/snapmgr.h"
 #include "utils/syscache.h"
-#include "utils/tqual.h"
-
-#include "sepgsql.h"
 
 static void sepgsql_index_modify(Oid indexOid);
 
@@ -67,7 +66,7 @@ sepgsql_attribute_post_create(Oid relOid, AttrNumber attnum)
 	 * Compute a default security label of the new column underlying the
 	 * specified relation, and check permission to create it.
 	 */
-	rel = heap_open(AttributeRelationId, AccessShareLock);
+	rel = table_open(AttributeRelationId, AccessShareLock);
 
 	ScanKeyInit(&skey[0],
 				Anum_pg_attribute_attrelid,
@@ -120,7 +119,7 @@ sepgsql_attribute_post_create(Oid relOid, AttrNumber attnum)
 	SetSecurityLabel(&object, SEPGSQL_LABEL_TAG, ncontext);
 
 	systable_endscan(sscan);
-	heap_close(rel, AccessShareLock);
+	table_close(rel, AccessShareLock);
 
 	pfree(tcontext);
 	pfree(ncontext);
@@ -259,10 +258,10 @@ sepgsql_relation_post_create(Oid relOid)
 	 * Fetch catalog record of the new relation. Because pg_class entry is not
 	 * visible right now, we need to scan the catalog using SnapshotSelf.
 	 */
-	rel = heap_open(RelationRelationId, AccessShareLock);
+	rel = table_open(RelationRelationId, AccessShareLock);
 
 	ScanKeyInit(&skey,
-				ObjectIdAttributeNumber,
+				Anum_pg_class_oid,
 				BTEqualStrategyNumber, F_OIDEQ,
 				ObjectIdGetDatum(relOid));
 
@@ -358,7 +357,7 @@ sepgsql_relation_post_create(Oid relOid)
 		HeapTuple	atup;
 		Form_pg_attribute attForm;
 
-		arel = heap_open(AttributeRelationId, AccessShareLock);
+		arel = table_open(AttributeRelationId, AccessShareLock);
 
 		ScanKeyInit(&akey,
 					Anum_pg_attribute_attrelid,
@@ -400,13 +399,13 @@ sepgsql_relation_post_create(Oid relOid)
 			pfree(ccontext);
 		}
 		systable_endscan(ascan);
-		heap_close(arel, AccessShareLock);
+		table_close(arel, AccessShareLock);
 	}
 	pfree(rcontext);
 
 out:
 	systable_endscan(sscan);
-	heap_close(rel, AccessShareLock);
+	table_close(rel, AccessShareLock);
 }
 
 /*
@@ -518,6 +517,46 @@ sepgsql_relation_drop(Oid relOid)
 }
 
 /*
+ * sepgsql_relation_truncate
+ *
+ * Check privileges to TRUNCATE the supplied relation.
+ */
+void
+sepgsql_relation_truncate(Oid relOid)
+{
+	ObjectAddress object;
+	char	   *audit_name;
+	uint16_t	tclass = 0;
+	char		relkind = get_rel_relkind(relOid);
+
+	switch (relkind)
+	{
+		case RELKIND_RELATION:
+		case RELKIND_PARTITIONED_TABLE:
+			tclass = SEPG_CLASS_DB_TABLE;
+			break;
+		default:
+			/* ignore other relkinds */
+			return;
+	}
+
+	/*
+	 * check db_table:{truncate} permission
+	 */
+	object.classId = RelationRelationId;
+	object.objectId = relOid;
+	object.objectSubId = 0;
+	audit_name = getObjectIdentity(&object);
+
+	sepgsql_avc_check_perms(&object,
+							tclass,
+							SEPG_DB_TABLE__TRUNCATE,
+							audit_name,
+							true);
+	pfree(audit_name);
+}
+
+/*
  * sepgsql_relation_relabel
  *
  * It checks privileges to relabel the supplied relation by the `seclabel'.
@@ -611,10 +650,10 @@ sepgsql_relation_setattr(Oid relOid)
 	/*
 	 * Fetch newer catalog
 	 */
-	rel = heap_open(RelationRelationId, AccessShareLock);
+	rel = table_open(RelationRelationId, AccessShareLock);
 
 	ScanKeyInit(&skey,
-				ObjectIdAttributeNumber,
+				Anum_pg_class_oid,
 				BTEqualStrategyNumber, F_OIDEQ,
 				ObjectIdGetDatum(relOid));
 
@@ -667,7 +706,7 @@ sepgsql_relation_setattr(Oid relOid)
 
 	ReleaseSysCache(oldtup);
 	systable_endscan(sscan);
-	heap_close(rel, AccessShareLock);
+	table_close(rel, AccessShareLock);
 }
 
 /*
@@ -723,7 +762,7 @@ sepgsql_relation_setattr_extra(Relation catalog,
 static void
 sepgsql_index_modify(Oid indexOid)
 {
-	Relation	catalog = heap_open(IndexRelationId, AccessShareLock);
+	Relation	catalog = table_open(IndexRelationId, AccessShareLock);
 
 	/* check db_table:{setattr} permission of the table being indexed */
 	sepgsql_relation_setattr_extra(catalog,
@@ -731,5 +770,5 @@ sepgsql_index_modify(Oid indexOid)
 								   indexOid,
 								   Anum_pg_index_indrelid,
 								   Anum_pg_index_indexrelid);
-	heap_close(catalog, AccessShareLock);
+	table_close(catalog, AccessShareLock);
 }

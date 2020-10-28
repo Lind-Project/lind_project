@@ -5,12 +5,12 @@
  *	  in a page which can be different when the WAL is generated
  *	  and when the WAL is applied.
  *
- * Portions Copyright (c) 2016-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 2016-2020, PostgreSQL Global Development Group
  *
  * Contains common routines required for masking a page.
  *
  * IDENTIFICATION
- *	  src/backend/storage/buffer/bufmask.c
+ *	  src/backend/access/common/bufmask.c
  *
  *-------------------------------------------------------------------------
  */
@@ -20,7 +20,7 @@
 #include "access/bufmask.h"
 
 /*
- * mask_page_lsn
+ * mask_page_lsn_and_checksum
  *
  * In consistency checks, the LSN of the two pages compared will likely be
  * different because of concurrent operations when the WAL is generated and

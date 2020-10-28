@@ -17,7 +17,7 @@
  * any database access.
  *
  *
- * Copyright (c) 2006-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2006-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *	  src/backend/utils/cache/ts_cache.c
@@ -27,8 +27,8 @@
 #include "postgres.h"
 
 #include "access/genam.h"
-#include "access/heapam.h"
 #include "access/htup_details.h"
+#include "access/table.h"
 #include "access/xact.h"
 #include "catalog/indexing.h"
 #include "catalog/namespace.h"
@@ -48,7 +48,6 @@
 #include "utils/memutils.h"
 #include "utils/regproc.h"
 #include "utils/syscache.h"
-#include "utils/tqual.h"
 
 
 /*
@@ -296,14 +295,18 @@ lookup_ts_dictionary_cache(Oid dictId)
 
 			/* Create private memory context the first time through */
 			saveCtx = AllocSetContextCreate(CacheMemoryContext,
-											NameStr(dict->dictname),
+											"TS dictionary",
 											ALLOCSET_SMALL_SIZES);
+			MemoryContextCopyAndSetIdentifier(saveCtx, NameStr(dict->dictname));
 		}
 		else
 		{
 			/* Clear the existing entry's private context */
 			saveCtx = entry->dictCtx;
-			MemoryContextResetAndDeleteChildren(saveCtx);
+			/* Don't let context's ident pointer dangle while we reset it */
+			MemoryContextSetIdentifier(saveCtx, NULL);
+			MemoryContextReset(saveCtx);
+			MemoryContextCopyAndSetIdentifier(saveCtx, NameStr(dict->dictname));
 		}
 
 		MemSet(entry, 0, sizeof(TSDictionaryCacheEntry));
@@ -478,7 +481,7 @@ lookup_ts_config_cache(Oid cfgId)
 					BTEqualStrategyNumber, F_OIDEQ,
 					ObjectIdGetDatum(cfgId));
 
-		maprel = heap_open(TSConfigMapRelationId, AccessShareLock);
+		maprel = table_open(TSConfigMapRelationId, AccessShareLock);
 		mapidx = index_open(TSConfigMapIndexId, AccessShareLock);
 		mapscan = systable_beginscan_ordered(maprel, mapidx,
 											 NULL, 1, &mapskey);
@@ -519,7 +522,7 @@ lookup_ts_config_cache(Oid cfgId)
 
 		systable_endscan_ordered(mapscan);
 		index_close(mapidx, AccessShareLock);
-		heap_close(maprel, AccessShareLock);
+		table_close(maprel, AccessShareLock);
 
 		if (ndicts > 0)
 		{

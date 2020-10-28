@@ -4,7 +4,7 @@
  *	  Low level infrastructure related to expression evaluation
  *
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * src/include/executor/execExpr.h
@@ -14,16 +14,23 @@
 #ifndef EXEC_EXPR_H
 #define EXEC_EXPR_H
 
+#include "executor/nodeAgg.h"
 #include "nodes/execnodes.h"
 
-/* forward reference to avoid circularity */
-struct ArrayRefState;
+/* forward references to avoid circularity */
+struct ExprEvalStep;
+struct SubscriptingRefState;
 
 /* Bits in ExprState->flags (see also execnodes.h for public flag bits): */
 /* expression's interpreter has been initialized */
 #define EEO_FLAG_INTERPRETER_INITIALIZED	(1 << 1)
 /* jump-threading is in use */
 #define EEO_FLAG_DIRECT_THREADED			(1 << 2)
+
+/* Typical API for out-of-line evaluation subroutines */
+typedef void (*ExecEvalSubroutine) (ExprState *state,
+									struct ExprEvalStep *op,
+									ExprContext *econtext);
 
 /*
  * Discriminator for ExprEvalSteps.
@@ -45,12 +52,8 @@ typedef enum ExprEvalOp
 	EEOP_SCAN_FETCHSOME,
 
 	/* compute non-system Var value */
-	/* "FIRST" variants are used only the first time through */
-	EEOP_INNER_VAR_FIRST,
 	EEOP_INNER_VAR,
-	EEOP_OUTER_VAR_FIRST,
 	EEOP_OUTER_VAR,
-	EEOP_SCAN_VAR_FIRST,
 	EEOP_SCAN_VAR,
 
 	/* compute system Var value */
@@ -61,8 +64,11 @@ typedef enum ExprEvalOp
 	/* compute wholerow Var */
 	EEOP_WHOLEROW,
 
-	/* compute non-system Var value, assign it into ExprState's resultslot */
-	/* (these are not used if _FIRST checks would be needed) */
+	/*
+	 * Compute non-system Var value, assign it into ExprState's resultslot.
+	 * These are not used if a CheckVarSlotCompatibility() check would be
+	 * needed.
+	 */
 	EEOP_ASSIGN_INNER_VAR,
 	EEOP_ASSIGN_OUTER_VAR,
 	EEOP_ASSIGN_SCAN_VAR,
@@ -131,6 +137,7 @@ typedef enum ExprEvalOp
 	/* evaluate PARAM_EXEC/EXTERN parameters */
 	EEOP_PARAM_EXEC,
 	EEOP_PARAM_EXTERN,
+	EEOP_PARAM_CALLBACK,
 
 	/* return CaseTestExpr value */
 	EEOP_CASE_TESTVAL,
@@ -141,6 +148,7 @@ typedef enum ExprEvalOp
 	/* evaluate assorted special-purpose expression types */
 	EEOP_IOCOERCE,
 	EEOP_DISTINCT,
+	EEOP_NOT_DISTINCT,
 	EEOP_NULLIF,
 	EEOP_SQLVALUEFUNCTION,
 	EEOP_CURRENTOFEXPR,
@@ -177,21 +185,21 @@ typedef enum ExprEvalOp
 	 */
 	EEOP_FIELDSTORE_FORM,
 
-	/* Process an array subscript; short-circuit expression to NULL if NULL */
-	EEOP_ARRAYREF_SUBSCRIPT,
+	/* Process a container subscript; short-circuit expression to NULL if NULL */
+	EEOP_SBSREF_SUBSCRIPT,
 
 	/*
-	 * Compute old array element/slice when an ArrayRef assignment expression
-	 * contains ArrayRef/FieldStore subexpressions.  Value is accessed using
-	 * the CaseTest mechanism.
+	 * Compute old container element/slice when a SubscriptingRef assignment
+	 * expression contains SubscriptingRef/FieldStore subexpressions. Value is
+	 * accessed using the CaseTest mechanism.
 	 */
-	EEOP_ARRAYREF_OLD,
+	EEOP_SBSREF_OLD,
 
-	/* compute new value for ArrayRef assignment expression */
-	EEOP_ARRAYREF_ASSIGN,
+	/* compute new value for SubscriptingRef assignment expression */
+	EEOP_SBSREF_ASSIGN,
 
-	/* compute element/slice for ArrayRef fetch expression */
-	EEOP_ARRAYREF_FETCH,
+	/* compute element/slice for SubscriptingRef fetch expression */
+	EEOP_SBSREF_FETCH,
 
 	/* evaluate value for CoerceToDomainValue */
 	EEOP_DOMAIN_TESTVAL,
@@ -211,6 +219,21 @@ typedef enum ExprEvalOp
 	EEOP_WINDOW_FUNC,
 	EEOP_SUBPLAN,
 	EEOP_ALTERNATIVE_SUBPLAN,
+
+	/* aggregation related nodes */
+	EEOP_AGG_STRICT_DESERIALIZE,
+	EEOP_AGG_DESERIALIZE,
+	EEOP_AGG_STRICT_INPUT_CHECK_ARGS,
+	EEOP_AGG_STRICT_INPUT_CHECK_NULLS,
+	EEOP_AGG_PLAIN_PERGROUP_NULLCHECK,
+	EEOP_AGG_PLAIN_TRANS_INIT_STRICT_BYVAL,
+	EEOP_AGG_PLAIN_TRANS_STRICT_BYVAL,
+	EEOP_AGG_PLAIN_TRANS_BYVAL,
+	EEOP_AGG_PLAIN_TRANS_INIT_STRICT_BYREF,
+	EEOP_AGG_PLAIN_TRANS_STRICT_BYREF,
+	EEOP_AGG_PLAIN_TRANS_BYREF,
+	EEOP_AGG_ORDERED_TRANS_DATUM,
+	EEOP_AGG_ORDERED_TRANS_TUPLE,
 
 	/* non-existent operation, used e.g. to check array lengths */
 	EEOP_LAST
@@ -243,6 +266,12 @@ typedef struct ExprEvalStep
 		{
 			/* attribute number up to which to fetch (inclusive) */
 			int			last_var;
+			/* will the type of slot be the same for every invocation */
+			bool		fixed;
+			/* tuple descriptor, if known */
+			TupleDesc	known_desc;
+			/* type of slot, can only be relied upon if fixed is set */
+			const TupleTableSlotOps *kind;
 		}			fetch;
 
 		/* for EEOP_INNER/OUTER/SCAN_[SYS]VAR[_FIRST] */
@@ -331,6 +360,15 @@ typedef struct ExprEvalStep
 			Oid			paramtype;	/* OID of parameter's datatype */
 		}			param;
 
+		/* for EEOP_PARAM_CALLBACK */
+		struct
+		{
+			ExecEvalSubroutine paramfunc;	/* add-on evaluation subroutine */
+			void	   *paramarg;	/* private data for same */
+			int			paramid;	/* numeric ID for parameter */
+			Oid			paramtype;	/* OID of parameter's datatype */
+		}			cparam;
+
 		/* for EEOP_CASE_TESTVAL/DOMAIN_TESTVAL */
 		struct
 		{
@@ -385,10 +423,8 @@ typedef struct ExprEvalStep
 		/* for EEOP_ARRAYCOERCE */
 		struct
 		{
-			ArrayCoerceExpr *coerceexpr;
+			ExprState  *elemexprstate;	/* null if no per-element work */
 			Oid			resultelemtype; /* element type of result array */
-			FmgrInfo   *elemfunc;	/* lookup info for element coercion
-									 * function */
 			struct ArrayMapState *amstate;	/* workspace for array_map */
 		}			arraycoerce;
 
@@ -459,22 +495,22 @@ typedef struct ExprEvalStep
 			int			ncolumns;
 		}			fieldstore;
 
-		/* for EEOP_ARRAYREF_SUBSCRIPT */
+		/* for EEOP_SBSREF_SUBSCRIPT */
 		struct
 		{
 			/* too big to have inline */
-			struct ArrayRefState *state;
+			struct SubscriptingRefState *state;
 			int			off;	/* 0-based index of this subscript */
 			bool		isupper;	/* is it upper or lower subscript? */
 			int			jumpdone;	/* jump here on null */
-		}			arrayref_subscript;
+		}			sbsref_subscript;
 
-		/* for EEOP_ARRAYREF_OLD / ASSIGN / FETCH */
+		/* for EEOP_SBSREF_OLD / ASSIGN / FETCH */
 		struct
 		{
 			/* too big to have inline */
-			struct ArrayRefState *state;
-		}			arrayref;
+			struct SubscriptingRefState *state;
+		}			sbsref;
 
 		/* for EEOP_DOMAIN_NOTNULL / DOMAIN_CHECK */
 		struct
@@ -536,14 +572,13 @@ typedef struct ExprEvalStep
 		/* for EEOP_GROUPING_FUNC */
 		struct
 		{
-			AggState   *parent; /* parent Agg */
 			List	   *clauses;	/* integer list of column numbers */
 		}			grouping_func;
 
 		/* for EEOP_WINDOW_FUNC */
 		struct
 		{
-			/* out-of-line state, modified by nodeWindowFunc.c */
+			/* out-of-line state, modified by nodeWindowAgg.c */
 			WindowFuncExprState *wfstate;
 		}			window_func;
 
@@ -560,18 +595,63 @@ typedef struct ExprEvalStep
 			/* out-of-line state, created by nodeSubplan.c */
 			AlternativeSubPlanState *asstate;
 		}			alternative_subplan;
+
+		/* for EEOP_AGG_*DESERIALIZE */
+		struct
+		{
+			FunctionCallInfo fcinfo_data;
+			int			jumpnull;
+		}			agg_deserialize;
+
+		/* for EEOP_AGG_STRICT_INPUT_CHECK_NULLS / STRICT_INPUT_CHECK_ARGS */
+		struct
+		{
+			/*
+			 * For EEOP_AGG_STRICT_INPUT_CHECK_ARGS args contains pointers to
+			 * the NullableDatums that need to be checked for NULLs.
+			 *
+			 * For EEOP_AGG_STRICT_INPUT_CHECK_NULLS nulls contains pointers
+			 * to booleans that need to be checked for NULLs.
+			 *
+			 * Both cases currently need to exist because sometimes the
+			 * to-be-checked nulls are in TupleTableSlot.isnull array, and
+			 * sometimes in FunctionCallInfoBaseData.args[i].isnull.
+			 */
+			NullableDatum *args;
+			bool	   *nulls;
+			int			nargs;
+			int			jumpnull;
+		}			agg_strict_input_check;
+
+		/* for EEOP_AGG_PLAIN_PERGROUP_NULLCHECK */
+		struct
+		{
+			int			setoff;
+			int			jumpnull;
+		}			agg_plain_pergroup_nullcheck;
+
+		/* for EEOP_AGG_PLAIN_TRANS_[INIT_][STRICT_]{BYVAL,BYREF} */
+		/* for EEOP_AGG_ORDERED_TRANS_{DATUM,TUPLE} */
+		struct
+		{
+			AggStatePerTrans pertrans;
+			ExprContext *aggcontext;
+			int			setno;
+			int			transno;
+			int			setoff;
+		}			agg_trans;
 	}			d;
 } ExprEvalStep;
 
 
-/* Non-inline data for array operations */
-typedef struct ArrayRefState
+/* Non-inline data for container operations */
+typedef struct SubscriptingRefState
 {
 	bool		isassignment;	/* is it assignment, or just fetch? */
 
-	Oid			refelemtype;	/* OID of the array element type */
-	int16		refattrlength;	/* typlen of array type */
-	int16		refelemlength;	/* typlen of the array element type */
+	Oid			refelemtype;	/* OID of the container element type */
+	int16		refattrlength;	/* typlen of container type */
+	int16		refelemlength;	/* typlen of the container element type */
 	bool		refelembyval;	/* is the element type pass-by-value? */
 	char		refelemalign;	/* typalign of the element type */
 
@@ -594,58 +674,81 @@ typedef struct ArrayRefState
 	Datum		replacevalue;
 	bool		replacenull;
 
-	/* if we have a nested assignment, ARRAYREF_OLD puts old value here */
+	/* if we have a nested assignment, SBSREF_OLD puts old value here */
 	Datum		prevvalue;
 	bool		prevnull;
-} ArrayRefState;
+} SubscriptingRefState;
 
 
+/* functions in execExpr.c */
+extern void ExprEvalPushStep(ExprState *es, const ExprEvalStep *s);
+
+/* functions in execExprInterp.c */
 extern void ExecReadyInterpretedExpr(ExprState *state);
-
 extern ExprEvalOp ExecEvalStepOp(ExprState *state, ExprEvalStep *op);
+
+extern Datum ExecInterpExprStillValid(ExprState *state, ExprContext *econtext, bool *isNull);
+extern void CheckExprStillValid(ExprState *state, ExprContext *econtext);
 
 /*
  * Non fast-path execution functions. These are externs instead of statics in
  * execExprInterp.c, because that allows them to be used by other methods of
  * expression evaluation, reducing code duplication.
  */
+extern void ExecEvalFuncExprFusage(ExprState *state, ExprEvalStep *op,
+								   ExprContext *econtext);
+extern void ExecEvalFuncExprStrictFusage(ExprState *state, ExprEvalStep *op,
+										 ExprContext *econtext);
 extern void ExecEvalParamExec(ExprState *state, ExprEvalStep *op,
-				  ExprContext *econtext);
+							  ExprContext *econtext);
 extern void ExecEvalParamExtern(ExprState *state, ExprEvalStep *op,
-					ExprContext *econtext);
+								ExprContext *econtext);
 extern void ExecEvalSQLValueFunction(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalCurrentOfExpr(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalNextValueExpr(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalRowNull(ExprState *state, ExprEvalStep *op,
-				ExprContext *econtext);
+							ExprContext *econtext);
 extern void ExecEvalRowNotNull(ExprState *state, ExprEvalStep *op,
-				   ExprContext *econtext);
+							   ExprContext *econtext);
 extern void ExecEvalArrayExpr(ExprState *state, ExprEvalStep *op);
-extern void ExecEvalArrayCoerce(ExprState *state, ExprEvalStep *op);
+extern void ExecEvalArrayCoerce(ExprState *state, ExprEvalStep *op,
+								ExprContext *econtext);
 extern void ExecEvalRow(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalMinMax(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalFieldSelect(ExprState *state, ExprEvalStep *op,
-					ExprContext *econtext);
+								ExprContext *econtext);
 extern void ExecEvalFieldStoreDeForm(ExprState *state, ExprEvalStep *op,
-						 ExprContext *econtext);
+									 ExprContext *econtext);
 extern void ExecEvalFieldStoreForm(ExprState *state, ExprEvalStep *op,
-					   ExprContext *econtext);
-extern bool ExecEvalArrayRefSubscript(ExprState *state, ExprEvalStep *op);
-extern void ExecEvalArrayRefFetch(ExprState *state, ExprEvalStep *op);
-extern void ExecEvalArrayRefOld(ExprState *state, ExprEvalStep *op);
-extern void ExecEvalArrayRefAssign(ExprState *state, ExprEvalStep *op);
+								   ExprContext *econtext);
+extern bool ExecEvalSubscriptingRef(ExprState *state, ExprEvalStep *op);
+extern void ExecEvalSubscriptingRefFetch(ExprState *state, ExprEvalStep *op);
+extern void ExecEvalSubscriptingRefOld(ExprState *state, ExprEvalStep *op);
+extern void ExecEvalSubscriptingRefAssign(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalConvertRowtype(ExprState *state, ExprEvalStep *op,
-					   ExprContext *econtext);
+								   ExprContext *econtext);
 extern void ExecEvalScalarArrayOp(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalConstraintNotNull(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalConstraintCheck(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalXmlExpr(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalGroupingFunc(ExprState *state, ExprEvalStep *op);
 extern void ExecEvalSubPlan(ExprState *state, ExprEvalStep *op,
-				ExprContext *econtext);
+							ExprContext *econtext);
 extern void ExecEvalAlternativeSubPlan(ExprState *state, ExprEvalStep *op,
-						   ExprContext *econtext);
+									   ExprContext *econtext);
 extern void ExecEvalWholeRowVar(ExprState *state, ExprEvalStep *op,
-					ExprContext *econtext);
+								ExprContext *econtext);
+extern void ExecEvalSysVar(ExprState *state, ExprEvalStep *op,
+						   ExprContext *econtext, TupleTableSlot *slot);
+
+extern void ExecAggInitGroup(AggState *aggstate, AggStatePerTrans pertrans, AggStatePerGroup pergroup,
+							 ExprContext *aggcontext);
+extern Datum ExecAggTransReparent(AggState *aggstate, AggStatePerTrans pertrans,
+								  Datum newValue, bool newValueIsNull,
+								  Datum oldValue, bool oldValueIsNull);
+extern void ExecEvalAggOrderedTransDatum(ExprState *state, ExprEvalStep *op,
+										 ExprContext *econtext);
+extern void ExecEvalAggOrderedTransTuple(ExprState *state, ExprEvalStep *op,
+										 ExprContext *econtext);
 
 #endif							/* EXEC_EXPR_H */

@@ -3,7 +3,7 @@
  * amvalidate.c
  *	  Support routines for index access methods' amvalidate functions.
  *
- * Copyright (c) 2016-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2016-2020, PostgreSQL Global Development Group
  *
  *
  * IDENTIFICATION
@@ -21,6 +21,7 @@
 #include "catalog/pg_opclass.h"
 #include "catalog/pg_operator.h"
 #include "catalog/pg_proc.h"
+#include "catalog/pg_type.h"
 #include "parser/parse_coerce.h"
 #include "utils/syscache.h"
 
@@ -140,9 +141,9 @@ identify_opfamily_groups(CatCList *oprlist, CatCList *proclist)
 
 /*
  * Validate the signature (argument and result types) of an opclass support
- * function.  Return TRUE if OK, FALSE if not.
+ * function.  Return true if OK, false if not.
  *
- * The "..." represents maxargs argument-type OIDs.  If "exact" is TRUE, they
+ * The "..." represents maxargs argument-type OIDs.  If "exact" is true, they
  * must match the function arg types exactly, else only binary-coercibly.
  * In any case the function result type must match restype exactly.
  */
@@ -183,8 +184,18 @@ check_amproc_signature(Oid funcid, Oid restype, bool exact,
 }
 
 /*
+ * Validate the signature of an opclass options support function, that should
+ * be 'void(internal)'.
+ */
+bool
+check_amoptsproc_signature(Oid funcid)
+{
+	return check_amproc_signature(funcid, VOIDOID, true, 1, 1, INTERNALOID);
+}
+
+/*
  * Validate the signature (argument and result types) of an opclass operator.
- * Return TRUE if OK, FALSE if not.
+ * Return true if OK, false if not.
  *
  * Currently, we can hard-wire this as accepting only binary operators.  Also,
  * we can insist on exact type matches, since the given lefttype/righttype

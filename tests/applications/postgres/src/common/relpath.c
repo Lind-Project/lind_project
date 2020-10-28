@@ -4,7 +4,7 @@
  *
  * This module also contains some logic associated with fork names.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -18,8 +18,7 @@
 #include "postgres_fe.h"
 #endif
 
-#include "catalog/catalog.h"
-#include "catalog/pg_tablespace.h"
+#include "catalog/pg_tablespace_d.h"
 #include "common/relpath.h"
 #include "storage/backendid.h"
 
@@ -37,6 +36,9 @@ const char *const forkNames[] = {
 	"vm",						/* VISIBILITYMAP_FORKNUM */
 	"init"						/* INIT_FORKNUM */
 };
+
+StaticAssertDecl(lengthof(forkNames) == (MAX_FORKNUM + 1),
+				 "array length mismatch");
 
 /*
  * forkname_to_number - look up fork number by name

@@ -2,7 +2,7 @@
  * hashfuncs.c
  *		Functions to investigate the content of HASH indexes
  *
- * Copyright (c) 2017, PostgreSQL Global Development Group
+ * Copyright (c) 2017-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *		contrib/pageinspect/hashfuncs.c
@@ -10,15 +10,16 @@
 
 #include "postgres.h"
 
-#include "pageinspect.h"
-
 #include "access/hash.h"
 #include "access/htup_details.h"
-#include "catalog/pg_type.h"
 #include "catalog/pg_am.h"
+#include "catalog/pg_type.h"
 #include "funcapi.h"
 #include "miscadmin.h"
+#include "pageinspect.h"
+#include "utils/array.h"
 #include "utils/builtins.h"
+#include "utils/rel.h"
 
 PG_FUNCTION_INFO_V1(hash_page_type);
 PG_FUNCTION_INFO_V1(hash_page_stats);
@@ -96,18 +97,22 @@ verify_hash_page(bytea *raw_page, int flags)
 				ereport(ERROR,
 						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 						 errmsg("page is not a hash meta page")));
+				break;
 			case LH_BUCKET_PAGE | LH_OVERFLOW_PAGE:
 				ereport(ERROR,
 						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 						 errmsg("page is not a hash bucket or overflow page")));
+				break;
 			case LH_OVERFLOW_PAGE:
 				ereport(ERROR,
 						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 						 errmsg("page is not a hash overflow page")));
+				break;
 			default:
 				elog(ERROR,
 					 "hash page of type %08x not in mask %08x",
 					 pagetype, flags);
+				break;
 		}
 	}
 
@@ -190,7 +195,7 @@ hash_page_type(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use raw page functions"))));
+				 errmsg("must be superuser to use raw page functions")));
 
 	page = verify_hash_page(raw_page, 0);
 
@@ -238,7 +243,7 @@ hash_page_stats(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use raw page functions"))));
+				 errmsg("must be superuser to use raw page functions")));
 
 	page = verify_hash_page(raw_page, LH_BUCKET_PAGE | LH_OVERFLOW_PAGE);
 
@@ -305,7 +310,7 @@ hash_page_items(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use raw page functions"))));
+				 errmsg("must be superuser to use raw page functions")));
 
 	if (SRF_IS_FIRSTCALL())
 	{
@@ -369,11 +374,8 @@ hash_page_items(PG_FUNCTION_ARGS)
 
 		SRF_RETURN_NEXT(fctx, result);
 	}
-	else
-	{
-		pfree(uargs);
-		SRF_RETURN_DONE(fctx);
-	}
+
+	SRF_RETURN_DONE(fctx);
 }
 
 /* ------------------------------------------------
@@ -410,7 +412,7 @@ hash_bitmap_info(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use raw page functions"))));
+				 errmsg("must be superuser to use raw page functions")));
 
 	indexRel = index_open(indexRelid, AccessShareLock);
 
@@ -521,7 +523,7 @@ hash_metapage_info(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use raw page functions"))));
+				 errmsg("must be superuser to use raw page functions")));
 
 	page = verify_hash_page(raw_page, LH_META_PAGE);
 
@@ -555,14 +557,18 @@ hash_metapage_info(PG_FUNCTION_ARGS)
 	values[j++] = PointerGetDatum(construct_array(spares,
 												  HASH_MAX_SPLITPOINTS,
 												  INT8OID,
-												  8, FLOAT8PASSBYVAL, 'd'));
+												  sizeof(int64),
+												  FLOAT8PASSBYVAL,
+												  TYPALIGN_DOUBLE));
 
 	for (i = 0; i < HASH_MAX_BITMAPS; i++)
 		mapp[i] = Int64GetDatum((int64) metad->hashm_mapp[i]);
 	values[j++] = PointerGetDatum(construct_array(mapp,
 												  HASH_MAX_BITMAPS,
 												  INT8OID,
-												  8, FLOAT8PASSBYVAL, 'd'));
+												  sizeof(int64),
+												  FLOAT8PASSBYVAL,
+												  TYPALIGN_DOUBLE));
 
 	tuple = heap_form_tuple(tupleDesc, values, nulls);
 

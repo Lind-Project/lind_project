@@ -2,23 +2,21 @@
  * logical.h
  *	   PostgreSQL logical decoding coordination
  *
- * Copyright (c) 2012-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2012-2020, PostgreSQL Global Development Group
  *
  *-------------------------------------------------------------------------
  */
 #ifndef LOGICAL_H
 #define LOGICAL_H
 
-#include "replication/slot.h"
-
 #include "access/xlog.h"
 #include "access/xlogreader.h"
 #include "replication/output_plugin.h"
+#include "replication/slot.h"
 
 struct LogicalDecodingContext;
 
-typedef void (*LogicalOutputPluginWriterWrite) (
-												struct LogicalDecodingContext *lr,
+typedef void (*LogicalOutputPluginWriterWrite) (struct LogicalDecodingContext *lr,
 												XLogRecPtr Ptr,
 												TransactionId xid,
 												bool last_write
@@ -26,8 +24,7 @@ typedef void (*LogicalOutputPluginWriterWrite) (
 
 typedef LogicalOutputPluginWriterWrite LogicalOutputPluginWriterPrepareWrite;
 
-typedef void (*LogicalOutputPluginWriterUpdateProgress) (
-														 struct LogicalDecodingContext *lr,
+typedef void (*LogicalOutputPluginWriterUpdateProgress) (struct LogicalDecodingContext *lr,
 														 XLogRecPtr Ptr,
 														 TransactionId xid
 );
@@ -44,6 +41,13 @@ typedef struct LogicalDecodingContext
 	XLogReaderState *reader;
 	struct ReorderBuffer *reorder;
 	struct SnapBuild *snapshot_builder;
+
+	/*
+	 * Marks the logical decoding context as fast forward decoding one. Such a
+	 * context does not have plugin loaded so most of the following properties
+	 * are unused.
+	 */
+	bool		fast_forward;
 
 	OutputPluginCallbacks callbacks;
 	OutputPluginOptions options;
@@ -88,26 +92,27 @@ typedef struct LogicalDecodingContext
 extern void CheckLogicalDecodingRequirements(void);
 
 extern LogicalDecodingContext *CreateInitDecodingContext(char *plugin,
-						  List *output_plugin_options,
-						  bool need_full_snapshot,
-						  XLogPageReadCB read_page,
-						  LogicalOutputPluginWriterPrepareWrite prepare_write,
-						  LogicalOutputPluginWriterWrite do_write,
-						  LogicalOutputPluginWriterUpdateProgress update_progress);
-extern LogicalDecodingContext *CreateDecodingContext(
-					  XLogRecPtr start_lsn,
-					  List *output_plugin_options,
-					  XLogPageReadCB read_page,
-					  LogicalOutputPluginWriterPrepareWrite prepare_write,
-					  LogicalOutputPluginWriterWrite do_write,
-					  LogicalOutputPluginWriterUpdateProgress update_progress);
+														 List *output_plugin_options,
+														 bool need_full_snapshot,
+														 XLogRecPtr restart_lsn,
+														 XLogReaderRoutine *xl_routine,
+														 LogicalOutputPluginWriterPrepareWrite prepare_write,
+														 LogicalOutputPluginWriterWrite do_write,
+														 LogicalOutputPluginWriterUpdateProgress update_progress);
+extern LogicalDecodingContext *CreateDecodingContext(XLogRecPtr start_lsn,
+													 List *output_plugin_options,
+													 bool fast_forward,
+													 XLogReaderRoutine *xl_routine,
+													 LogicalOutputPluginWriterPrepareWrite prepare_write,
+													 LogicalOutputPluginWriterWrite do_write,
+													 LogicalOutputPluginWriterUpdateProgress update_progress);
 extern void DecodingContextFindStartpoint(LogicalDecodingContext *ctx);
 extern bool DecodingContextReady(LogicalDecodingContext *ctx);
 extern void FreeDecodingContext(LogicalDecodingContext *ctx);
 
 extern void LogicalIncreaseXminForSlot(XLogRecPtr lsn, TransactionId xmin);
 extern void LogicalIncreaseRestartDecodingForSlot(XLogRecPtr current_lsn,
-									  XLogRecPtr restart_lsn);
+												  XLogRecPtr restart_lsn);
 extern void LogicalConfirmReceivedLocation(XLogRecPtr lsn);
 
 extern bool filter_by_origin_cb_wrapper(LogicalDecodingContext *ctx, RepOriginId origin_id);

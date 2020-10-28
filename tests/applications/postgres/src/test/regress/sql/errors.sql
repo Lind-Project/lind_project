@@ -91,7 +91,7 @@ alter table emp rename column nonesuchatt to newnonesuchatt;
 alter table emp rename column salary to manager;
 
 -- conflict
-alter table emp rename column salary to oid;
+alter table emp rename column salary to ctid;
 
 
 --
@@ -366,8 +366,10 @@ NOT
 NULL);
 
 -- Check that stack depth detection mechanism works and
--- max_stack_depth is not set too high
+-- max_stack_depth is not set too high.  The full error report is not
+-- very stable, so show only SQLSTATE and primary error message.
 create function infinite_recurse() returns int as
 'select infinite_recurse()' language sql;
-\set VERBOSITY terse
+\set VERBOSITY sqlstate
 select infinite_recurse();
+\echo :LAST_ERROR_MESSAGE

@@ -8,7 +8,7 @@
  * be a measurable performance gain from doing this, but that might change
  * in the future as we add more options.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -22,7 +22,7 @@
 #include "catalog/pg_tablespace.h"
 #include "commands/tablespace.h"
 #include "miscadmin.h"
-#include "optimizer/cost.h"
+#include "optimizer/optimizer.h"
 #include "storage/bufmgr.h"
 #include "utils/catcache.h"
 #include "utils/hsearch.h"
@@ -220,4 +220,18 @@ get_tablespace_io_concurrency(Oid spcid)
 		return effective_io_concurrency;
 	else
 		return spc->opts->effective_io_concurrency;
+}
+
+/*
+ * get_tablespace_maintenance_io_concurrency
+ */
+int
+get_tablespace_maintenance_io_concurrency(Oid spcid)
+{
+	TableSpaceCacheEntry *spc = get_tablespace(spcid);
+
+	if (!spc->opts || spc->opts->maintenance_io_concurrency < 0)
+		return maintenance_io_concurrency;
+	else
+		return spc->opts->maintenance_io_concurrency;
 }

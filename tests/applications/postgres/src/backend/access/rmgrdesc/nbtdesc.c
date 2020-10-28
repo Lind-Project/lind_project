@@ -3,7 +3,7 @@
  * nbtdesc.c
  *	  rmgr descriptor routines for access/nbtree/nbtxlog.c
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -27,6 +27,7 @@ btree_desc(StringInfo buf, XLogReaderState *record)
 		case XLOG_BTREE_INSERT_LEAF:
 		case XLOG_BTREE_INSERT_UPPER:
 		case XLOG_BTREE_INSERT_META:
+		case XLOG_BTREE_INSERT_POST:
 			{
 				xl_btree_insert *xlrec = (xl_btree_insert *) rec;
 
@@ -35,28 +36,35 @@ btree_desc(StringInfo buf, XLogReaderState *record)
 			}
 		case XLOG_BTREE_SPLIT_L:
 		case XLOG_BTREE_SPLIT_R:
-		case XLOG_BTREE_SPLIT_L_ROOT:
-		case XLOG_BTREE_SPLIT_R_ROOT:
 			{
 				xl_btree_split *xlrec = (xl_btree_split *) rec;
 
-				appendStringInfo(buf, "level %u, firstright %d, newitemoff %d",
-								 xlrec->level, xlrec->firstright, xlrec->newitemoff);
+				appendStringInfo(buf, "level %u, firstrightoff %d, newitemoff %d, postingoff %d",
+								 xlrec->level, xlrec->firstrightoff,
+								 xlrec->newitemoff, xlrec->postingoff);
+				break;
+			}
+		case XLOG_BTREE_DEDUP:
+			{
+				xl_btree_dedup *xlrec = (xl_btree_dedup *) rec;
+
+				appendStringInfo(buf, "nintervals %u", xlrec->nintervals);
 				break;
 			}
 		case XLOG_BTREE_VACUUM:
 			{
 				xl_btree_vacuum *xlrec = (xl_btree_vacuum *) rec;
 
-				appendStringInfo(buf, "lastBlockVacuumed %u",
-								 xlrec->lastBlockVacuumed);
+				appendStringInfo(buf, "ndeleted %u; nupdated %u",
+								 xlrec->ndeleted, xlrec->nupdated);
 				break;
 			}
 		case XLOG_BTREE_DELETE:
 			{
 				xl_btree_delete *xlrec = (xl_btree_delete *) rec;
 
-				appendStringInfo(buf, "%d items", xlrec->nitems);
+				appendStringInfo(buf, "latestRemovedXid %u; ndeleted %u",
+								 xlrec->latestRemovedXid, xlrec->ndeleted);
 				break;
 			}
 		case XLOG_BTREE_MARK_PAGE_HALFDEAD:
@@ -96,6 +104,17 @@ btree_desc(StringInfo buf, XLogReaderState *record)
 								 xlrec->node.relNode, xlrec->latestRemovedXid);
 				break;
 			}
+		case XLOG_BTREE_META_CLEANUP:
+			{
+				xl_btree_metadata *xlrec;
+
+				xlrec = (xl_btree_metadata *) XLogRecGetBlockData(record, 0,
+																  NULL);
+				appendStringInfo(buf, "oldest_btpo_xact %u; last_cleanup_num_heap_tuples: %f",
+								 xlrec->oldest_btpo_xact,
+								 xlrec->last_cleanup_num_heap_tuples);
+				break;
+			}
 	}
 }
 
@@ -121,11 +140,11 @@ btree_identify(uint8 info)
 		case XLOG_BTREE_SPLIT_R:
 			id = "SPLIT_R";
 			break;
-		case XLOG_BTREE_SPLIT_L_ROOT:
-			id = "SPLIT_L_ROOT";
+		case XLOG_BTREE_INSERT_POST:
+			id = "INSERT_POST";
 			break;
-		case XLOG_BTREE_SPLIT_R_ROOT:
-			id = "SPLIT_R_ROOT";
+		case XLOG_BTREE_DEDUP:
+			id = "DEDUP";
 			break;
 		case XLOG_BTREE_VACUUM:
 			id = "VACUUM";
@@ -147,6 +166,9 @@ btree_identify(uint8 info)
 			break;
 		case XLOG_BTREE_REUSE_PAGE:
 			id = "REUSE_PAGE";
+			break;
+		case XLOG_BTREE_META_CLEANUP:
+			id = "META_CLEANUP";
 			break;
 	}
 

@@ -1,16 +1,16 @@
 # LANGUAGE message translation file for pg_upgrade
 # Copyright (C) 2017 PostgreSQL Global Development Group
 # This file is distributed under the same license as the PostgreSQL package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
-# Abdullah GÜLNER <agulner@gmail.com>, 2017, 2018, 2019.
+# Abdullah GÜLNER <agulner@gmail.com>, 2017, 2018.
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: pg_upgrade (PostgreSQL) 10\n"
 "Report-Msgid-Bugs-To: pgsql-bugs@postgresql.org\n"
-"POT-Creation-Date: 2019-03-27 09:25+0000\n"
-"PO-Revision-Date: 2019-03-28 11:16+0300\n"
-"Last-Translator: Abdullah GÜLNER\n"
-"Language-Team: Turkish <ceviri@postgresql.org.tr>\n"
+"POT-Creation-Date: 2019-04-02 07:45+0000\n"
+"PO-Revision-Date: 2019-04-03 14:47+0300\n"
+"Last-Translator: Abdullah Gülner\n"
+"Language-Team: \n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -23,7 +23,7 @@ msgid ""
 "Performing Consistency Checks on Old Live Server\n"
 "------------------------------------------------\n"
 msgstr ""
-"Eski Canlı Sunucuda Tutarlılık Testleri Gerçekleştiriliyor\n"
+"Eski Canlı Sunucuda Tutarlılık Testleri Gerçekleştirliyor\n"
 "------------------------------------------------\n"
 
 #: check.c:72
@@ -166,7 +166,7 @@ msgstr "Yeni cluster veritabanı \"%s\" boş değil\n"
 #: check.c:432
 #, c-format
 msgid "Creating script to analyze new cluster"
-msgstr "Yeni kümeyi (cluster) analiz etmek için betik (script) oluşturuluyor"
+msgstr "Yeni kümeyi (cluster) analiz etmek için betik (script) oluşturuluyor "
 
 #: check.c:446 check.c:574 check.c:838 check.c:949 check.c:1040 function.c:253
 #: option.c:480 version.c:57 version.c:156 version.c:257 version.c:339
@@ -200,7 +200,7 @@ msgstr ""
 #: check.c:571
 #, c-format
 msgid "Creating script to delete old cluster"
-msgstr "Eski kümeyi (cluster) silmek için betik (script) oluşturuluyor"
+msgstr "Eski kümeyi (cluster) silmek için betik (script) oluşturuluyor."
 
 #: check.c:650
 #, c-format
@@ -367,7 +367,7 @@ msgstr "%s kullanılarak kontrol verisi alınamadı: %s\n"
 #: controldata.c:139
 #, c-format
 msgid "%d: database cluster state problem\n"
-msgstr "%d: veritabanı kümesinin (cluster) durumu ile ilgili sorun\n"
+msgstr "%d: veritabanı kümesini durumu ile ilgili sorun\n"
 
 #: controldata.c:156
 #, c-format
@@ -382,12 +382,12 @@ msgstr "Hedef küme kurtarma (recovery) modunda iken kapatıldı. Yükseltmek i�
 #: controldata.c:163
 #, c-format
 msgid "The source cluster was not shut down cleanly.\n"
-msgstr "Kaynak küme (cluster) düzgün bir şekilde kapatılmamış.\n"
+msgstr "Kaynak küme düzgün bir şekilde kapatılmamış.\n"
 
 #: controldata.c:165
 #, c-format
 msgid "The target cluster was not shut down cleanly.\n"
-msgstr "Hedef küme (cluster) düzgün bir şekilde kapatılmamış.\n"
+msgstr "Hedef küme düzgün bir şekilde kapatılmamış.\n"
 
 #: controldata.c:176
 #, c-format
@@ -399,7 +399,8 @@ msgstr "Kaynak kümede (cluster) küme durumu bilgisi eksik:\n"
 msgid "The target cluster lacks cluster state information:\n"
 msgstr "Hedef kümede (cluster) küme durumu bilgisi eksik:\n"
 
-#: controldata.c:208 dump.c:51 pg_upgrade.c:330 relfilenode.c:244 util.c:80
+#: controldata.c:208 dump.c:51 pg_upgrade.c:333 pg_upgrade.c:370
+#: relfilenode.c:244 util.c:80
 #, c-format
 msgid "%s"
 msgstr "%s"
@@ -634,7 +635,7 @@ msgstr "Veritabanı şemalarının dökümü (dump) oluşturuluyor\n"
 #: exec.c:44
 #, c-format
 msgid "could not get pg_ctl version data using %s: %s\n"
-msgstr "%s kullanılarak pg_ctl sürüm verisi alınamadı:%s\n"
+msgstr "%s kullanılarak pg_ctl sürüm verisi alınamadı: %s\n"
 
 #: exec.c:50
 #, c-format
@@ -651,12 +652,12 @@ msgstr "çok uzun komut\n"
 msgid "%s\n"
 msgstr "%s\n"
 
-#: exec.c:148 exec.c:202 option.c:101 option.c:217
+#: exec.c:149 exec.c:204 option.c:101 option.c:217
 #, c-format
 msgid "could not write to log file \"%s\"\n"
 msgstr "\"%s\" günlük (log) dosyasına yazılamadı\n"
 
-#: exec.c:177
+#: exec.c:178
 #, c-format
 msgid ""
 "\n"
@@ -665,12 +666,12 @@ msgstr ""
 "\n"
 "*hata*"
 
-#: exec.c:180
+#: exec.c:181
 #, c-format
 msgid "There were problems executing \"%s\"\n"
 msgstr "\"%s\"nin çalıştırılmasında sorunlar oluştu\n"
 
-#: exec.c:183
+#: exec.c:184
 #, c-format
 msgid ""
 "Consult the last few lines of \"%s\" or \"%s\" for\n"
@@ -679,7 +680,7 @@ msgstr ""
 "Hatanın muhtemel sebebi için \"%s\" veya \n"
 "\"%s\"nin son bir kaç satırına bakınız.\n"
 
-#: exec.c:188
+#: exec.c:189
 #, c-format
 msgid ""
 "Consult the last few lines of \"%s\" for\n"
@@ -688,84 +689,84 @@ msgstr ""
 "Hatanın muhtemel sebebi için \"%s\" nin\n"
 "son bir kaç satırına bakınız.\n"
 
-#: exec.c:228
+#: exec.c:230
 #, c-format
 msgid "could not open file \"%s\" for reading: %s\n"
 msgstr "\"%s\" dosyası okuma için açılamadı: %s\n"
 
-#: exec.c:255
+#: exec.c:257
 #, c-format
 msgid "You must have read and write access in the current directory.\n"
 msgstr "Geçerli dizinde okuma ve yazma erişiminiz olmalı.\n"
 
-#: exec.c:308 exec.c:370 exec.c:425
+#: exec.c:310 exec.c:372 exec.c:427
 #, c-format
 msgid "check for \"%s\" failed: %s\n"
 msgstr "\"%s\" kontrolü aksadı: %s\n"
 
-#: exec.c:311 exec.c:373
+#: exec.c:313 exec.c:375
 #, c-format
 msgid "\"%s\" is not a directory\n"
 msgstr "\"%s\" bir dizin değil\n"
 
-#: exec.c:428
+#: exec.c:430
 #, c-format
 msgid "check for \"%s\" failed: not a regular file\n"
 msgstr ""
 "\"%s\" kontrolü hata verdi: normal bir dosya değil\n"
 " \n"
 
-#: exec.c:440
+#: exec.c:442
 #, c-format
 msgid "check for \"%s\" failed: cannot read file (permission denied)\n"
 msgstr "\"%s\" kontrolü hata verdi: dosya okunamıyor (izin yok)\n"
 
-#: exec.c:448
+#: exec.c:450
 #, c-format
 msgid "check for \"%s\" failed: cannot execute (permission denied)\n"
 msgstr "\"%s\" kontrolü hata verdi: çalıştırılamıyor (izin yok)\n"
 
-#: file.c:43 file.c:146
+#: file.c:44 file.c:147
 #, c-format
 msgid "error while copying relation \"%s.%s\": could not open file \"%s\": %s\n"
 msgstr "\"%s.%s\" ilişkisi (relation) kopyalanırken hata oluştu: \"%s\" dosyası açılamadı: %s\n"
 
-#: file.c:48 file.c:155
+#: file.c:49 file.c:156
 #, c-format
 msgid "error while copying relation \"%s.%s\": could not create file \"%s\": %s\n"
 msgstr "\"%s.%s\" ilişkisi (relation) kopyalanırken hata oluştu: \"%s\" dosyası oluşturulamadı: %s\n"
 
-#: file.c:62 file.c:179
+#: file.c:63 file.c:180
 #, c-format
 msgid "error while copying relation \"%s.%s\": could not read file \"%s\": %s\n"
 msgstr "\"%s.%s\" ilişkisi (relation) kopyalanırken hata oluştu: \"%s\" dosyası okunamadı: %s\n"
 
-#: file.c:74 file.c:257
+#: file.c:75 file.c:258
 #, c-format
 msgid "error while copying relation \"%s.%s\": could not write file \"%s\": %s\n"
 msgstr "\"%s.%s\" ilişkisi (relation) kopyalanırken hata oluştu: \"%s\" dosyasına yazılamadı: %s\n"
 
-#: file.c:88
+#: file.c:89
 #, c-format
 msgid "error while copying relation \"%s.%s\" (\"%s\" to \"%s\"): %s\n"
 msgstr "\"%s.%s\" ilişkisi (relation) kopyalanırken hata oluştu (\"%s\" \"%s\"ye): %s\n"
 
-#: file.c:107
+#: file.c:108
 #, c-format
 msgid "error while creating link for relation \"%s.%s\" (\"%s\" to \"%s\"): %s\n"
 msgstr "\"%s.%s\" ilişkisi için bağlantı oluşturulurken hata oluştu (\"%s\" \"%s\"ye): %s\n"
 
-#: file.c:150
+#: file.c:151
 #, c-format
 msgid "error while copying relation \"%s.%s\": could not stat file \"%s\": %s\n"
 msgstr "\"%s.%s\" ilişkisi (relation) kopyalanırken hata oluştu: \"%s\" dosyasının durumu görüntülenemiyor (stat) : %s\n"
 
-#: file.c:182
+#: file.c:183
 #, c-format
 msgid "error while copying relation \"%s.%s\": partial page found in file \"%s\"\n"
 msgstr "\"%s.%s\" ilişkisi (relation) kopyalanırken hata oluştu: \"%s\" dosyasında kısmi (partial) sayfa (page) bulundu\n"
 
-#: file.c:283
+#: file.c:284
 #, c-format
 msgid ""
 "could not create hard link between old and new data directories: %s\n"
@@ -955,7 +956,7 @@ msgstr "geçersiz yeni port numarası\n"
 #: option.c:202
 #, c-format
 msgid "Running in verbose mode\n"
-msgstr "Ayrıntılı açıklamalı (verbose) kipte çalışıyor\n"
+msgstr "Verbose kipte çalışıyor\n"
 
 #: option.c:207
 #, c-format
@@ -1216,7 +1217,7 @@ msgstr "%d satırı, \"%s\" dosyasından okunamadı: %s\n"
 #: option.c:506
 #, c-format
 msgid "user-supplied old port number %hu corrected to %hu\n"
-msgstr "kullanıcı tarafından sağlanan eski port numarası %hu, %hu olarak düzeltildi\n"
+msgstr "kullanıcı tarafından sağlanan eski port numarası%hu %hu olarak düzeltildi\n"
 
 #: parallel.c:128 parallel.c:241
 #, c-format
@@ -1243,7 +1244,12 @@ msgstr "alt süreç (child process) olağan dışı olarak sonlandı: durum %d\n
 msgid "child worker exited abnormally: %s\n"
 msgstr "Alt işçi (child worker) olağan dışı olarak sonlandı: %s\n"
 
-#: pg_upgrade.c:112
+#: pg_upgrade.c:106
+#, c-format
+msgid "could not read permissions of directory \"%s\": %s\n"
+msgstr "\"%s\" dizininin erişim hakları okunamıyor: %s\n"
+
+#: pg_upgrade.c:123
 #, c-format
 msgid ""
 "\n"
@@ -1254,17 +1260,17 @@ msgstr ""
 "Yükseltme (upgrade) gerçekleştiriliyor\n"
 "----------------------------------\n"
 
-#: pg_upgrade.c:155
+#: pg_upgrade.c:166
 #, c-format
 msgid "Setting next OID for new cluster"
 msgstr "Yeni küme (cluster) için sonraki OID belirleniyor"
 
-#: pg_upgrade.c:162
+#: pg_upgrade.c:173
 #, c-format
 msgid "Sync data directory to disk"
 msgstr "Veri dizinini diske eşzamanla (sync)"
 
-#: pg_upgrade.c:174
+#: pg_upgrade.c:185
 #, c-format
 msgid ""
 "\n"
@@ -1275,7 +1281,7 @@ msgstr ""
 "Yükseltme (upgrade) tamamlandı\n"
 "----------------------------\n"
 
-#: pg_upgrade.c:220
+#: pg_upgrade.c:231
 #, c-format
 msgid ""
 "There seems to be a postmaster servicing the old cluster.\n"
@@ -1284,7 +1290,7 @@ msgstr ""
 "Eski kümeye (cluster) hizmet veren bir postmaster var görünüyor.\n"
 "Lütfen o postmaster'ı kapatıp tekrar deneyin.\n"
 
-#: pg_upgrade.c:233
+#: pg_upgrade.c:244
 #, c-format
 msgid ""
 "There seems to be a postmaster servicing the new cluster.\n"
@@ -1293,72 +1299,72 @@ msgstr ""
 "Yeni kümeye (cluster) hizmet veren bir postmaster var görünüyor.\n"
 "Lütfen o postmaster'ı kapatıp tekrar deneyin.\n"
 
-#: pg_upgrade.c:239
+#: pg_upgrade.c:250
 #, c-format
 msgid "%s: could not find own program executable\n"
 msgstr "%s: çalıştırılabilir dosya bulunamadı\n"
 
-#: pg_upgrade.c:256
+#: pg_upgrade.c:267
 #, c-format
 msgid "Analyzing all rows in the new cluster"
 msgstr "Yeni cluster daki tüm satırlar (row) analiz ediliyor."
 
-#: pg_upgrade.c:269
+#: pg_upgrade.c:280
 #, c-format
 msgid "Freezing all rows in the new cluster"
 msgstr "Yeni cluster daki tüm satırlar donduruluyor."
 
-#: pg_upgrade.c:289
+#: pg_upgrade.c:300
 #, c-format
 msgid "Restoring global objects in the new cluster"
 msgstr "Yeni kümede (cluster) global objeler geri yükleniyor (restore)"
 
-#: pg_upgrade.c:313
+#: pg_upgrade.c:315
 #, c-format
 msgid "Restoring database schemas in the new cluster\n"
 msgstr "Yeni kümede (cluster) veritabanı şemaları geri yükleniyor\n"
 
-#: pg_upgrade.c:375
+#: pg_upgrade.c:421
 #, c-format
 msgid "Deleting files from new %s"
 msgstr "yeni %s deki dosyalar siliniyor"
 
-#: pg_upgrade.c:379
+#: pg_upgrade.c:425
 #, c-format
 msgid "could not delete directory \"%s\"\n"
 msgstr "%s dizini silinemedi\n"
 
-#: pg_upgrade.c:398
+#: pg_upgrade.c:444
 #, c-format
 msgid "Copying old %s to new server"
 msgstr "Eski %s yeni sunucuya kopyalanıyor"
 
-#: pg_upgrade.c:425
+#: pg_upgrade.c:471
 #, c-format
 msgid "Setting next transaction ID and epoch for new cluster"
 msgstr "Yeni küme (cluster) için sonraki işlem (transaction) ID ve dönem değeri belirleniyor."
 
-#: pg_upgrade.c:455
+#: pg_upgrade.c:501
 #, c-format
 msgid "Setting next multixact ID and offset for new cluster"
 msgstr "Yeni kümede (cluster) sonraki multixact ID değeri ve göreli konum değeri (offset) belirleniyor"
 
-#: pg_upgrade.c:479
+#: pg_upgrade.c:525
 #, c-format
 msgid "Setting oldest multixact ID in new cluster"
 msgstr "Yeni kümede (cluster) en eski multixact ID değeri belirleniyor"
 
-#: pg_upgrade.c:499
+#: pg_upgrade.c:545
 #, c-format
 msgid "Resetting WAL archives"
 msgstr "WAL arşivleri sıfırlanıyor (reset)"
 
-#: pg_upgrade.c:542
+#: pg_upgrade.c:588
 #, c-format
 msgid "Setting frozenxid and minmxid counters in new cluster"
 msgstr "Yeni kümede (cluster) frozenxid ve minmxid sayaçları belirleniyor"
 
-#: pg_upgrade.c:544
+#: pg_upgrade.c:590
 #, c-format
 msgid "Setting minmxid counter in new cluster"
 msgstr "Yeni kümede (cluster) minmxid sayacı belirleniyor"
@@ -1479,7 +1485,7 @@ msgstr "bellek yetersiz\n"
 #: server.c:378
 #, c-format
 msgid "libpq environment variable %s has a non-local server value: %s\n"
-msgstr "%s libpq ortam değişkeni yerel olmayan bir sunucu değerine sahip: %s\n"
+msgstr "%s libpq ortam değişkeni yerel olmayan (non-local) bir sunucu değerine sahip: %s\n"
 
 #: tablespace.c:28
 #, c-format
@@ -1503,7 +1509,7 @@ msgstr "\"%s\" tablesapace dizininin durumu görüntülenemedi (stat): %s\n"
 #: tablespace.c:96
 #, c-format
 msgid "tablespace path \"%s\" is not a directory\n"
-msgstr "tablespace için verile \"%s\" yolu bir dizin değil\n"
+msgstr "tablespace için verilen \"%s\" yolu bir dizin değil\n"
 
 #: util.c:50
 #, c-format

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>33.16. The Connection Service File</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="prev" href="libpq-pgpass.html" title="33.15. The Password File" /><link rel="next" href="libpq-ldap.html" title="33.17. LDAP Lookup of Connection Parameters" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">33.16. The Connection Service File</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="libpq-pgpass.html" title="33.15. The Password File">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="libpq.html" title="Chapter 33. libpq — C Library">Up</a></td><th width="60%" align="center">Chapter 33. <span xmlns="http://www.w3.org/1999/xhtml" class="application">libpq</span> — C Library</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="libpq-ldap.html" title="33.17. LDAP Lookup of Connection Parameters">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="LIBPQ-PGSERVICE"><div class="titlepage"><div><div><h2 class="title" style="clear: both">33.16. The Connection Service File</h2></div></div></div><a id="id-1.7.3.23.2" class="indexterm"></a><a id="id-1.7.3.23.3" class="indexterm"></a><a id="id-1.7.3.23.4" class="indexterm"></a><p>
+   The connection service file allows libpq connection parameters to be
+   associated with a single service name. That service name can then be
+   specified by a libpq connection, and the associated settings will be
+   used. This allows connection parameters to be modified without requiring
+   a recompile of the libpq application. The service name can also be
+   specified using the <code class="envar">PGSERVICE</code> environment variable.
+  </p><p>
+   The connection service file can be a per-user service file
+   at <code class="filename">~/.pg_service.conf</code> or the location
+   specified by the environment variable <code class="envar">PGSERVICEFILE</code>,
+   or it can be a system-wide file
+   at <code class="filename">`pg_config --sysconfdir`/pg_service.conf</code> or in the directory
+   specified by the environment variable
+   <code class="envar">PGSYSCONFDIR</code>.  If service definitions with the same
+   name exist in the user and the system file, the user file takes
+   precedence.
+  </p><p>
+   The file uses an <span class="quote">“<span class="quote">INI file</span>”</span> format where the section
+   name is the service name and the parameters are connection
+   parameters; see <a class="xref" href="libpq-connect.html#LIBPQ-PARAMKEYWORDS" title="33.1.2. Parameter Key Words">Section 33.1.2</a> for a list.  For
+   example:
+</p><pre class="programlisting">
+# comment
+[mydb]
+host=somehost
+port=5433
+user=admin
+</pre><p>
+   An example file is provided at
+   <code class="filename">share/pg_service.conf.sample</code>.
+  </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="libpq-pgpass.html" title="33.15. The Password File">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="libpq.html" title="Chapter 33. libpq — C Library">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="libpq-ldap.html" title="33.17. LDAP Lookup of Connection Parameters">Next</a></td></tr><tr><td width="40%" align="left" valign="top">33.15. The Password File </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 33.17. LDAP Lookup of Connection Parameters</td></tr></table></div></body></html>

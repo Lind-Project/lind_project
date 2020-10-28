@@ -3,7 +3,7 @@
  * parse_expr.c
  *	  handle expressions in parser
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -20,9 +20,9 @@
 #include "miscadmin.h"
 #include "nodes/makefuncs.h"
 #include "nodes/nodeFuncs.h"
-#include "optimizer/tlist.h"
-#include "optimizer/var.h"
+#include "optimizer/optimizer.h"
 #include "parser/analyze.h"
+#include "parser/parse_agg.h"
 #include "parser/parse_clause.h"
 #include "parser/parse_coerce.h"
 #include "parser/parse_collate.h"
@@ -32,13 +32,11 @@
 #include "parser/parse_relation.h"
 #include "parser/parse_target.h"
 #include "parser/parse_type.h"
-#include "parser/parse_agg.h"
 #include "utils/builtins.h"
 #include "utils/date.h"
 #include "utils/lsyscache.h"
 #include "utils/timestamp.h"
 #include "utils/xml.h"
-
 
 /* GUC parameters */
 bool		operator_precedence_warning = false;
@@ -105,35 +103,36 @@ static Node *transformMultiAssignRef(ParseState *pstate, MultiAssignRef *maref);
 static Node *transformCaseExpr(ParseState *pstate, CaseExpr *c);
 static Node *transformSubLink(ParseState *pstate, SubLink *sublink);
 static Node *transformArrayExpr(ParseState *pstate, A_ArrayExpr *a,
-				   Oid array_type, Oid element_type, int32 typmod);
+								Oid array_type, Oid element_type, int32 typmod);
 static Node *transformRowExpr(ParseState *pstate, RowExpr *r, bool allowDefault);
 static Node *transformCoalesceExpr(ParseState *pstate, CoalesceExpr *c);
 static Node *transformMinMaxExpr(ParseState *pstate, MinMaxExpr *m);
 static Node *transformSQLValueFunction(ParseState *pstate,
-						  SQLValueFunction *svf);
+									   SQLValueFunction *svf);
 static Node *transformXmlExpr(ParseState *pstate, XmlExpr *x);
 static Node *transformXmlSerialize(ParseState *pstate, XmlSerialize *xs);
 static Node *transformBooleanTest(ParseState *pstate, BooleanTest *b);
 static Node *transformCurrentOfExpr(ParseState *pstate, CurrentOfExpr *cexpr);
 static Node *transformColumnRef(ParseState *pstate, ColumnRef *cref);
-static Node *transformWholeRowRef(ParseState *pstate, RangeTblEntry *rte,
-					 int location);
+static Node *transformWholeRowRef(ParseState *pstate,
+								  ParseNamespaceItem *nsitem,
+								  int sublevels_up, int location);
 static Node *transformIndirection(ParseState *pstate, A_Indirection *ind);
 static Node *transformTypeCast(ParseState *pstate, TypeCast *tc);
 static Node *transformCollateClause(ParseState *pstate, CollateClause *c);
 static Node *make_row_comparison_op(ParseState *pstate, List *opname,
-					   List *largs, List *rargs, int location);
+									List *largs, List *rargs, int location);
 static Node *make_row_distinct_op(ParseState *pstate, List *opname,
-					 RowExpr *lrow, RowExpr *rrow, int location);
+								  RowExpr *lrow, RowExpr *rrow, int location);
 static Expr *make_distinct_op(ParseState *pstate, List *opname,
-				 Node *ltree, Node *rtree, int location);
+							  Node *ltree, Node *rtree, int location);
 static Node *make_nulltest_from_distinct(ParseState *pstate,
-							A_Expr *distincta, Node *arg);
+										 A_Expr *distincta, Node *arg);
 static int	operator_precedence_group(Node *node, const char **nodename);
 static void emit_precedence_warnings(ParseState *pstate,
-						 int opgroup, const char *opname,
-						 Node *lchild, Node *rchild,
-						 int location);
+									 int opgroup, const char *opname,
+									 Node *lchild, Node *rchild,
+									 int location);
 
 
 /*
@@ -386,7 +385,7 @@ transformExprRecurse(ParseState *pstate, Node *expr)
  * selection from an arbitrary node needs it.)
  */
 static void
-unknown_attribute(ParseState *pstate, Node *relref, char *attname,
+unknown_attribute(ParseState *pstate, Node *relref, const char *attname,
 				  int location)
 {
 	RangeTblEntry *rte;
@@ -466,13 +465,13 @@ transformIndirection(ParseState *pstate, A_Indirection *ind)
 
 			/* process subscripts before this field selection */
 			if (subscripts)
-				result = (Node *) transformArraySubscripts(pstate,
-														   result,
-														   exprType(result),
-														   InvalidOid,
-														   exprTypmod(result),
-														   subscripts,
-														   NULL);
+				result = (Node *) transformContainerSubscripts(pstate,
+															   result,
+															   exprType(result),
+															   InvalidOid,
+															   exprTypmod(result),
+															   subscripts,
+															   NULL);
 			subscripts = NIL;
 
 			newresult = ParseFuncOrColumn(pstate,
@@ -480,6 +479,7 @@ transformIndirection(ParseState *pstate, A_Indirection *ind)
 										  list_make1(result),
 										  last_srf,
 										  NULL,
+										  false,
 										  location);
 			if (newresult == NULL)
 				unknown_attribute(pstate, result, strVal(n), location);
@@ -488,13 +488,13 @@ transformIndirection(ParseState *pstate, A_Indirection *ind)
 	}
 	/* process trailing subscripts, if any */
 	if (subscripts)
-		result = (Node *) transformArraySubscripts(pstate,
-												   result,
-												   exprType(result),
-												   InvalidOid,
-												   exprTypmod(result),
-												   subscripts,
-												   NULL);
+		result = (Node *) transformContainerSubscripts(pstate,
+													   result,
+													   exprType(result),
+													   InvalidOid,
+													   exprTypmod(result),
+													   subscripts,
+													   NULL);
 
 	return result;
 }
@@ -511,7 +511,7 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 	char	   *nspname = NULL;
 	char	   *relname = NULL;
 	char	   *colname = NULL;
-	RangeTblEntry *rte;
+	ParseNamespaceItem *nsitem;
 	int			levels_up;
 	enum
 	{
@@ -520,6 +520,80 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 		CRERR_WRONG_DB,
 		CRERR_TOO_MANY
 	}			crerr = CRERR_NO_COLUMN;
+	const char *err;
+
+	/*
+	 * Check to see if the column reference is in an invalid place within the
+	 * query.  We allow column references in most places, except in default
+	 * expressions and partition bound expressions.
+	 */
+	err = NULL;
+	switch (pstate->p_expr_kind)
+	{
+		case EXPR_KIND_NONE:
+			Assert(false);		/* can't happen */
+			break;
+		case EXPR_KIND_OTHER:
+		case EXPR_KIND_JOIN_ON:
+		case EXPR_KIND_JOIN_USING:
+		case EXPR_KIND_FROM_SUBSELECT:
+		case EXPR_KIND_FROM_FUNCTION:
+		case EXPR_KIND_WHERE:
+		case EXPR_KIND_POLICY:
+		case EXPR_KIND_HAVING:
+		case EXPR_KIND_FILTER:
+		case EXPR_KIND_WINDOW_PARTITION:
+		case EXPR_KIND_WINDOW_ORDER:
+		case EXPR_KIND_WINDOW_FRAME_RANGE:
+		case EXPR_KIND_WINDOW_FRAME_ROWS:
+		case EXPR_KIND_WINDOW_FRAME_GROUPS:
+		case EXPR_KIND_SELECT_TARGET:
+		case EXPR_KIND_INSERT_TARGET:
+		case EXPR_KIND_UPDATE_SOURCE:
+		case EXPR_KIND_UPDATE_TARGET:
+		case EXPR_KIND_GROUP_BY:
+		case EXPR_KIND_ORDER_BY:
+		case EXPR_KIND_DISTINCT_ON:
+		case EXPR_KIND_LIMIT:
+		case EXPR_KIND_OFFSET:
+		case EXPR_KIND_RETURNING:
+		case EXPR_KIND_VALUES:
+		case EXPR_KIND_VALUES_SINGLE:
+		case EXPR_KIND_CHECK_CONSTRAINT:
+		case EXPR_KIND_DOMAIN_CHECK:
+		case EXPR_KIND_FUNCTION_DEFAULT:
+		case EXPR_KIND_INDEX_EXPRESSION:
+		case EXPR_KIND_INDEX_PREDICATE:
+		case EXPR_KIND_ALTER_COL_TRANSFORM:
+		case EXPR_KIND_EXECUTE_PARAMETER:
+		case EXPR_KIND_TRIGGER_WHEN:
+		case EXPR_KIND_PARTITION_EXPRESSION:
+		case EXPR_KIND_CALL_ARGUMENT:
+		case EXPR_KIND_COPY_WHERE:
+		case EXPR_KIND_GENERATED_COLUMN:
+			/* okay */
+			break;
+
+		case EXPR_KIND_COLUMN_DEFAULT:
+			err = _("cannot use column reference in DEFAULT expression");
+			break;
+		case EXPR_KIND_PARTITION_BOUND:
+			err = _("cannot use column reference in partition bound expression");
+			break;
+
+			/*
+			 * There is intentionally no default: case here, so that the
+			 * compiler will warn if we add a new ParseExprKind without
+			 * extending this switch.  If we do see an unrecognized value at
+			 * runtime, the behavior will be the same as for EXPR_KIND_OTHER,
+			 * which is sane anyway.
+			 */
+	}
+	if (err)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg_internal("%s", err),
+				 parser_errposition(pstate, cref->location)));
 
 	/*
 	 * Give the PreParseColumnRefHook, if any, first shot.  If it returns
@@ -527,7 +601,7 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 	 */
 	if (pstate->p_pre_columnref_hook != NULL)
 	{
-		node = (*pstate->p_pre_columnref_hook) (pstate, cref);
+		node = pstate->p_pre_columnref_hook(pstate, cref);
 		if (node != NULL)
 			return node;
 	}
@@ -580,11 +654,11 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 					 * PostQUEL-inspired syntax.  The preferred form now is
 					 * "rel.*".
 					 */
-					rte = refnameRangeTblEntry(pstate, NULL, colname,
-											   cref->location,
-											   &levels_up);
-					if (rte)
-						node = transformWholeRowRef(pstate, rte,
+					nsitem = refnameNamespaceItem(pstate, NULL, colname,
+												  cref->location,
+												  &levels_up);
+					if (nsitem)
+						node = transformWholeRowRef(pstate, nsitem, levels_up,
 													cref->location);
 				}
 				break;
@@ -597,11 +671,11 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 				Assert(IsA(field1, String));
 				relname = strVal(field1);
 
-				/* Locate the referenced RTE */
-				rte = refnameRangeTblEntry(pstate, nspname, relname,
-										   cref->location,
-										   &levels_up);
-				if (rte == NULL)
+				/* Locate the referenced nsitem */
+				nsitem = refnameNamespaceItem(pstate, nspname, relname,
+											  cref->location,
+											  &levels_up);
+				if (nsitem == NULL)
 				{
 					crerr = CRERR_NO_RTE;
 					break;
@@ -610,25 +684,28 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 				/* Whole-row reference? */
 				if (IsA(field2, A_Star))
 				{
-					node = transformWholeRowRef(pstate, rte, cref->location);
+					node = transformWholeRowRef(pstate, nsitem, levels_up,
+												cref->location);
 					break;
 				}
 
 				Assert(IsA(field2, String));
 				colname = strVal(field2);
 
-				/* Try to identify as a column of the RTE */
-				node = scanRTEForColumn(pstate, rte, colname, cref->location,
-										0, NULL);
+				/* Try to identify as a column of the nsitem */
+				node = scanNSItemForColumn(pstate, nsitem, levels_up, colname,
+										   cref->location);
 				if (node == NULL)
 				{
 					/* Try it as a function call on the whole row */
-					node = transformWholeRowRef(pstate, rte, cref->location);
+					node = transformWholeRowRef(pstate, nsitem, levels_up,
+												cref->location);
 					node = ParseFuncOrColumn(pstate,
 											 list_make1(makeString(colname)),
 											 list_make1(node),
 											 pstate->p_last_srf,
 											 NULL,
+											 false,
 											 cref->location);
 				}
 				break;
@@ -644,11 +721,11 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 				Assert(IsA(field2, String));
 				relname = strVal(field2);
 
-				/* Locate the referenced RTE */
-				rte = refnameRangeTblEntry(pstate, nspname, relname,
-										   cref->location,
-										   &levels_up);
-				if (rte == NULL)
+				/* Locate the referenced nsitem */
+				nsitem = refnameNamespaceItem(pstate, nspname, relname,
+											  cref->location,
+											  &levels_up);
+				if (nsitem == NULL)
 				{
 					crerr = CRERR_NO_RTE;
 					break;
@@ -657,25 +734,28 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 				/* Whole-row reference? */
 				if (IsA(field3, A_Star))
 				{
-					node = transformWholeRowRef(pstate, rte, cref->location);
+					node = transformWholeRowRef(pstate, nsitem, levels_up,
+												cref->location);
 					break;
 				}
 
 				Assert(IsA(field3, String));
 				colname = strVal(field3);
 
-				/* Try to identify as a column of the RTE */
-				node = scanRTEForColumn(pstate, rte, colname, cref->location,
-										0, NULL);
+				/* Try to identify as a column of the nsitem */
+				node = scanNSItemForColumn(pstate, nsitem, levels_up, colname,
+										   cref->location);
 				if (node == NULL)
 				{
 					/* Try it as a function call on the whole row */
-					node = transformWholeRowRef(pstate, rte, cref->location);
+					node = transformWholeRowRef(pstate, nsitem, levels_up,
+												cref->location);
 					node = ParseFuncOrColumn(pstate,
 											 list_make1(makeString(colname)),
 											 list_make1(node),
 											 pstate->p_last_srf,
 											 NULL,
+											 false,
 											 cref->location);
 				}
 				break;
@@ -704,11 +784,11 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 					break;
 				}
 
-				/* Locate the referenced RTE */
-				rte = refnameRangeTblEntry(pstate, nspname, relname,
-										   cref->location,
-										   &levels_up);
-				if (rte == NULL)
+				/* Locate the referenced nsitem */
+				nsitem = refnameNamespaceItem(pstate, nspname, relname,
+											  cref->location,
+											  &levels_up);
+				if (nsitem == NULL)
 				{
 					crerr = CRERR_NO_RTE;
 					break;
@@ -717,25 +797,28 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 				/* Whole-row reference? */
 				if (IsA(field4, A_Star))
 				{
-					node = transformWholeRowRef(pstate, rte, cref->location);
+					node = transformWholeRowRef(pstate, nsitem, levels_up,
+												cref->location);
 					break;
 				}
 
 				Assert(IsA(field4, String));
 				colname = strVal(field4);
 
-				/* Try to identify as a column of the RTE */
-				node = scanRTEForColumn(pstate, rte, colname, cref->location,
-										0, NULL);
+				/* Try to identify as a column of the nsitem */
+				node = scanNSItemForColumn(pstate, nsitem, levels_up, colname,
+										   cref->location);
 				if (node == NULL)
 				{
 					/* Try it as a function call on the whole row */
-					node = transformWholeRowRef(pstate, rte, cref->location);
+					node = transformWholeRowRef(pstate, nsitem, levels_up,
+												cref->location);
 					node = ParseFuncOrColumn(pstate,
 											 list_make1(makeString(colname)),
 											 list_make1(node),
 											 pstate->p_last_srf,
 											 NULL,
+											 false,
 											 cref->location);
 				}
 				break;
@@ -758,7 +841,7 @@ transformColumnRef(ParseState *pstate, ColumnRef *cref)
 	{
 		Node	   *hookresult;
 
-		hookresult = (*pstate->p_post_columnref_hook) (pstate, cref, node);
+		hookresult = pstate->p_post_columnref_hook(pstate, cref, node);
 		if (node == NULL)
 			node = hookresult;
 		else if (hookresult != NULL)
@@ -813,7 +896,7 @@ transformParamRef(ParseState *pstate, ParamRef *pref)
 	 * call it.  If not, or if the hook returns NULL, throw a generic error.
 	 */
 	if (pstate->p_paramref_hook != NULL)
-		result = (*pstate->p_paramref_hook) (pstate, pref);
+		result = pstate->p_paramref_hook(pstate, pref);
 	else
 		result = NULL;
 
@@ -878,7 +961,7 @@ transformAExprOp(ParseState *pstate, A_Expr *a)
 		list_length(a->name) == 1 &&
 		strcmp(strVal(linitial(a->name)), "=") == 0 &&
 		(exprIsNullConstant(lexpr) || exprIsNullConstant(rexpr)) &&
-		(!IsA(lexpr, CaseTestExpr) &&!IsA(rexpr, CaseTestExpr)))
+		(!IsA(lexpr, CaseTestExpr) && !IsA(rexpr, CaseTestExpr)))
 	{
 		NullTest   *n = makeNode(NullTest);
 
@@ -1477,6 +1560,7 @@ transformFuncCall(ParseState *pstate, FuncCall *fn)
 							 targs,
 							 last_srf,
 							 fn,
+							 false,
 							 fn->location);
 }
 
@@ -1800,6 +1884,7 @@ transformSubLink(ParseState *pstate, SubLink *sublink)
 		case EXPR_KIND_WINDOW_ORDER:
 		case EXPR_KIND_WINDOW_FRAME_RANGE:
 		case EXPR_KIND_WINDOW_FRAME_ROWS:
+		case EXPR_KIND_WINDOW_FRAME_GROUPS:
 		case EXPR_KIND_SELECT_TARGET:
 		case EXPR_KIND_INSERT_TARGET:
 		case EXPR_KIND_UPDATE_SOURCE:
@@ -1837,8 +1922,20 @@ transformSubLink(ParseState *pstate, SubLink *sublink)
 		case EXPR_KIND_TRIGGER_WHEN:
 			err = _("cannot use subquery in trigger WHEN condition");
 			break;
+		case EXPR_KIND_PARTITION_BOUND:
+			err = _("cannot use subquery in partition bound");
+			break;
 		case EXPR_KIND_PARTITION_EXPRESSION:
 			err = _("cannot use subquery in partition key expression");
+			break;
+		case EXPR_KIND_CALL_ARGUMENT:
+			err = _("cannot use subquery in CALL argument");
+			break;
+		case EXPR_KIND_COPY_WHERE:
+			err = _("cannot use subquery in COPY FROM WHERE condition");
+			break;
+		case EXPR_KIND_GENERATED_COLUMN:
+			err = _("cannot use subquery in column generation expression");
 			break;
 
 			/*
@@ -2168,7 +2265,6 @@ transformRowExpr(ParseState *pstate, RowExpr *r, bool allowDefault)
 	RowExpr    *newr;
 	char		fname[16];
 	int			fnum;
-	ListCell   *lc;
 
 	newr = makeNode(RowExpr);
 
@@ -2182,10 +2278,9 @@ transformRowExpr(ParseState *pstate, RowExpr *r, bool allowDefault)
 
 	/* ROW() has anonymous columns, so invent some field names */
 	newr->colnames = NIL;
-	fnum = 1;
-	foreach(lc, newr->args)
+	for (fnum = 1; fnum <= list_length(newr->args); fnum++)
 	{
-		snprintf(fname, sizeof(fname), "f%d", fnum++);
+		snprintf(fname, sizeof(fname), "f%d", fnum);
 		newr->colnames = lappend(newr->colnames, makeString(pstrdup(fname)));
 	}
 
@@ -2560,14 +2655,9 @@ transformBooleanTest(ParseState *pstate, BooleanTest *b)
 static Node *
 transformCurrentOfExpr(ParseState *pstate, CurrentOfExpr *cexpr)
 {
-	int			sublevels_up;
-
 	/* CURRENT OF can only appear at top level of UPDATE/DELETE */
-	Assert(pstate->p_target_rangetblentry != NULL);
-	cexpr->cvarno = RTERangeTablePosn(pstate,
-									  pstate->p_target_rangetblentry,
-									  &sublevels_up);
-	Assert(sublevels_up == 0);
+	Assert(pstate->p_target_nsitem != NULL);
+	cexpr->cvarno = pstate->p_target_nsitem->p_rtindex;
 
 	/*
 	 * Check to see if the cursor name matches a parameter of type REFCURSOR.
@@ -2585,9 +2675,9 @@ transformCurrentOfExpr(ParseState *pstate, CurrentOfExpr *cexpr)
 
 		/* See if there is a translation available from a parser hook */
 		if (pstate->p_pre_columnref_hook != NULL)
-			node = (*pstate->p_pre_columnref_hook) (pstate, cref);
+			node = pstate->p_pre_columnref_hook(pstate, cref);
 		if (node == NULL && pstate->p_post_columnref_hook != NULL)
-			node = (*pstate->p_post_columnref_hook) (pstate, cref, NULL);
+			node = pstate->p_post_columnref_hook(pstate, cref, NULL);
 
 		/*
 		 * XXX Should we throw an error if we get a translation that isn't a
@@ -2615,14 +2705,10 @@ transformCurrentOfExpr(ParseState *pstate, CurrentOfExpr *cexpr)
  * Construct a whole-row reference to represent the notation "relation.*".
  */
 static Node *
-transformWholeRowRef(ParseState *pstate, RangeTblEntry *rte, int location)
+transformWholeRowRef(ParseState *pstate, ParseNamespaceItem *nsitem,
+					 int sublevels_up, int location)
 {
 	Var		   *result;
-	int			vnum;
-	int			sublevels_up;
-
-	/* Find the RTE's rangetable location */
-	vnum = RTERangeTablePosn(pstate, rte, &sublevels_up);
 
 	/*
 	 * Build the appropriate referencing node.  Note that if the RTE is a
@@ -2632,13 +2718,14 @@ transformWholeRowRef(ParseState *pstate, RangeTblEntry *rte, int location)
 	 * historically.  One argument for it is that "rel" and "rel.*" mean the
 	 * same thing for composite relations, so why not for scalar functions...
 	 */
-	result = makeWholeRowVar(rte, vnum, sublevels_up, true);
+	result = makeWholeRowVar(nsitem->p_rte, nsitem->p_rtindex,
+							 sublevels_up, true);
 
 	/* location is not filled in by makeWholeRowVar */
 	result->location = location;
 
 	/* mark relation as requiring whole-row SELECT access */
-	markVarForSelectPriv(pstate, result, rte);
+	markVarForSelectPriv(pstate, result, nsitem->p_rte);
 
 	return (Node *) result;
 }
@@ -3422,6 +3509,8 @@ ParseExprKindName(ParseExprKind exprKind)
 			return "window RANGE";
 		case EXPR_KIND_WINDOW_FRAME_ROWS:
 			return "window ROWS";
+		case EXPR_KIND_WINDOW_FRAME_GROUPS:
+			return "window GROUPS";
 		case EXPR_KIND_SELECT_TARGET:
 			return "SELECT";
 		case EXPR_KIND_INSERT_TARGET:
@@ -3460,8 +3549,16 @@ ParseExprKindName(ParseExprKind exprKind)
 			return "EXECUTE";
 		case EXPR_KIND_TRIGGER_WHEN:
 			return "WHEN";
+		case EXPR_KIND_PARTITION_BOUND:
+			return "partition bound";
 		case EXPR_KIND_PARTITION_EXPRESSION:
 			return "PARTITION BY";
+		case EXPR_KIND_CALL_ARGUMENT:
+			return "CALL";
+		case EXPR_KIND_COPY_WHERE:
+			return "WHERE";
+		case EXPR_KIND_GENERATED_COLUMN:
+			return "GENERATED AS";
 
 			/*
 			 * There is intentionally no default: case here, so that the

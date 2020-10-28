@@ -4,7 +4,7 @@
  *		Functions for archiving WAL files and restoring from the archive.
  *
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * src/backend/access/transam/xlogarchive.c
@@ -21,6 +21,8 @@
 
 #include "access/xlog.h"
 #include "access/xlog_internal.h"
+#include "access/xlogarchive.h"
+#include "common/archive.h"
 #include "miscadmin.h"
 #include "postmaster/startup.h"
 #include "replication/walsender.h"
@@ -33,11 +35,11 @@
  * Attempt to retrieve the specified file from off-line archival storage.
  * If successful, fill "path" with its complete path (note that this will be
  * a temp file name that doesn't follow the normal naming convention), and
- * return TRUE.
+ * return true.
  *
  * If not successful, fill "path" with the name of the normal on-line file
  * (which may or may not actually exist, but we'll try to use it), and return
- * FALSE.
+ * false.
  *
  * For fixed-size files, the caller may pass the expected size as an
  * additional crosscheck on successful recovery.  If the file size is not
@@ -53,19 +55,23 @@ RestoreArchivedFile(char *path, const char *xlogfname,
 					bool cleanupEnabled)
 {
 	char		xlogpath[MAXPGPATH];
-	char		xlogRestoreCmd[MAXPGPATH];
+	char	   *xlogRestoreCmd;
 	char		lastRestartPointFname[MAXPGPATH];
-	char	   *dp;
-	char	   *endp;
-	const char *sp;
 	int			rc;
 	struct stat stat_buf;
 	XLogSegNo	restartSegNo;
 	XLogRecPtr	restartRedoPtr;
 	TimeLineID	restartTli;
 
+	/*
+	 * Ignore restore_command when not in archive recovery (meaning we are in
+	 * crash recovery).
+	 */
+	if (!ArchiveRecoveryRequested)
+		goto not_available;
+
 	/* In standby mode, restore_command might not be supplied */
-	if (recoveryRestoreCommand == NULL)
+	if (recoveryRestoreCommand == NULL || strcmp(recoveryRestoreCommand, "") == 0)
 		goto not_available;
 
 	/*
@@ -133,66 +139,22 @@ RestoreArchivedFile(char *path, const char *xlogfname,
 	if (cleanupEnabled)
 	{
 		GetOldestRestartPoint(&restartRedoPtr, &restartTli);
-		XLByteToSeg(restartRedoPtr, restartSegNo);
-		XLogFileName(lastRestartPointFname, restartTli, restartSegNo);
+		XLByteToSeg(restartRedoPtr, restartSegNo, wal_segment_size);
+		XLogFileName(lastRestartPointFname, restartTli, restartSegNo,
+					 wal_segment_size);
 		/* we shouldn't need anything earlier than last restart point */
 		Assert(strcmp(lastRestartPointFname, xlogfname) <= 0);
 	}
 	else
-		XLogFileName(lastRestartPointFname, 0, 0L);
+		XLogFileName(lastRestartPointFname, 0, 0L, wal_segment_size);
 
-	/*
-	 * construct the command to be executed
-	 */
-	dp = xlogRestoreCmd;
-	endp = xlogRestoreCmd + MAXPGPATH - 1;
-	*endp = '\0';
-
-	for (sp = recoveryRestoreCommand; *sp; sp++)
-	{
-		if (*sp == '%')
-		{
-			switch (sp[1])
-			{
-				case 'p':
-					/* %p: relative path of target file */
-					sp++;
-					StrNCpy(dp, xlogpath, endp - dp);
-					make_native_path(dp);
-					dp += strlen(dp);
-					break;
-				case 'f':
-					/* %f: filename of desired file */
-					sp++;
-					StrNCpy(dp, xlogfname, endp - dp);
-					dp += strlen(dp);
-					break;
-				case 'r':
-					/* %r: filename of last restartpoint */
-					sp++;
-					StrNCpy(dp, lastRestartPointFname, endp - dp);
-					dp += strlen(dp);
-					break;
-				case '%':
-					/* convert %% to a single % */
-					sp++;
-					if (dp < endp)
-						*dp++ = *sp;
-					break;
-				default:
-					/* otherwise treat the % as not special */
-					if (dp < endp)
-						*dp++ = *sp;
-					break;
-			}
-		}
-		else
-		{
-			if (dp < endp)
-				*dp++ = *sp;
-		}
-	}
-	*dp = '\0';
+	/* Build the restore command to execute */
+	xlogRestoreCmd = BuildRestoreCommand(recoveryRestoreCommand,
+										 xlogpath, xlogfname,
+										 lastRestartPointFname);
+	if (xlogRestoreCmd == NULL)
+		elog(ERROR, "could not build restore command \"%s\"",
+			 recoveryRestoreCommand);
 
 	ereport(DEBUG3,
 			(errmsg_internal("executing restore command \"%s\"",
@@ -209,6 +171,7 @@ RestoreArchivedFile(char *path, const char *xlogfname,
 	rc = system(xlogRestoreCmd);
 
 	PostRestoreCommand();
+	pfree(xlogRestoreCmd);
 
 	if (rc == 0)
 	{
@@ -320,7 +283,7 @@ not_available:
  * This is currently used for recovery_end_command and archive_cleanup_command.
  */
 void
-ExecuteRecoveryCommand(char *command, char *commandName, bool failOnSignal)
+ExecuteRecoveryCommand(const char *command, const char *commandName, bool failOnSignal)
 {
 	char		xlogRecoveryCmd[MAXPGPATH];
 	char		lastRestartPointFname[MAXPGPATH];
@@ -340,8 +303,9 @@ ExecuteRecoveryCommand(char *command, char *commandName, bool failOnSignal)
 	 * archive, though there is no requirement to do so.
 	 */
 	GetOldestRestartPoint(&restartRedoPtr, &restartTli);
-	XLByteToSeg(restartRedoPtr, restartSegNo);
-	XLogFileName(lastRestartPointFname, restartTli, restartSegNo);
+	XLByteToSeg(restartRedoPtr, restartSegNo, wal_segment_size);
+	XLogFileName(lastRestartPointFname, restartTli, restartSegNo,
+				 wal_segment_size);
 
 	/*
 	 * construct the command to be executed
@@ -398,7 +362,7 @@ ExecuteRecoveryCommand(char *command, char *commandName, bool failOnSignal)
 		 */
 		ereport((failOnSignal && wait_result_is_any_signal(rc, true)) ? FATAL : WARNING,
 		/*------
-		   translator: First %s represents a recovery.conf parameter name like
+		   translator: First %s represents a postgresql.conf parameter name like
 		  "recovery_end_command", the 2nd is the value of that parameter, the
 		  third an already translated error message. */
 				(errmsg("%s \"%s\": %s", commandName,
@@ -410,10 +374,10 @@ ExecuteRecoveryCommand(char *command, char *commandName, bool failOnSignal)
 /*
  * A file was restored from the archive under a temporary filename (path),
  * and now we want to keep it. Rename it under the permanent filename in
- * in pg_wal (xlogfname), replacing any existing file with the same name.
+ * pg_wal (xlogfname), replacing any existing file with the same name.
  */
 void
-KeepFileRestoredFromArchive(char *path, char *xlogfname)
+KeepFileRestoredFromArchive(const char *path, const char *xlogfname)
 {
 	char		xlogfpath[MAXPGPATH];
 	bool		reload = false;
@@ -537,7 +501,7 @@ XLogArchiveNotifySeg(XLogSegNo segno)
 {
 	char		xlog[MAXFNAMELEN];
 
-	XLogFileName(xlog, ThisTimeLineID, segno);
+	XLogFileName(xlog, ThisTimeLineID, segno, wal_segment_size);
 	XLogArchiveNotify(xlog);
 }
 

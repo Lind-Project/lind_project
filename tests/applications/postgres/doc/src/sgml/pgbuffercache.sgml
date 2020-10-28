@@ -33,104 +33,125 @@
   <title>The <structname>pg_buffercache</structname> View</title>
 
   <para>
-   The definitions of the columns exposed by the view are shown in <xref linkend="pgbuffercache-columns">.
+   The definitions of the columns exposed by the view are shown in <xref linkend="pgbuffercache-columns"/>.
   </para>
 
   <table id="pgbuffercache-columns">
-   <title><structname>pg_buffercache</> Columns</title>
-
-   <tgroup cols="4">
+   <title><structname>pg_buffercache</structname> Columns</title>
+   <tgroup cols="1">
     <thead>
      <row>
-      <entry>Name</entry>
-      <entry>Type</entry>
-      <entry>References</entry>
-      <entry>Description</entry>
+      <entry role="catalog_table_entry"><para role="column_definition">
+       Column Type
+      </para>
+      <para>
+       Description
+      </para></entry>
      </row>
     </thead>
+
     <tbody>
-
      <row>
-      <entry><structfield>bufferid</structfield></entry>
-      <entry><type>integer</type></entry>
-      <entry></entry>
-      <entry>ID, in the range 1..<varname>shared_buffers</></entry>
+      <entry role="catalog_table_entry"><para role="column_definition">
+       <structfield>bufferid</structfield> <type>integer</type>
+      </para>
+      <para>
+       ID, in the range 1..<varname>shared_buffers</varname>
+      </para></entry>
      </row>
 
      <row>
-      <entry><structfield>relfilenode</structfield></entry>
-      <entry><type>oid</type></entry>
-      <entry><literal>pg_class.relfilenode</literal></entry>
-      <entry>Filenode number of the relation</entry>
+      <entry role="catalog_table_entry"><para role="column_definition">
+       <structfield>relfilenode</structfield> <type>oid</type>
+       (references <link linkend="catalog-pg-class"><structname>pg_class</structname></link>.<structfield>relfilenode</structfield>)
+      </para>
+      <para>
+       Filenode number of the relation
+      </para></entry>
      </row>
 
      <row>
-      <entry><structfield>reltablespace</structfield></entry>
-      <entry><type>oid</type></entry>
-      <entry><literal>pg_tablespace.oid</literal></entry>
-      <entry>Tablespace OID of the relation</entry>
+      <entry role="catalog_table_entry"><para role="column_definition">
+       <structfield>reltablespace</structfield> <type>oid</type>
+       (references <link linkend="catalog-pg-tablespace"><structname>pg_tablespace</structname></link>.<structfield>oid</structfield>)
+      </para>
+      <para>
+       Tablespace OID of the relation
+      </para></entry>
      </row>
 
      <row>
-      <entry><structfield>reldatabase</structfield></entry>
-      <entry><type>oid</type></entry>
-      <entry><literal>pg_database.oid</literal></entry>
-      <entry>Database OID of the relation</entry>
+      <entry role="catalog_table_entry"><para role="column_definition">
+       <structfield>reldatabase</structfield> <type>oid</type>
+       (references <link linkend="catalog-pg-database"><structname>pg_database</structname></link>.<structfield>oid</structfield>)
+      </para>
+      <para>
+       Database OID of the relation
+      </para></entry>
      </row>
 
      <row>
-      <entry><structfield>relforknumber</structfield></entry>
-      <entry><type>smallint</type></entry>
-      <entry></entry>
-      <entry>Fork number within the relation;  see
-      <filename>include/common/relpath.h</></entry>
+      <entry role="catalog_table_entry"><para role="column_definition">
+       <structfield>relforknumber</structfield> <type>smallint</type>
+      </para>
+      <para>
+       Fork number within the relation;  see
+       <filename>include/common/relpath.h</filename>
+      </para></entry>
      </row>
 
      <row>
-      <entry><structfield>relblocknumber</structfield></entry>
-      <entry><type>bigint</type></entry>
-      <entry></entry>
-      <entry>Page number within the relation</entry>
+      <entry role="catalog_table_entry"><para role="column_definition">
+       <structfield>relblocknumber</structfield> <type>bigint</type>
+      </para>
+      <para>
+       Page number within the relation
+      </para></entry>
      </row>
 
      <row>
-      <entry><structfield>isdirty</structfield></entry>
-      <entry><type>boolean</type></entry>
-      <entry></entry>
-      <entry>Is the page dirty?</entry>
+      <entry role="catalog_table_entry"><para role="column_definition">
+       <structfield>isdirty</structfield> <type>boolean</type>
+      </para>
+      <para>
+       Is the page dirty?
+      </para></entry>
      </row>
 
      <row>
-      <entry><structfield>usagecount</structfield></entry>
-      <entry><type>smallint</type></entry>
-      <entry></entry>
-      <entry>Clock-sweep access count</entry>
+      <entry role="catalog_table_entry"><para role="column_definition">
+       <structfield>usagecount</structfield> <type>smallint</type>
+      </para>
+      <para>
+       Clock-sweep access count
+      </para></entry>
      </row>
 
      <row>
-      <entry><structfield>pinning_backends</structfield></entry>
-      <entry><type>integer</type></entry>
-      <entry></entry>
-      <entry>Number of backends pinning this buffer</entry>
+      <entry role="catalog_table_entry"><para role="column_definition">
+       <structfield>pinning_backends</structfield> <type>integer</type>
+      </para>
+      <para>
+       Number of backends pinning this buffer
+      </para></entry>
      </row>
-
     </tbody>
    </tgroup>
   </table>
 
   <para>
    There is one row for each buffer in the shared cache. Unused buffers are
-   shown with all fields null except <structfield>bufferid</>.  Shared system
+   shown with all fields null except <structfield>bufferid</structfield>.  Shared system
    catalogs are shown as belonging to database zero.
   </para>
 
   <para>
    Because the cache is shared by all the databases, there will normally be
    pages from relations not belonging to the current database.  This means
-   that there may not be matching join rows in <structname>pg_class</> for
+   that there may not be matching join rows in <structname>pg_class</structname> for
    some rows, or that there could even be incorrect joins.  If you are
-   trying to join against <structname>pg_class</>, it's a good idea to
-   restrict the join to rows having <structfield>reldatabase</> equal to
+   trying to join against <structname>pg_class</structname>, it's a good idea to
+   restrict the join to rows having <structfield>reldatabase</structfield> equal to
    the current database's OID or zero.
   </para>
 

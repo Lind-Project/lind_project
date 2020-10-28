@@ -8,8 +8,8 @@
   </indexterm>
 
   <para>
-   To supplement the trigger mechanism discussed in <xref linkend="triggers">,
-   <productname>PostgreSQL</> also provides event triggers.  Unlike regular
+   To supplement the trigger mechanism discussed in <xref linkend="triggers"/>,
+   <productname>PostgreSQL</productname> also provides event triggers.  Unlike regular
    triggers, which are attached to a single table and capture only DML events,
    event triggers are global to a particular database and are capable of
    capturing DDL events.
@@ -28,67 +28,67 @@
      An event trigger fires whenever the event with which it is associated
      occurs in the database in which it is defined. Currently, the only
      supported events are
-     <literal>ddl_command_start</>,
-     <literal>ddl_command_end</>,
-     <literal>table_rewrite</>
-     and <literal>sql_drop</>.
+     <literal>ddl_command_start</literal>,
+     <literal>ddl_command_end</literal>,
+     <literal>table_rewrite</literal>
+     and <literal>sql_drop</literal>.
      Support for additional events may be added in future releases.
    </para>
 
    <para>
-     The <literal>ddl_command_start</> event occurs just before the
-     execution of a <literal>CREATE</>, <literal>ALTER</>, <literal>DROP</>,
-     <literal>SECURITY LABEL</>,
-     <literal>COMMENT</>, <literal>GRANT</> or <literal>REVOKE</>
+     The <literal>ddl_command_start</literal> event occurs just before the
+     execution of a <literal>CREATE</literal>, <literal>ALTER</literal>, <literal>DROP</literal>,
+     <literal>SECURITY LABEL</literal>,
+     <literal>COMMENT</literal>, <literal>GRANT</literal> or <literal>REVOKE</literal>
      command.  No check whether the affected object exists or doesn't exist is
      performed before the event trigger fires.
      As an exception, however, this event does not occur for
      DDL commands targeting shared objects &mdash; databases, roles, and tablespaces
      &mdash; or for commands targeting event triggers themselves.  The event trigger
      mechanism does not support these object types.
-     <literal>ddl_command_start</> also occurs just before the execution of a
+     <literal>ddl_command_start</literal> also occurs just before the execution of a
      <literal>SELECT INTO</literal> command, since this is equivalent to
      <literal>CREATE TABLE AS</literal>.
    </para>
 
    <para>
-    The <literal>ddl_command_end</> event occurs just after the execution of
-    this same set of commands.  To obtain more details on the <acronym>DDL</>
+    The <literal>ddl_command_end</literal> event occurs just after the execution of
+    this same set of commands.  To obtain more details on the <acronym>DDL</acronym>
     operations that took place, use the set-returning function
-    <literal>pg_event_trigger_ddl_commands()</> from the
-    <literal>ddl_command_end</> event trigger code (see
-    <xref linkend="functions-event-triggers">).  Note that the trigger fires
+    <literal>pg_event_trigger_ddl_commands()</literal> from the
+    <literal>ddl_command_end</literal> event trigger code (see
+    <xref linkend="functions-event-triggers"/>).  Note that the trigger fires
     after the actions have taken place (but before the transaction commits),
     and thus the system catalogs can be read as already changed.
    </para>
 
    <para>
-    The <literal>sql_drop</> event occurs just before the
-    <literal>ddl_command_end</> event trigger for any operation that drops
+    The <literal>sql_drop</literal> event occurs just before the
+    <literal>ddl_command_end</literal> event trigger for any operation that drops
     database objects.  To list the objects that have been dropped, use the
-    set-returning function <literal>pg_event_trigger_dropped_objects()</> from the
-    <literal>sql_drop</> event trigger code (see
-    <xref linkend="functions-event-triggers">). Note that
+    set-returning function <literal>pg_event_trigger_dropped_objects()</literal> from the
+    <literal>sql_drop</literal> event trigger code (see
+    <xref linkend="functions-event-triggers"/>). Note that
     the trigger is executed after the objects have been deleted from the
     system catalogs, so it's not possible to look them up anymore.
    </para>
 
    <para>
-    The <literal>table_rewrite</> event occurs just before a table is
-    rewritten by some actions of the commands <literal>ALTER TABLE</> and
-    <literal>ALTER TYPE</>.  While other
+    The <literal>table_rewrite</literal> event occurs just before a table is
+    rewritten by some actions of the commands <literal>ALTER TABLE</literal> and
+    <literal>ALTER TYPE</literal>.  While other
     control statements are available to rewrite a table,
     like <literal>CLUSTER</literal> and <literal>VACUUM</literal>,
-    the <literal>table_rewrite</> event is not triggered by them.
+    the <literal>table_rewrite</literal> event is not triggered by them.
    </para>
 
    <para>
      Event triggers (like other functions) cannot be executed in an aborted
      transaction.  Thus, if a DDL command fails with an error, any associated
-     <literal>ddl_command_end</> triggers will not be executed.  Conversely,
-     if a <literal>ddl_command_start</> trigger fails with an error, no
+     <literal>ddl_command_end</literal> triggers will not be executed.  Conversely,
+     if a <literal>ddl_command_start</literal> trigger fails with an error, no
      further event triggers will fire, and no attempt will be made to execute
-     the command itself.  Similarly, if a <literal>ddl_command_end</> trigger
+     the command itself.  Similarly, if a <literal>ddl_command_end</literal> trigger
      fails with an error, the effects of the DDL statement will be rolled
      back, just as they would be in any other case where the containing
      transaction aborts.
@@ -96,11 +96,11 @@
 
    <para>
      For a complete list of commands supported by the event trigger mechanism,
-     see <xref linkend="event-trigger-matrix">.
+     see <xref linkend="event-trigger-matrix"/>.
    </para>
 
    <para>
-     Event triggers are created using the command <xref linkend="sql-createeventtrigger">.
+     Event triggers are created using the command <xref linkend="sql-createeventtrigger"/>.
      In order to create an event trigger, you must first create a function with
      the special return type <literal>event_trigger</literal>.  This function
      need not (and may not) return a value; the return type serves merely as
@@ -125,20 +125,26 @@
    <title>Event Trigger Firing Matrix</title>
 
    <para>
-     <xref linkend="event-trigger-by-command-tag"> lists all commands
+     <xref linkend="event-trigger-by-command-tag"/> lists all commands
      for which event triggers are supported.
    </para>
 
    <table id="event-trigger-by-command-tag">
      <title>Event Trigger Support by Command Tag</title>
      <tgroup cols="6">
+      <colspec colname="col1" colwidth="2*"/>
+      <colspec colname="col2" colwidth="1*"/>
+      <colspec colname="col3" colwidth="1*"/>
+      <colspec colname="col4" colwidth="1*"/>
+      <colspec colname="col5" colwidth="1*"/>
+      <colspec colname="col6" colwidth="1*"/>
       <thead>
        <row>
         <entry>Command Tag</entry>
-        <entry><literal>ddl_command_start</literal></entry>
-        <entry><literal>ddl_command_end</literal></entry>
-        <entry><literal>sql_drop</literal></entry>
-        <entry><literal>table_rewrite</literal></entry>
+        <entry><literal>ddl_&zwsp;command_&zwsp;start</literal></entry>
+        <entry><literal>ddl_&zwsp;command_&zwsp;end</literal></entry>
+        <entry><literal>sql_&zwsp;drop</literal></entry>
+        <entry><literal>table_&zwsp;rewrite</literal></entry>
         <entry>Notes</entry>
        </row>
       </thead>
@@ -149,7 +155,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER COLLATION</literal></entry>
@@ -157,7 +163,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER CONVERSION</literal></entry>
@@ -165,7 +171,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER DOMAIN</literal></entry>
@@ -173,7 +179,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER DEFAULT PRIVILEGES</literal></entry>
@@ -181,7 +187,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER EXTENSION</literal></entry>
@@ -189,7 +195,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER FOREIGN DATA WRAPPER</literal></entry>
@@ -197,7 +203,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER FOREIGN TABLE</literal></entry>
@@ -205,7 +211,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER FUNCTION</literal></entry>
@@ -213,7 +219,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER LANGUAGE</literal></entry>
@@ -221,7 +227,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER LARGE OBJECT</literal></entry>
@@ -229,7 +235,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER MATERIALIZED VIEW</literal></entry>
@@ -237,7 +243,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER OPERATOR</literal></entry>
@@ -245,7 +251,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER OPERATOR CLASS</literal></entry>
@@ -253,7 +259,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER OPERATOR FAMILY</literal></entry>
@@ -261,7 +267,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER POLICY</literal></entry>
@@ -269,7 +275,15 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
+       </row>
+       <row>
+        <entry align="left"><literal>ALTER PROCEDURE</literal></entry>
+        <entry align="center"><literal>X</literal></entry>
+        <entry align="center"><literal>X</literal></entry>
+        <entry align="center"><literal>-</literal></entry>
+        <entry align="center"><literal>-</literal></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER PUBLICATION</literal></entry>
@@ -277,7 +291,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER SCHEMA</literal></entry>
@@ -285,7 +299,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER SEQUENCE</literal></entry>
@@ -293,7 +307,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER SERVER</literal></entry>
@@ -301,7 +315,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER STATISTICS</literal></entry>
@@ -309,7 +323,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER SUBSCRIPTION</literal></entry>
@@ -317,7 +331,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER TABLE</literal></entry>
@@ -325,7 +339,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER TEXT SEARCH CONFIGURATION</literal></entry>
@@ -333,7 +347,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER TEXT SEARCH DICTIONARY</literal></entry>
@@ -341,7 +355,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER TEXT SEARCH PARSER</literal></entry>
@@ -349,7 +363,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER TEXT SEARCH TEMPLATE</literal></entry>
@@ -357,7 +371,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER TRIGGER</literal></entry>
@@ -365,7 +379,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER TYPE</literal></entry>
@@ -373,7 +387,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>X</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER USER MAPPING</literal></entry>
@@ -381,7 +395,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>ALTER VIEW</literal></entry>
@@ -389,7 +403,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>COMMENT</literal></entry>
@@ -397,7 +411,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center">Only for local objects</entry>
+        <entry align="left">Only for local objects</entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE ACCESS METHOD</literal></entry>
@@ -405,7 +419,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE AGGREGATE</literal></entry>
@@ -413,7 +427,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE CAST</literal></entry>
@@ -421,7 +435,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE COLLATION</literal></entry>
@@ -429,7 +443,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE CONVERSION</literal></entry>
@@ -437,7 +451,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE DOMAIN</literal></entry>
@@ -445,7 +459,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE EXTENSION</literal></entry>
@@ -453,7 +467,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE FOREIGN DATA WRAPPER</literal></entry>
@@ -461,7 +475,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE FOREIGN TABLE</literal></entry>
@@ -469,7 +483,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE FUNCTION</literal></entry>
@@ -477,7 +491,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE INDEX</literal></entry>
@@ -485,7 +499,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE LANGUAGE</literal></entry>
@@ -493,7 +507,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE MATERIALIZED VIEW</literal></entry>
@@ -501,7 +515,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE OPERATOR</literal></entry>
@@ -509,7 +523,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE OPERATOR CLASS</literal></entry>
@@ -517,7 +531,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE OPERATOR FAMILY</literal></entry>
@@ -525,7 +539,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE POLICY</literal></entry>
@@ -533,7 +547,15 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
+       </row>
+       <row>
+        <entry align="left"><literal>CREATE PROCEDURE</literal></entry>
+        <entry align="center"><literal>X</literal></entry>
+        <entry align="center"><literal>X</literal></entry>
+        <entry align="center"><literal>-</literal></entry>
+        <entry align="center"><literal>-</literal></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE PUBLICATION</literal></entry>
@@ -541,7 +563,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE RULE</literal></entry>
@@ -549,7 +571,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE SCHEMA</literal></entry>
@@ -557,7 +579,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE SEQUENCE</literal></entry>
@@ -565,7 +587,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE SERVER</literal></entry>
@@ -573,7 +595,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE STATISTICS</literal></entry>
@@ -581,7 +603,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE SUBSCRIPTION</literal></entry>
@@ -589,7 +611,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE TABLE</literal></entry>
@@ -597,7 +619,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE TABLE AS</literal></entry>
@@ -605,7 +627,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE TEXT SEARCH CONFIGURATION</literal></entry>
@@ -613,7 +635,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE TEXT SEARCH DICTIONARY</literal></entry>
@@ -621,7 +643,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE TEXT SEARCH PARSER</literal></entry>
@@ -629,7 +651,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE TEXT SEARCH TEMPLATE</literal></entry>
@@ -637,7 +659,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE TRIGGER</literal></entry>
@@ -645,7 +667,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE TYPE</literal></entry>
@@ -653,7 +675,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE USER MAPPING</literal></entry>
@@ -661,7 +683,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>CREATE VIEW</literal></entry>
@@ -669,7 +691,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP ACCESS METHOD</literal></entry>
@@ -677,7 +699,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP AGGREGATE</literal></entry>
@@ -685,7 +707,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP CAST</literal></entry>
@@ -693,7 +715,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP COLLATION</literal></entry>
@@ -701,7 +723,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP CONVERSION</literal></entry>
@@ -709,7 +731,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP DOMAIN</literal></entry>
@@ -717,7 +739,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP EXTENSION</literal></entry>
@@ -725,7 +747,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP FOREIGN DATA WRAPPER</literal></entry>
@@ -733,7 +755,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP FOREIGN TABLE</literal></entry>
@@ -741,7 +763,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP FUNCTION</literal></entry>
@@ -749,7 +771,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP INDEX</literal></entry>
@@ -757,7 +779,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP LANGUAGE</literal></entry>
@@ -765,7 +787,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP MATERIALIZED VIEW</literal></entry>
@@ -773,7 +795,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP OPERATOR</literal></entry>
@@ -781,7 +803,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP OPERATOR CLASS</literal></entry>
@@ -789,7 +811,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP OPERATOR FAMILY</literal></entry>
@@ -797,7 +819,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP OWNED</literal></entry>
@@ -805,7 +827,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP POLICY</literal></entry>
@@ -813,7 +835,15 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
+       </row>
+       <row>
+        <entry align="left"><literal>DROP PROCEDURE</literal></entry>
+        <entry align="center"><literal>X</literal></entry>
+        <entry align="center"><literal>X</literal></entry>
+        <entry align="center"><literal>X</literal></entry>
+        <entry align="center"><literal>-</literal></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP PUBLICATION</literal></entry>
@@ -821,7 +851,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP RULE</literal></entry>
@@ -829,7 +859,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP SCHEMA</literal></entry>
@@ -837,7 +867,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP SEQUENCE</literal></entry>
@@ -845,7 +875,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP SERVER</literal></entry>
@@ -853,7 +883,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP STATISTICS</literal></entry>
@@ -861,7 +891,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP SUBSCRIPTION</literal></entry>
@@ -869,7 +899,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP TABLE</literal></entry>
@@ -877,7 +907,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP TEXT SEARCH CONFIGURATION</literal></entry>
@@ -885,7 +915,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP TEXT SEARCH DICTIONARY</literal></entry>
@@ -893,7 +923,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP TEXT SEARCH PARSER</literal></entry>
@@ -901,7 +931,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP TEXT SEARCH TEMPLATE</literal></entry>
@@ -909,7 +939,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP TRIGGER</literal></entry>
@@ -917,7 +947,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP TYPE</literal></entry>
@@ -925,7 +955,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP USER MAPPING</literal></entry>
@@ -933,7 +963,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>DROP VIEW</literal></entry>
@@ -941,7 +971,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>GRANT</literal></entry>
@@ -949,7 +979,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center">Only for local objects</entry>
+        <entry align="left">Only for local objects</entry>
        </row>
        <row>
         <entry align="left"><literal>IMPORT FOREIGN SCHEMA</literal></entry>
@@ -957,7 +987,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>REFRESH MATERIALIZED VIEW</literal></entry>
@@ -965,7 +995,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
        <row>
         <entry align="left"><literal>REVOKE</literal></entry>
@@ -973,7 +1003,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center">Only for local objects</entry>
+        <entry align="left">Only for local objects</entry>
        </row>
        <row>
         <entry align="left"><literal>SECURITY LABEL</literal></entry>
@@ -981,7 +1011,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center">Only for local objects</entry>
+        <entry align="left">Only for local objects</entry>
        </row>
        <row>
         <entry align="left"><literal>SELECT INTO</literal></entry>
@@ -989,7 +1019,7 @@
         <entry align="center"><literal>X</literal></entry>
         <entry align="center"><literal>-</literal></entry>
         <entry align="center"><literal>-</literal></entry>
-        <entry align="center"></entry>
+        <entry align="left"></entry>
        </row>
       </tbody>
      </tgroup>
@@ -1015,14 +1045,14 @@
    </para>
 
    <para>
-    Event trigger functions must use the <quote>version 1</> function
+    Event trigger functions must use the <quote>version 1</quote> function
     manager interface.
    </para>
 
    <para>
     When a function is called by the event trigger manager, it is not passed
-    any normal arguments, but it is passed a <quote>context</> pointer
-    pointing to a <structname>EventTriggerData</> structure. C functions can
+    any normal arguments, but it is passed a <quote>context</quote> pointer
+    pointing to a <structname>EventTriggerData</structname> structure. C functions can
     check whether they were called from the event trigger manager or not by
     executing the macro:
 <programlisting>
@@ -1033,10 +1063,10 @@ CALLED_AS_EVENT_TRIGGER(fcinfo)
 ((fcinfo)-&gt;context != NULL &amp;&amp; IsA((fcinfo)-&gt;context, EventTriggerData))
 </programlisting>
     If this returns true, then it is safe to cast
-    <literal>fcinfo-&gt;context</> to type <literal>EventTriggerData
+    <literal>fcinfo-&gt;context</literal> to type <literal>EventTriggerData
     *</literal> and make use of the pointed-to
-    <structname>EventTriggerData</> structure.  The function must
-    <emphasis>not</emphasis> alter the <structname>EventTriggerData</>
+    <structname>EventTriggerData</structname> structure.  The function must
+    <emphasis>not</emphasis> alter the <structname>EventTriggerData</structname>
     structure or any of the data it points to.
    </para>
 
@@ -1050,7 +1080,7 @@ typedef struct EventTriggerData
     NodeTag     type;
     const char *event;      /* event name */
     Node       *parsetree;  /* parse tree */
-    const char *tag;        /* command tag */
+    CommandTag  tag;        /* command tag */
 } EventTriggerData;
 </programlisting>
 
@@ -1058,7 +1088,7 @@ typedef struct EventTriggerData
 
     <variablelist>
      <varlistentry>
-      <term><structfield>type</></term>
+      <term><structfield>type</structfield></term>
       <listitem>
        <para>
         Always <literal>T_EventTriggerData</literal>.
@@ -1067,20 +1097,20 @@ typedef struct EventTriggerData
      </varlistentry>
 
      <varlistentry>
-      <term><structfield>event</></term>
+      <term><structfield>event</structfield></term>
       <listitem>
        <para>
         Describes the event for which the function is called, one of
         <literal>"ddl_command_start"</literal>, <literal>"ddl_command_end"</literal>,
         <literal>"sql_drop"</literal>, <literal>"table_rewrite"</literal>.
-        See <xref linkend="event-trigger-definition"> for the meaning of these
+        See <xref linkend="event-trigger-definition"/> for the meaning of these
         events.
        </para>
       </listitem>
      </varlistentry>
 
      <varlistentry>
-      <term><structfield>parsetree</></term>
+      <term><structfield>parsetree</structfield></term>
       <listitem>
        <para>
         A pointer to the parse tree of the command.  Check the PostgreSQL
@@ -1091,7 +1121,7 @@ typedef struct EventTriggerData
      </varlistentry>
 
      <varlistentry>
-      <term><structfield>tag</></term>
+      <term><structfield>tag</structfield></term>
       <listitem>
        <para>
         The command tag associated with the event for which the event trigger
@@ -1103,8 +1133,8 @@ typedef struct EventTriggerData
    </para>
 
    <para>
-    An event trigger function must return a <symbol>NULL</> pointer
-    (<emphasis>not</> an SQL null value, that is, do not
+    An event trigger function must return a <symbol>NULL</symbol> pointer
+    (<emphasis>not</emphasis> an SQL null value, that is, do not
     set <parameter>isNull</parameter> true).
    </para>
   </sect1>
@@ -1119,11 +1149,11 @@ typedef struct EventTriggerData
    </para>
 
    <para>
-    The function <function>noddl</> raises an exception each time it is called.
+    The function <function>noddl</function> raises an exception each time it is called.
     The event trigger definition associated the function with
     the <literal>ddl_command_start</literal> event.  The effect is that all DDL
     commands (with the exceptions mentioned
-    in <xref linkend="event-trigger-definition">) are prevented from running.
+    in <xref linkend="event-trigger-definition"/>) are prevented from running.
    </para>
 
    <para>
@@ -1157,14 +1187,14 @@ noddl(PG_FUNCTION_ARGS)
    </para>
 
    <para>
-    After you have compiled the source code (see <xref linkend="dfunc">),
+    After you have compiled the source code (see <xref linkend="dfunc"/>),
     declare the function and the triggers:
 <programlisting>
 CREATE FUNCTION noddl() RETURNS event_trigger
     AS 'noddl' LANGUAGE C;
 
 CREATE EVENT TRIGGER noddl ON ddl_command_start
-    EXECUTE PROCEDURE noddl();
+    EXECUTE FUNCTION noddl();
 </programlisting>
    </para>
 
@@ -1173,9 +1203,9 @@ CREATE EVENT TRIGGER noddl ON ddl_command_start
 <screen>
 =# \dy
                      List of event triggers
- Name  |       Event       | Owner | Enabled | Procedure | Tags
--------+-------------------+-------+---------+-----------+------
- noddl | ddl_command_start | dim   | enabled | noddl     |
+ Name  |       Event       | Owner | Enabled | Function | Tags
+-------+-------------------+-------+---------+----------+------
+ noddl | ddl_command_start | dim   | enabled | noddl    |
 (1 row)
 
 =# CREATE TABLE foo(id serial);
@@ -1204,7 +1234,7 @@ COMMIT;
    <title>A Table Rewrite Event Trigger Example</title>
 
    <para>
-    Thanks to the <literal>table_rewrite</> event, it is possible to implement
+    Thanks to the <literal>table_rewrite</literal> event, it is possible to implement
     a table rewriting policy only allowing the rewrite in maintenance windows.
    </para>
 
@@ -1249,7 +1279,7 @@ $$;
 
 CREATE EVENT TRIGGER no_rewrite_allowed
                   ON table_rewrite
-   EXECUTE PROCEDURE no_rewrite();
+   EXECUTE FUNCTION no_rewrite();
 </programlisting>
    </para>
  </sect1>

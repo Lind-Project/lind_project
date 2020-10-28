@@ -4,7 +4,7 @@
  *
  * Entrypoints of the hooks in PostgreSQL, and dispatches the callbacks.
  *
- * Copyright (c) 2010-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2010-2020, PostgreSQL Global Development Group
  *
  * -------------------------------------------------------------------------
  */
@@ -20,11 +20,10 @@
 #include "executor/executor.h"
 #include "fmgr.h"
 #include "miscadmin.h"
+#include "sepgsql.h"
 #include "tcop/utility.h"
 #include "utils/guc.h"
 #include "utils/queryenvironment.h"
-
-#include "sepgsql.h"
 
 PG_MODULE_MAGIC;
 
@@ -189,6 +188,20 @@ sepgsql_object_access(ObjectAccessType access,
 			}
 			break;
 
+		case OAT_TRUNCATE:
+			{
+				switch (classId)
+				{
+					case RelationRelationId:
+						sepgsql_relation_truncate(objectId);
+						break;
+					default:
+						/* Ignore unsupported object classes */
+						break;
+				}
+			}
+			break;
+
 		case OAT_POST_ALTER:
 			{
 				ObjectAccessPostAlter *pa_arg = arg;
@@ -304,7 +317,7 @@ sepgsql_utility_command(PlannedStmt *pstmt,
 						ParamListInfo params,
 						QueryEnvironment *queryEnv,
 						DestReceiver *dest,
-						char *completionTag)
+						QueryCompletion *qc)
 {
 	Node	   *parsetree = pstmt->utilityStmt;
 	sepgsql_context_info_t saved_context_info = sepgsql_context_info;
@@ -367,19 +380,17 @@ sepgsql_utility_command(PlannedStmt *pstmt,
 		if (next_ProcessUtility_hook)
 			(*next_ProcessUtility_hook) (pstmt, queryString,
 										 context, params, queryEnv,
-										 dest, completionTag);
+										 dest, qc);
 		else
 			standard_ProcessUtility(pstmt, queryString,
 									context, params, queryEnv,
-									dest, completionTag);
+									dest, qc);
 	}
-	PG_CATCH();
+	PG_FINALLY();
 	{
 		sepgsql_context_info = saved_context_info;
-		PG_RE_THROW();
 	}
 	PG_END_TRY();
-	sepgsql_context_info = saved_context_info;
 }
 
 /*

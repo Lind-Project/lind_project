@@ -9,11 +9,12 @@
 
 package SimpleTee;
 use strict;
+use warnings;
 
 sub TIEHANDLE
 {
 	my $self = shift;
-	bless \@_, $self;
+	return bless \@_, $self;
 }
 
 sub PRINT

@@ -9,7 +9,7 @@
  * of XLogRecData structs by a call to XLogRecordAssemble(). See
  * access/transam/README for details.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * src/backend/access/transam/xloginsert.c
@@ -25,12 +25,13 @@
 #include "access/xloginsert.h"
 #include "catalog/pg_control.h"
 #include "common/pg_lzcompress.h"
+#include "executor/instrument.h"
 #include "miscadmin.h"
+#include "pg_trace.h"
 #include "replication/origin.h"
 #include "storage/bufmgr.h"
 #include "storage/proc.h"
 #include "utils/memutils.h"
-#include "pg_trace.h"
 
 /* Buffer size required to store a compressed version of backup block image */
 #define PGLZ_MAX_BLCKSZ PGLZ_MAX_OUTPUT(BLCKSZ)
@@ -107,10 +108,10 @@ static bool begininsert_called = false;
 static MemoryContext xloginsert_cxt;
 
 static XLogRecData *XLogRecordAssemble(RmgrId rmid, uint8 info,
-				   XLogRecPtr RedoRecPtr, bool doPageWrites,
-				   XLogRecPtr *fpw_lsn);
+									   XLogRecPtr RedoRecPtr, bool doPageWrites,
+									   XLogRecPtr *fpw_lsn, int *num_fpi);
 static bool XLogCompressBackupBlock(char *page, uint16 hole_offset,
-						uint16 hole_length, char *dest, uint16 *dlen);
+									uint16 hole_length, char *dest, uint16 *dlen);
 
 /*
  * Begin constructing a WAL record. This must be called before the
@@ -448,6 +449,7 @@ XLogInsert(RmgrId rmid, uint8 info)
 		bool		doPageWrites;
 		XLogRecPtr	fpw_lsn;
 		XLogRecData *rdt;
+		int			num_fpi = 0;
 
 		/*
 		 * Get values needed to decide whether to do full-page writes. Since
@@ -457,9 +459,9 @@ XLogInsert(RmgrId rmid, uint8 info)
 		GetFullPageWriteInfo(&RedoRecPtr, &doPageWrites);
 
 		rdt = XLogRecordAssemble(rmid, info, RedoRecPtr, doPageWrites,
-								 &fpw_lsn);
+								 &fpw_lsn, &num_fpi);
 
-		EndPos = XLogInsertRecord(rdt, fpw_lsn, curinsert_flags);
+		EndPos = XLogInsertRecord(rdt, fpw_lsn, curinsert_flags, num_fpi);
 	} while (EndPos == InvalidXLogRecPtr);
 
 	XLogResetInsertion();
@@ -482,7 +484,7 @@ XLogInsert(RmgrId rmid, uint8 info)
 static XLogRecData *
 XLogRecordAssemble(RmgrId rmid, uint8 info,
 				   XLogRecPtr RedoRecPtr, bool doPageWrites,
-				   XLogRecPtr *fpw_lsn)
+				   XLogRecPtr *fpw_lsn, int *num_fpi)
 {
 	XLogRecData *rdt;
 	uint32		total_len = 0;
@@ -584,7 +586,7 @@ XLogRecordAssemble(RmgrId rmid, uint8 info,
 		if (include_image)
 		{
 			Page		page = regbuf->page;
-			uint16		compressed_len;
+			uint16		compressed_len = 0;
 
 			/*
 			 * The page needs to be backed up, so calculate its hole length
@@ -605,7 +607,7 @@ XLogRecordAssemble(RmgrId rmid, uint8 info,
 				}
 				else
 				{
-					/* No "hole" to compress out */
+					/* No "hole" to remove */
 					bimg.hole_offset = 0;
 					cbimg.hole_length = 0;
 				}
@@ -634,6 +636,9 @@ XLogRecordAssemble(RmgrId rmid, uint8 info,
 			 * struct
 			 */
 			bkpb.fork_flags |= BKPBLOCK_HAS_IMAGE;
+
+			/* Report a full page image constructed for the WAL record */
+			*num_fpi += 1;
 
 			/*
 			 * Construct XLogRecData entries for the page content.
@@ -797,8 +802,8 @@ XLogRecordAssemble(RmgrId rmid, uint8 info,
 /*
  * Create a compressed version of a backup block image.
  *
- * Returns FALSE if compression fails (i.e., compressed result is actually
- * bigger than original). Otherwise, returns TRUE and sets 'dlen' to
+ * Returns false if compression fails (i.e., compressed result is actually
+ * bigger than original). Otherwise, returns true and sets 'dlen' to
  * the length of compressed block image.
  */
 static bool
@@ -899,7 +904,7 @@ XLogSaveBufferForHint(Buffer buffer, bool buffer_std)
 	/*
 	 * Ensure no checkpoint can change our view of RedoRecPtr.
 	 */
-	Assert(MyPgXact->delayChkpt);
+	Assert(MyProc->delayChkpt);
 
 	/*
 	 * Update RedoRecPtr so that we can make the right decision
@@ -965,7 +970,7 @@ XLogSaveBufferForHint(Buffer buffer, bool buffer_std)
  * log_newpage_buffer instead.
  *
  * If the page follows the standard page layout, with a PageHeader and unused
- * space between pd_lower and pd_upper, set 'page_std' to TRUE. That allows
+ * space between pd_lower and pd_upper, set 'page_std' to true. That allows
  * the unused space to be left out from the WAL record, making it smaller.
  */
 XLogRecPtr
@@ -1002,7 +1007,7 @@ log_newpage(RelFileNode *rnode, ForkNumber forkNum, BlockNumber blkno,
  * function.  This function will set the page LSN.
  *
  * If the page follows the standard page layout, with a PageHeader and unused
- * space between pd_lower and pd_upper, set 'page_std' to TRUE. That allows
+ * space between pd_lower and pd_upper, set 'page_std' to true. That allows
  * the unused space to be left out from the WAL record, making it smaller.
  */
 XLogRecPtr
@@ -1098,7 +1103,7 @@ log_newpage_range(Relation rel, ForkNumber forkNum,
 			MarkBufferDirty(bufpack[i]);
 		}
 
-		recptr = XLogInsert(RM_XLOG_ID, XLOG_FPI_MULTI);
+		recptr = XLogInsert(RM_XLOG_ID, XLOG_FPI);
 
 		for (i = 0; i < nbufs; i++)
 		{

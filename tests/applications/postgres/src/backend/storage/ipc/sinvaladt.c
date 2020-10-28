@@ -3,7 +3,7 @@
  * sinvaladt.c
  *	  POSTGRES shared cache invalidation data manager.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -17,6 +17,7 @@
 #include <signal.h>
 #include <unistd.h>
 
+#include "access/transam.h"
 #include "miscadmin.h"
 #include "storage/backendid.h"
 #include "storage/ipc.h"
@@ -25,8 +26,6 @@
 #include "storage/shmem.h"
 #include "storage/sinvaladt.h"
 #include "storage/spin.h"
-#include "access/transam.h"
-
 
 /*
  * Conceptually, the shared cache invalidation messages are stored in an
@@ -627,7 +626,7 @@ SIGetDataEntries(SharedInvalidationMessage *data, int datasize)
  * SICleanupQueue
  *		Remove messages that have been consumed by all active backends
  *
- * callerHasWriteLock is TRUE if caller is holding SInvalWriteLock.
+ * callerHasWriteLock is true if caller is holding SInvalWriteLock.
  * minFree is the minimum number of message slots to make free.
  *
  * Possible side effects of this routine include marking one or more

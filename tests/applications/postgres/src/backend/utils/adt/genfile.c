@@ -4,7 +4,7 @@
  *		Functions for direct access to files
  *
  *
- * Copyright (c) 2004-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2004-2020, PostgreSQL Global Development Group
  *
  * Author: Andreas Pflug <pgadmin@pse-consulting.de>
  *
@@ -22,14 +22,18 @@
 
 #include "access/htup_details.h"
 #include "access/xlog_internal.h"
+#include "catalog/pg_authid.h"
+#include "catalog/pg_tablespace_d.h"
 #include "catalog/pg_type.h"
 #include "funcapi.h"
 #include "mb/pg_wchar.h"
 #include "miscadmin.h"
 #include "postmaster/syslogger.h"
 #include "storage/fd.h"
+#include "utils/acl.h"
 #include "utils/builtins.h"
 #include "utils/memutils.h"
+#include "utils/syscache.h"
 #include "utils/timestamp.h"
 
 
@@ -38,6 +42,12 @@
  *
  * Filename may be absolute or relative to the DataDir, but we only allow
  * absolute paths that match DataDir or Log_directory.
+ *
+ * This does a privilege check against the 'pg_read_server_files' role, so
+ * this function is really only appropriate for callers who are only checking
+ * 'read' access.  Do not use this function if you are looking for a check
+ * for 'write' or 'program' access without updating it to access the type
+ * of check as an argument and checking the appropriate role membership.
  */
 static char *
 convert_and_check_filename(text *arg)
@@ -47,13 +57,22 @@ convert_and_check_filename(text *arg)
 	filename = text_to_cstring(arg);
 	canonicalize_path(filename);	/* filename can change length here */
 
+	/*
+	 * Members of the 'pg_read_server_files' role are allowed to access any
+	 * files on the server as the PG user, so no need to do any further checks
+	 * here.
+	 */
+	if (is_member_of_role(GetUserId(), DEFAULT_ROLE_READ_SERVER_FILES))
+		return filename;
+
+	/* User isn't a member of the default role, so check if it's allowable */
 	if (is_absolute_path(filename))
 	{
 		/* Disallow '/a/b/data/..' */
 		if (path_contains_parent_reference(filename))
 			ereport(ERROR,
 					(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-					 (errmsg("reference to parent directory (\"..\") not allowed"))));
+					 errmsg("reference to parent directory (\"..\") not allowed")));
 
 		/*
 		 * Allow absolute paths if within DataDir or Log_directory, even
@@ -64,12 +83,12 @@ convert_and_check_filename(text *arg)
 			 !path_is_prefix_of_path(Log_directory, filename)))
 			ereport(ERROR,
 					(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-					 (errmsg("absolute path not allowed"))));
+					 errmsg("absolute path not allowed")));
 	}
 	else if (!path_is_relative_and_below_cwd(filename))
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("path must be in or below the current directory"))));
+				 errmsg("path must be in or below the current directory")));
 
 	return filename;
 }
@@ -87,33 +106,11 @@ read_binary_file(const char *filename, int64 seek_offset, int64 bytes_to_read,
 				 bool missing_ok)
 {
 	bytea	   *buf;
-	size_t		nbytes;
+	size_t		nbytes = 0;
 	FILE	   *file;
 
-	if (bytes_to_read < 0)
-	{
-		if (seek_offset < 0)
-			bytes_to_read = -seek_offset;
-		else
-		{
-			struct stat fst;
-
-			if (stat(filename, &fst) < 0)
-			{
-				if (missing_ok && errno == ENOENT)
-					return NULL;
-				else
-					ereport(ERROR,
-							(errcode_for_file_access(),
-							 errmsg("could not stat file \"%s\": %m", filename)));
-			}
-
-			bytes_to_read = fst.st_size - seek_offset;
-		}
-	}
-
-	/* not sure why anyone thought that int64 length was a good idea */
-	if (bytes_to_read > (MaxAllocSize - VARHDRSZ))
+	/* clamp request size to what we can actually deliver */
+	if (bytes_to_read > (int64) (MaxAllocSize - VARHDRSZ))
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("requested length too large")));
@@ -135,9 +132,67 @@ read_binary_file(const char *filename, int64 seek_offset, int64 bytes_to_read,
 				(errcode_for_file_access(),
 				 errmsg("could not seek in file \"%s\": %m", filename)));
 
-	buf = (bytea *) palloc((Size) bytes_to_read + VARHDRSZ);
+	if (bytes_to_read >= 0)
+	{
+		/* If passed explicit read size just do it */
+		buf = (bytea *) palloc((Size) bytes_to_read + VARHDRSZ);
 
-	nbytes = fread(VARDATA(buf), 1, (size_t) bytes_to_read, file);
+		nbytes = fread(VARDATA(buf), 1, (size_t) bytes_to_read, file);
+	}
+	else
+	{
+		/* Negative read size, read rest of file */
+		StringInfoData sbuf;
+
+		initStringInfo(&sbuf);
+		/* Leave room in the buffer for the varlena length word */
+		sbuf.len += VARHDRSZ;
+		Assert(sbuf.len < sbuf.maxlen);
+
+		while (!(feof(file) || ferror(file)))
+		{
+			size_t		rbytes;
+
+			/* Minimum amount to read at a time */
+#define MIN_READ_SIZE 4096
+
+			/*
+			 * If not at end of file, and sbuf.len is equal to
+			 * MaxAllocSize - 1, then either the file is too large, or
+			 * there is nothing left to read. Attempt to read one more
+			 * byte to see if the end of file has been reached. If not,
+			 * the file is too large; we'd rather give the error message
+			 * for that ourselves.
+			 */
+			if (sbuf.len == MaxAllocSize - 1)
+			{
+				char	rbuf[1];
+
+				if (fread(rbuf, 1, 1, file) != 0 || !feof(file))
+					ereport(ERROR,
+							(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
+							 errmsg("file length too large")));
+				else
+					break;
+			}
+
+			/* OK, ensure that we can read at least MIN_READ_SIZE */
+			enlargeStringInfo(&sbuf, MIN_READ_SIZE);
+
+			/*
+			 * stringinfo.c likes to allocate in powers of 2, so it's likely
+			 * that much more space is available than we asked for.  Use all
+			 * of it, rather than making more fread calls than necessary.
+			 */
+			rbytes = fread(sbuf.data + sbuf.len, 1,
+						   (size_t) (sbuf.maxlen - sbuf.len - 1), file);
+			sbuf.len += rbytes;
+			nbytes += rbytes;
+		}
+
+		/* Now we can commandeer the stringinfo's buffer as the result */
+		buf = (bytea *) sbuf.data;
+	}
 
 	if (ferror(file))
 		ereport(ERROR,
@@ -177,6 +232,8 @@ read_text_file(const char *filename, int64 seek_offset, int64 bytes_to_read,
 
 /*
  * Read a section of a file, returning it as text
+ *
+ * This function is kept to support adminpack 1.0.
  */
 Datum
 pg_read_file(PG_FUNCTION_ARGS)
@@ -191,7 +248,49 @@ pg_read_file(PG_FUNCTION_ARGS)
 	if (!superuser())
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to read files"))));
+				 errmsg("must be superuser to read files with adminpack 1.0"),
+		/* translator: %s is a SQL function name */
+				 errhint("Consider using %s, which is part of core, instead.",
+						 "pg_file_read()")));
+
+	/* handle optional arguments */
+	if (PG_NARGS() >= 3)
+	{
+		seek_offset = PG_GETARG_INT64(1);
+		bytes_to_read = PG_GETARG_INT64(2);
+
+		if (bytes_to_read < 0)
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("requested length cannot be negative")));
+	}
+	if (PG_NARGS() >= 4)
+		missing_ok = PG_GETARG_BOOL(3);
+
+	filename = convert_and_check_filename(filename_t);
+
+	result = read_text_file(filename, seek_offset, bytes_to_read, missing_ok);
+	if (result)
+		PG_RETURN_TEXT_P(result);
+	else
+		PG_RETURN_NULL();
+}
+
+/*
+ * Read a section of a file, returning it as text
+ *
+ * No superuser check done here- instead privileges are handled by the
+ * GRANT system.
+ */
+Datum
+pg_read_file_v2(PG_FUNCTION_ARGS)
+{
+	text	   *filename_t = PG_GETARG_TEXT_PP(0);
+	int64		seek_offset = 0;
+	int64		bytes_to_read = -1;
+	bool		missing_ok = false;
+	char	   *filename;
+	text	   *result;
 
 	/* handle optional arguments */
 	if (PG_NARGS() >= 3)
@@ -229,11 +328,6 @@ pg_read_binary_file(PG_FUNCTION_ARGS)
 	char	   *filename;
 	bytea	   *result;
 
-	if (!superuser())
-		ereport(ERROR,
-				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to read files"))));
-
 	/* handle optional arguments */
 	if (PG_NARGS() >= 3)
 	{
@@ -260,8 +354,8 @@ pg_read_binary_file(PG_FUNCTION_ARGS)
 
 
 /*
- * Wrapper functions for the 1 and 3 argument variants of pg_read_file()
- * and pg_binary_read_file().
+ * Wrapper functions for the 1 and 3 argument variants of pg_read_file_v2()
+ * and pg_read_binary_file().
  *
  * These are necessary to pass the sanity check in opr_sanity, which checks
  * that all built-in functions that share the implementing C function take
@@ -270,13 +364,13 @@ pg_read_binary_file(PG_FUNCTION_ARGS)
 Datum
 pg_read_file_off_len(PG_FUNCTION_ARGS)
 {
-	return pg_read_file(fcinfo);
+	return pg_read_file_v2(fcinfo);
 }
 
 Datum
 pg_read_file_all(PG_FUNCTION_ARGS)
 {
-	return pg_read_file(fcinfo);
+	return pg_read_file_v2(fcinfo);
 }
 
 Datum
@@ -306,11 +400,6 @@ pg_stat_file(PG_FUNCTION_ARGS)
 	TupleDesc	tupdesc;
 	bool		missing_ok = false;
 
-	if (!superuser())
-		ereport(ERROR,
-				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to get file information"))));
-
 	/* check the optional argument */
 	if (PG_NARGS() == 2)
 		missing_ok = PG_GETARG_BOOL(1);
@@ -331,7 +420,7 @@ pg_stat_file(PG_FUNCTION_ARGS)
 	 * This record type had better match the output parameters declared for me
 	 * in pg_proc.h.
 	 */
-	tupdesc = CreateTemplateTupleDesc(6, false);
+	tupdesc = CreateTemplateTupleDesc(6);
 	TupleDescInitEntry(tupdesc, (AttrNumber) 1,
 					   "size", INT8OID, -1, 0);
 	TupleDescInitEntry(tupdesc, (AttrNumber) 2,
@@ -398,11 +487,6 @@ pg_ls_dir(PG_FUNCTION_ARGS)
 	struct dirent *de;
 	MemoryContext oldcontext;
 
-	if (!superuser())
-		ereport(ERROR,
-				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to get directory listings"))));
-
 	location = convert_and_check_filename(PG_GETARG_TEXT_PP(0));
 
 	/* check the optional arguments */
@@ -427,7 +511,7 @@ pg_ls_dir(PG_FUNCTION_ARGS)
 	/* The tupdesc and tuplestore must be created in ecxt_per_query_memory */
 	oldcontext = MemoryContextSwitchTo(rsinfo->econtext->ecxt_per_query_memory);
 
-	tupdesc = CreateTemplateTupleDesc(1, false);
+	tupdesc = CreateTemplateTupleDesc(1);
 	TupleDescInitEntry(tupdesc, (AttrNumber) 1, "pg_ls_dir", TEXTOID, -1, 0);
 
 	randomAccess = (rsinfo->allowedModes & SFRM_Materialize_Random) != 0;
@@ -482,9 +566,12 @@ pg_ls_dir_1arg(PG_FUNCTION_ARGS)
 
 /*
  * Generic function to return a directory listing of files.
+ *
+ * If the directory isn't there, silently return an empty set if missing_ok.
+ * Other unreadable-directory cases throw an error.
  */
 static Datum
-pg_ls_dir_files(FunctionCallInfo fcinfo, const char *dir)
+pg_ls_dir_files(FunctionCallInfo fcinfo, const char *dir, bool missing_ok)
 {
 	ReturnSetInfo *rsinfo = (ReturnSetInfo *) fcinfo->resultinfo;
 	bool		randomAccess;
@@ -524,6 +611,14 @@ pg_ls_dir_files(FunctionCallInfo fcinfo, const char *dir)
 	 * can't count on the SRF being run to completion.
 	 */
 	dirdesc = AllocateDir(dir);
+	if (!dirdesc)
+	{
+		/* Return empty tuplestore if appropriate */
+		if (missing_ok && errno == ENOENT)
+			return (Datum) 0;
+		/* Otherwise, we can let ReadDir() throw the error */
+	}
+
 	while ((de = ReadDir(dirdesc, dir)) != NULL)
 	{
 		Datum		values[3];
@@ -567,12 +662,59 @@ pg_ls_dir_files(FunctionCallInfo fcinfo, const char *dir)
 Datum
 pg_ls_logdir(PG_FUNCTION_ARGS)
 {
-	return pg_ls_dir_files(fcinfo, Log_directory);
+	return pg_ls_dir_files(fcinfo, Log_directory, false);
 }
 
 /* Function to return the list of files in the WAL directory */
 Datum
 pg_ls_waldir(PG_FUNCTION_ARGS)
 {
-	return pg_ls_dir_files(fcinfo, XLOGDIR);
+	return pg_ls_dir_files(fcinfo, XLOGDIR, false);
+}
+
+/*
+ * Generic function to return the list of files in pgsql_tmp
+ */
+static Datum
+pg_ls_tmpdir(FunctionCallInfo fcinfo, Oid tblspc)
+{
+	char		path[MAXPGPATH];
+
+	if (!SearchSysCacheExists1(TABLESPACEOID, ObjectIdGetDatum(tblspc)))
+		ereport(ERROR,
+				(errcode(ERRCODE_UNDEFINED_OBJECT),
+				 errmsg("tablespace with OID %u does not exist",
+						tblspc)));
+
+	TempTablespacePath(path, tblspc);
+	return pg_ls_dir_files(fcinfo, path, true);
+}
+
+/*
+ * Function to return the list of temporary files in the pg_default tablespace's
+ * pgsql_tmp directory
+ */
+Datum
+pg_ls_tmpdir_noargs(PG_FUNCTION_ARGS)
+{
+	return pg_ls_tmpdir(fcinfo, DEFAULTTABLESPACE_OID);
+}
+
+/*
+ * Function to return the list of temporary files in the specified tablespace's
+ * pgsql_tmp directory
+ */
+Datum
+pg_ls_tmpdir_1arg(PG_FUNCTION_ARGS)
+{
+	return pg_ls_tmpdir(fcinfo, PG_GETARG_OID(0));
+}
+
+/*
+ * Function to return the list of files in the WAL archive status directory.
+ */
+Datum
+pg_ls_archive_statusdir(PG_FUNCTION_ARGS)
+{
+	return pg_ls_dir_files(fcinfo, XLOGDIR "/archive_status", true);
 }

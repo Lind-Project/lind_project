@@ -3,7 +3,7 @@ doc/src/sgml/ref/alter_collation.sgml
 PostgreSQL documentation
 -->
 
-<refentry id="SQL-ALTERCOLLATION">
+<refentry id="sql-altercollation">
  <indexterm zone="sql-altercollation">
   <primary>ALTER COLLATION</primary>
  </indexterm>
@@ -38,7 +38,7 @@ ALTER COLLATION <replaceable>name</replaceable> SET SCHEMA <replaceable>new_sche
   </para>
 
   <para>
-   You must own the collation to use <command>ALTER COLLATION</>.
+   You must own the collation to use <command>ALTER COLLATION</command>.
    To alter the owner, you must also be a direct or indirect member of the new
    owning role, and that role must have <literal>CREATE</literal> privilege on
    the collation's schema.  (These restrictions enforce that altering the
@@ -93,16 +93,15 @@ ALTER COLLATION <replaceable>name</replaceable> SET SCHEMA <replaceable>new_sche
     <listitem>
      <para>
       Update the collation's version.
-      See <xref linkend="sql-altercollation-notes"
-      endterm="sql-altercollation-notes-title"> below.
+      See <xref linkend="sql-altercollation-notes"/> below.
      </para>
     </listitem>
    </varlistentry>
   </variablelist>
  </refsect1>
 
- <refsect1 id="sql-altercollation-notes">
-  <title id="sql-altercollation-notes-title">Notes</title>
+ <refsect1 id="sql-altercollation-notes" xreflabel="Notes">
+  <title>Notes</title>
 
   <para>
    When using collations provided by the ICU library, the ICU-specific version
@@ -129,6 +128,16 @@ HINT:  Rebuild all objects affected by this collation and run ALTER COLLATION pg
    does not actually check whether all affected objects have been rebuilt
    correctly.
   </para>
+  <para>
+   When using collations provided by <literal>libc</literal> and
+   <productname>PostgreSQL</productname> was built with the GNU C library, the
+   C library's version is used as a collation version.  Since collation
+   definitions typically change only with GNU C library releases, this provides
+   some defense against corruption, but it is not completely reliable.
+  </para>
+  <para>
+   Currently, there is no version tracking for the database default collation.
+  </para>
 
   <para>
    The following query can be used to identify all collations in the current
@@ -140,8 +149,7 @@ SELECT pg_describe_object(refclassid, refobjid, refobjsubid) AS "Collation",
        ON refclassid = 'pg_collation'::regclass AND refobjid = c.oid
   WHERE c.collversion <> pg_collation_actual_version(c.oid)
   ORDER BY 1, 2;
-]]></programlisting>
-  </para>
+]]></programlisting></para>
  </refsect1>
 
  <refsect1>
@@ -176,8 +184,8 @@ ALTER COLLATION "en_US" OWNER TO joe;
   <title>See Also</title>
 
   <simplelist type="inline">
-   <member><xref linkend="sql-createcollation"></member>
-   <member><xref linkend="sql-dropcollation"></member>
+   <member><xref linkend="sql-createcollation"/></member>
+   <member><xref linkend="sql-dropcollation"/></member>
   </simplelist>
  </refsect1>
 </refentry>

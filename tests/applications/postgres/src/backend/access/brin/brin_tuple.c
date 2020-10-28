@@ -1,5 +1,5 @@
 /*
- * brin_tuples.c
+ * brin_tuple.c
  *		Method implementations for tuples in BRIN indexes.
  *
  * Intended usage is that code outside this file only deals with
@@ -23,7 +23,7 @@
  * Note the size of the null bitmask may not be the same as that of the
  * datum array.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -31,17 +31,16 @@
  */
 #include "postgres.h"
 
-#include "access/htup_details.h"
 #include "access/brin_tuple.h"
+#include "access/htup_details.h"
 #include "access/tupdesc.h"
 #include "access/tupmacs.h"
 #include "utils/datum.h"
 #include "utils/memutils.h"
 
-
 static inline void brin_deconstruct_tuple(BrinDesc *brdesc,
-					   char *tp, bits8 *nullbits, bool nulls,
-					   Datum *values, bool *allnulls, bool *hasnulls);
+										  char *tp, bits8 *nullbits, bool nulls,
+										  Datum *values, bool *allnulls, bool *hasnulls);
 
 
 /*
@@ -62,7 +61,7 @@ brtuple_disk_tupdesc(BrinDesc *brdesc)
 		/* make sure it's in the bdesc's context */
 		oldcxt = MemoryContextSwitchTo(brdesc->bd_context);
 
-		tupdesc = CreateTemplateTupleDesc(brdesc->bd_totalstored, false);
+		tupdesc = CreateTemplateTupleDesc(brdesc->bd_totalstored);
 
 		for (i = 0; i < brdesc->bd_tupdesc->natts; i++)
 		{
@@ -207,7 +206,7 @@ brin_form_tuple(BrinDesc *brdesc, BlockNumber blkno, BrinMemTuple *tuple,
 		/*
 		 * Note that we reverse the sense of null bits in this module: we
 		 * store a 1 for a null attribute rather than a 0.  So we must reverse
-		 * the sense of the att_isnull test in br_deconstruct_tuple as well.
+		 * the sense of the att_isnull test in brin_deconstruct_tuple as well.
 		 */
 		bitP = ((bits8 *) ((char *) rettuple + SizeOfBrinTuple)) - 1;
 		bitmask = HIGHBIT;
@@ -559,7 +558,7 @@ brin_deconstruct_tuple(BrinDesc *brdesc,
 			 datumno < brdesc->bd_info[attnum]->oi_nstored;
 			 datumno++)
 		{
-			Form_pg_attribute thisatt = diskdsc->attrs[stored];
+			Form_pg_attribute thisatt = TupleDescAttr(diskdsc, stored);
 
 			if (thisatt->attlen == -1)
 			{

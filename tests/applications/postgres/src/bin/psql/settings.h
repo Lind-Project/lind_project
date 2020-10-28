@@ -1,17 +1,17 @@
 /*
  * psql - the PostgreSQL interactive terminal
  *
- * Copyright (c) 2000-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2000-2020, PostgreSQL Global Development Group
  *
  * src/bin/psql/settings.h
  */
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-
-#include "variables.h"
 #include "fe_utils/print.h"
+#include "variables.h"
 
+#define DEFAULT_CSV_FIELD_SEP ','
 #define DEFAULT_FIELD_SEP "|"
 #define DEFAULT_RECORD_SEP "\n"
 
@@ -23,8 +23,8 @@
 #define DEFAULT_EDITOR_LINENUMBER_ARG "+"
 #endif
 
-#define DEFAULT_PROMPT1 "%/%R%# "
-#define DEFAULT_PROMPT2 "%/%R%# "
+#define DEFAULT_PROMPT1 "%/%R%x%# "
+#define DEFAULT_PROMPT2 "%/%R%x%# "
 #define DEFAULT_PROMPT3 ">> "
 
 /*
@@ -88,12 +88,14 @@ typedef struct _psqlSettings
 
 	PGresult   *last_error_result;	/* most recent error result, if any */
 
-	printQueryOpt popt;
+	printQueryOpt popt;			/* The active print format settings */
 
 	char	   *gfname;			/* one-shot file output argument for \g */
-	bool		g_expanded;		/* one-shot expanded output requested via \gx */
+	printQueryOpt *gsavepopt;	/* if not null, saved print format settings */
+
 	char	   *gset_prefix;	/* one-shot prefix argument for \gset */
-	bool		gexec_flag;		/* one-shot flag to execute query's results */
+	bool		gdesc_flag;		/* one-shot request to describe query results */
+	bool		gexec_flag;		/* one-shot request to execute query results */
 	bool		crosstab_flag;	/* one-shot request to crosstab results */
 	char	   *ctv_args[4];	/* \crosstabview arguments */
 
@@ -125,6 +127,7 @@ typedef struct _psqlSettings
 	bool		quiet;
 	bool		singleline;
 	bool		singlestep;
+	bool		hide_tableam;
 	int			fetch_count;
 	int			histsize;
 	int			ignoreeof;

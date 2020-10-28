@@ -14,10 +14,10 @@
  <para>
   The formal name of the SQL standard is ISO/IEC 9075 <quote>Database
   Language SQL</quote>.  A revised version of the standard is released
-  from time to time; the most recent update appearing in 2011.
-  The 2011 version is referred to as ISO/IEC 9075:2011, or simply as SQL:2011.
-  The versions prior to that were SQL:2008, SQL:2006, SQL:2003, SQL:1999,
-  and SQL-92.  Each version
+  from time to time; the most recent update appearing in 2016.
+  The 2016 version is referred to as ISO/IEC 9075:2016, or simply as SQL:2016.
+  The versions prior to that were SQL:2011, SQL:2008, SQL:2006, SQL:2003,
+  SQL:1999, and SQL-92.  Each version
   replaces the previous one, so claims of conformance to earlier
   versions have no official merit.
   <productname>PostgreSQL</productname> development aims for
@@ -44,10 +44,7 @@
   broad three levels found in <acronym>SQL-92</acronym>.  A large
   subset of these features represents the <quote>Core</quote>
   features, which every conforming SQL implementation must supply.
-  The rest of the features are purely optional.  Some optional
-  features are grouped together to form <quote>packages</quote>, which
-  SQL implementations can claim conformance to, thus claiming
-  conformance to particular groups of features.
+  The rest of the features are purely optional.
  </para>
 
  <para>
@@ -66,6 +63,7 @@
    <listitem><para>ISO/IEC 9075-11 Information and Definition Schemas (SQL/Schemata)</para><indexterm><primary>SQL/Schemata</primary></indexterm></listitem>
    <listitem><para>ISO/IEC 9075-13 Routines and Types using the Java Language (SQL/JRT)</para><indexterm><primary>SQL/JRT</primary></indexterm></listitem>
    <listitem><para>ISO/IEC 9075-14 XML-related specifications (SQL/XML)</para><indexterm><primary>SQL/XML</primary></indexterm></listitem>
+   <listitem><para>ISO/IEC 9075-15 Multi-dimensional arrays (SQL/MDA)</para><indexterm><primary>SQL/MDA</primary></indexterm></listitem>
   </itemizedlist>
  </para>
 
@@ -74,23 +72,23 @@
   11, and 14.  Part 3 is covered by the ODBC driver, and part 13 is
   covered by the PL/Java plug-in, but exact conformance is currently
   not being verified for these components.  There are currently no
-  implementations of parts 4 and 10
+  implementations of parts 4, 10, and 15
   for <productname>PostgreSQL</productname>.
  </para>
 
  <para>
-  PostgreSQL supports most of the major features of SQL:2011.  Out of
-  179 mandatory features required for full Core conformance,
-  PostgreSQL conforms to at least 160.  In addition, there is a long
+  PostgreSQL supports most of the major features of SQL:2016.  Out of
+  177 mandatory features required for full Core conformance,
+  PostgreSQL conforms to at least 170.  In addition, there is a long
   list of supported optional features.  It might be worth noting that at
   the time of writing, no current version of any database management
-  system claims full conformance to Core SQL:2011.
+  system claims full conformance to Core SQL:2016.
  </para>
 
  <para>
   In the following two sections, we provide a list of those features
   that <productname>PostgreSQL</productname> supports, followed by a
-  list of the features defined in <acronym>SQL:2011</acronym> which
+  list of the features defined in <acronym>SQL:2016</acronym> which
   are not yet supported in <productname>PostgreSQL</productname>.
   Both of these lists are approximate: There might be minor details that
   are nonconforming for a feature that is listed as supported, and
@@ -113,10 +111,14 @@
    <para>
     <informaltable>
      <tgroup cols="4">
+      <colspec colname="col1" colwidth="1.5*"/>
+      <colspec colname="col2" colwidth="1*"/>
+      <colspec colname="col3" colwidth="7*"/>
+      <colspec colname="col4" colwidth="3*"/>
       <thead>
        <row>
         <entry>Identifier</entry>
-        <entry>Package</entry>
+        <entry>Core?</entry>
         <entry>Description</entry>
         <entry>Comment</entry>
        </row>
@@ -133,17 +135,21 @@
    <title>Unsupported Features</title>
 
    <para>
-    The following features defined in <acronym>SQL:2011</acronym> are not
+    The following features defined in <acronym>SQL:2016</acronym> are not
     implemented in this release of
     <productname>PostgreSQL</productname>. In a few cases, equivalent
     functionality is available.
 
     <informaltable>
      <tgroup cols="4">
+      <colspec colname="col1" colwidth="1.5*"/>
+      <colspec colname="col2" colwidth="1*"/>
+      <colspec colname="col3" colwidth="7*"/>
+      <colspec colname="col4" colwidth="3*"/>
       <thead>
        <row>
         <entry>Identifier</entry>
-        <entry>Package</entry>
+        <entry>Core?</entry>
         <entry>Description</entry>
         <entry>Comment</entry>
        </row>
@@ -200,7 +206,7 @@
    </para>
 
    <sect2 id="functions-xml-limits-xpath1">
-    <title>Queries are restricted to XPath 1.0</title>
+    <title>Queries Are Restricted to XPath 1.0</title>
 
     <para>
      The <productname>PostgreSQL</productname>-specific functions
@@ -383,7 +389,7 @@
     </sect3>
 
     <sect3 id="functions-xml-limits-casts">
-     <title>Mappings between SQL and XML data types and values</title>
+     <title>Mappings between SQL and XML Data Types and Values</title>
 
      <para>
       In SQL:2006 and later, both directions of conversion between standard SQL
@@ -400,25 +406,20 @@
       that the XML data type's XPath 1.0 string form will be valid as the
       text-input form of the SQL datatype, and conversely. This rule has the
       virtue of simplicity while producing, for many data types, results similar
-      to the mappings specified in the standard. In this release,
-      an explicit cast is needed if an <function>xmltable</function> column
-      expression produces a boolean or double value; see
-      <xref linkend="functions-xml-limits-postgresql">.
+      to the mappings specified in the standard.
      </para>
 
      <para>
       Where interoperability with other systems is a concern, for some data
       types, it may be necessary to use data type formatting functions (such
-      as those in <xref linkend="functions-formatting">) explicitly to
+      as those in <xref linkend="functions-formatting"/>) explicitly to
       produce the standard mappings.
      </para>
     </sect3>
    </sect2>
 
    <sect2 id="functions-xml-limits-postgresql">
-    <title>
-     Incidental limits of the implementation
-    </title>
+    <title>Incidental Limits of the Implementation</title>
 
     <para>
      This section concerns limits that are not inherent in the
@@ -427,51 +428,7 @@
     </para>
 
     <sect3>
-     <title>
-      Cast needed for <function>xmltable</function> column
-      of boolean or double type
-     </title>
-
-     <para>
-      An <function>xmltable</function> column expression evaluating to an XPath
-      boolean or number result will produce an <quote>unexpected XPath object
-      type</quote> error. The workaround is to rewrite the column expression to
-      be inside the XPath <function>string</function> function;
-      <productname>PostgreSQL</productname> will then assign the string value
-      successfully to an SQL output column of boolean or double type.
-     </para>
-    </sect3>
-
-    <sect3>
-     <title>
-      Column path result or SQL result column of XML type
-     </title>
-
-     <para>
-      In this release, a <function>xmltable</function> column expression
-      that evaluates to an XML node-set can be assigned to an SQL result
-      column of XML type, producing a concatenation of: for most types of
-      node in the node-set, a text node containing the XPath 1.0
-      <firstterm>string-value</firstterm> of the node, but for an element node,
-      a copy of the node itself. Such a node-set may be assigned to an SQL
-      column of non-XML type only if the node-set has a single node, with the
-      string-value of most node types replaced with an empty string, the
-      string-value of an element node replaced with a concatenation of only its
-      direct text-node children (excluding those of descendants), and the
-      string-value of a text or attribute node being as defined in XPath 1.0.
-      An XPath string value assigned to a result column of XML type must be
-      parsable as XML.
-     </para>
-
-     <para>
-      It is best not to develop code that relies on these behaviors, which have
-      little resemblance to the spec, and are changed in
-      <productname>PostgreSQL 12</productname>.
-     </para>
-    </sect3>
-
-    <sect3>
-     <title>Only <literal>BY VALUE</literal> passing mechanism is supported</title>
+     <title>Only <literal>BY VALUE</literal> Passing Mechanism Is Supported</title>
 
      <para>
       The SQL standard defines two <firstterm>passing mechanisms</firstterm>
@@ -496,10 +453,10 @@ SELECT XMLQUERY('$a is $b' PASSING BY VALUE <replaceable>x</replaceable> AS a, <
      </para>
 
      <para>
-      In this release, <productname>PostgreSQL</productname> will accept
-      <literal>BY REF</literal> in an
+      <productname>PostgreSQL</productname> will accept
+      <literal>BY VALUE</literal> or <literal>BY REF</literal> in an
       <function>XMLEXISTS</function> or <function>XMLTABLE</function>
-      construct, but will ignore it.  The <type>xml</type> data type holds
+      construct, but it ignores them.  The <type>xml</type> data type holds
       a character-string serialized representation, so there is no node
       identity to preserve, and passing is always effectively <literal>BY
       VALUE</literal>.
@@ -507,7 +464,7 @@ SELECT XMLQUERY('$a is $b' PASSING BY VALUE <replaceable>x</replaceable> AS a, <
     </sect3>
 
     <sect3>
-     <title>Cannot pass named parameters to queries</title>
+     <title>Cannot Pass Named Parameters to Queries</title>
 
      <para>
       The XPath-based functions support passing one parameter to serve as the
@@ -517,7 +474,7 @@ SELECT XMLQUERY('$a is $b' PASSING BY VALUE <replaceable>x</replaceable> AS a, <
     </sect3>
 
     <sect3>
-     <title>No <type>XML(SEQUENCE)</type> type</title>
+     <title>No <type>XML(SEQUENCE)</type> Type</title>
 
      <para>
       The <productname>PostgreSQL</productname> <type>xml</type> data type

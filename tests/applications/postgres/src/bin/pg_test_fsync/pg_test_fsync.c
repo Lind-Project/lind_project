@@ -12,9 +12,9 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "getopt_long.h"
 #include "access/xlogdefs.h"
-
+#include "common/logging.h"
+#include "getopt_long.h"
 
 /*
  * put the temp files in the local directory
@@ -46,7 +46,7 @@ do { \
 	if (CreateThread(NULL, 0, process_alarm, NULL, 0, NULL) == \
 		INVALID_HANDLE_VALUE) \
 	{ \
-		fprintf(stderr, _("Could not create thread for alarm\n")); \
+		pg_log_error("could not create thread for alarm"); \
 		exit(1); \
 	} \
 	gettimeofday(&start_t, NULL); \
@@ -64,7 +64,7 @@ static const char *progname;
 
 static int	secs_per_test = 5;
 static int	needs_unlink = 0;
-static char full_buf[XLOG_SEG_SIZE],
+static char full_buf[DEFAULT_XLOG_SEG_SIZE],
 		   *buf,
 		   *filename = FSYNC_FILENAME;
 static struct timeval start_t,
@@ -92,12 +92,14 @@ static void signal_cleanup(int sig);
 static int	pg_fsync_writethrough(int fd);
 #endif
 static void print_elapse(struct timeval start_t, struct timeval stop_t, int ops);
-static void die(const char *str);
+
+#define die(msg) do { pg_log_error("%s: %m", _(msg)); exit(1); } while(0)
 
 
 int
 main(int argc, char *argv[])
 {
+	pg_logging_init(argv[0]);
 	set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("pg_test_fsync"));
 	progname = get_progname(argv[0]);
 
@@ -167,7 +169,7 @@ handle_args(int argc, char *argv[])
 		switch (option)
 		{
 			case 'f':
-				filename = strdup(optarg);
+				filename = pg_strdup(optarg);
 				break;
 
 			case 's':
@@ -184,9 +186,8 @@ handle_args(int argc, char *argv[])
 
 	if (argc > optind)
 	{
-		fprintf(stderr,
-				_("%s: too many command-line arguments (first is \"%s\")\n"),
-				progname, argv[optind]);
+		pg_log_error("too many command-line arguments (first is \"%s\")",
+					 argv[optind]);
 		fprintf(stderr, _("Try \"%s --help\" for more information.\n"),
 				progname);
 		exit(1);
@@ -209,7 +210,7 @@ prepare_buf(void)
 	int			ops;
 
 	/* write random data into buffer */
-	for (ops = 0; ops < XLOG_SEG_SIZE; ops++)
+	for (ops = 0; ops < DEFAULT_XLOG_SEG_SIZE; ops++)
 		full_buf[ops] = random();
 
 	buf = (char *) TYPEALIGN(XLOG_BLCKSZ, full_buf);
@@ -226,7 +227,8 @@ test_open(void)
 	if ((tmpfile = open(filename, O_RDWR | O_CREAT | PG_BINARY, S_IRUSR | S_IWUSR)) == -1)
 		die("could not open output file");
 	needs_unlink = 1;
-	if (write(tmpfile, full_buf, XLOG_SEG_SIZE) != XLOG_SEG_SIZE)
+	if (write(tmpfile, full_buf, DEFAULT_XLOG_SEG_SIZE) !=
+		DEFAULT_XLOG_SEG_SIZE)
 		die("write failed");
 
 	/* fsync now so that dirty buffers don't skew later tests */
@@ -600,10 +602,3 @@ process_alarm(LPVOID param)
 	ExitThread(0);
 }
 #endif
-
-static void
-die(const char *str)
-{
-	fprintf(stderr, _("%s: %s\n"), _(str), strerror(errno));
-	exit(1);
-}

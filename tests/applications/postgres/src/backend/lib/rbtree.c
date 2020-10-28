@@ -17,7 +17,7 @@
  * longest path from root to leaf is only about twice as long as the shortest,
  * so lookups are guaranteed to run in O(lg n) time.
  *
- * Copyright (c) 2009-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2009-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *	  src/backend/lib/rbtree.c
@@ -60,19 +60,11 @@ struct RBTree
  */
 #define RBTNIL (&sentinel)
 
-static RBTNode sentinel = {RBTBLACK, RBTNIL, RBTNIL, NULL};
-
-/*
- * Values used in the RBTreeIterator.next_state field, with an
- * InvertedWalk iterator.
- */
-typedef enum InvertedWalkNextStep
+static RBTNode sentinel =
 {
-	NextStepBegin,
-	NextStepUp,
-	NextStepLeft,
-	NextStepRight
-} InvertedWalkNextStep;
+	RBTBLACK, RBTNIL, RBTNIL, NULL
+};
+
 
 /*
  * rbt_create: create an empty RBTree
@@ -567,6 +559,7 @@ rbt_delete_node(RBTree *rbt, RBTNode *z)
 	RBTNode    *x,
 			   *y;
 
+	/* This is just paranoia: we should only get called on a valid node */
 	if (!z || z == RBTNIL)
 		return;
 
@@ -730,114 +723,6 @@ rbt_right_left_iterator(RBTreeIterator *iter)
 	return iter->last_visited;
 }
 
-static RBTNode *
-rbt_direct_iterator(RBTreeIterator *iter)
-{
-	if (iter->last_visited == NULL)
-	{
-		iter->last_visited = iter->rbt->root;
-		return iter->last_visited;
-	}
-
-	if (iter->last_visited->left != RBTNIL)
-	{
-		iter->last_visited = iter->last_visited->left;
-		return iter->last_visited;
-	}
-
-	do
-	{
-		if (iter->last_visited->right != RBTNIL)
-		{
-			iter->last_visited = iter->last_visited->right;
-			break;
-		}
-
-		/* go up and one step right */
-		for (;;)
-		{
-			RBTNode    *came_from = iter->last_visited;
-
-			iter->last_visited = iter->last_visited->parent;
-			if (iter->last_visited == NULL)
-			{
-				iter->is_over = true;
-				break;
-			}
-
-			if ((iter->last_visited->right != came_from) && (iter->last_visited->right != RBTNIL))
-			{
-				iter->last_visited = iter->last_visited->right;
-				return iter->last_visited;
-			}
-		}
-	}
-	while (iter->last_visited != NULL);
-
-	return iter->last_visited;
-}
-
-static RBTNode *
-rbt_inverted_iterator(RBTreeIterator *iter)
-{
-	RBTNode    *came_from;
-	RBTNode    *current;
-
-	current = iter->last_visited;
-
-loop:
-	switch ((InvertedWalkNextStep) iter->next_step)
-	{
-			/* First call, begin from root */
-		case NextStepBegin:
-			current = iter->rbt->root;
-			iter->next_step = NextStepLeft;
-			goto loop;
-
-		case NextStepLeft:
-			while (current->left != RBTNIL)
-				current = current->left;
-
-			iter->next_step = NextStepRight;
-			goto loop;
-
-		case NextStepRight:
-			if (current->right != RBTNIL)
-			{
-				current = current->right;
-				iter->next_step = NextStepLeft;
-				goto loop;
-			}
-			else				/* not moved - return current, then go up */
-				iter->next_step = NextStepUp;
-			break;
-
-		case NextStepUp:
-			came_from = current;
-			current = current->parent;
-			if (current == NULL)
-			{
-				iter->is_over = true;
-				break;			/* end of iteration */
-			}
-			else if (came_from == current->right)
-			{
-				/* return current, then continue to go up */
-				break;
-			}
-			else
-			{
-				/* otherwise we came from the left */
-				Assert(came_from == current->left);
-				iter->next_step = NextStepRight;
-				goto loop;
-			}
-	}
-
-	iter->last_visited = current;
-	return current;
-}
-
 /*
  * rbt_begin_iterate: prepare to traverse the tree in any of several orders
  *
@@ -849,7 +734,7 @@ loop:
  * tree are allowed.
  *
  * The iterator state is stored in the 'iter' struct.  The caller should
- * treat it as opaque struct.
+ * treat it as an opaque struct.
  */
 void
 rbt_begin_iterate(RBTree *rbt, RBTOrderControl ctrl, RBTreeIterator *iter)
@@ -866,13 +751,6 @@ rbt_begin_iterate(RBTree *rbt, RBTOrderControl ctrl, RBTreeIterator *iter)
 			break;
 		case RightLeftWalk:		/* visit right, then self, then left */
 			iter->iterate = rbt_right_left_iterator;
-			break;
-		case DirectWalk:		/* visit self, then left, then right */
-			iter->iterate = rbt_direct_iterator;
-			break;
-		case InvertedWalk:		/* visit left, then right, then self */
-			iter->iterate = rbt_inverted_iterator;
-			iter->next_step = NextStepBegin;
 			break;
 		default:
 			elog(ERROR, "unrecognized rbtree iteration order: %d", ctrl);

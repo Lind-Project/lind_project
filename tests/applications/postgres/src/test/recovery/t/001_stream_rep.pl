@@ -3,14 +3,15 @@ use strict;
 use warnings;
 use PostgresNode;
 use TestLib;
-use Test::More tests => 32;
+use Test::More tests => 36;
 
 # Initialize master node
 my $node_master = get_new_node('master');
 # A specific role is created to perform some tests related to replication,
 # and it needs proper authentication configuration.
-$node_master->init(allows_streaming => 1,
-	auth_extra => ['--create-role', 'repl_role']);
+$node_master->init(
+	allows_streaming => 1,
+	auth_extra       => [ '--create-role', 'repl_role' ]);
 $node_master->start;
 my $backup_name = 'my_backup';
 
@@ -98,8 +99,10 @@ sub test_target_session_attrs
 		extra_params => [ '-d', $connstr ]);
 	is( $status == $ret && $stdout eq $target_node->port,
 		1,
-"connect to node $target_name if mode \"$mode\" and $node1_name,$node2_name listed"
+		"connect to node $target_name if mode \"$mode\" and $node1_name,$node2_name listed"
 	);
+
+	return;
 }
 
 # Connect to master in "read-write" mode with master,standby1 list.
@@ -122,50 +125,59 @@ test_target_session_attrs($node_standby_1, $node_master, $node_standby_1,
 # role.
 note "testing SHOW commands for replication connection";
 
-$node_master->psql('postgres',"
+$node_master->psql(
+	'postgres', "
 CREATE ROLE repl_role REPLICATION LOGIN;
 GRANT pg_read_all_settings TO repl_role;");
-my $master_host = $node_master->host;
-my $master_port = $node_master->port;
+my $master_host    = $node_master->host;
+my $master_port    = $node_master->port;
 my $connstr_common = "host=$master_host port=$master_port user=repl_role";
-my $connstr_rep = "$connstr_common replication=1";
-my $connstr_db = "$connstr_common replication=database dbname=postgres";
+my $connstr_rep    = "$connstr_common replication=1";
+my $connstr_db     = "$connstr_common replication=database dbname=postgres";
 
 # Test SHOW ALL
-my ($ret, $stdout, $stderr) =
-    $node_master->psql('postgres', 'SHOW ALL;',
-		       on_error_die => 1,
-		       extra_params => [ '-d', $connstr_rep ]);
+my ($ret, $stdout, $stderr) = $node_master->psql(
+	'postgres', 'SHOW ALL;',
+	on_error_die => 1,
+	extra_params => [ '-d', $connstr_rep ]);
 ok($ret == 0, "SHOW ALL with replication role and physical replication");
-($ret, $stdout, $stderr) =
-    $node_master->psql('postgres', 'SHOW ALL;',
-		       on_error_die => 1,
-		       extra_params => [ '-d', $connstr_db ]);
+($ret, $stdout, $stderr) = $node_master->psql(
+	'postgres', 'SHOW ALL;',
+	on_error_die => 1,
+	extra_params => [ '-d', $connstr_db ]);
 ok($ret == 0, "SHOW ALL with replication role and logical replication");
 
 # Test SHOW with a user-settable parameter
-($ret, $stdout, $stderr) =
-    $node_master->psql('postgres', 'SHOW work_mem;',
-		       on_error_die => 1,
-		       extra_params => [ '-d', $connstr_rep ]);
-ok($ret == 0, "SHOW with user-settable parameter, replication role and physical replication");
-($ret, $stdout, $stderr) =
-    $node_master->psql('postgres', 'SHOW work_mem;',
-		       on_error_die => 1,
-		       extra_params => [ '-d', $connstr_db ]);
-ok($ret == 0, "SHOW with user-settable parameter, replication role and logical replication");
+($ret, $stdout, $stderr) = $node_master->psql(
+	'postgres', 'SHOW work_mem;',
+	on_error_die => 1,
+	extra_params => [ '-d', $connstr_rep ]);
+ok( $ret == 0,
+	"SHOW with user-settable parameter, replication role and physical replication"
+);
+($ret, $stdout, $stderr) = $node_master->psql(
+	'postgres', 'SHOW work_mem;',
+	on_error_die => 1,
+	extra_params => [ '-d', $connstr_db ]);
+ok( $ret == 0,
+	"SHOW with user-settable parameter, replication role and logical replication"
+);
 
 # Test SHOW with a superuser-settable parameter
-($ret, $stdout, $stderr) =
-    $node_master->psql('postgres', 'SHOW data_directory;',
-		       on_error_die => 1,
-		       extra_params => [ '-d', $connstr_rep ]);
-ok($ret == 0, "SHOW with superuser-settable parameter, replication role and physical replication");
-($ret, $stdout, $stderr) =
-    $node_master->psql('postgres', 'SHOW data_directory;',
-		       on_error_die => 1,
-		       extra_params => [ '-d', $connstr_db ]);
-ok($ret == 0, "SHOW with superuser-settable parameter, replication role and logical replication");
+($ret, $stdout, $stderr) = $node_master->psql(
+	'postgres', 'SHOW primary_conninfo;',
+	on_error_die => 1,
+	extra_params => [ '-d', $connstr_rep ]);
+ok( $ret == 0,
+	"SHOW with superuser-settable parameter, replication role and physical replication"
+);
+($ret, $stdout, $stderr) = $node_master->psql(
+	'postgres', 'SHOW primary_conninfo;',
+	on_error_die => 1,
+	extra_params => [ '-d', $connstr_db ]);
+ok( $ret == 0,
+	"SHOW with superuser-settable parameter, replication role and logical replication"
+);
 
 note "switching to physical replication slot";
 
@@ -181,7 +193,7 @@ is( $node_master->psql(
 		qq[SELECT pg_create_physical_replication_slot('$slotname_1');]),
 	0,
 	'physical slot created on master');
-$node_standby_1->append_conf('recovery.conf',
+$node_standby_1->append_conf('postgresql.conf',
 	"primary_slot_name = $slotname_1");
 $node_standby_1->append_conf('postgresql.conf',
 	"wal_receiver_status_interval = 1");
@@ -192,11 +204,13 @@ is( $node_standby_1->psql(
 		qq[SELECT pg_create_physical_replication_slot('$slotname_2');]),
 	0,
 	'physical slot created on intermediate replica');
-$node_standby_2->append_conf('recovery.conf',
+$node_standby_2->append_conf('postgresql.conf',
 	"primary_slot_name = $slotname_2");
 $node_standby_2->append_conf('postgresql.conf',
 	"wal_receiver_status_interval = 1");
-$node_standby_2->restart;
+# should be able change primary_slot_name without restart
+# will wait effect in get_slot_xmins above
+$node_standby_2->reload;
 
 # Fetch xmin columns from slot's pg_replication_slots row, after waiting for
 # given boolean condition to be true to ensure we've reached a quiescent state
@@ -235,7 +249,7 @@ $node_master->safe_psql('postgres', 'CREATE TABLE replayed(val integer);');
 sub replay_check
 {
 	my $newval = $node_master->safe_psql('postgres',
-'INSERT INTO replayed(val) SELECT coalesce(max(val),0) + 1 AS newval FROM replayed RETURNING val'
+		'INSERT INTO replayed(val) SELECT coalesce(max(val),0) + 1 AS newval FROM replayed RETURNING val'
 	);
 	$node_master->wait_for_catchup($node_standby_1, 'replay',
 		$node_master->lsn('insert'));
@@ -247,6 +261,7 @@ sub replay_check
 	$node_standby_2->safe_psql('postgres',
 		qq[SELECT 1 FROM replayed WHERE val = $newval])
 	  or die "standby_2 didn't replay standby_1 value $newval";
+	return;
 }
 
 replay_check();
@@ -331,3 +346,66 @@ is($catalog_xmin, '',
 is($xmin, '', 'xmin of cascaded slot null with hs feedback reset');
 is($catalog_xmin, '',
 	'catalog xmin of cascaded slot still null with hs_feedback reset');
+
+note "check change primary_conninfo without restart";
+$node_standby_2->append_conf('postgresql.conf', "primary_slot_name = ''");
+$node_standby_2->enable_streaming($node_master);
+$node_standby_2->reload;
+
+# be sure do not streaming from cascade
+$node_standby_1->stop;
+
+my $newval = $node_master->safe_psql('postgres',
+	'INSERT INTO replayed(val) SELECT coalesce(max(val),0) + 1 AS newval FROM replayed RETURNING val'
+);
+$node_master->wait_for_catchup($node_standby_2, 'replay',
+	$node_master->lsn('insert'));
+my $is_replayed = $node_standby_2->safe_psql('postgres',
+	qq[SELECT 1 FROM replayed WHERE val = $newval]);
+is($is_replayed, qq(1), "standby_2 didn't replay master value $newval");
+
+# Drop any existing slots on the primary, for the follow-up tests.
+$node_master->safe_psql('postgres',
+	"SELECT pg_drop_replication_slot(slot_name) FROM pg_replication_slots;");
+
+# Test physical slot advancing and its durability.  Create a new slot on
+# the primary, not used by any of the standbys. This reserves WAL at creation.
+my $phys_slot = 'phys_slot';
+$node_master->safe_psql('postgres',
+	"SELECT pg_create_physical_replication_slot('$phys_slot', true);");
+# Generate some WAL, and switch to a new segment, used to check that
+# the previous segment is correctly getting recycled as the slot advancing
+# would recompute the minimum LSN calculated across all slots.
+my $segment_removed = $node_master->safe_psql('postgres',
+	'SELECT pg_walfile_name(pg_current_wal_lsn())');
+chomp($segment_removed);
+$node_master->psql(
+	'postgres', "
+	CREATE TABLE tab_phys_slot (a int);
+	INSERT INTO tab_phys_slot VALUES (generate_series(1,10));
+	SELECT pg_switch_wal();");
+my $current_lsn =
+  $node_master->safe_psql('postgres', "SELECT pg_current_wal_lsn();");
+chomp($current_lsn);
+my $psql_rc = $node_master->psql('postgres',
+	"SELECT pg_replication_slot_advance('$phys_slot', '$current_lsn'::pg_lsn);"
+);
+is($psql_rc, '0', 'slot advancing with physical slot');
+my $phys_restart_lsn_pre = $node_master->safe_psql('postgres',
+	"SELECT restart_lsn from pg_replication_slots WHERE slot_name = '$phys_slot';"
+);
+chomp($phys_restart_lsn_pre);
+# Slot advance should persist across clean restarts.
+$node_master->restart;
+my $phys_restart_lsn_post = $node_master->safe_psql('postgres',
+	"SELECT restart_lsn from pg_replication_slots WHERE slot_name = '$phys_slot';"
+);
+chomp($phys_restart_lsn_post);
+ok( ($phys_restart_lsn_pre cmp $phys_restart_lsn_post) == 0,
+	"physical slot advance persists across restarts");
+
+# Check if the previous segment gets correctly recycled after the
+# server stopped cleanly, causing a shutdown checkpoint to be generated.
+my $master_data = $node_master->data_dir;
+ok(!-f "$master_data/pg_wal/$segment_removed",
+	"WAL segment $segment_removed recycled after physical slot advancing");

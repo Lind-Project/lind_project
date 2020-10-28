@@ -1,11 +1,17 @@
 /* -------------------------------------------------------------------------
  *
  * pg_subscription_rel.h
- *		Local info about tables that come from the publisher of a
- *		subscription (pg_subscription_rel).
+ *	  definition of the system catalog containing the state for each
+ *	  replicated table in each subscription (pg_subscription_rel)
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
+ *
+ * src/include/catalog/pg_subscription_rel.h
+ *
+ * NOTES
+ *	  The Catalog.pm module reads this file and derives schema
+ *	  information.
  *
  * -------------------------------------------------------------------------
  */
@@ -14,6 +20,7 @@
 
 #include "access/xlogdefs.h"
 #include "catalog/genbki.h"
+#include "catalog/pg_subscription_rel_d.h"
 #include "nodes/pg_list.h"
 
 /* ----------------
@@ -21,12 +28,7 @@
  *		typedef struct FormData_pg_subscription_rel
  * ----------------
  */
-#define SubscriptionRelRelationId			6102
-
-/* Workaround for genbki not knowing about XLogRecPtr */
-#define pg_lsn XLogRecPtr
-
-CATALOG(pg_subscription_rel,6102) BKI_WITHOUT_OIDS
+CATALOG(pg_subscription_rel,6102,SubscriptionRelRelationId)
 {
 	Oid			srsubid;		/* Oid of subscription */
 	Oid			srrelid;		/* Oid of relation */
@@ -38,23 +40,16 @@ CATALOG(pg_subscription_rel,6102) BKI_WITHOUT_OIDS
 	 */
 #ifdef CATALOG_VARLEN			/* variable-length fields start here */
 
-	pg_lsn		srsublsn;		/* remote LSN of the state change used for
-								 * synchronization coordination, or NULL if
-								 * not valid */
+	XLogRecPtr	srsublsn BKI_FORCE_NULL;	/* remote LSN of the state change
+											 * used for synchronization
+											 * coordination, or NULL if not
+											 * valid */
 #endif
 } FormData_pg_subscription_rel;
 
 typedef FormData_pg_subscription_rel *Form_pg_subscription_rel;
 
-/* ----------------
- *		compiler constants for pg_subscription_rel
- * ----------------
- */
-#define Natts_pg_subscription_rel				4
-#define Anum_pg_subscription_rel_srsubid		1
-#define Anum_pg_subscription_rel_srrelid		2
-#define Anum_pg_subscription_rel_srsubstate		3
-#define Anum_pg_subscription_rel_srsublsn		4
+#ifdef EXPOSE_TO_CLIENT_CODE
 
 /* ----------------
  *		substate constants
@@ -72,6 +67,8 @@ typedef FormData_pg_subscription_rel *Form_pg_subscription_rel;
 #define SUBREL_STATE_SYNCWAIT	'w' /* waiting for sync */
 #define SUBREL_STATE_CATCHUP	'c' /* catching up with apply */
 
+#endif							/* EXPOSE_TO_CLIENT_CODE */
+
 typedef struct SubscriptionRelState
 {
 	Oid			relid;
@@ -79,10 +76,12 @@ typedef struct SubscriptionRelState
 	char		state;
 } SubscriptionRelState;
 
-extern Oid SetSubscriptionRelState(Oid subid, Oid relid, char state,
-						XLogRecPtr sublsn, bool update_only);
+extern void AddSubscriptionRelState(Oid subid, Oid relid, char state,
+									XLogRecPtr sublsn);
+extern void UpdateSubscriptionRelState(Oid subid, Oid relid, char state,
+									   XLogRecPtr sublsn);
 extern char GetSubscriptionRelState(Oid subid, Oid relid,
-						XLogRecPtr *sublsn, bool missing_ok);
+									XLogRecPtr *sublsn, bool missing_ok);
 extern void RemoveSubscriptionRel(Oid subid, Oid relid);
 
 extern List *GetSubscriptionRelations(Oid subid);

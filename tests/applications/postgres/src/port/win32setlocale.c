@@ -3,7 +3,7 @@
  * win32setlocale.c
  *		Wrapper to work around bugs in Windows setlocale() implementation
  *
- * Copyright (c) 2011-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2011-2020, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
  *	  src/port/win32setlocale.c
@@ -187,7 +187,7 @@ pgwin32_setlocale(int category, const char *locale)
 	 * forbidden to modify, so casting away the "const" is innocuous.
 	 */
 	if (result)
-		result = (char *) map_locale(locale_map_result, result);
+		result = unconstify(char *, map_locale(locale_map_result, result));
 
 	return result;
 }

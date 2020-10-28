@@ -9,7 +9,7 @@ SELECT 'init' FROM pg_create_logical_replication_slot('Invalid Name', 'test_deco
 
 -- fail twice because of an invalid parameter values
 SELECT 'init' FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', 'frakbar');
-SELECT 'init' FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'nonexistant-option', 'frakbar');
+SELECT 'init' FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'nonexistent-option', 'frakbar');
 SELECT 'init' FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', 'frakbar');
 
 -- succeed once
@@ -67,7 +67,7 @@ INSERT INTO replication_example(somedata, somenum) VALUES (4, 1);
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'skip-empty-xacts', '1');
 
 ALTER TABLE replication_example ALTER COLUMN somenum TYPE int4 USING (somenum::int4);
--- throw away changes, they contain oids
+-- check that this doesn't produce any changes from the heap rewrite
 SELECT count(data) FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'skip-empty-xacts', '1');
 
 INSERT INTO replication_example(somedata, somenum) VALUES (5, 1);
@@ -93,12 +93,11 @@ COMMIT;
 /* display results */
 SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'skip-empty-xacts', '1');
 
--- hide changes bc of oid visible in full table rewrites
 CREATE TABLE tr_unique(id2 serial unique NOT NULL, data int);
 INSERT INTO tr_unique(data) VALUES(10);
 ALTER TABLE tr_unique RENAME TO tr_pkey;
 ALTER TABLE tr_pkey ADD COLUMN id serial primary key;
-SELECT count(data) FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'skip-empty-xacts', '1');
+SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'include-xids', '0', 'skip-empty-xacts', '1', 'include-rewrites', '1');
 
 INSERT INTO tr_pkey(data) VALUES(1);
 --show deletion with primary key
@@ -221,7 +220,7 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'inc
 -- test whether a known, but not yet logged toplevel xact, followed by a
 -- subxact commit is handled correctly
 BEGIN;
-SELECT txid_current() != 0; -- so no fixed xid apears in the outfile
+SELECT pg_current_xact_id() != '0'; -- so no fixed xid apears in the outfile
 SAVEPOINT a;
 INSERT INTO tr_sub(path) VALUES ('4-top-1-#1');
 RELEASE SAVEPOINT a;
@@ -388,4 +387,6 @@ SELECT data FROM pg_logical_slot_get_changes('regression_slot', NULL, NULL, 'inc
 SELECT pg_drop_replication_slot('regression_slot');
 
 /* check that the slot is gone */
+\x
 SELECT * FROM pg_replication_slots;
+\x

@@ -5,10 +5,12 @@
  *
  * This module is responsible for managing three planner data structures:
  *
- * root->glob->nParamExec: counts actual assignments of PARAM_EXEC slots.
- * This counter is global to the whole plan since the executor has only one
- * PARAM_EXEC array.  Assignments are permanent for the plan: we never
- * de-assign a slot once added.
+ * root->glob->paramExecTypes: records actual assignments of PARAM_EXEC slots.
+ * The i'th list element holds the data type OID of the i'th parameter slot.
+ * (Elements can be InvalidOid if they represent slots that are needed for
+ * chgParam signaling, but will never hold a value at runtime.)  This list is
+ * global to the whole plan since the executor has only one PARAM_EXEC array.
+ * Assignments are permanent for the plan: we never remove entries once added.
  *
  * root->plan_params: a list of PlannerParamItem nodes, recording Vars and
  * PlaceHolderVars that the root's query level needs to supply to lower-level
@@ -38,7 +40,7 @@
  * doesn't really save much executor work anyway.
  *
  *
- * Portions Copyright (c) 1996-2019, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -81,15 +83,14 @@ assign_param_for_var(PlannerInfo *root, Var *var)
 
 			/*
 			 * This comparison must match _equalVar(), except for ignoring
-			 * varlevelsup.  Note that _equalVar() ignores the location.
+			 * varlevelsup.  Note that _equalVar() ignores varnosyn,
+			 * varattnosyn, and location, so this does too.
 			 */
 			if (pvar->varno == var->varno &&
 				pvar->varattno == var->varattno &&
 				pvar->vartype == var->vartype &&
 				pvar->vartypmod == var->vartypmod &&
-				pvar->varcollid == var->varcollid &&
-				pvar->varnoold == var->varnoold &&
-				pvar->varoattno == var->varoattno)
+				pvar->varcollid == var->varcollid)
 				return pitem->paramId;
 		}
 	}
@@ -100,7 +101,9 @@ assign_param_for_var(PlannerInfo *root, Var *var)
 
 	pitem = makeNode(PlannerParamItem);
 	pitem->item = (Node *) var;
-	pitem->paramId = root->glob->nParamExec++;
+	pitem->paramId = list_length(root->glob->paramExecTypes);
+	root->glob->paramExecTypes = lappend_oid(root->glob->paramExecTypes,
+											 var->vartype);
 
 	root->plan_params = lappend(root->plan_params, pitem);
 
@@ -173,7 +176,9 @@ assign_param_for_placeholdervar(PlannerInfo *root, PlaceHolderVar *phv)
 
 	pitem = makeNode(PlannerParamItem);
 	pitem->item = (Node *) phv;
-	pitem->paramId = root->glob->nParamExec++;
+	pitem->paramId = list_length(root->glob->paramExecTypes);
+	root->glob->paramExecTypes = lappend_oid(root->glob->paramExecTypes,
+											 exprType((Node *) phv->phexpr));
 
 	root->plan_params = lappend(root->plan_params, pitem);
 
@@ -237,7 +242,9 @@ replace_outer_agg(PlannerInfo *root, Aggref *agg)
 
 	pitem = makeNode(PlannerParamItem);
 	pitem->item = (Node *) agg;
-	pitem->paramId = root->glob->nParamExec++;
+	pitem->paramId = list_length(root->glob->paramExecTypes);
+	root->glob->paramExecTypes = lappend_oid(root->glob->paramExecTypes,
+											 agg->aggtype);
 
 	root->plan_params = lappend(root->plan_params, pitem);
 
@@ -282,7 +289,9 @@ replace_outer_grouping(PlannerInfo *root, GroupingFunc *grp)
 
 	pitem = makeNode(PlannerParamItem);
 	pitem->item = (Node *) grp;
-	pitem->paramId = root->glob->nParamExec++;
+	pitem->paramId = list_length(root->glob->paramExecTypes);
+	root->glob->paramExecTypes = lappend_oid(root->glob->paramExecTypes,
+											 ptype);
 
 	root->plan_params = lappend(root->plan_params, pitem);
 
@@ -500,16 +509,11 @@ identify_current_nestloop_params(PlannerInfo *root, Relids leftrelids)
 {
 	List	   *result;
 	ListCell   *cell;
-	ListCell   *prev;
-	ListCell   *next;
 
 	result = NIL;
-	prev = NULL;
-	for (cell = list_head(root->curOuterParams); cell; cell = next)
+	foreach(cell, root->curOuterParams)
 	{
 		NestLoopParam *nlp = (NestLoopParam *) lfirst(cell);
-
-		next = lnext(cell);
 
 		/*
 		 * We are looking for Vars and PHVs that can be supplied by the
@@ -519,8 +523,8 @@ identify_current_nestloop_params(PlannerInfo *root, Relids leftrelids)
 		if (IsA(nlp->paramval, Var) &&
 			bms_is_member(nlp->paramval->varno, leftrelids))
 		{
-			root->curOuterParams = list_delete_cell(root->curOuterParams,
-													cell, prev);
+			root->curOuterParams = foreach_delete_current(root->curOuterParams,
+														  cell);
 			result = lappend(result, nlp);
 		}
 		else if (IsA(nlp->paramval, PlaceHolderVar) &&
@@ -531,12 +535,10 @@ identify_current_nestloop_params(PlannerInfo *root, Relids leftrelids)
 													 false)->ph_eval_at,
 							   leftrelids))
 		{
-			root->curOuterParams = list_delete_cell(root->curOuterParams,
-													cell, prev);
+			root->curOuterParams = foreach_delete_current(root->curOuterParams,
+														  cell);
 			result = lappend(result, nlp);
 		}
-		else
-			prev = cell;
 	}
 	return result;
 }
@@ -548,7 +550,8 @@ identify_current_nestloop_params(PlannerInfo *root, Relids leftrelids)
  * NestLoop parameters.
  *
  * We don't need to build a PlannerParamItem for such a Param, but we do
- * need to record the PARAM_EXEC slot number as being allocated.
+ * need to make sure we record the type in paramExecTypes (otherwise,
+ * there won't be a slot allocated for it).
  */
 Param *
 generate_new_exec_param(PlannerInfo *root, Oid paramtype, int32 paramtypmod,
@@ -558,7 +561,9 @@ generate_new_exec_param(PlannerInfo *root, Oid paramtype, int32 paramtypmod,
 
 	retval = makeNode(Param);
 	retval->paramkind = PARAM_EXEC;
-	retval->paramid = root->glob->nParamExec++;
+	retval->paramid = list_length(root->glob->paramExecTypes);
+	root->glob->paramExecTypes = lappend_oid(root->glob->paramExecTypes,
+											 paramtype);
 	retval->paramtype = paramtype;
 	retval->paramtypmod = paramtypmod;
 	retval->paramcollid = paramcollation;
@@ -578,5 +583,9 @@ generate_new_exec_param(PlannerInfo *root, Oid paramtype, int32 paramtypmod,
 int
 assign_special_exec_param(PlannerInfo *root)
 {
-	return root->glob->nParamExec++;
+	int			paramId = list_length(root->glob->paramExecTypes);
+
+	root->glob->paramExecTypes = lappend_oid(root->glob->paramExecTypes,
+											 InvalidOid);
+	return paramId;
 }

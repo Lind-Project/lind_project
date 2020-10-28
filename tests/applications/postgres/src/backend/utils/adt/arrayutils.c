@@ -3,7 +3,7 @@
  * arrayutils.c
  *	  This file contains some support routines required for array functions.
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  *
@@ -220,14 +220,13 @@ ArrayGetIntegerTypmods(ArrayType *arr, int *n)
 
 	/* hardwired knowledge about cstring's representation details here */
 	deconstruct_array(arr, CSTRINGOID,
-					  -2, false, 'c',
+					  -2, false, TYPALIGN_CHAR,
 					  &elem_values, NULL, n);
 
 	result = (int32 *) palloc(*n * sizeof(int32));
 
 	for (i = 0; i < *n; i++)
-		result[i] = pg_atoi(DatumGetCString(elem_values[i]),
-							sizeof(int32), '\0');
+		result[i] = pg_strtoint32(DatumGetCString(elem_values[i]));
 
 	pfree(elem_values);
 

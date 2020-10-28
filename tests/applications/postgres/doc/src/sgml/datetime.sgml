@@ -37,18 +37,18 @@
      <substeps>
       <step>
        <para>
-        If the numeric token contains a colon (<literal>:</>), this is
+        If the numeric token contains a colon (<literal>:</literal>), this is
         a time string. Include all subsequent digits and colons.
        </para>
       </step>
 
       <step>
        <para>
-        If the numeric token contains a dash (<literal>-</>), slash
-        (<literal>/</>), or two or more dots (<literal>.</>), this is
+        If the numeric token contains a dash (<literal>-</literal>), slash
+        (<literal>/</literal>), or two or more dots (<literal>.</literal>), this is
         a date string which might have a text month.  If a date token has
         already been seen, it is instead interpreted as a time zone
-        name (e.g., <literal>America/New_York</>).
+        name (e.g., <literal>America/New_York</literal>).
        </para>
       </step>
 
@@ -63,8 +63,8 @@
 
       <step>
        <para>
-        If the token starts with a plus (<literal>+</>) or minus
-        (<literal>-</>), then it is either a numeric time zone or a special
+        If the token starts with a plus (<literal>+</literal>) or minus
+        (<literal>-</literal>), then it is either a numeric time zone or a special
         field.
        </para>
       </step>
@@ -81,7 +81,7 @@
        <para>
         See if the token matches any known time zone abbreviation.
         These abbreviations are supplied by the configuration file
-        described in <xref linkend="datetime-config-files">.
+        described in <xref linkend="datetime-config-files"/>.
        </para>
       </step>
 
@@ -115,7 +115,7 @@
         and if no other date fields have been previously read, then interpret
         as a <quote>concatenated date</quote> (e.g.,
         <literal>19990118</literal> or <literal>990118</literal>).
-        The interpretation is <literal>YYYYMMDD</> or <literal>YYMMDD</>.
+        The interpretation is <literal>YYYYMMDD</literal> or <literal>YYMMDD</literal>.
        </para>
       </step>
 
@@ -129,7 +129,7 @@
       <step>
        <para>
         If four or six digits and a year has already been read, then
-        interpret as a time (<literal>HHMM</> or <literal>HHMMSS</>).
+        interpret as a time (<literal>HHMM</literal> or <literal>HHMMSS</literal>).
        </para>
       </step>
 
@@ -144,7 +144,7 @@
       <step>
        <para>
         Otherwise the date field ordering is assumed to follow the
-        <varname>DateStyle</> setting: mm-dd-yy, dd-mm-yy, or yy-mm-dd.
+        <varname>DateStyle</varname> setting: mm-dd-yy, dd-mm-yy, or yy-mm-dd.
         Throw an error if a month or day field is found to be out of range.
        </para>
       </step>
@@ -167,8 +167,8 @@
 
       <tip>
        <para>
-        Gregorian years AD 1-99 can be entered by using 4 digits with leading
-        zeros (e.g., <literal>0099</> is AD 99).
+        Gregorian years AD 1&ndash;99 can be entered by using 4 digits with leading
+        zeros (e.g., <literal>0099</literal> is AD 99).
        </para>
       </tip>
      </para>
@@ -191,7 +191,7 @@
     seemingly valid timestamp string to represent a nonexistent or ambiguous
     timestamp.  Such cases are not rejected; the ambiguity is resolved by
     determining which UTC offset to apply.  For example, supposing that the
-    <xref linkend="guc-timezone"> parameter is set
+    <xref linkend="guc-timezone"/> parameter is set
     to <literal>America/New_York</literal>, consider
 <programlisting>
 =&gt; SELECT '2018-03-11 02:30'::timestamptz;
@@ -258,7 +258,7 @@
    <title>Date/Time Key Words</title>
 
    <para>
-    <xref linkend="datetime-month-table"> shows the tokens that are
+    <xref linkend="datetime-month-table"/> shows the tokens that are
     recognized as names of months.
    </para>
 
@@ -325,7 +325,7 @@
     </table>
 
     <para>
-     <xref linkend="datetime-dow-table"> shows the tokens that are
+     <xref linkend="datetime-dow-table"/> shows the tokens that are
      recognized as names of days of the week.
     </para>
 
@@ -372,7 +372,7 @@
      </table>
 
    <para>
-    <xref linkend="datetime-mod-table"> shows the tokens that serve
+    <xref linkend="datetime-mod-table"/> shows the tokens that serve
     various modifier purposes.
    </para>
 
@@ -395,7 +395,7 @@
         <entry>Ignored</entry>
        </row>
        <row>
-        <entry><literal>JULIAN</>, <literal>JD</>, <literal>J</></entry>
+        <entry><literal>JULIAN</literal>, <literal>JD</literal>, <literal>J</literal></entry>
         <entry>Next field is Julian Date</entry>
        </row>
        <row>
@@ -427,28 +427,28 @@
     Since timezone abbreviations are not well standardized,
     <productname>PostgreSQL</productname> provides a means to customize
     the set of abbreviations accepted by the server.  The
-    <xref linkend="guc-timezone-abbreviations"> run-time parameter
+    <xref linkend="guc-timezone-abbreviations"/> run-time parameter
     determines the active set of abbreviations.  While this parameter
     can be altered by any database user, the possible values for it
     are under the control of the database administrator &mdash; they
     are in fact names of configuration files stored in
-    <filename>.../share/timezonesets/</> of the installation directory.
+    <filename>.../share/timezonesets/</filename> of the installation directory.
     By adding or altering files in that directory, the administrator
     can set local policy for timezone abbreviations.
    </para>
 
    <para>
-    <varname>timezone_abbreviations</> can be set to any file name
-    found in <filename>.../share/timezonesets/</>, if the file's name
+    <varname>timezone_abbreviations</varname> can be set to any file name
+    found in <filename>.../share/timezonesets/</filename>, if the file's name
     is entirely alphabetic.  (The prohibition against non-alphabetic
-    characters in <varname>timezone_abbreviations</> prevents reading
+    characters in <varname>timezone_abbreviations</varname> prevents reading
     files outside the intended directory, as well as reading editor
     backup files and other extraneous files.)
    </para>
 
    <para>
     A timezone abbreviation file can contain blank lines and comments
-    beginning with <literal>#</>.  Non-comment lines must have one of
+    beginning with <literal>#</literal>.  Non-comment lines must have one of
     these formats:
 
 <synopsis>
@@ -466,12 +466,12 @@
     the equivalent offset in seconds from UTC, positive being east from
     Greenwich and negative being west.  For example, -18000 would be five
     hours west of Greenwich, or North American east coast standard time.
-    <literal>D</> indicates that the zone name represents local
+    <literal>D</literal> indicates that the zone name represents local
     daylight-savings time rather than standard time.
    </para>
 
    <para>
-    Alternatively, a <replaceable>time_zone_name</> can be given, referencing
+    Alternatively, a <replaceable>time_zone_name</replaceable> can be given, referencing
     a zone name defined in the IANA timezone database.  The zone's definition
     is consulted to see whether the abbreviation is or has been in use in
     that zone, and if so, the appropriate meaning is used &mdash; that is,
@@ -495,34 +495,34 @@
    </tip>
 
    <para>
-    The <literal>@INCLUDE</> syntax allows inclusion of another file in the
-    <filename>.../share/timezonesets/</> directory.  Inclusion can be nested,
+    The <literal>@INCLUDE</literal> syntax allows inclusion of another file in the
+    <filename>.../share/timezonesets/</filename> directory.  Inclusion can be nested,
     to a limited depth.
    </para>
 
    <para>
-    The <literal>@OVERRIDE</> syntax indicates that subsequent entries in the
+    The <literal>@OVERRIDE</literal> syntax indicates that subsequent entries in the
     file can override previous entries (typically, entries obtained from
     included files).  Without this, conflicting definitions of the same
     timezone abbreviation are considered an error.
    </para>
 
    <para>
-    In an unmodified installation, the file <filename>Default</> contains
+    In an unmodified installation, the file <filename>Default</filename> contains
     all the non-conflicting time zone abbreviations for most of the world.
-    Additional files <filename>Australia</> and <filename>India</> are
+    Additional files <filename>Australia</filename> and <filename>India</filename> are
     provided for those regions: these files first include the
-    <literal>Default</> file and then add or modify abbreviations as needed.
+    <literal>Default</literal> file and then add or modify abbreviations as needed.
    </para>
 
    <para>
     For reference purposes, a standard installation also contains files
-    <filename>Africa.txt</>, <filename>America.txt</>, etc, containing
+    <filename>Africa.txt</filename>, <filename>America.txt</filename>, etc, containing
     information about every time zone abbreviation known to be in use
     according to the IANA timezone database.  The zone name
     definitions found in these files can be copied and pasted into a custom
     configuration file as needed.  Note that these files cannot be directly
-    referenced as <varname>timezone_abbreviations</> settings, because of
+    referenced as <varname>timezone_abbreviations</varname> settings, because of
     the dot embedded in their names.
    </para>
 
@@ -538,16 +538,16 @@
     <para>
      Time zone abbreviations defined in the configuration file override
      non-timezone meanings built into <productname>PostgreSQL</productname>.
-     For example, the <filename>Australia</> configuration file defines
-     <literal>SAT</> (for South Australian Standard Time).  When this
-     file is active, <literal>SAT</> will not be recognized as an abbreviation
+     For example, the <filename>Australia</filename> configuration file defines
+     <literal>SAT</literal> (for South Australian Standard Time).  When this
+     file is active, <literal>SAT</literal> will not be recognized as an abbreviation
      for Saturday.
     </para>
    </caution>
 
    <caution>
     <para>
-     If you modify files in <filename>.../share/timezonesets/</>,
+     If you modify files in <filename>.../share/timezonesets/</filename>,
      it is up to you to make backups &mdash; a normal database dump
      will not include this directory.
     </para>
@@ -564,8 +564,8 @@
   </indexterm>
 
   <para>
-   <acronym>PostgreSQL</acronym> can accept time zone specifications that
-   are written according to the <acronym>POSIX</acronym> standard's rules
+   <productname>PostgreSQL</productname> can accept time zone specifications
+   that are written according to the <acronym>POSIX</acronym> standard's rules
    for the <varname>TZ</varname> environment
    variable.  <acronym>POSIX</acronym> time zone specifications are
    inadequate to deal with the complexity of real-world time zone history,
@@ -624,7 +624,7 @@
    Note that the zone abbreviations given here are only used for output,
    and even then only in some timestamp output formats.  The zone
    abbreviations recognized in timestamp input are determined as explained
-   in <xref linkend="datetime-config-files">.
+   in <xref linkend="datetime-config-files"/>.
   </para>
 
   <para>
@@ -635,8 +635,8 @@
    or <literal>-</literal>).  The positive sign is used for
    zones <emphasis>west</emphasis> of Greenwich.  (Note that this is the
    opposite of the ISO-8601 sign convention used elsewhere in
-   <acronym>PostgreSQL</acronym>.)  <replaceable>hh</replaceable> can have
-   one or two digits; <replaceable>mm</replaceable>
+   <productname>PostgreSQL</productname>.)  <replaceable>hh</replaceable>
+   can have one or two digits; <replaceable>mm</replaceable>
    and <replaceable>ss</replaceable> (if used) must have two.
   </para>
 
@@ -718,33 +718,12 @@
   <para>
    If a daylight-savings abbreviation is given but the
    transition <replaceable>rule</replaceable> field is omitted,
-   <productname>PostgreSQL</productname> attempts to determine the
-   transition times by consulting the <filename>posixrules</filename> file
-   in the IANA time zone database.  This file has the same format as a
-   full time zone entry, but only its transition timing rules are used,
-   not its UTC offsets.  Typically, this file has the same contents as the
-   <literal>US/Eastern</literal> file, so that POSIX-style time zone
-   specifications follow USA daylight-savings rules.  If needed, you can
-   adjust this behavior by replacing the <filename>posixrules</filename>
-   file.
-  </para>
-
-  <note>
-   <para>
-    The facility to consult a <filename>posixrules</filename> file has
-    been deprecated by IANA, and it is likely to go away in the future.
-    One bug in this feature, which is unlikely to be fixed before it
-    disappears, is that it fails to apply DST rules to dates after 2038.
-   </para>
-  </note>
-
-  <para>
-   If the <filename>posixrules</filename> file is not present,
    the fallback behavior is to use the
    rule <literal>M3.2.0,M11.1.0</literal>, which corresponds to USA
    practice as of 2020 (that is, spring forward on the second Sunday of
    March, fall back on the first Sunday of November, both transitions
-   occurring at 2AM prevailing time).
+   occurring at 2AM prevailing time).  Note that this rule does not
+   give correct USA transition dates for years before 2007.
   </para>
 
   <para>
@@ -765,8 +744,7 @@
    because (for historical reasons) there are files by those names in the
    IANA time zone database.  The practical implication of this is that
    these zone names will produce valid historical USA daylight-savings
-   transitions, even when a plain POSIX specification would not due to
-   lack of a suitable <filename>posixrules</filename> file.
+   transitions, even when a plain POSIX specification would not.
   </para>
 
   <para>
@@ -794,10 +772,10 @@
    <quote>datetime literal</quote>, the <quote>datetime
    values</quote> are constrained by the natural rules for dates and
    times according to the Gregorian calendar</quote>.
-   <productname>PostgreSQL</> follows the SQL
+   <productname>PostgreSQL</productname> follows the SQL
    standard's lead by counting dates exclusively in the Gregorian
    calendar, even for years before that calendar was in use.
-   This rule is known as the <firstterm>proleptic Gregorian calendar</>.
+   This rule is known as the <firstterm>proleptic Gregorian calendar</firstterm>.
   </para>
 
   <para>
@@ -871,7 +849,7 @@ $ <userinput>cal 9 1752</userinput>
    dominions, not other places.
    Since it would be difficult and confusing to try to track the actual
    calendars that were in use in various places at various times,
-   <productname>PostgreSQL</> does not try, but rather follows the Gregorian
+   <productname>PostgreSQL</productname> does not try, but rather follows the Gregorian
    calendar rules for all dates, even though this method is not historically
    accurate.
   </para>
@@ -895,11 +873,11 @@ $ <userinput>cal 9 1752</userinput>
    calendar, unrelated to the Julian calendar though it is confusingly
    named similarly to that calendar.
    The Julian Date system was invented by the French scholar
-   Joseph Justus Scaliger (1540-1609)
+   Joseph Justus Scaliger (1540&ndash;1609)
    and probably takes its name from Scaliger's father,
-   the Italian scholar Julius Caesar Scaliger (1484-1558).
+   the Italian scholar Julius Caesar Scaliger (1484&ndash;1558).
    In the Julian Date system, each day has a sequential number, starting
-   from JD 0 (which is sometimes called <emphasis>the</> Julian Date).
+   from JD 0 (which is sometimes called <emphasis>the</emphasis> Julian Date).
    JD 0 corresponds to 1 January 4713 BC in the Julian calendar, or
    24 November 4714 BC in the Gregorian calendar.  Julian Date counting
    is most often used by astronomers for labeling their nightly observations,
@@ -909,10 +887,10 @@ $ <userinput>cal 9 1752</userinput>
   </para>
 
   <para>
-   Although <productname>PostgreSQL</> supports Julian Date notation for
+   Although <productname>PostgreSQL</productname> supports Julian Date notation for
    input and output of dates (and also uses Julian dates for some internal
    datetime calculations), it does not observe the nicety of having dates
-   run from noon to noon.  <productname>PostgreSQL</> treats a Julian Date
+   run from noon to noon.  <productname>PostgreSQL</productname> treats a Julian Date
    as running from midnight to midnight.
   </para>
 

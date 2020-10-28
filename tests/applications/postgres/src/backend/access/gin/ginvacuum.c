@@ -4,7 +4,7 @@
  *	  delete & vacuum routines for the postgres GIN
  *
  *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
  *
  * IDENTIFICATION
@@ -22,6 +22,7 @@
 #include "postmaster/autovacuum.h"
 #include "storage/indexfsm.h"
 #include "storage/lmgr.h"
+#include "storage/predicate.h"
 #include "utils/memutils.h"
 
 struct GinVacuumState
@@ -149,15 +150,18 @@ ginDeletePage(GinVacuumState *gvs, BlockNumber deleteBlkno, BlockNumber leftBlkn
 	pBuffer = ReadBufferExtended(gvs->index, MAIN_FORKNUM, parentBlkno,
 								 RBM_NORMAL, gvs->strategy);
 
-	START_CRIT_SECTION();
-
-	/* Unlink the page by changing left sibling's rightlink */
 	page = BufferGetPage(dBuffer);
 	rightlink = GinPageGetOpaque(page)->rightlink;
 
-	/* For deleted page remember last xid which could knew its address */
-	GinPageSetDeleteXid(page, ReadNewTransactionId());
+	/*
+	 * Any insert which would have gone on the leaf block will now go to its
+	 * right sibling.
+	 */
+	PredicateLockPageCombine(gvs->index, deleteBlkno, rightlink);
 
+	START_CRIT_SECTION();
+
+	/* Unlink the page by changing left sibling's rightlink */
 	page = BufferGetPage(lBuffer);
 	GinPageGetOpaque(page)->rightlink = rightlink;
 
@@ -179,7 +183,13 @@ ginDeletePage(GinVacuumState *gvs, BlockNumber deleteBlkno, BlockNumber leftBlkn
 	 * we shouldn't change rightlink field to save workability of running
 	 * search scan
 	 */
+
+	/*
+	 * Mark page as deleted, and remember last xid which could know its
+	 * address.
+	 */
 	GinPageSetDeleted(page);
+	GinPageSetDeleteXid(page, ReadNewTransactionId());
 
 	MarkBufferDirty(pBuffer);
 	MarkBufferDirty(lBuffer);
@@ -239,7 +249,7 @@ ginScanToDelete(GinVacuumState *gvs, BlockNumber blkno, bool isRoot,
 	DataPageDeleteStack *me;
 	Buffer		buffer;
 	Page		page;
-	bool		meDelete = FALSE;
+	bool		meDelete = false;
 	bool		isempty;
 
 	if (isRoot)
@@ -278,7 +288,7 @@ ginScanToDelete(GinVacuumState *gvs, BlockNumber blkno, bool isRoot,
 		{
 			PostingItem *pitem = GinDataPageGetPostingItem(page, i);
 
-			if (ginScanToDelete(gvs, PostingItemGetBlockNumber(pitem), FALSE, me, i))
+			if (ginScanToDelete(gvs, PostingItemGetBlockNumber(pitem), false, me, i))
 				i--;
 		}
 
@@ -302,7 +312,7 @@ ginScanToDelete(GinVacuumState *gvs, BlockNumber blkno, bool isRoot,
 			Assert(!isRoot);
 			ginDeletePage(gvs, blkno, BufferGetBlockNumber(me->leftBuffer),
 						  me->parent->blkno, myoff, me->parent->isRoot);
-			meDelete = TRUE;
+			meDelete = true;
 		}
 	}
 
@@ -336,7 +346,7 @@ ginVacuumPostingTreeLeaves(GinVacuumState *gvs, BlockNumber blkno)
 {
 	Buffer		buffer;
 	Page		page;
-	bool		hasVoidPage = FALSE;
+	bool		hasVoidPage = false;
 	MemoryContext oldCxt;
 
 	/* Find leftmost leaf page of posting tree and lock it in exclusive mode */
@@ -376,7 +386,7 @@ ginVacuumPostingTreeLeaves(GinVacuumState *gvs, BlockNumber blkno)
 		MemoryContextReset(gvs->tmpCxt);
 
 		if (GinDataLeafPageIsEmpty(page))
-			hasVoidPage = TRUE;
+			hasVoidPage = true;
 
 		blkno = GinPageGetOpaque(page)->rightlink;
 
@@ -403,17 +413,17 @@ ginVacuumPostingTree(GinVacuumState *gvs, BlockNumber rootBlkno)
 		 * There is at least one empty page.  So we have to rescan the tree
 		 * deleting empty pages.
 		 */
-		Buffer				buffer;
+		Buffer		buffer;
 		DataPageDeleteStack root,
-						   *ptr,
-						   *tmp;
+				   *ptr,
+				   *tmp;
 
 		buffer = ReadBufferExtended(gvs->index, MAIN_FORKNUM, rootBlkno,
 									RBM_NORMAL, gvs->strategy);
 
 		/*
-		 * Lock posting tree root for cleanup to ensure there are no concurrent
-		 * inserts.
+		 * Lock posting tree root for cleanup to ensure there are no
+		 * concurrent inserts.
 		 */
 		LockBufferForCleanup(buffer);
 
@@ -768,7 +778,7 @@ ginvacuumcleanup(IndexVacuumInfo *info, IndexBulkDeleteResult *stats)
 
 	/* Update the metapage with accurate page and entry counts */
 	idxStat.nTotalPages = npages;
-	ginUpdateStats(info->index, &idxStat);
+	ginUpdateStats(info->index, &idxStat, false);
 
 	/* Finally, vacuum the FSM */
 	IndexFreeSpaceMapVacuum(info->index);

@@ -1,26 +1,24 @@
 /*
  * psql - the PostgreSQL interactive terminal
  *
- * Copyright (c) 2000-2017, PostgreSQL Global Development Group
+ * Copyright (c) 2000-2020, PostgreSQL Global Development Group
  *
  * src/bin/psql/mainloop.c
  */
 #include "postgres_fe.h"
-#include "mainloop.h"
 
 #include "command.h"
 #include "common.h"
+#include "common/logging.h"
 #include "input.h"
+#include "mainloop.h"
+#include "mb/pg_wchar.h"
 #include "prompt.h"
 #include "settings.h"
-
-#include "mb/pg_wchar.h"
-
 
 /* callback functions for our flex lexer */
 const PsqlScanCallbacks psqlscan_callbacks = {
 	psql_get_variable,
-	psql_error
 };
 
 
@@ -49,6 +47,7 @@ MainLoop(FILE *source)
 	volatile int successResult = EXIT_SUCCESS;
 	volatile backslashResult slashCmdStatus = PSQL_CMD_UNKNOWN;
 	volatile promptStatus_t prompt_status = PROMPT_READY;
+	volatile bool need_redisplay = false;
 	volatile int count_eof = 0;
 	volatile bool die_on_error = false;
 	FILE	   *prev_cmd_source;
@@ -79,7 +78,7 @@ MainLoop(FILE *source)
 		PQExpBufferBroken(previous_buf) ||
 		PQExpBufferBroken(history_buf))
 	{
-		psql_error("out of memory\n");
+		pg_log_error("out of memory");
 		exit(EXIT_FAILURE);
 	}
 
@@ -120,6 +119,7 @@ MainLoop(FILE *source)
 			count_eof = 0;
 			slashCmdStatus = PSQL_CMD_UNKNOWN;
 			prompt_status = PROMPT_READY;
+			need_redisplay = false;
 			pset.stmt_lineno = 1;
 			cancel_pressed = false;
 
@@ -133,7 +133,7 @@ MainLoop(FILE *source)
 				 */
 				if (!conditional_stack_empty(cond_stack))
 				{
-					psql_error("\\if: escaped\n");
+					pg_log_error("\\if: escaped");
 					conditional_stack_pop(cond_stack);
 				}
 			}
@@ -154,6 +154,18 @@ MainLoop(FILE *source)
 			/* May need to reset prompt, eg after \r command */
 			if (query_buf->len == 0)
 				prompt_status = PROMPT_READY;
+			/* If query buffer came from \e, redisplay it with a prompt */
+			if (need_redisplay)
+			{
+				if (query_buf->len > 0)
+				{
+					fputs(get_prompt(PROMPT_READY, cond_stack), stdout);
+					fputs(query_buf->data, stdout);
+					fflush(stdout);
+				}
+				need_redisplay = false;
+			}
+			/* Now we can fetch a line */
 			line = gets_interactive(get_prompt(prompt_status, cond_stack),
 									query_buf);
 		}
@@ -216,21 +228,135 @@ MainLoop(FILE *source)
 			continue;
 		}
 
-		/* A request for help? Be friendly and give them some guidance */
-		if (pset.cur_cmd_interactive && query_buf->len == 0 &&
-			pg_strncasecmp(line, "help", 4) == 0 &&
-			(line[4] == '\0' || line[4] == ';' || isspace((unsigned char) line[4])))
+		/* Recognize "help", "quit", "exit" only in interactive mode */
+		if (pset.cur_cmd_interactive)
 		{
-			free(line);
-			puts(_("You are using psql, the command-line interface to PostgreSQL."));
-			printf(_("Type:  \\copyright for distribution terms\n"
-					 "       \\h for help with SQL commands\n"
-					 "       \\? for help with psql commands\n"
-					 "       \\g or terminate with semicolon to execute query\n"
-					 "       \\q to quit\n"));
+			char	   *first_word = line;
+			char	   *rest_of_line = NULL;
+			bool		found_help = false;
+			bool		found_exit_or_quit = false;
+			bool		found_q = false;
 
-			fflush(stdout);
-			continue;
+			/*
+			 * The assistance words, help/exit/quit, must have no whitespace
+			 * before them, and only whitespace after, with an optional
+			 * semicolon.  This prevents indented use of these words, perhaps
+			 * as identifiers, from invoking the assistance behavior.
+			 */
+			if (pg_strncasecmp(first_word, "help", 4) == 0)
+			{
+				rest_of_line = first_word + 4;
+				found_help = true;
+			}
+			else if (pg_strncasecmp(first_word, "exit", 4) == 0 ||
+					 pg_strncasecmp(first_word, "quit", 4) == 0)
+			{
+				rest_of_line = first_word + 4;
+				found_exit_or_quit = true;
+			}
+			else if (strncmp(first_word, "\\q", 2) == 0)
+			{
+				rest_of_line = first_word + 2;
+				found_q = true;
+			}
+
+			/*
+			 * If we found a command word, check whether the rest of the line
+			 * contains only whitespace plus maybe one semicolon.  If not,
+			 * ignore the command word after all.  These commands are only for
+			 * compatibility with other SQL clients and are not documented.
+			 */
+			if (rest_of_line != NULL)
+			{
+				/*
+				 * Ignore unless rest of line is whitespace, plus maybe one
+				 * semicolon
+				 */
+				while (isspace((unsigned char) *rest_of_line))
+					++rest_of_line;
+				if (*rest_of_line == ';')
+					++rest_of_line;
+				while (isspace((unsigned char) *rest_of_line))
+					++rest_of_line;
+				if (*rest_of_line != '\0')
+				{
+					found_help = false;
+					found_exit_or_quit = false;
+				}
+			}
+
+			/*
+			 * "help" is only a command when the query buffer is empty, but we
+			 * emit a one-line message even when it isn't to help confused
+			 * users.  The text is still added to the query buffer in that
+			 * case.
+			 */
+			if (found_help)
+			{
+				if (query_buf->len != 0)
+#ifndef WIN32
+					puts(_("Use \\? for help or press control-C to clear the input buffer."));
+#else
+					puts(_("Use \\? for help."));
+#endif
+				else
+				{
+					puts(_("You are using psql, the command-line interface to PostgreSQL."));
+					printf(_("Type:  \\copyright for distribution terms\n"
+							 "       \\h for help with SQL commands\n"
+							 "       \\? for help with psql commands\n"
+							 "       \\g or terminate with semicolon to execute query\n"
+							 "       \\q to quit\n"));
+					free(line);
+					fflush(stdout);
+					continue;
+				}
+			}
+
+			/*
+			 * "quit" and "exit" are only commands when the query buffer is
+			 * empty, but we emit a one-line message even when it isn't to
+			 * help confused users.  The text is still added to the query
+			 * buffer in that case.
+			 */
+			if (found_exit_or_quit)
+			{
+				if (query_buf->len != 0)
+				{
+					if (prompt_status == PROMPT_READY ||
+						prompt_status == PROMPT_CONTINUE ||
+						prompt_status == PROMPT_PAREN)
+						puts(_("Use \\q to quit."));
+					else
+#ifndef WIN32
+						puts(_("Use control-D to quit."));
+#else
+						puts(_("Use control-C to quit."));
+#endif
+				}
+				else
+				{
+					/* exit app */
+					free(line);
+					fflush(stdout);
+					successResult = EXIT_SUCCESS;
+					break;
+				}
+			}
+
+			/*
+			 * If they typed "\q" in a place where "\q" is not active, supply
+			 * a hint.  The text is still added to the query buffer.
+			 */
+			if (found_q && query_buf->len != 0 &&
+				prompt_status != PROMPT_READY &&
+				prompt_status != PROMPT_CONTINUE &&
+				prompt_status != PROMPT_PAREN)
+#ifndef WIN32
+				puts(_("Use control-D to quit."));
+#else
+				puts(_("Use control-C to quit."));
+#endif
 		}
 
 		/* echo back if flag is set, unless interactive */
@@ -273,7 +399,7 @@ MainLoop(FILE *source)
 
 			if (PQExpBufferBroken(query_buf))
 			{
-				psql_error("out of memory\n");
+				pg_log_error("out of memory");
 				exit(EXIT_FAILURE);
 			}
 
@@ -336,7 +462,7 @@ MainLoop(FILE *source)
 				{
 					/* if interactive, warn about non-executed query */
 					if (pset.cur_cmd_interactive)
-						psql_error("query ignored; use \\endif or Ctrl-C to exit current \\if block\n");
+						pg_log_error("query ignored; use \\endif or Ctrl-C to exit current \\if block");
 					/* fake an OK result for purposes of loop checks */
 					success = true;
 					slashCmdStatus = PSQL_CMD_SEND;
@@ -410,6 +536,10 @@ MainLoop(FILE *source)
 				{
 					/* should not see this in inactive branch */
 					Assert(conditional_active(cond_stack));
+					/* ensure what came back from editing ends in a newline */
+					if (query_buf->len > 0 &&
+						query_buf->data[query_buf->len - 1] != '\n')
+						appendPQExpBufferChar(query_buf, '\n');
 					/* rescan query_buf as new input */
 					psql_scan_finish(scan_state);
 					free(line);
@@ -421,6 +551,8 @@ MainLoop(FILE *source)
 									pset.encoding, standard_strings());
 					line_saved_in_history = false;
 					prompt_status = PROMPT_READY;
+					/* we'll want to redisplay after parsing what we have */
+					need_redisplay = true;
 				}
 				else if (slashCmdStatus == PSQL_CMD_TERMINATE)
 					break;
@@ -456,14 +588,19 @@ MainLoop(FILE *source)
 	}							/* while !endoffile/session */
 
 	/*
-	 * Process query at the end of file without a semicolon
+	 * If we have a non-semicolon-terminated query at the end of file, we
+	 * process it unless the input source is interactive --- in that case it
+	 * seems better to go ahead and quit.  Also skip if this is an error exit.
 	 */
 	if (query_buf->len > 0 && !pset.cur_cmd_interactive &&
 		successResult == EXIT_SUCCESS)
 	{
 		/* save query in history */
+		/* currently unneeded since we don't use this block if interactive */
+#ifdef NOT_USED
 		if (pset.cur_cmd_interactive)
 			pg_send_history(history_buf);
+#endif
 
 		/* execute query unless we're in an inactive \if branch */
 		if (conditional_active(cond_stack))
@@ -473,7 +610,7 @@ MainLoop(FILE *source)
 		else
 		{
 			if (pset.cur_cmd_interactive)
-				psql_error("query ignored; use \\endif or Ctrl-C to exit current \\if block\n");
+				pg_log_error("query ignored; use \\endif or Ctrl-C to exit current \\if block");
 			success = true;
 		}
 
@@ -491,7 +628,7 @@ MainLoop(FILE *source)
 		successResult != EXIT_USER &&
 		!conditional_stack_empty(cond_stack))
 	{
-		psql_error("reached EOF without finding closing \\endif(s)\n");
+		pg_log_error("reached EOF without finding closing \\endif(s)");
 		if (die_on_error && !pset.cur_cmd_interactive)
 			successResult = EXIT_USER;
 	}

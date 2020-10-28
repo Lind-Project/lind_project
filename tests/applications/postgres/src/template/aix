@@ -13,6 +13,10 @@ if test "$GCC" != yes ; then
       CFLAGS="-O2 -qmaxmem=16384"
       ;;
   esac
+
+  # Due to a compiler bug, see 20171013023536.GA492146@rfd.leadboat.com for details,
+  # force restrict not to be used when compiling with xlc.
+  FORCE_DISABLE_RESTRICT=yes
 fi
 
 # Extra CFLAGS for code that will go into a shared library

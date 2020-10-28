@@ -4,10 +4,10 @@
 #include "postgres_fe.h"
 
 #include "ecpg-pthread-win32.h"
-#include "ecpgtype.h"
-#include "ecpglib.h"
 #include "ecpgerrno.h"
-#include "extern.h"
+#include "ecpglib.h"
+#include "ecpglib_extern.h"
+#include "ecpgtype.h"
 #include "sqlca.h"
 
 #ifdef ENABLE_THREAD_SAFETY
@@ -67,7 +67,7 @@ ecpg_get_connection_nr(const char *connection_name)
 		ret = con;
 	}
 
-	return (ret);
+	return ret;
 }
 
 struct connection *
@@ -106,7 +106,7 @@ ecpg_get_connection(const char *connection_name)
 #endif
 	}
 
-	return (ret);
+	return ret;
 }
 
 static void
@@ -168,7 +168,7 @@ ECPGsetcommit(int lineno, const char *mode, const char *connection_name)
 	PGresult   *results;
 
 	if (!ecpg_init(con, connection_name, lineno))
-		return (false);
+		return false;
 
 	ecpg_log("ECPGsetcommit on line %d: action \"%s\"; connection \"%s\"\n", lineno, mode, con->name);
 
@@ -204,7 +204,7 @@ ECPGsetconn(int lineno, const char *connection_name)
 	struct connection *con = ecpg_get_connection(connection_name);
 
 	if (!ecpg_init(con, connection_name, lineno))
-		return (false);
+		return false;
 
 #ifdef ENABLE_THREAD_SAFETY
 	pthread_setspecific(actual_connection_key, con);
@@ -514,9 +514,9 @@ ECPGconnect(int lineno, int c, const char *name, const char *user, const char *p
 			 options ? "with options " : "", options ? options : "",
 			 (user && strlen(user) > 0) ? "for user " : "", user ? user : "");
 
+	/* count options (this may produce an overestimate, it's ok) */
 	if (options)
 		for (i = 0; options[i]; i++)
-			/* count options */
 			if (options[i] == '=')
 				connect_params++;
 
@@ -583,8 +583,12 @@ ECPGconnect(int lineno, int c, const char *name, const char *user, const char *p
 	{
 		char	   *str;
 
-		/* options look like this "option1 = value1 option2 = value2 ... */
-		/* we have to break up the string into single options */
+		/*
+		 * The options string contains "keyword=value" pairs separated by
+		 * '&'s.  We must break this up into keywords and values to pass to
+		 * libpq (it's okay to scribble on the options string).  We ignore
+		 * spaces just before each keyword or value.
+		 */
 		for (str = options; *str;)
 		{
 			int			e,
@@ -592,13 +596,21 @@ ECPGconnect(int lineno, int c, const char *name, const char *user, const char *p
 			char	   *token1,
 					   *token2;
 
-			for (token1 = str; *token1 && *token1 == ' '; token1++);
-			for (e = 0; token1[e] && token1[e] != '='; e++);
+			/* Skip spaces before keyword */
+			for (token1 = str; *token1 == ' '; token1++)
+				 /* skip */ ;
+			/* Find end of keyword */
+			for (e = 0; token1[e] && token1[e] != '='; e++)
+				 /* skip */ ;
 			if (token1[e])		/* found "=" */
 			{
 				token1[e] = '\0';
-				for (token2 = token1 + e + 1; *token2 && *token2 == ' '; token2++);
-				for (a = 0; token2[a] && token2[a] != '&'; a++);
+				/* Skip spaces before value */
+				for (token2 = token1 + e + 1; *token2 == ' '; token2++)
+					 /* skip */ ;
+				/* Find end of value */
+				for (a = 0; token2[a] && token2[a] != '&'; a++)
+					 /* skip */ ;
 				if (token2[a])	/* found "&" => another option follows */
 				{
 					token2[a] = '\0';
@@ -612,11 +624,14 @@ ECPGconnect(int lineno, int c, const char *name, const char *user, const char *p
 				i++;
 			}
 			else
-				/* the parser should not be able to create this invalid option */
+			{
+				/* Bogus options syntax ... ignore trailing garbage */
 				str = token1 + e;
+			}
 		}
-
 	}
+
+	Assert(i <= connect_params);
 	conn_keywords[i] = NULL;	/* terminator */
 
 	this->connection = PQconnectdbParams(conn_keywords, conn_values, 0);
@@ -675,7 +690,7 @@ ECPGdisconnect(int lineno, const char *connection_name)
 	{
 		ecpg_raise(lineno, ECPG_OUT_OF_MEMORY,
 				   ECPG_SQLSTATE_ECPG_OUT_OF_MEMORY, NULL);
-		return (false);
+		return false;
 	}
 
 #ifdef ENABLE_THREAD_SAFETY
@@ -702,7 +717,7 @@ ECPGdisconnect(int lineno, const char *connection_name)
 #ifdef ENABLE_THREAD_SAFETY
 			pthread_mutex_unlock(&connections_mutex);
 #endif
-			return (false);
+			return false;
 		}
 		else
 			ecpg_finish(con);
