@@ -15,7 +15,7 @@ int main(void)
   }
   else if (pid == 0) {
   
-  char* arr[] = {"/bin/ls", "-l", "-a", NULL};
+  char* arr[] = {"ls", "-l", "-a", NULL};
   execv("/bin/ls", arr);
   
   }
