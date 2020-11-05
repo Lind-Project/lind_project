@@ -4,8 +4,6 @@
 touch python-native/Include/Python-ast.h python-native/Python/Python-ast.c
 make -C ./python-native Parser/pgen #build a native version of Python to get pgen from
 
-echo "******************************************************************************************************************************"
-
 if [[ "$*" =~ (^|[[:blank:]])(-h|--help)([[:blank:]]|$) ]]; then
 	./configure --help
 	exit 1
@@ -31,12 +29,8 @@ touch Include/Python-ast.h Python/Python-ast.c
 
 make #will fail
 
-echo "******************************************************************************************************************************"
-
 cp python-native/Parser/pgen Parser/pgen
 
 chmod +x Parser/pgen
-
-echo "******************************************************************************************************************************"
 
 make
