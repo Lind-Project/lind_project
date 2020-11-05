@@ -1,6 +1,4 @@
 /* String (str/bytes) object implementation */
-#define PY_FORMAT_LONG_LONG
-
 #define PY_SSIZE_T_CLEAN
 
 #include "Python.h"
