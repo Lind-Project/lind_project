@@ -21,6 +21,11 @@ fi
 
 cp "./Modules/Setup.dist"  "./Modules/Setup"
 
+make python Parser/pgen
+mv python hostpython
+mv Parser/pgen Parser/hostpgen
+make distclean
+
 touch Include/Python-ast.h Python/Python-ast.c
 
 make
