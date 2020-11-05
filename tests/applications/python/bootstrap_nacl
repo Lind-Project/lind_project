@@ -1,9 +1,5 @@
 #!/bin/bash
 
-export CFLAGS='-g -e -fno-pie -std=c99'
-export CXXFLAGS='-g -fno-pie'
-export LDFLAGS='-g -fno-pie'
-
 cd python-native
 
 ./configure #build a native version of Python to get pgen from
