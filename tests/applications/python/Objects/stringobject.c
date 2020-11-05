@@ -1,4 +1,6 @@
 /* String (str/bytes) object implementation */
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 #define PY_SSIZE_T_CLEAN
 
