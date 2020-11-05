@@ -2,7 +2,7 @@
 
 #define PY_SSIZE_T_CLEAN
 
-#include "../Include/Python.h"
+#include "Python.h"
 #include <ctype.h>
 #include <stddef.h>
 
