@@ -1,8 +1,12 @@
 #!/bin/bash
 
-./python-native/configure #build a native version of Python to get pgen from
-touch python-native/Include/Python-ast.h python-native/Python/Python-ast.c
-make -C ./python-native Parser/pgen #build a native version of Python to get pgen from
+cd python-native
+
+./configure #build a native version of Python to get pgen from
+touch Include/Python-ast.h Python/Python-ast.c
+make Parser/pgen #build a native version of Python to get pgen from
+
+cd ..
 
 if [[ "$*" =~ (^|[[:blank:]])(-h|--help)([[:blank:]]|$) ]]; then
 	./configure --help
