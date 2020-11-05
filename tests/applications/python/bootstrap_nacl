@@ -25,7 +25,8 @@ touch Include/Python-ast.h Python/Python-ast.c
 
 make #will fail
 
-(cd  python-native && ./configure && make Parser/pgen) #build a native version of Python to get pgen from
+./python-native/configure #build a native version of Python to get pgen from
+make python-native/Parser/pgen #build a native version of Python to get pgen from
 
 cp python-native/Parser/pgen Parser/pgen
 
