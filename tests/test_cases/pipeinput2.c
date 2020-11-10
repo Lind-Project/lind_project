@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
         close(pipefd[0]);          /* Close unused read end */
         printf("about to write to pipe in parent\n");
         printf("I'm parent with pid: %d\n", cpid);
-
+    fflush(stdout)
 	write(pipefd[1], "Hey Nick!\n", strlen("Hey Nick!\n"));
 	close(pipefd[1]);          /* Reader will see EOF */
         wait(NULL);                /* Wait for child */
