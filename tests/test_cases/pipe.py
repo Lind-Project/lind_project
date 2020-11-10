@@ -5,6 +5,10 @@ import sys
 lind_result = sys.argv[1].split('\n')
 host_result = sys.argv[2].split('\n')
 
+if len(lind_result) != len(host_result):
+    print "Mismatched number of lines!"
+    exit(-1)
+
 lind_line0 = lind_result[0].split(',')
 host_line0 = host_result[0].split(',')
 
