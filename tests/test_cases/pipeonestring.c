@@ -40,5 +40,6 @@ int main(int argc, char *argv[])
         wait(NULL);                /* Wait for child */
         exit(EXIT_SUCCESS);
     }
+    fflush(stdout);
 }
 
