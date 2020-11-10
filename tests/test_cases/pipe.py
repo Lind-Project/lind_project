@@ -5,7 +5,7 @@ import sys
 lind_result = sys.argv[1].split('\n')
 host_result = sys.argv[2].split('\n')
 
-lind_line0 = lind_result[0].spilt(',')
+lind_line0 = lind_result[0].split(',')
 host_line0 = host_result[0].split(',')
 
 if not (lind_line0[0][-1].isdigit() and lind_line0[1][1].isdigit() \
