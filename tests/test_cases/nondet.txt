@@ -9,3 +9,4 @@ forkmalloc.c
 pipe.c
 pipeinput.c
 pipeinput2.c
+pipewrite.c

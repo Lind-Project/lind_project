@@ -5,3 +5,4 @@ dupwrite.c
 forkdup.c
 write.c
 forknodup.c
+pipepong.c
