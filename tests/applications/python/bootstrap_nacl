@@ -1,0 +1,40 @@
+#!/bin/bash
+
+cd python-native
+
+./configure #build a native version of Python to get pgen from
+touch Include/Python-ast.h Python/Python-ast.c
+make Parser/pgen #build a native version of Python to get pgen from
+
+cd ..
+
+if [[ "$*" =~ (^|[[:blank:]])(-h|--help)([[:blank:]]|$) ]]; then
+	./configure --help
+	exit 1
+fi
+
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS='-g -e -fno-pie -DPY_FORMAT_LONG_LONG="ll" -std=c99'
+export CXXFLAGS='-g -fno-pie'
+export LDFLAGS='-g -fno-pie'
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+
+if [[ ! -e ./configure ]]; then
+	./autogen.sh
+fi
+
+./configure --host=x86_64-nacl "$@"
+
+cp "./Modules/Setup.dist"  "./Modules/Setup"
+
+touch Include/Python-ast.h Python/Python-ast.c
+
+make #will fail
+
+cp python-native/Parser/pgen Parser/pgen
+
+chmod +x Parser/pgen
+
+make
