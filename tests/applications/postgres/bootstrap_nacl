@@ -8,7 +8,7 @@ fi
 export CC=x86_64-nacl-gcc
 export CXX=x86_64-nacl-g++
 export LD=x86_64-nacl-ld
-export CFLAGS='-g -e -fno-pie'
+export CFLAGS='-g -fno-pie'
 export CXXFLAGS='-g -fno-pie'
 export LDFLAGS='-g -fno-pie'
 export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
@@ -17,10 +17,6 @@ if [[ ! -e ./configure ]]; then
 	./autogen.sh
 fi
 
-./configure CFLAGS=-DPY_FORMAT_LONG_LONG="ll" --host=x86_64-nacl "$@"
-
-cp "./Modules/Setup.dist"  "./Modules/Setup"
-
-touch Include/Python-ast.h Python/Python-ast.c
+./configure --with-template=linux --without-readline --without-zlib USE_DEV_URANDOM=1 --host=x86_64-nacl "$@"
 
 make
