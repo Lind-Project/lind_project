@@ -15,8 +15,9 @@ int main(void)
   }
   else if (pid == 0) {
   
-  char* arr[] = {"hello.c", NULL};
-  execv("/test_cases/hello.c", arr);
+  // Users need to compile hello.c beforehand.
+  char* arr[] = {"./hello", NULL};
+  execv("./hello", arr);
   
   }
   wait(NULL);
