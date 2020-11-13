@@ -15,8 +15,8 @@ int main(void)
   }
   else if (pid == 0) {
   
-  char* arr[] = {"hello.c"};
-  execv("hello.c", arr);
+  char* arr[] = {"hello.c", NULL};
+  execv("/test_cases/hello.c", arr);
   
   }
   wait(NULL);
