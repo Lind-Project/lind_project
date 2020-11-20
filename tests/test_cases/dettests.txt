@@ -6,3 +6,5 @@ forkdup.c
 write.c
 forknodup.c
 pipepong.c
+forkexecv.c
+mprotec.c
