@@ -32,7 +32,7 @@ for var in "${totalarray[@]}"; do
     varnexe="${var%.*}.nexe";
     x86_64-nacl-gcc-4.4.3 $var -o test_out/$varnexe -std=gnu99;
     varnonexe="${var%.*}";
-    gcc $var -o test_out/$varnonexe
+    gcc $var -o test_out/$varnonexe -lpthread
 done
 echo "Copying test cases"
 lindfs cp $PWD/test_out/ &> /dev/null
