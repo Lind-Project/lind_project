@@ -37,7 +37,7 @@ for var in "${totalarray[@]}"; do
     gcc $var -o test_out/$varnonexe -lpthread
 done
 echo "Copying test cases"
-lindfs cp $PWD/ nondet.txt
+lindfs cp $PWD/nondet.txt &> /dev/null
 lindfs cp $PWD/test_out/ &> /dev/null
 
 echo "Executing deterministic test cases"
