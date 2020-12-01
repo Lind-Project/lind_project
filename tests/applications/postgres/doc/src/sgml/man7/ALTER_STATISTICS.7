@@ -1,0 +1,91 @@
+'\" t
+.\"     Title: ALTER STATISTICS
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 2020
+.\"    Manual: PostgreSQL 13.0 Documentation
+.\"    Source: PostgreSQL 13.0
+.\"  Language: English
+.\"
+.TH "ALTER STATISTICS" "7" "2020" "PostgreSQL 13.0" "PostgreSQL 13.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ALTER_STATISTICS \- change the definition of an extended statistics object
+.SH "SYNOPSIS"
+.sp
+.nf
+ALTER STATISTICS \fIname\fR OWNER TO { \fInew_owner\fR | CURRENT_USER | SESSION_USER }
+ALTER STATISTICS \fIname\fR RENAME TO \fInew_name\fR
+ALTER STATISTICS \fIname\fR SET SCHEMA \fInew_schema\fR
+ALTER STATISTICS \fIname\fR SET STATISTICS \fInew_target\fR
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBALTER STATISTICS\fR
+changes the parameters of an existing extended statistics object\&. Any parameters not specifically set in the
+\fBALTER STATISTICS\fR
+command retain their prior settings\&.
+.PP
+You must own the statistics object to use
+\fBALTER STATISTICS\fR\&. To change a statistics object\*(Aqs schema, you must also have
+CREATE
+privilege on the new schema\&. To alter the owner, you must also be a direct or indirect member of the new owning role, and that role must have
+CREATE
+privilege on the statistics object\*(Aqs schema\&. (These restrictions enforce that altering the owner doesn\*(Aqt do anything you couldn\*(Aqt do by dropping and recreating the statistics object\&. However, a superuser can alter ownership of any statistics object anyway\&.)
+.SH "PARAMETERS"
+.PP
+.PP
+\fIname\fR
+.RS 4
+The name (optionally schema\-qualified) of the statistics object to be altered\&.
+.RE
+.PP
+\fInew_owner\fR
+.RS 4
+The user name of the new owner of the statistics object\&.
+.RE
+.PP
+\fInew_name\fR
+.RS 4
+The new name for the statistics object\&.
+.RE
+.PP
+\fInew_schema\fR
+.RS 4
+The new schema for the statistics object\&.
+.RE
+.PP
+\fInew_target\fR
+.RS 4
+The statistic\-gathering target for this statistics object for subsequent
+\fBANALYZE\fR(7)
+operations\&. The target can be set in the range 0 to 10000; alternatively, set it to \-1 to revert to using the maximum of the statistics target of the referenced columns, if set, or the system default statistics target (default_statistics_target)\&. For more information on the use of statistics by the
+PostgreSQL
+query planner, refer to
+Section\ \&14.2\&.
+.RE
+.SH "COMPATIBILITY"
+.PP
+There is no
+\fBALTER STATISTICS\fR
+command in the SQL standard\&.
+.SH "SEE ALSO"
+CREATE STATISTICS (\fBCREATE_STATISTICS\fR(7)), DROP STATISTICS (\fBDROP_STATISTICS\fR(7))

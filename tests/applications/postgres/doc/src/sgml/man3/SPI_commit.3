@@ -1,0 +1,54 @@
+'\" t
+.\"     Title: SPI_commit
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 2020
+.\"    Manual: PostgreSQL 13.0 Documentation
+.\"    Source: PostgreSQL 13.0
+.\"  Language: English
+.\"
+.TH "SPI_COMMIT" "3" "2020" "PostgreSQL 13.0" "PostgreSQL 13.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+SPI_commit, SPI_commit_and_chain \- commit the current transaction
+.SH "SYNOPSIS"
+.sp
+.nf
+void SPI_commit(void)
+.fi
+.sp
+.nf
+void SPI_commit_and_chain(void)
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBSPI_commit\fR
+commits the current transaction\&. It is approximately equivalent to running the SQL command
+\fBCOMMIT\fR\&. After a transaction is committed, a new transaction has to be started using
+\fBSPI_start_transaction\fR
+before further database actions can be executed\&.
+.PP
+\fBSPI_commit_and_chain\fR
+is the same, but a new transaction is immediately started with the same transaction characteristics as the just finished one, like with the SQL command
+\fBCOMMIT AND CHAIN\fR\&.
+.PP
+These functions can only be executed if the SPI connection has been set as nonatomic in the call to
+\fBSPI_connect_ext\fR\&.
