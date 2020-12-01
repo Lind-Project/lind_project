@@ -8,3 +8,7 @@ forknodup.c
 pipepong.c
 forkexecv.c
 mprotec.c
+exit.c
+readbytes.c
+gethostname.c
+serverclient.c
