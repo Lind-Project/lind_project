@@ -27,6 +27,7 @@ echo ${deterministicinput[@]}
 echo ${nondeterministicinput[@]}
 totalarray=( "${deterministicinput[@]}" "${nondeterministicinput[@]}" )
 echo "Compiling test cases"
+lindfs cp nondet.txt &> test_out/nondet.txt
 x86_64-nacl-gcc-4.4.3 hello.c -o test_out/hello -std=gnu99;
 for var in "${totalarray[@]}"; do
     echo "Compiling test: $var"
