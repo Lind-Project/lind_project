@@ -28,6 +28,7 @@ echo ${nondeterministicinput[@]}
 totalarray=( "${deterministicinput[@]}" "${nondeterministicinput[@]}" )
 echo "Compiling test cases"
 
+cp nondet.txt test_out
 x86_64-nacl-gcc-4.4.3 hello.c -o test_out/hello -std=gnu99;
 for var in "${totalarray[@]}"; do
     echo "Compiling test: $var"
@@ -37,7 +38,6 @@ for var in "${totalarray[@]}"; do
     gcc $var -o test_out/$varnonexe -lpthread
 done
 echo "Copying test cases"
-lindfs cp $PWD/nondet.txt &> /dev/null
 lindfs cp $PWD/test_out/ &> /dev/null
 
 echo "Executing deterministic test cases"
