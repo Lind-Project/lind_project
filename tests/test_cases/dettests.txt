@@ -10,6 +10,5 @@ forkexecv.c
 mprotec.c
 exit.c
 readbytes.c
-gethostname.c
 serverclient.c
 mmaptest.c

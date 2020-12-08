@@ -8,16 +8,14 @@
 int main(void)
 {
   pid_t pid;
-  char *envp[] = {NULL};
 
   if ((pid = fork()) == -1) {
     perror("fork error");
   }
   else if (pid == 0) {
   
-  // Users need to compile hello.c beforehand.
-  char* arr[] = {"./hello", NULL};
-  execv("./hello", arr);
+  char* arr[] = {"ls", NULL};
+  execv("/bin/ls", arr);
   
   }
   wait(NULL);
