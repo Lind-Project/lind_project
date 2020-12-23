@@ -9,11 +9,8 @@ def forkandopen(results):
     assert(int(fdlist[-1]) != -1)
     assert(int(fdlist[-4]) != -1)
 
-
 lind_results = sys.argv[1]
 native_results = sys.argv[2]
 
-print "Running forkandopen test"
 forkandopen(lind_results)
 forkandopen(native_results)
-

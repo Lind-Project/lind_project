@@ -23,10 +23,10 @@ int main(void)
 		dup2(fd[1], 1);
 		/* close(fd[0]); */
 		if ((ret = write(1, "hi\n", 3)) < 0) {
-			fprintf(stderr, "write(): %s\n", strerror(errno));
+			printf(stderr, "write(): %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
-		fprintf(stderr, "write() ret: %d\n", ret);
+		printf(stderr, "write() ret: %d\n", ret);
 		/* close(fd[1]); */
 		exit(0);
 	}
@@ -36,10 +36,10 @@ int main(void)
 	 * close(fd[1]);
 	 */
 	if ((ret = read(fd[0], str, 3)) < 0) {
-		fprintf(stderr, "read(): %s\n", strerror(errno));
+		printf(stderr, "read(): %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-	fprintf(stderr, "read() ret: %d\n", ret);
+	printf(stderr, "read() ret: %d\n", ret);
 
 	/* close(fd[0]); */
 	puts(str);

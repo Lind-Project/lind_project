@@ -12,3 +12,5 @@ exit.c
 readbytes.c
 serverclient.c
 mmaptest.c
+writeloop.c
+writepartial.c
