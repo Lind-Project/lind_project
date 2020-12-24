@@ -6,11 +6,8 @@ forkdup.c
 write.c
 forknodup.c
 pipepong.c
-forkexecv.c
 mprotec.c
 exit.c
 readbytes.c
-serverclient.c
-mmaptest.c
 writeloop.c
 writepartial.c
