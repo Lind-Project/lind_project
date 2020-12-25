@@ -19,8 +19,10 @@ int main(void)
 
 	puts("main()");
 
-	// if ((fd = open("mprotec.txt", O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1)
-	if ((fd = open("mprotec.txt", O_CREAT|O_RDWR|O_TRUNC, 0777)) == -1)
+	fd = open("mprotec.txt", O_WRONLY|O_TRUNC|O_CREAT, 0777);
+	close(fd);
+
+	if ((fd = open("mprotec.txt", O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1)
 		perror("open()");
 
 	//getchar();
