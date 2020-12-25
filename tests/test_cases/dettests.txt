@@ -6,7 +6,6 @@ forkdup.c
 write.c
 forknodup.c
 pipepong.c
-mprotec.c
 exit.c
 readbytes.c
 writeloop.c
