@@ -19,12 +19,9 @@ int main(void)
 
 	puts("main()");
 
-	fd = open("mprotec.txt", O_WRONLY|O_TRUNC|O_CREAT, 0777);
-	close(fd);
-
-	if ((fd = open("mprotec.txt", O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1)
+	if ((fd = open("mprotec.txt", O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1)
 		perror("open()");
-
+	fallocate(fd, 0, 0, 4096);
 	//getchar();
 	puts("open()");
 
