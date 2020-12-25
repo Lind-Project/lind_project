@@ -16,40 +16,43 @@ int main()
     char buf_wr2[]={"NYU is amazing!\n"};
     char buf_rd[120];
     char buf_rd2[120];
-
+ 
+    //clear file
+    fclose(fopen(filename, "w"));
+ 
     //open file
     fd = open(filename, O_RDWR|O_CREAT, 0777);
-    nw = pwrite(fd, &buf_wr, strlen(buf_wr), 0);
+    nw = pwrite(fd, buf_wr, strlen(buf_wr), 0);
 
     //error checking
     if(fd == -1){
         perror("[error in open]\n");
     }
     else if(nw == -1){
+        printf("[file is opened]\n");
         perror("[error in write]\n");
     }
     else{
-
-        /*if open and write process are ok, read first write data
-        * from file*/
-        nr = pread(fd, &buf_rd, sizeof(buf_rd),0);
-
         //display succeeded message about first write and open process
         printf("[file is opened]\n");
         printf("[succeeded write(1) process]\n");
-
+        printf("[reading(1) data] from %s\n", filename);
+     
+        /*if open and write process are ok, read first write data
+        * from file*/
+        nr = pread(fd, buf_rd, strlen(buf_wr)-1,0);
+     
         //read process error control
         if(nr == -1){
             perror("[error in read]\n");
         } else{
-        printf("[reading(1) data] from %s\n", filename);
-        printf("[%s]\n", buf_rd);
+            printf("[%s]\n", buf_rd);
         }
 
     }
 
     //second write process.
-    nw2= pwrite(fd, &buf_wr2, strlen(buf_wr2), 30);
+    nw2= pwrite(fd, buf_wr2, strlen(buf_wr2), 30);
 
     //write error checking
     if(nw2 == -1){
@@ -58,12 +61,20 @@ int main()
 
         /*if write process is correct
         * second read process*/
-        nr2 = pread(fd, &buf_rd2, sizeof(buf_rd), 30);
-
+     
         printf("-----------------------------------\n");
         printf("[succeeded write(2) process]\n");
         printf("[reading(2) data] from %s\n", filename);
-        printf("[%s]\n", buf_rd2);
+     
+        //read second write data from file
+        nr2 = pread(fd, buf_rd2, strlen(buf_wr2)-1, 30);
+     
+        //read process error control
+        if(nr2 == -1){
+            perror("[error in read2]\n");
+        } else{
+            printf("[%s]\n", buf_rd2);
+        }
     }
 
     //error checking for close process
