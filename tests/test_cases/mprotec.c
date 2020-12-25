@@ -21,7 +21,7 @@ int main(void)
 
 	if ((fd = open("mprotec.txt", O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1)
 		perror("open()");
-	fallocate(fd, 0, 0, 4096);
+	ftruncate(fd, 4096);
 	//getchar();
 	puts("open()");
 
