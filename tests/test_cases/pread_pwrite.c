@@ -22,7 +22,7 @@ int main()
  
     //open file
     fd = open(filename, O_RDWR|O_CREAT, 0777);
-    nw = pwrite(fd, buf_wr, strlen(buf_wr), 0);
+    nw = pwrite(fd, buf_wr, strlen(buf_wr), 30);
 
     //error checking
     if(fd == -1){
@@ -40,7 +40,7 @@ int main()
      
         /*if open and write process are ok, read first write data
         * from file*/
-        nr = pread(fd, buf_rd, strlen(buf_wr)-1,0);
+        nr = pread(fd, buf_rd, strlen(buf_wr)-1,30);
      
         //read process error control
         if(nr == -1){
@@ -52,7 +52,7 @@ int main()
     }
 
     //second write process.
-    nw2= pwrite(fd, buf_wr2, strlen(buf_wr2), 30);
+    nw2= pwrite(fd, buf_wr2, strlen(buf_wr2), 0);
 
     //write error checking
     if(nw2 == -1){
@@ -67,7 +67,7 @@ int main()
         printf("[reading(2) data] from %s\n", filename);
      
         //read second write data from file
-        nr2 = pread(fd, buf_rd2, strlen(buf_wr2)-1, 30);
+        nr2 = pread(fd, buf_rd2, strlen(buf_wr2)-1, 0);
      
         //read process error control
         if(nr2 == -1){
