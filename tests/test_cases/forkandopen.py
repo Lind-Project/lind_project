@@ -5,7 +5,6 @@ import sys
 
 def forkandopen(results):
     fdlist = re.findall('[-\d]+', results)
-    print fdlist
     assert(int(fdlist[-1]) != -1)
     assert(int(fdlist[-4]) != -1)
 
