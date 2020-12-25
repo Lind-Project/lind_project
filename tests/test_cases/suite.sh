@@ -28,13 +28,12 @@ echo ${nondeterministicinput[@]}
 totalarray=( "${deterministicinput[@]}" "${nondeterministicinput[@]}" )
 echo "Compiling test cases"
 
-# x86_64-nacl-gcc-4.4.3 hello.c -o test_out/hello -std=gnu99;
 for var in "${totalarray[@]}"; do
     echo "Compiling test: $var"
     varnexe="${var%.*}.nexe";
-    x86_64-nacl-gcc-4.4.3 $var -o test_out/$varnexe -std=gnu99; # -lpthread
+    x86_64-nacl-gcc-4.4.3 $var -o test_out/$varnexe -std=gnu99;
     varnonexe="${var%.*}";
-    gcc $var -o test_out/$varnonexe # -lpthread
+    gcc $var -o test_out/$varnonexe
 done
 echo "Copying test cases"
 lindfs cp $PWD/test_out/ &> /dev/null
