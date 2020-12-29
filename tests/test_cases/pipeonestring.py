@@ -9,12 +9,13 @@ if len(lind_result) != len(host_result):
     print "Mismatched number of lines!"
     exit(-1)
 
-if not (lind_result[1].split(": ")[1].isdigit() \
-    and host_result[1].split(": ")[1].isdigit()):
-    print "Nondeterministic lines of an unrecognized format!"
-    exit(-1)
+for line in lind_result:
+    if line[0] == 'I' and (not line.split(": ")[1].isdigit()):
+        print "Nondeterministic lines of an unrecognized format!"
+        exit(-1)
 
-if not (lind_result[2].split(": ")[1].isdigit() \
-    and host_result[2].split(": ")[1].isdigit()):
-    print "Nondeterministic lines of an unrecognized format!"
-    exit(-1)
+for line in host_result:
+    if line[0] == 'I' and (not line.split(": ")[1].isdigit()):
+        print "Nondeterministic lines of an unrecognized format!"
+        exit(-1)
+        
