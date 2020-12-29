@@ -14,7 +14,7 @@ int main()
     {
         printf("Child: Testing open in child: pid %d!\n", pid); 
 
-        int fd = open("foo.txt", O_RDONLY|O_TRUNC|O_CREAT);
+        int fd = open("foo.txt", O_RDONLY|O_CREAT);
 
         printf("Child: Pid %d opened fd %d\n", pid, fd);
 
@@ -24,7 +24,7 @@ int main()
     {
         printf("Parent: Testing open in parent: pid %d!\n", pid); 
 
-        int fd = open("foo.txt", O_RDONLY|O_TRUNC|O_CREAT);
+        int fd = open("foo.txt", O_RDONLY|O_CREAT);
 
         printf("Parent: Pid %d opened fd %d\n", pid, fd);
 
