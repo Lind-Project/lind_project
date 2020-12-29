@@ -19,9 +19,9 @@ int main(void)
 
 	puts("main()");
 
-	if ((fd = open("mprotec.txt", O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1)
+	if ((fd = open("/dev/zero", O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) == -1)
 		perror("open()");
-	ftruncate(fd, 4096);
+
 	//getchar();
 	puts("open()");
 
