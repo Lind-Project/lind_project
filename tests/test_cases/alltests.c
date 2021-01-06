@@ -43,7 +43,7 @@ int main()
 
         /*if open and write process are ok, read first write data
         * from file*/
-        nr = pread(fd, buf_rd, strlen(buf_wr)-1,30);
+        nr = pread(fd, buf_rd, strlen(buf_wr),30);
 
         //read process error control
         if(nr == -1){
@@ -54,7 +54,7 @@ int main()
 
     }
     
-    w = write(fd, buf_wr3, strlen(buf_wr3)-1);
+    w = write(fd, buf_wr3, strlen(buf_wr3));
     
     //write error checking
     if(w == -1){
@@ -70,7 +70,7 @@ int main()
         lseek (fd, 0, SEEK_SET);
         
         //read second write data from file
-        r = read(fd, buf_rd3, strlen(buf_wr3)-1);
+        r = read(fd, buf_rd3, strlen(buf_wr3));
 
         //read process error control
         if(r == -1){
@@ -97,7 +97,7 @@ int main()
         printf("[reading(3) data] from %s\n", filename);
 
         //read second write data from file
-        nr2 = pread(fd, buf_rd2, strlen(buf_wr2)-1, 50);
+        nr2 = pread(fd, buf_rd2, strlen(buf_wr2), 50);
 
         //read process error control
         if(nr2 == -1){
@@ -109,9 +109,11 @@ int main()
         
         lseek (fd, 50, SEEK_SET);
         
-        read(fd, buf_rd4, strlen(buf_wr3)-1);
+        read(fd, buf_rd4, strlen(buf_wr2));
         printf("[reading(4) data] from %s\n", filename);
         printf("[%s]\n", buf_rd4);
+     
+        printf("Going to close!");
         
     }
     
