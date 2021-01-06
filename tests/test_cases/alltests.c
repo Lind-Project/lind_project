@@ -109,7 +109,7 @@ int main()
         
         lseek (fd, 50, SEEK_SET);
         
-        read(fd, buf_rd4, strlen(buf_wr3)-1, 50);
+        read(fd, buf_rd4, strlen(buf_wr3)-1);
         printf("[reading(4) data] from %s\n", filename);
         printf("[%s]\n", buf_rd4);
         
