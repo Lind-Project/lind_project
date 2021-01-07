@@ -277,7 +277,7 @@ function download_src() {
 function update_all() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 	
-	local git_deps = ("nacl_repy", "lind_glibc", "native_client")
+	local git_deps = ("nacl_repy" "lind_glibc" "native_client")
 	
 	cd "$LIND_BASE"
 	
