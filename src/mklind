@@ -273,6 +273,41 @@ function download_src() {
 	rm -rfv -- _gclient_* _bad_scm
 }
 
+#checkout glibc, nacl, and repy to develop
+function update_all() {
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
+	
+	
+	git_deps[nacl_repy]="$NACL_REPY_URL"
+	git_deps[lind_glibc]="$LIND_GLIBC_URL"
+	git_deps[native_client]="$NATIVE_CLIENT_URL"
+	
+	cd "$LIND_BASE"
+	
+	git init
+	if [[ "$(git config remote.origin.url)" != *Lind-Project/lind_project* ]]; then
+		if ! git remote add origin "$LIND_URL"; then
+			print "LIND_BASE already an initialized git directory" >&2
+			false
+		fi
+		git fetch --all
+		#git checkout master
+	fi
+	
+	# symlink submodules
+	git submodule update --init --recursive --remote .
+	
+	# iterate through all subdirectories, fetch from remote, restructure lind directory, and checkout to develop
+	for dir in "${!git_deps[@]}"; do
+		[[ ! -e "src/$dir" ]] && git clone "${git_deps[$dir]}" "src/$dir"
+		rm -rf -- "${LIND_SRC:?}/$dir"
+		ln -Trsfv "$LIND_BASE/src/$dir" "$LIND_SRC/$dir"
+		(cd "$LIND_SRC/$dir" && git checkout develop)
+        done
+}
+
+
+
 # wipe the entire modular build toolchain build tree, then rebuild it
 # warning: this can take a while!
 #
@@ -650,9 +685,7 @@ for word in "$@"; do
 	download)
 		download_src;;
 	update)
-		update_nacl
-		update_repy
-		update_glibc;;
+		update_all;;
 	repy)
 		build_repy;;
 	nacl)
