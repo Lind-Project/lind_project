@@ -590,7 +590,7 @@ function build_docker() {
 
 # prompt for target if none given on command line
 PS3=$'\n'"Build which target? "
-list=(all download repy nacl glibc install)
+list=(all download update repy nacl glibc install)
 list+=(cleanall cleannacl cleansources cleantoolchain)
 list+=(updateglibc updateglibc2 docker nightly testall)
 list+=(testapps testglibc testrepy testsyscalls)
@@ -649,6 +649,10 @@ for word in "$@"; do
 	case "$word" in
 	download)
 		download_src;;
+	update)
+		update_nacl
+		update_repy
+		update_glibc;;
 	repy)
 		build_repy;;
 	nacl)
