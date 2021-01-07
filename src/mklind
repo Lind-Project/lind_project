@@ -283,9 +283,9 @@ function update_all() {
 	
 	git fetch --all
 	
-	# iterate through all subdirectories, fetch from remote, restructure lind directory, and checkout to develop
+	# iterate through all subdirectories, checkout to develop, pull the updates
 	for dir in "${git_deps[@]}"; do
-		print "updating $dir"
+		print "Updating $dir"
 		(cd "$LIND_SRC/$dir" && git checkout develop && git pull --rebase)
         done
 }
