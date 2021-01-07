@@ -284,7 +284,6 @@ function update_all() {
 	
 	cd "$LIND_BASE"
 	
-	git init
 	if [[ "$(git config remote.origin.url)" != *Lind-Project/lind_project* ]]; then
 		if ! git remote add origin "$LIND_URL"; then
 			print "LIND_BASE already an initialized git directory" >&2
@@ -294,14 +293,8 @@ function update_all() {
 		#git checkout master
 	fi
 	
-	# symlink submodules
-	git submodule update --init --recursive --remote .
-	
 	# iterate through all subdirectories, fetch from remote, restructure lind directory, and checkout to develop
 	for dir in "${!git_deps[@]}"; do
-		[[ ! -e "src/$dir" ]] && git clone "${git_deps[$dir]}" "src/$dir"
-		rm -rf -- "${LIND_SRC:?}/$dir"
-		ln -Trsfv "$LIND_BASE/src/$dir" "$LIND_SRC/$dir"
 		(cd "$LIND_SRC/$dir" && git checkout develop)
         done
 }
