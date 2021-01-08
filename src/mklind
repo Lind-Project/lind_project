@@ -282,6 +282,8 @@ function update_all() {
 	cd "$LIND_BASE"
 	
 	git fetch --all
+	print "Updating lind_project"
+	(git checkout develop && git pull --rebase)
 	
 	# iterate through all subdirectories, checkout to develop, pull the updates
 	for dir in "${git_deps[@]}"; do
@@ -609,10 +611,10 @@ function build_docker() {
 
 # prompt for target if none given on command line
 PS3=$'\n'"Build which target? "
-list=(all download update repy nacl glibc install)
+list=(all update repy nacl glibc install)
 list+=(cleanall cleannacl cleansources cleantoolchain)
 list+=(updateglibc updateglibc2 docker nightly testall)
-list+=(testapps testglibc testrepy testsyscalls)
+list+=(testapps testglibc testrepy testsyscalls download)
 if ((!$#)); then
 	select choice in "${list[@]}"; do
 		set -- "$choice"
