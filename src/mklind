@@ -273,6 +273,27 @@ function download_src() {
 	rm -rfv -- _gclient_* _bad_scm
 }
 
+#checkout glibc, nacl, and repy to develop
+function update_all() {
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
+	
+	local git_deps=(nacl_repy lind_glibc native_client)
+	
+	cd "$LIND_BASE"
+	
+	git fetch --all
+	print "Updating lind_project"
+	(git checkout develop && git pull --rebase)
+	
+	# iterate through all subdirectories, checkout to develop, pull the updates
+	for dir in "${git_deps[@]}"; do
+		print "Updating $dir"
+		(cd "$LIND_SRC/$dir" && git checkout develop && git pull --rebase)
+        done
+}
+
+
+
 # wipe the entire modular build toolchain build tree, then rebuild it
 # warning: this can take a while!
 #
@@ -590,10 +611,10 @@ function build_docker() {
 
 # prompt for target if none given on command line
 PS3=$'\n'"Build which target? "
-list=(all download repy nacl glibc install)
+list=(all update repy nacl glibc install)
 list+=(cleanall cleannacl cleansources cleantoolchain)
 list+=(updateglibc updateglibc2 docker nightly testall)
-list+=(testapps testglibc testrepy testsyscalls)
+list+=(testapps testglibc testrepy testsyscalls download)
 if ((!$#)); then
 	select choice in "${list[@]}"; do
 		set -- "$choice"
@@ -649,6 +670,8 @@ for word in "$@"; do
 	case "$word" in
 	download)
 		download_src;;
+	update)
+		update_all;;
 	repy)
 		build_repy;;
 	nacl)
