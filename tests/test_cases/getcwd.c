@@ -5,7 +5,7 @@
 
 int main() {
     char buf[BUFSIZE]; 
-    gethostname(&buf, BUFSIZE);
+    getcwd(&buf, BUFSIZE);
     printf("Current working directory: %s\n", buf); 
     return 0; 
 } 
