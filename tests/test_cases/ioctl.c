@@ -11,7 +11,6 @@ int main()
 {
 
     int server_fd, val; 
-    struct sockaddr_in address; 
     int opt = 1; 
     int not_blocking;
        
@@ -22,32 +21,13 @@ int main()
         exit(EXIT_FAILURE); 
     } 
 
-    // Forcefully attaching socket to the port 10000 
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) 
-    { 
-        perror("setsockopt failed"); 
-        exit(EXIT_FAILURE); 
-    } 
-    address.sin_family = AF_INET; 
-    address.sin_addr.s_addr = INADDR_ANY; 
-    address.sin_port = htons( PORT ); 
-       
-    // Forcefully attaching socket to the port 10000  
-    if (bind(server_fd, (struct sockaddr *)&address,  
-                                 sizeof(address))<0) 
-    { 
-        perror("bind failed"); 
-        exit(EXIT_FAILURE); 
-    } 
-
     printf("[For 0 = False and <any_other_int> = True]\n");
     printf("[The answers should be F, T, F]\n\n");
 
     if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
     /* Something's wrong here, check errno to find out why */ 
-        val = -val;
-        not_blocking = val & O_NONBLOCK; 
-        printf("(0) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
+        perror("Error: fcntl(F_GETFL) < 0"); 
+        exit(EXIT_FAILURE); 
     } else { 
         not_blocking = val & O_NONBLOCK; 
         printf("(0) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
@@ -58,9 +38,8 @@ int main()
 
     if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
     /* Something's wrong here, check errno to find out why */
-        val = -val;
-        not_blocking = val & O_NONBLOCK; 
-        printf("(1) Is the socket set for non-blocking I/O?: %d\n", not_blocking); 
+        perror("Error: fcntl(F_GETFL) < 0"); 
+        exit(EXIT_FAILURE); 
     } else { 
         not_blocking = val & O_NONBLOCK; 
         printf("(1) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
@@ -73,9 +52,8 @@ int main()
 
     if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
     /* Something's wrong here, check errno to find out why */ 
-        val = -val;
-        not_blocking = val & O_NONBLOCK; 
-        printf("(2) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
+        perror("Error: fcntl(F_GETFL) < 0"); 
+        exit(EXIT_FAILURE); 
     } else { 
         not_blocking = val & O_NONBLOCK; 
         printf("(2) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
