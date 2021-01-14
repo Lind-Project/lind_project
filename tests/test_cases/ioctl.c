@@ -45,6 +45,7 @@ int main()
 
     if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
     /* Something's wrong here, check errno to find out why */ 
+        val = -val;
         not_blocking = val & O_NONBLOCK; 
         printf("(0) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
     } else { 
@@ -57,6 +58,7 @@ int main()
 
     if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
     /* Something's wrong here, check errno to find out why */
+        val = -val;
         not_blocking = val & O_NONBLOCK; 
         printf("(1) Is the socket set for non-blocking I/O?: %d\n", not_blocking); 
     } else { 
@@ -71,6 +73,7 @@ int main()
 
     if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
     /* Something's wrong here, check errno to find out why */ 
+        val = -val;
         not_blocking = val & O_NONBLOCK; 
         printf("(2) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
     } else { 
