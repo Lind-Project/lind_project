@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define BUFSIZE 32
+#define BUFSIZE 64
 
 int main() {
     char buf[BUFSIZE]; 
