@@ -26,7 +26,7 @@ int main(void)
 			fprintf(stderr, "write(): %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
-		fprintf(stderr, "write() ret: %d\n", ret);
+		printf("write() ret: %d\n", ret);
 		/* close(fd[1]); */
 		exit(0);
 	}
@@ -39,7 +39,7 @@ int main(void)
 		fprintf(stderr, "read(): %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-	fprintf(stderr, "read() ret: %d\n", ret);
+	printf("read() ret: %d\n", ret);
 
 	/* close(fd[0]); */
 	puts(str);

@@ -8,17 +8,15 @@
 int main(void)
 {
   pid_t pid;
-  char *envp[] = {NULL};
 
   if ((pid = fork()) == -1) {
     perror("fork error");
   }
   else if (pid == 0) {
   
-  char* arr[] = {"/bin/ls", "-l", "-a", NULL};
+  char* arr[] = {"ls", NULL};
   execv("/bin/ls", arr);
   
   }
   wait(NULL);
 }
-
