@@ -47,6 +47,9 @@ int main()
     printf("[Clearing socket for non-blocking I/O]\n");
     ioctl(server_fd, FIONBIO, &opt);
     opt = 1;
+    
+    perror("..."); 
+    exit(EXIT_FAILURE); 
 
     if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
     /* Something's wrong here, check errno to find out why  */
@@ -55,7 +58,6 @@ int main()
         not_blocking = val & O_NONBLOCK; 
         printf("(2) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
     } 
-    perror("..."); 
-    exit(EXIT_FAILURE); 
+    
     return 0;
 }
