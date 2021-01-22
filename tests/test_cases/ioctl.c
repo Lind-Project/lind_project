@@ -55,6 +55,7 @@ int main()
         not_blocking = val & O_NONBLOCK; 
         printf("(2) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
     } 
-
+    perror("..."); 
+    exit(EXIT_FAILURE); 
     return 0;
 }
