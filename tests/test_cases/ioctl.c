@@ -25,11 +25,9 @@ int main()
     printf("[The answers should be F, T, F]\n\n");
 
     if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
-    /* Something's wrong here, check errno to find out why  
-        perror("Error: fcntl(F_GETFL) < 0"); 
-        exit(EXIT_FAILURE); */
-        not_blocking = val & O_NONBLOCK; 
-        printf("(1) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
+    /* Something's wrong here, check errno to find out why   */
+        perror("Error: fcntl(F_GETFL) < 0, fcntl(F_GETFL)= %d", val); 
+        exit(EXIT_FAILURE);
     } else { 
         not_blocking = val & O_NONBLOCK; 
         printf("(0) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
@@ -39,11 +37,9 @@ int main()
     ioctl(server_fd, FIONBIO, &opt);
 
     if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
-    /* Something's wrong here, check errno to find out why
-        perror("Error: fcntl(F_GETFL) < 0");
-        exit(EXIT_FAILURE); */
-        not_blocking = val & O_NONBLOCK; 
-        printf("(1) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
+    /* Something's wrong here, check errno to find out why */ 
+        perror("Error: fcntl(F_GETFL) < 0, fcntl(F_GETFL)= %d", val);
+        exit(EXIT_FAILURE);
     } else { 
         not_blocking = val & O_NONBLOCK; 
         printf("(1) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
@@ -55,11 +51,9 @@ int main()
     opt = 1;
 
     if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
-    /* Something's wrong here, check errno to find out why 
-        perror("Error: fcntl(F_GETFL) < 0"); 
-        exit(EXIT_FAILURE); */
-        not_blocking = val & O_NONBLOCK; 
-        printf("(1) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
+    /* Something's wrong here, check errno to find out why  */
+        perror("Error: fcntl(F_GETFL) < 0, fcntl(F_GETFL)= %d", val); 
+        exit(EXIT_FAILURE);
     } else { 
         not_blocking = val & O_NONBLOCK; 
         printf("(2) Is the socket set for non-blocking I/O?: %d\n", not_blocking);
