@@ -24,7 +24,7 @@ int main()
     printf("[For 0 = False and <any_other_int> = True]\n");
     printf("[The answers should be F, T, F]\n\n");
 
-    if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
+    if ( (val = fcntl(server_fd, F_GETFL)) < 0) { 
     /* Something's wrong here, check errno to find out why   */
         printf("Error: fcntl(F_GETFL) < 0, fcntl(F_GETFL)= %d", val); 
     } else { 
@@ -35,7 +35,7 @@ int main()
     printf("[Setting socket for non_blocking I/O]\n");
     ioctl(server_fd, FIONBIO, &opt);
 
-    if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
+    if ( (val = fcntl(server_fd, F_GETFL)) < 0) { 
     /* Something's wrong here, check errno to find out why */ 
         printf("Error: fcntl(F_GETFL) < 0, fcntl(F_GETFL)= %d", val);
     } else { 
@@ -47,11 +47,8 @@ int main()
     printf("[Clearing socket for non-blocking I/O]\n");
     ioctl(server_fd, FIONBIO, &opt);
     opt = 1;
-    
-    perror("..."); 
-    exit(EXIT_FAILURE); 
 
-    if ( (val = fcntl(server_fd, F_GETFL, 0)) < 0) { 
+    if ( (val = fcntl(server_fd, F_GETFL)) < 0) { 
     /* Something's wrong here, check errno to find out why  */
         printf("Error: fcntl(F_GETFL) < 0, fcntl(F_GETFL)= %d", val); 
     } else { 
