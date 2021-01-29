@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./write_128mb.nexe | ./read_from_pipe.nexe
+
