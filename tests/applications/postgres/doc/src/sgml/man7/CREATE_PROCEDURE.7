@@ -1,0 +1,246 @@
+'\" t
+.\"     Title: CREATE PROCEDURE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 2020
+.\"    Manual: PostgreSQL 13.0 Documentation
+.\"    Source: PostgreSQL 13.0
+.\"  Language: English
+.\"
+.TH "CREATE PROCEDURE" "7" "2020" "PostgreSQL 13.0" "PostgreSQL 13.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+CREATE_PROCEDURE \- define a new procedure
+.SH "SYNOPSIS"
+.sp
+.nf
+CREATE [ OR REPLACE ] PROCEDURE
+    \fIname\fR ( [ [ \fIargmode\fR ] [ \fIargname\fR ] \fIargtype\fR [ { DEFAULT | = } \fIdefault_expr\fR ] [, \&.\&.\&.] ] )
+  { LANGUAGE \fIlang_name\fR
+    | TRANSFORM { FOR TYPE \fItype_name\fR } [, \&.\&.\&. ]
+    | [ EXTERNAL ] SECURITY INVOKER | [ EXTERNAL ] SECURITY DEFINER
+    | SET \fIconfiguration_parameter\fR { TO \fIvalue\fR | = \fIvalue\fR | FROM CURRENT }
+    | AS \*(Aq\fIdefinition\fR\*(Aq
+    | AS \*(Aq\fIobj_file\fR\*(Aq, \*(Aq\fIlink_symbol\fR\*(Aq
+  } \&.\&.\&.
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBCREATE PROCEDURE\fR
+defines a new procedure\&.
+\fBCREATE OR REPLACE PROCEDURE\fR
+will either create a new procedure, or replace an existing definition\&. To be able to define a procedure, the user must have the
+USAGE
+privilege on the language\&.
+.PP
+If a schema name is included, then the procedure is created in the specified schema\&. Otherwise it is created in the current schema\&. The name of the new procedure must not match any existing procedure or function with the same input argument types in the same schema\&. However, procedures and functions of different argument types can share a name (this is called
+overloading)\&.
+.PP
+To replace the current definition of an existing procedure, use
+\fBCREATE OR REPLACE PROCEDURE\fR\&. It is not possible to change the name or argument types of a procedure this way (if you tried, you would actually be creating a new, distinct procedure)\&.
+.PP
+When
+\fBCREATE OR REPLACE PROCEDURE\fR
+is used to replace an existing procedure, the ownership and permissions of the procedure do not change\&. All other procedure properties are assigned the values specified or implied in the command\&. You must own the procedure to replace it (this includes being a member of the owning role)\&.
+.PP
+The user that creates the procedure becomes the owner of the procedure\&.
+.PP
+To be able to create a procedure, you must have
+USAGE
+privilege on the argument types\&.
+.SH "PARAMETERS"
+.PP
+\fIname\fR
+.RS 4
+The name (optionally schema\-qualified) of the procedure to create\&.
+.RE
+.PP
+\fIargmode\fR
+.RS 4
+The mode of an argument:
+IN,
+INOUT, or
+VARIADIC\&. If omitted, the default is
+IN\&. (OUT
+arguments are currently not supported for procedures\&. Use
+INOUT
+instead\&.)
+.RE
+.PP
+\fIargname\fR
+.RS 4
+The name of an argument\&.
+.RE
+.PP
+\fIargtype\fR
+.RS 4
+The data type(s) of the procedure\*(Aqs arguments (optionally schema\-qualified), if any\&. The argument types can be base, composite, or domain types, or can reference the type of a table column\&.
+.sp
+Depending on the implementation language it might also be allowed to specify
+\(lqpseudo\-types\(rq
+such as
+cstring\&. Pseudo\-types indicate that the actual argument type is either incompletely specified, or outside the set of ordinary SQL data types\&.
+.sp
+The type of a column is referenced by writing
+\fItable_name\fR\&.\fIcolumn_name\fR%TYPE\&. Using this feature can sometimes help make a procedure independent of changes to the definition of a table\&.
+.RE
+.PP
+\fIdefault_expr\fR
+.RS 4
+An expression to be used as default value if the parameter is not specified\&. The expression has to be coercible to the argument type of the parameter\&. All input parameters following a parameter with a default value must have default values as well\&.
+.RE
+.PP
+\fIlang_name\fR
+.RS 4
+The name of the language that the procedure is implemented in\&. It can be
+sql,
+c,
+internal, or the name of a user\-defined procedural language, e\&.g\&.,
+plpgsql\&. Enclosing the name in single quotes is deprecated and requires matching case\&.
+.RE
+.PP
+TRANSFORM { FOR TYPE \fItype_name\fR } [, \&.\&.\&. ] }
+.RS 4
+Lists which transforms a call to the procedure should apply\&. Transforms convert between SQL types and language\-specific data types; see
+CREATE TRANSFORM (\fBCREATE_TRANSFORM\fR(7))\&. Procedural language implementations usually have hardcoded knowledge of the built\-in types, so those don\*(Aqt need to be listed here\&. If a procedural language implementation does not know how to handle a type and no transform is supplied, it will fall back to a default behavior for converting data types, but this depends on the implementation\&.
+.RE
+.PP
+[EXTERNAL] SECURITY INVOKER
+.br
+[EXTERNAL] SECURITY DEFINER
+.RS 4
+SECURITY INVOKER
+indicates that the procedure is to be executed with the privileges of the user that calls it\&. That is the default\&.
+SECURITY DEFINER
+specifies that the procedure is to be executed with the privileges of the user that owns it\&.
+.sp
+The key word
+EXTERNAL
+is allowed for SQL conformance, but it is optional since, unlike in SQL, this feature applies to all procedures not only external ones\&.
+.sp
+A
+SECURITY DEFINER
+procedure cannot execute transaction control statements (for example,
+\fBCOMMIT\fR
+and
+\fBROLLBACK\fR, depending on the language)\&.
+.RE
+.PP
+\fIconfiguration_parameter\fR
+.br
+\fIvalue\fR
+.RS 4
+The
+SET
+clause causes the specified configuration parameter to be set to the specified value when the procedure is entered, and then restored to its prior value when the procedure exits\&.
+SET FROM CURRENT
+saves the value of the parameter that is current when
+\fBCREATE PROCEDURE\fR
+is executed as the value to be applied when the procedure is entered\&.
+.sp
+If a
+SET
+clause is attached to a procedure, then the effects of a
+\fBSET LOCAL\fR
+command executed inside the procedure for the same variable are restricted to the procedure: the configuration parameter\*(Aqs prior value is still restored at procedure exit\&. However, an ordinary
+\fBSET\fR
+command (without
+LOCAL) overrides the
+SET
+clause, much as it would do for a previous
+\fBSET LOCAL\fR
+command: the effects of such a command will persist after procedure exit, unless the current transaction is rolled back\&.
+.sp
+If a
+SET
+clause is attached to a procedure, then that procedure cannot execute transaction control statements (for example,
+\fBCOMMIT\fR
+and
+\fBROLLBACK\fR, depending on the language)\&.
+.sp
+See
+\fBSET\fR(7)
+and
+Chapter\ \&19
+for more information about allowed parameter names and values\&.
+.RE
+.PP
+\fIdefinition\fR
+.RS 4
+A string constant defining the procedure; the meaning depends on the language\&. It can be an internal procedure name, the path to an object file, an SQL command, or text in a procedural language\&.
+.sp
+It is often helpful to use dollar quoting (see
+Section\ \&4.1.2.4) to write the procedure definition string, rather than the normal single quote syntax\&. Without dollar quoting, any single quotes or backslashes in the procedure definition must be escaped by doubling them\&.
+.RE
+.PP
+\fIobj_file\fR, \fIlink_symbol\fR
+.RS 4
+This form of the
+AS
+clause is used for dynamically loadable C language procedures when the procedure name in the C language source code is not the same as the name of the SQL procedure\&. The string
+\fIobj_file\fR
+is the name of the shared library file containing the compiled C procedure, and is interpreted as for the
+\fBLOAD\fR(7)
+command\&. The string
+\fIlink_symbol\fR
+is the procedure\*(Aqs link symbol, that is, the name of the procedure in the C language source code\&. If the link symbol is omitted, it is assumed to be the same as the name of the SQL procedure being defined\&.
+.sp
+When repeated
+\fBCREATE PROCEDURE\fR
+calls refer to the same object file, the file is only loaded once per session\&. To unload and reload the file (perhaps during development), start a new session\&.
+.RE
+.SH "NOTES"
+.PP
+See
+CREATE FUNCTION (\fBCREATE_FUNCTION\fR(7))
+for more details on function creation that also apply to procedures\&.
+.PP
+Use
+\fBCALL\fR(7)
+to execute a procedure\&.
+.SH "EXAMPLES"
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE PROCEDURE insert_data(a integer, b integer)
+LANGUAGE SQL
+AS $$
+INSERT INTO tbl VALUES (a);
+INSERT INTO tbl VALUES (b);
+$$;
+
+CALL insert_data(1, 2);
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+A
+\fBCREATE PROCEDURE\fR
+command is defined in the SQL standard\&. The
+PostgreSQL
+version is similar but not fully compatible\&. For details see also
+CREATE FUNCTION (\fBCREATE_FUNCTION\fR(7))\&.
+.SH "SEE ALSO"
+ALTER PROCEDURE (\fBALTER_PROCEDURE\fR(7)), DROP PROCEDURE (\fBDROP_PROCEDURE\fR(7)), \fBCALL\fR(7), CREATE FUNCTION (\fBCREATE_FUNCTION\fR(7))

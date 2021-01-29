@@ -1,0 +1,3 @@
+#!/bin/bash
+
+./write_32mb | ./read_from_pipe

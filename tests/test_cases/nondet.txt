@@ -1,2 +1,8 @@
 getpid.c
 read.c
+dup.c
+fork.c
+fork2malloc.c
+forkandopen.c
+forkfiles.c
+forkmalloc.c

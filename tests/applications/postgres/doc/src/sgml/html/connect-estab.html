@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>50.2. How Connections Are Established</title><link rel="stylesheet" type="text/css" href="stylesheet.css" /><link rev="made" href="pgsql-docs@lists.postgresql.org" /><meta name="generator" content="DocBook XSL Stylesheets V1.79.1" /><link rel="prev" href="query-path.html" title="50.1. The Path of a Query" /><link rel="next" href="parser-stage.html" title="50.3. The Parser Stage" /></head><body id="docContent" class="container-fluid col-10"><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="5" align="center">50.2. How Connections Are Established</th></tr><tr><td width="10%" align="left"><a accesskey="p" href="query-path.html" title="50.1. The Path of a Query">Prev</a> </td><td width="10%" align="left"><a accesskey="u" href="overview.html" title="Chapter 50. Overview of PostgreSQL Internals">Up</a></td><th width="60%" align="center">Chapter 50. Overview of PostgreSQL Internals</th><td width="10%" align="right"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="10%" align="right"> <a accesskey="n" href="parser-stage.html" title="50.3. The Parser Stage">Next</a></td></tr></table><hr></hr></div><div class="sect1" id="CONNECT-ESTAB"><div class="titlepage"><div><div><h2 class="title" style="clear: both">50.2. How Connections Are Established</h2></div></div></div><p>
+    <span class="productname">PostgreSQL</span> is implemented using a
+    simple <span class="quote">“<span class="quote">process per user</span>”</span> client/server model.  In this model
+    there is one <em class="firstterm">client process</em> connected to
+    exactly one <em class="firstterm">server process</em>.  As we do not
+    know ahead of time how many connections will be made, we have to
+    use a <em class="firstterm">master process</em> that spawns a new
+    server process every time a connection is requested. This master
+    process is called <code class="literal">postgres</code> and listens at a
+    specified TCP/IP port for incoming connections. Whenever a request
+    for a connection is detected the <code class="literal">postgres</code>
+    process spawns a new server process. The server tasks
+    communicate with each other using <em class="firstterm">semaphores</em> and
+    <em class="firstterm">shared memory</em> to ensure data integrity
+    throughout concurrent data access.
+   </p><p>
+    The client process can be any program that understands the
+    <span class="productname">PostgreSQL</span> protocol described in
+    <a class="xref" href="protocol.html" title="Chapter 52. Frontend/Backend Protocol">Chapter 52</a>.  Many clients are based on the
+    C-language library <span class="application">libpq</span>, but several independent
+    implementations of the protocol exist, such as the Java
+    <span class="application">JDBC</span> driver.
+   </p><p>
+    Once a connection is established the client process can send a query
+    to the <em class="firstterm">backend</em> (server). The query is transmitted using plain text,
+    i.e., there is no parsing done in the <em class="firstterm">frontend</em> (client). The
+    server parses the query, creates an <em class="firstterm">execution plan</em>,
+    executes the plan and returns the retrieved rows to the client
+    by transmitting them over the established connection.
+   </p></div><div xmlns="http://www.w3.org/TR/xhtml1/transitional" class="navfooter"><hr></hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="query-path.html" title="50.1. The Path of a Query">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="overview.html" title="Chapter 50. Overview of PostgreSQL Internals">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="parser-stage.html" title="50.3. The Parser Stage">Next</a></td></tr><tr><td width="40%" align="left" valign="top">50.1. The Path of a Query </td><td width="20%" align="center"><a accesskey="h" href="index.html" title="PostgreSQL 13.0 Documentation">Home</a></td><td width="40%" align="right" valign="top"> 50.3. The Parser Stage</td></tr></table></div></body></html>

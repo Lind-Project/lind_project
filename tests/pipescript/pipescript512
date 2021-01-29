@@ -1,0 +1,5 @@
+#!/bin/bash
+
+./write_512mb | ./read_from_pipe
+
+

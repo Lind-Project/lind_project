@@ -7,7 +7,7 @@ if [ "$NGX_PLATFORM" != win32 ]; then
 
     ngx_feature="C compiler"
     ngx_feature_name=
-    ngx_feature_run=yes
+    ngx_feature_run=no
     ngx_feature_incs=
     ngx_feature_path=
     ngx_feature_libs=
