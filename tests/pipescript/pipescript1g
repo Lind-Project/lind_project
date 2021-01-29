@@ -1,0 +1,3 @@
+#!/bin/bash
+
+./write_1gb | ./read_from_pipe
