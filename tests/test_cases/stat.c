@@ -10,7 +10,7 @@
 
 extern char **environ;
 
-int (* const f)(const char *pathname, struct stat *statbuf) = lstat;
+int (* const f)(const char *pathname, struct stat *statbuf) = stat;
 
 int main(int argc, char **argv)
 {
