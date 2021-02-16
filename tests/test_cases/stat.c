@@ -10,8 +10,6 @@
 
 extern char **environ;
 
-int (* const f)(const char *pathname, struct stat *statbuf) = stat;
-
 int main(int argc, char **argv)
 {
 	FILE *fp = stdout;
@@ -45,28 +43,20 @@ int main(int argc, char **argv)
 
 	if (argc < 2) {
 		struct stat st = {0};
-		fprintf(fp, "usage: %s <files>\n", argv[0]);
-		fprintf(fp, "running stat(\"%s\")\n", argv[0]);
-		if (f(argv[0], &st) < 0) {
-			perror("stat");
-			printf("errno: %d\n", errno);
-			exit(1);
-		}
-		printf("size: %jd\n", st.st_size);
+		printf("usage: %s <files>\n", argv[0]);
 		exit(0);
 	}
 
 	for (int i = 1; i < argc; i++) {
 		struct stat st = {0};
-		fprintf(fp, "running stat(\"%s\")\n", argv[i]);
-		if (f(argv[i], &st) < 0) {
+		printf("running stat(\"%s\")\n", argv[i]);
+		if (stat(argv[i], &st) < 0) {
 			perror("stat");
 			printf("errno: %d\n", errno);
 			exit(1);
 		}
 		printf("size: %jd\n", st.st_size);
 	}
-	putc('\n', fp);
 
 	return 0;
 }
