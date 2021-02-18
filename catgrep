@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cat wpawordlist.txt | grep '^.\{6\}$'
