@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cat megawords.txt | cat | cat | wc
