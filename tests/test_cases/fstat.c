@@ -7,12 +7,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 extern char **environ;
 
 int main(int argc, char **argv)
 {
 	FILE *fp = stdout;
+	int fd;
 
 	/*
 	* struct stat {
@@ -45,7 +47,8 @@ int main(int argc, char **argv)
 		struct stat st = {0};
 		printf("usage: %s <files>\n", argv[0]);
 		printf("running fstat(\"%s\")\n", argv[0]);
-		if (fstat(argv[0], &st) < 0) {
+		fd = open(argv[0], O_RDONLY);
+		if (fstat(fd, &st) < 0) {
 			perror("fstat");
 			printf("errno: %d\n", errno);
 			exit(1);
@@ -57,7 +60,8 @@ int main(int argc, char **argv)
 	for (int i = 1; i < argc; i++) {
 		struct stat st = {0};
 		printf("running fstat(\"%s\")\n", argv[i]);
-		if (fstat(argv[i], &st) < 0) {
+		fd = open(argv[i], O_RDONLY);
+		if (fstat(fd, &st) < 0) {
 			perror("fstat");
 			printf("errno: %d\n", errno);
 			exit(1);
