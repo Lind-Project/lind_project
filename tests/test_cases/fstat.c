@@ -57,6 +57,7 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
+	// The files would have to be copied to lindfs beforehand
 	for (int i = 1; i < argc; i++) {
 		struct stat st = {0};
 		printf("running fstat(\"%s\")\n", argv[i]);
