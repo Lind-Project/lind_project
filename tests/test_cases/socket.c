@@ -19,7 +19,7 @@ int main( int argc, char *argv[] ) {
       exit(1);
    }
    
-   printf("Socket opened succesfully.")
+   printf("Socket opened succesfully.");
       
    return 0;
 }
