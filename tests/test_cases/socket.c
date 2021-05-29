@@ -1,4 +1,4 @@
-#from https://www.tutorialspoint.com/unix_sockets/socket_server_example.htm
+//code from https://www.tutorialspoint.com/unix_sockets/socket_server_example.htm
 
 #include <stdio.h>
 #include <stdlib.h>
