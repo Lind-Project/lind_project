@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.repy": "python",
+        "system_error": "c",
+        "regex": "c",
+        "future": "c"
+    }
+}
