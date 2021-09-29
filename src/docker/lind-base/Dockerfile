@@ -12,8 +12,8 @@ ARG BRANCH
 ENV PATH "/root/bin:/home/lind/bin:$PATH"
 ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 ENV PATH "/home/lind/lind_project:$PATH"
-ENV PATH "/home/lind/lind_project/lind/repy/bin:$PATH"
-ENV PATH "/home/lind/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
+ENV PATH "/home/lind/lind_project/lind/lindenv/bin:$PATH"
+ENV PATH "/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin:$PATH"
 # This is needed for lindsh and others
 ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
 
@@ -21,8 +21,8 @@ ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
 ENV LIND_SRC "$LIND_BASE/lind"
-ENV REPY_PATH "$LIND_SRC/repy"
-ENV NACL_SDK_ROOT "$REPY_PATH/sdk"
+ENV LIND_ENV_PATH "$LIND_SRC/lindenv"
+ENV NACL_SDK_ROOT "$LIND_ENV_PATH/sdk"
 ENV PYTHON "python2"
 ENV PNACLPYTHON "python2"
 ENV LD_LIBRARY_PATH "/lib/glibc"
@@ -49,8 +49,10 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 	tmux screen bash-completion mlocate shadow ncdu \
 	bind-tools cowsay filesystem linux-headers \
 	grml-zsh-config linux-docs man-pages man-db \
-	util-linux help2man rlwrap
+	util-linux help2man rlwrap \
+    glibc lib32-glibc libxcrypt rustup
 RUN pkgfile --update
+RUN rustup default nightly
 
 USER lind
 

@@ -595,8 +595,8 @@ for word in "$@"; do
 	glibc)
 		build_glibc;;
 	all)
-		build_nacl
 		build_rustposix
+		build_nacl
 		build_glibc
 		install_to_path;;
 	install)
