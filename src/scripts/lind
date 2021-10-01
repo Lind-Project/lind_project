@@ -55,16 +55,14 @@ shift "$((OPTIND - 1))"
 export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
 export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
 export LIND_SRC="${LIND_SRC:-$LIND_BASE/lind}"
-export REPY_PATH="${REPY_PATH:-$LIND_SRC/repy}"
-export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$REPY_PATH/sdk}"
-export PYTHON="${PYTHON:-python2}"
-export PNACLPYTHON="${PNACLPYTHON:-python2}"
+export LIND_ENV_PATH="${LIND_ENV_PATH:-$LIND_SRC/lindenv}"
+export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$LIND_ENV_PATH/sdk}"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
 
-cd "$REPY_PATH/repy" || exit 1
+cd "$LIND_ENV_PATH/fs" || exit 1
 
-print_arg_str+="${extra_args[*]} -- \"$LD_LIBRARY_PATH/runnable-ld.so\" --library-path \"$LD_LIBRARY_PATH\" $*"
-ldr_args+=("${extra_args[@]}" -- "$LD_LIBRARY_PATH/runnable-ld.so" --library-path "$LD_LIBRARY_PATH" "$@")
+print_arg_str+="${extra_args[*]} -- \"/lib/glibc/runnable-ld.so\" --library-path \"/lib/glibc\" $*"
+ldr_args+=("${extra_args[@]}" -- "/lib/glibc/runnable-ld.so" --library-path "/lib/glibc" "$@")
 
 if [[ -n "${gdb_arg_str[*]}" ]]; then
 	# concatenate so we can pass the argument list to gdb

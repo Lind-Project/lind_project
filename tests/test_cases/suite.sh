@@ -36,7 +36,7 @@ for var in "${totalarray[@]}"; do
     gcc $var -o test_out/$varnonexe -lpthread
 done
 echo "Copying test cases"
-lindfs cp $PWD/test_out/ &> /dev/null
+lindfs cp $PWD/test_out/ /automated_tests/ &> /dev/null
 
 echo "Executing deterministic test cases"
 for var in "${deterministicinput[@]}"; do
@@ -46,7 +46,7 @@ for var in "${deterministicinput[@]}"; do
     varnonexe="${var%.*}";
     exec 3>&2
     exec 2> /dev/null
-    lindoutput=$(lind "/tests/test_cases/test_out/$nexefile");
+    lindoutput=$(lind "/automated_tests/$nexefile");
     regularoutput=$(./test_out/$varnonexe)
     exec 2>&3
 
@@ -76,7 +76,7 @@ for var in "${nondeterministicinput[@]}"; do
     varnonexe="${var%.*}";
     exec 3>&2
     exec 2> /dev/null
-    lindoutput="$(lind "/tests/test_cases/test_out/$nexefile")";
+    lindoutput="$(lind "/automated_tests/$nexefile")";
     regularoutput="$(./test_out/$varnonexe)";
     exec 2>&3
 
@@ -103,7 +103,7 @@ for var in "${nondeterministicinput[@]}"; do
 done
 
 rm ./test_out/* &> /dev/null
-lindfs deltree "/tests/test_cases/test_out" &> /dev/null
+lindfs deltree "/automated_tests/" &> /dev/null
 
 echo "------------------------------------------------------------------"
 

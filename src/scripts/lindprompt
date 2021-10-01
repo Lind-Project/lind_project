@@ -17,7 +17,7 @@ while true; do
   myarr=( $command )
   case "${myarr[0]}" in
     "help"|[hH])
-      [[ ${myarr[1]} == cp ]] && echo "syntax: \"cp basedir filepath\" copies filepath (or recursively copies all children of filepath if filepath is a directory) into the lind file system with their filename being their path relative to basedir. Filepath must be relative to basedir." && continue;
+      [[ ${myarr[1]} == cp ]] && echo "syntax: \"cp hostpath lindpath\" copies file at hostpath on the host system to lindpath in the lind file system." && continue;
       echo "List of commands";
       echo "[help/h]: show this help message"
       echo "[cd/chdir]: Change working directory of the lind prompt"
@@ -28,13 +28,10 @@ while true; do
       echo "[exit/quit]: leave lind prompt"
       ;;
     "compile"|"cc"|"gcc")
-      $LIND_ROOT/lind/repy/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc "${myarr[@]:1}";
+      $LIND_ROOT/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc "${myarr[@]:1}";
       ;;
     "cp"|"copy")
-      pushd . &> /dev/null
-      cd $LIND_ROOT/lind/repy/repy &> /dev/null
-      python2 lind_fs_utils.py cp "${myarr[@]:1}";
-      popd &> /dev/null
+      lindfs cp "${myarr[@]:1}";
       ;;
     "r"|"run"|"exec"|"execute")
       if [[ "" == ${myarr[1]} ]];
@@ -45,7 +42,7 @@ while true; do
           then read -r -p "File is not an nexe file. Try to run anyway? [y/N]" response
           case "$response" in
               [yY][eE][sS]|[yY])
-                  $LIND_ROOT/lind/repy/bin/lind ${myarr[@]:1};
+                  lind ${myarr[@]:1};
                   continue;
                   ;;
               *)
@@ -53,7 +50,7 @@ while true; do
                   ;;
           esac;
       fi
-      $LIND_ROOT/lind/repy/bin/lind ${myarr[@]:1};
+      lind ${myarr[@]:1};
       ;;
     exit|quit)
       exit
