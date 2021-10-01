@@ -32,3 +32,6 @@
 [submodule "src/--force"]
 	path = src/--force
 	url = https://github.com/Lind-Project/safeposix-rust.git
+[submodule "src/safeposix-rust"]
+	path = src/safeposix-rust
+	url = https://github.com/Lind-Project/safeposix-rust.git
