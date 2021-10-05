@@ -31,7 +31,7 @@ WORKDIR /home/lind/lind_project
 
 # finish install
 RUN git pull -t -j8
-RUN for t in rustposix nacl glibc install; do ./src/mklind -q "$t"; done
+RUN for t in rustposix nacl install; do ./src/mklind -q "$t"; done
 # make tests
 run mkdir -p lind/lindenv/tests
 run for c in $test_cases; do x86_64-nacl-gcc -std=c99 "tests/test_cases/$c.c" -o "lind/lindenv/tests/$c"; done

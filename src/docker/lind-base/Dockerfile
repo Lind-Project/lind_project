@@ -52,11 +52,16 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 	util-linux help2man rlwrap \
     glibc lib32-glibc libxcrypt rustup
 RUN pkgfile --update
-RUN rustup default nightly
+
+WORKDIR /usr/bin
+RUN ln -sf python2 python
 
 USER lind
-
 WORKDIR /home/lind/
+
+RUN rustup default nightly
+
+
 RUN git config --global user.name "lind"
 RUN git config --global user.email "lind@nyu.edu"
 RUN git config --global core.excludesFile "/home/lind/.cvsignore"
@@ -74,15 +79,6 @@ RUN ln -rsv "/home/lind/lind_project" "./"
 WORKDIR /root/build/
 RUN lesskey
 
-
-USER lind
-WORKDIR /home/lind/build/
-RUN git clone https://aur.archlinux.org/downgrade.git downgrade
-WORKDIR /home/lind/build/downgrade
-RUN makepkg --noconfirm -sci
-USER root
-RUN pacman -U *.pkg.tar.xz --noconfirm
-
 USER lind
 
 WORKDIR /home/lind/build/make-3.82/
@@ -92,12 +88,8 @@ RUN ./configure --prefix="/home/lind/.local" && make install
 
 USER root
 
-
 WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/" "/var/cache/pacman/pkg/"
 RUN chown -Rc lind:lind .
-
-RUN yes | downgrade gcc=9.3.0 gcc-libs=9.3.0
-RUN pip2 install -U --user virtualenv==20.0.23
 
 CMD bash
