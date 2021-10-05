@@ -1,4 +1,4 @@
-FROM archlinux/base
+FROM archlinux:latest
 LABEL lind "v1.0-rc5"
 LABEL description "Lind NaCl Glibc Toolchain (Base)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
