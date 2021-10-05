@@ -8,6 +8,10 @@
 # Updated by Jonathan Singer <jes965@nyu.edu>
 
 # version and usage strings
+
+# export LD_LIBRARY_PATH just for builds
+export LD_LIBRARY_PATH="/lib/glibc"
+
 cd ..
 readonly version=1.0.0-rc4
 usage+=$'\n'"Lind $version NaCl Toolchain Build Script"$'\n'
@@ -206,7 +210,7 @@ function clean_src() {
 function download_src() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
-	local pip_bin pip_ver nacl_rev
+	local  nacl_rev
 	local -A git_deps toolchain_deps
 
 	# populate associative arrays
@@ -224,6 +228,7 @@ function download_src() {
 
 	# clone and symlink dependencies
 	mkdir -p "$LIND_BASE" "$LIND_SRC" "$NACL_SRC"
+	
 	cd "$LIND_BASE"
 
 	# make sure we are in the git root of "Lind-Project/lind_project"
@@ -269,6 +274,11 @@ function download_src() {
 	cd "$LIND_BASE"
 	git checkout -- Makefile
 	rm -rfv -- _gclient_* _bad_scm
+
+	# create lindenv dirs
+	cd "$LIND_SRC"
+	mkdir -p lindenv/
+	mkdir -p lindenv/fs lindenv/bin
 }
 
 #checkout glibc, nacl, and safeposix-rust to develop
@@ -308,7 +318,6 @@ function install_to_path() {
 
 	print "** Sending NaCl files to $LIND_ENV_PATH **"
 
-	mkdir -p "$LIND_ENV_PATH_BIN"
 	mkdir -p "$LIND_ENV_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
 	mkdir -p "$LIND_ENV_PATH_SDK/tools"
 
@@ -383,11 +392,11 @@ function build_rustposix() {
     if [[ "$DEBUG_RUSTPOSIX" == "true" ]]; then 
         cargo build
         cp "target/debug/librustposix.so"  "$LIND_ENV_PATH/librustposix.so"
-        cp "target/debug/lind_fs_utils"  "$LIND_ENV_PATH_BIN"
+        cp "target/debug/lind_fs_utils"  "$LIND_ENV_PATH_BIN/lind_fs_utils"
     else
         cargo build --release
         cp "target/release/librustposix.so"  "$LIND_ENV_PATH/librustposix.so"
-        cp "target/release/lind_fs_utils"  "$LIND_ENV_PATH_BIN"
+        cp "target/release/lind_fs_utils"  "$LIND_ENV_PATH_BIN/lind_fs_utils"
     fi
 	print "Done."
 }
@@ -462,6 +471,9 @@ function clean_nacl() {
 #
 function build_glibc() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
+
+	PERL_VER=$(perl -e 'print "$^V"' | cut -c 2-5)
+	export PERL5LIB=/usr/lib/perl5/$PERL_VER
 
 	# the build is long and boring, so execute this first if it exists
 	print ""
@@ -540,44 +552,6 @@ fi
 
 # all scripts assume we start here
 start_time="$(date +%s)"
-
-# start virtualenv if needed
-if [[ -z "$VIRTUAL_ENV" ]]; then
-
-	# find pip executable
-	if command -v pip2 >/dev/null 2>&1; then
-		pip_bin="pip2"
-	elif command -v pip >/dev/null 2>&1; then
-		pip_bin="pip"
-	else
-		print "Need to install pip/pip2 in order to build Lind" >&2
-		false
-	fi
-
-	pip_ver="$("$pip_bin" --version | sed 's/.*(python \([0-9\.]\+\)).*/\1/')"
-	if [[ "$pip_ver" != 2* ]]; then
-		print "Need python2 version of pip in order to build Lind" >&2
-		false
-	fi
-
-	if [[ "$("$pip_bin" show virtualenv | grep Version\: | grep -o [0-9]*\\.[0-9]*\\.[0-9]*)" != '20.0.23' ]]; then
-		print "Need python virtualenv/virtualenv2 in order to build Lind" >&2
-		false
-	fi
-
-	# start up virtualenv
-	if ! python2 -m virtualenv "$LIND_BASE/venv"; then
-		print "Command \`python2 -m virtualenv ./venv\` failed" >&2
-		false
-	fi
-	# shellcheck disable=SC1090
-	. "$LIND_BASE/venv/bin/activate"
-	# install pip dependencies
-	if ! pip install -Ur "$LIND_BASE/requirements.txt"; then
-		print "Installing dependencies from requirements.txt failed" >&2
-		false
-	fi
-fi
 
 # show command that will be executed
 print "" "Command line arguments: $0 $*" ""
