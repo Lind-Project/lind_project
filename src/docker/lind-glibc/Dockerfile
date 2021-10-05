@@ -21,7 +21,6 @@ ENV LIND_ENV_PATH "$LIND_SRC/lindenv"
 ENV NACL_SDK_ROOT "$LIND_ENV_PATH/sdk"
 ENV PYTHON "python2"
 ENV PNACLPYTHON "python2"
-ENV LD_LIBRARY_PATH "/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
 
 # download source files and make glibc
 USER lind
