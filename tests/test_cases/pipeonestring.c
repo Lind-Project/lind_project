@@ -10,8 +10,8 @@ int main(int argc, char *argv[])
 {
     int pipefd[2];
     pid_t cpid;
-    char buf[BUFSIZE];
-    
+    char buf[BUFSIZE] = {0};
+
     if (pipe(pipefd) == -1) {
         perror("pipe");
         exit(EXIT_FAILURE);

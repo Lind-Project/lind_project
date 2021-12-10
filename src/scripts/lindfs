@@ -1,57 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-ret=0
-cwd="$PWD"
-
-trap 'cd "$cwd"; exit "$ret"' EXIT
-
-export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
-export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
-export LIND_SRC="${LIND_SRC:-$LIND_BASE/lind}"
-export REPY_PATH="${REPY_PATH:-$LIND_SRC/repy}"
-export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$REPY_PATH/sdk}"
-export PYTHON="${PYTHON:-python2}"
-export PNACLPYTHON="${PNACLPYTHON:-python2}"
-export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
-
-if test $# -ge 0; then
-	args=''
-	for i in $(seq -s' ' 1 $#); do
-		eval "arg=\"\$(realpath -qe --relative-to \"\$REPY_PATH/repy\" \$$i)\""
-		eval "args=\"\$args \${arg:-\$$i}\""
-	done
-	set -- $args
-fi
-
-cd "$REPY_PATH/repy" || exit 1
-
-if command -v tput >/dev/null 2>&1; then
-	reset="$(tput -T xterm sgr0)"
-	purple="$(tput -T xterm setaf 13)"
-else
-	reset=""
-	purple=""
-fi
-if test "$1" = cp || test "$1" = update; then
-	action="$1"
-	shift
-	set -- "$action" "$REPY_PATH/repy" "$@"
-fi
-
-printf 'running: [%s%s%s]\n' "$reset$purple" "python2 lind_fs_utils.py $*" "$reset"
-
-# if command is "cp" retry using "update" on failure
-if test "$1" = cp; then
-	python2 lind_fs_utils.py "$@" 2>/dev/null
-	ret=$?
-	if test "$ret" -ne 0; then
-		shift
-		python2 lind_fs_utils.py update "$@"
-		ret=$?
-	fi
-else
-	python2 lind_fs_utils.py "$@"
-	ret=$?
-fi
-
-exit "$ret"
+pushd . > /dev/null
+cd "$LIND_SRC/lindenv/fs"
+../bin/lind_fs_utils "$@"
+popd > /dev/null
