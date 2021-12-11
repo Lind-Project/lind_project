@@ -10,11 +10,6 @@
 
 extern char **environ;
 
-<<<<<<< HEAD
-int (* const f)(const char *pathname, struct stat *statbuf) = stat;
-
-=======
->>>>>>> develop
 int main(int argc, char **argv)
 {
 	FILE *fp = stdout;
