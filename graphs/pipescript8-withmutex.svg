@@ -1,0 +1,3560 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="806" onload="init(evt)" viewBox="0 0 1200 806" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
+<!-- NOTES:  -->
+<defs>
+	<linearGradient id="background" y1="0" y2="1" x1="0" x2="0" >
+		<stop stop-color="#eeeeee" offset="5%" />
+		<stop stop-color="#eeeeb0" offset="95%" />
+	</linearGradient>
+</defs>
+<style type="text/css">
+	text { font-family:Verdana; font-size:12px; fill:rgb(0,0,0); }
+	#search, #ignorecase { opacity:0.1; cursor:pointer; }
+	#search:hover, #search.show, #ignorecase:hover, #ignorecase.show { opacity:1; }
+	#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+	#title { text-anchor:middle; font-size:17px}
+	#unzoom { cursor:pointer; }
+	#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+	.hide { display:none; }
+	.parent { opacity:0.5; }
+</style>
+<script type="text/ecmascript">
+<![CDATA[
+	"use strict";
+	var details, searchbtn, unzoombtn, matchedtxt, svg, searching, currentSearchTerm, ignorecase, ignorecaseBtn;
+	function init(evt) {
+		details = document.getElementById("details").firstChild;
+		searchbtn = document.getElementById("search");
+		ignorecaseBtn = document.getElementById("ignorecase");
+		unzoombtn = document.getElementById("unzoom");
+		matchedtxt = document.getElementById("matched");
+		svg = document.getElementsByTagName("svg")[0];
+		searching = 0;
+		currentSearchTerm = null;
+
+		// use GET parameters to restore a flamegraphs state.
+		var params = get_params();
+		if (params.x && params.y)
+			zoom(find_group(document.querySelector('[x="' + params.x + '"][y="' + params.y + '"]')));
+                if (params.s) search(params.s);
+	}
+
+	// event listeners
+	window.addEventListener("click", function(e) {
+		var target = find_group(e.target);
+		if (target) {
+			if (target.nodeName == "a") {
+				if (e.ctrlKey === false) return;
+				e.preventDefault();
+			}
+			if (target.classList.contains("parent")) unzoom();
+			zoom(target);
+			if (!document.querySelector('.parent')) {
+				clearzoom();
+				return;
+			}
+
+			// set parameters for zoom state
+			var el = target.querySelector("rect");
+			if (el && el.attributes && el.attributes.y && el.attributes._orig_x) {
+				var params = get_params()
+				params.x = el.attributes._orig_x.value;
+				params.y = el.attributes.y.value;
+				history.replaceState(null, null, parse_params(params));
+			}
+		}
+		else if (e.target.id == "unzoom") clearzoom();
+		else if (e.target.id == "search") search_prompt();
+		else if (e.target.id == "ignorecase") toggle_ignorecase();
+	}, false)
+
+	// mouse-over for info
+	// show
+	window.addEventListener("mouseover", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = "Function: " + g_to_text(target);
+	}, false)
+
+	// clear
+	window.addEventListener("mouseout", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = ' ';
+	}, false)
+
+	// ctrl-F for search
+	// ctrl-I to toggle case-sensitive search
+	window.addEventListener("keydown",function (e) {
+		if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+			e.preventDefault();
+			search_prompt();
+		}
+		else if (e.ctrlKey && e.keyCode === 73) {
+			e.preventDefault();
+			toggle_ignorecase();
+		}
+	}, false)
+
+	// functions
+	function get_params() {
+		var params = {};
+		var paramsarr = window.location.search.substr(1).split('&');
+		for (var i = 0; i < paramsarr.length; ++i) {
+			var tmp = paramsarr[i].split("=");
+			if (!tmp[0] || !tmp[1]) continue;
+			params[tmp[0]]  = decodeURIComponent(tmp[1]);
+		}
+		return params;
+	}
+	function parse_params(params) {
+		var uri = "?";
+		for (var key in params) {
+			uri += key + '=' + encodeURIComponent(params[key]) + '&';
+		}
+		if (uri.slice(-1) == "&")
+			uri = uri.substring(0, uri.length - 1);
+		if (uri == '?')
+			uri = window.location.href.split('?')[0];
+		return uri;
+	}
+	function find_child(node, selector) {
+		var children = node.querySelectorAll(selector);
+		if (children.length) return children[0];
+	}
+	function find_group(node) {
+		var parent = node.parentElement;
+		if (!parent) return;
+		if (parent.id == "frames") return node;
+		return find_group(parent);
+	}
+	function orig_save(e, attr, val) {
+		if (e.attributes["_orig_" + attr] != undefined) return;
+		if (e.attributes[attr] == undefined) return;
+		if (val == undefined) val = e.attributes[attr].value;
+		e.setAttribute("_orig_" + attr, val);
+	}
+	function orig_load(e, attr) {
+		if (e.attributes["_orig_"+attr] == undefined) return;
+		e.attributes[attr].value = e.attributes["_orig_" + attr].value;
+		e.removeAttribute("_orig_"+attr);
+	}
+	function g_to_text(e) {
+		var text = find_child(e, "title").firstChild.nodeValue;
+		return (text)
+	}
+	function g_to_func(e) {
+		var func = g_to_text(e);
+		// if there's any manipulation we want to do to the function
+		// name before it's searched, do it here before returning.
+		return (func);
+	}
+	function update_text(e) {
+		var r = find_child(e, "rect");
+		var t = find_child(e, "text");
+		var w = parseFloat(r.attributes.width.value) -3;
+		var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+		t.attributes.x.value = parseFloat(r.attributes.x.value) + 3;
+
+		// Smaller than this size won't fit anything
+		if (w < 2 * 12 * 0.59) {
+			t.textContent = "";
+			return;
+		}
+
+		t.textContent = txt;
+		// Fit in full text width
+		if (/^ *$/.test(txt) || t.getSubStringLength(0, txt.length) < w)
+			return;
+
+		for (var x = txt.length - 2; x > 0; x--) {
+			if (t.getSubStringLength(0, x + 2) <= w) {
+				t.textContent = txt.substring(0, x) + "..";
+				return;
+			}
+		}
+		t.textContent = "";
+	}
+
+	// zoom
+	function zoom_reset(e) {
+		if (e.attributes != undefined) {
+			orig_load(e, "x");
+			orig_load(e, "width");
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_reset(c[i]);
+		}
+	}
+	function zoom_child(e, x, ratio) {
+		if (e.attributes != undefined) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = (parseFloat(e.attributes.x.value) - x - 10) * ratio + 10;
+				if (e.tagName == "text")
+					e.attributes.x.value = find_child(e.parentNode, "rect[x]").attributes.x.value + 3;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseFloat(e.attributes.width.value) * ratio;
+			}
+		}
+
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_child(c[i], x - 10, ratio);
+		}
+	}
+	function zoom_parent(e) {
+		if (e.attributes) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = 10;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseInt(svg.width.baseVal.value) - (10 * 2);
+			}
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_parent(c[i]);
+		}
+	}
+	function zoom(node) {
+		var attr = find_child(node, "rect").attributes;
+		var width = parseFloat(attr.width.value);
+		var xmin = parseFloat(attr.x.value);
+		var xmax = parseFloat(xmin + width);
+		var ymin = parseFloat(attr.y.value);
+		var ratio = (svg.width.baseVal.value - 2 * 10) / width;
+
+		// XXX: Workaround for JavaScript float issues (fix me)
+		var fudge = 0.0001;
+
+		unzoombtn.classList.remove("hide");
+
+		var el = document.getElementById("frames").children;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var a = find_child(e, "rect").attributes;
+			var ex = parseFloat(a.x.value);
+			var ew = parseFloat(a.width.value);
+			var upstack;
+			// Is it an ancestor
+			if (0 == 0) {
+				upstack = parseFloat(a.y.value) > ymin;
+			} else {
+				upstack = parseFloat(a.y.value) < ymin;
+			}
+			if (upstack) {
+				// Direct ancestor
+				if (ex <= xmin && (ex+ew+fudge) >= xmax) {
+					e.classList.add("parent");
+					zoom_parent(e);
+					update_text(e);
+				}
+				// not in current path
+				else
+					e.classList.add("hide");
+			}
+			// Children maybe
+			else {
+				// no common path
+				if (ex < xmin || ex + fudge >= xmax) {
+					e.classList.add("hide");
+				}
+				else {
+					zoom_child(e, xmin, ratio);
+					update_text(e);
+				}
+			}
+		}
+		search();
+	}
+	function unzoom() {
+		unzoombtn.classList.add("hide");
+		var el = document.getElementById("frames").children;
+		for(var i = 0; i < el.length; i++) {
+			el[i].classList.remove("parent");
+			el[i].classList.remove("hide");
+			zoom_reset(el[i]);
+			update_text(el[i]);
+		}
+		search();
+	}
+	function clearzoom() {
+		unzoom();
+
+		// remove zoom state
+		var params = get_params();
+		if (params.x) delete params.x;
+		if (params.y) delete params.y;
+		history.replaceState(null, null, parse_params(params));
+	}
+
+	// search
+	function toggle_ignorecase() {
+		ignorecase = !ignorecase;
+		if (ignorecase) {
+			ignorecaseBtn.classList.add("show");
+		} else {
+			ignorecaseBtn.classList.remove("show");
+		}
+		reset_search();
+		search();
+	}
+	function reset_search() {
+		var el = document.querySelectorAll("#frames rect");
+		for (var i = 0; i < el.length; i++) {
+			orig_load(el[i], "fill")
+		}
+		var params = get_params();
+		delete params.s;
+		history.replaceState(null, null, parse_params(params));
+	}
+	function search_prompt() {
+		if (!searching) {
+			var term = prompt("Enter a search term (regexp " +
+			    "allowed, eg: ^ext4_)"
+			    + (ignorecase ? ", ignoring case" : "")
+			    + "\nPress Ctrl-i to toggle case sensitivity", "");
+			if (term != null) search(term);
+		} else {
+			reset_search();
+			searching = 0;
+			currentSearchTerm = null;
+			searchbtn.classList.remove("show");
+			searchbtn.firstChild.nodeValue = "Search"
+			matchedtxt.classList.add("hide");
+			matchedtxt.firstChild.nodeValue = ""
+		}
+	}
+	function search(term) {
+		if (term) currentSearchTerm = term;
+
+		var re = new RegExp(currentSearchTerm, ignorecase ? 'i' : '');
+		var el = document.getElementById("frames").children;
+		var matches = new Object();
+		var maxwidth = 0;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var func = g_to_func(e);
+			var rect = find_child(e, "rect");
+			if (func == null || rect == null)
+				continue;
+
+			// Save max width. Only works as we have a root frame
+			var w = parseFloat(rect.attributes.width.value);
+			if (w > maxwidth)
+				maxwidth = w;
+
+			if (func.match(re)) {
+				// highlight
+				var x = parseFloat(rect.attributes.x.value);
+				orig_save(rect, "fill");
+				rect.attributes.fill.value = "rgb(230,0,230)";
+
+				// remember matches
+				if (matches[x] == undefined) {
+					matches[x] = w;
+				} else {
+					if (w > matches[x]) {
+						// overwrite with parent
+						matches[x] = w;
+					}
+				}
+				searching = 1;
+			}
+		}
+		if (!searching)
+			return;
+		var params = get_params();
+		params.s = currentSearchTerm;
+		history.replaceState(null, null, parse_params(params));
+
+		searchbtn.classList.add("show");
+		searchbtn.firstChild.nodeValue = "Reset Search";
+
+		// calculate percent matched, excluding vertical overlap
+		var count = 0;
+		var lastx = -1;
+		var lastw = 0;
+		var keys = Array();
+		for (k in matches) {
+			if (matches.hasOwnProperty(k))
+				keys.push(k);
+		}
+		// sort the matched frames by their x location
+		// ascending, then width descending
+		keys.sort(function(a, b){
+			return a - b;
+		});
+		// Step through frames saving only the biggest bottom-up frames
+		// thanks to the sort order. This relies on the tree property
+		// where children are always smaller than their parents.
+		var fudge = 0.0001;	// JavaScript floating point
+		for (var k in keys) {
+			var x = parseFloat(keys[k]);
+			var w = matches[keys[k]];
+			if (x >= lastx + lastw - fudge) {
+				count += w;
+				lastx = x;
+				lastw = w;
+			}
+		}
+		// display matched percent
+		matchedtxt.classList.remove("hide");
+		var pct = 100 * count / maxwidth;
+		if (pct != 100) pct = pct.toFixed(1)
+		matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+	}
+]]>
+</script>
+<rect x="0.0" y="0" width="1200.0" height="806.0" fill="url(#background)"  />
+<text id="title" x="600.00" y="24" >Flame Graph</text>
+<text id="details" x="10.00" y="789" > </text>
+<text id="unzoom" x="10.00" y="24" class="hide">Reset Zoom</text>
+<text id="search" x="1090.00" y="24" >Search</text>
+<text id="ignorecase" x="1174.00" y="24" >ic</text>
+<text id="matched" x="1090.00" y="789" > </text>
+<g id="frames">
+<g >
+<title>[unknown] (5,159 samples, 6.29%)</title><rect x="28.7" y="629" width="74.2" height="15.0" fill="rgb(216,223,14)" rx="2" ry="2" />
+<text  x="31.65" y="639.5" >[unknown]</text>
+</g>
+<g >
+<title>NaClMutexLock (344 samples, 0.42%)</title><rect x="194.4" y="661" width="5.0" height="15.0" fill="rgb(239,154,51)" rx="2" ry="2" />
+<text  x="197.43" y="671.5" ></text>
+</g>
+<g >
+<title>core::num::&lt;impl u64&gt;::rotate_left (27 samples, 0.03%)</title><rect x="867.5" y="437" width="0.3" height="15.0" fill="rgb(244,100,44)" rx="2" ry="2" />
+<text  x="870.45" y="447.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (382 samples, 0.47%)</title><rect x="923.7" y="613" width="5.5" height="15.0" fill="rgb(250,9,20)" rx="2" ry="2" />
+<text  x="926.72" y="623.5" ></text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;std::sync::rwlock::RwLockReadGuard&lt;std::collections::hash::map::HashMap&lt;i32,alloc::sync::Arc&lt;rustposix::interface::pipe::EmulatedPipe&gt;&gt;&gt;&gt; (10 samples, 0.01%)</title><rect x="157.1" y="693" width="0.2" height="15.0" fill="rgb(218,160,54)" rx="2" ry="2" />
+<text  x="160.12" y="703.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_sub (291 samples, 0.35%)</title><rect x="746.9" y="485" width="4.1" height="15.0" fill="rgb(228,161,18)" rx="2" ry="2" />
+<text  x="749.86" y="495.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexUnlock (18 samples, 0.02%)</title><rect x="952.3" y="613" width="0.3" height="15.0" fill="rgb(212,22,32)" rx="2" ry="2" />
+<text  x="955.31" y="623.5" ></text>
+</g>
+<g >
+<title>perf (1,381 samples, 1.68%)</title><rect x="103.0" y="741" width="19.8" height="15.0" fill="rgb(232,189,31)" rx="2" ry="2" />
+<text  x="105.96" y="751.5" ></text>
+</g>
+<g >
+<title>std::thread::panicking (12 samples, 0.01%)</title><rect x="765.4" y="517" width="0.2" height="15.0" fill="rgb(233,86,41)" rx="2" ry="2" />
+<text  x="768.38" y="527.5" ></text>
+</g>
+<g >
+<title>DynArrayGet (14 samples, 0.02%)</title><rect x="1121.6" y="709" width="0.2" height="15.0" fill="rgb(219,187,31)" rx="2" ry="2" />
+<text  x="1124.58" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (105 samples, 0.13%)</title><rect x="105.5" y="613" width="1.5" height="15.0" fill="rgb(234,216,11)" rx="2" ry="2" />
+<text  x="108.51" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,073 samples, 1.31%)</title><rect x="107.2" y="517" width="15.4" height="15.0" fill="rgb(224,151,0)" rx="2" ry="2" />
+<text  x="110.19" y="527.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexUnlock (17 samples, 0.02%)</title><rect x="920.7" y="645" width="0.3" height="15.0" fill="rgb(223,74,7)" rx="2" ry="2" />
+<text  x="923.71" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (25 samples, 0.03%)</title><rect x="102.6" y="245" width="0.3" height="15.0" fill="rgb(234,209,13)" rx="2" ry="2" />
+<text  x="105.56" y="255.5" ></text>
+</g>
+<g >
+<title>[unknown] (15 samples, 0.02%)</title><rect x="102.7" y="165" width="0.2" height="15.0" fill="rgb(245,199,45)" rx="2" ry="2" />
+<text  x="105.70" y="175.5" ></text>
+</g>
+<g >
+<title>[unknown] (587 samples, 0.72%)</title><rect x="94.5" y="501" width="8.4" height="15.0" fill="rgb(239,175,49)" rx="2" ry="2" />
+<text  x="97.47" y="511.5" ></text>
+</g>
+<g >
+<title>NaClSysRead (32,246 samples, 39.34%)</title><rect x="202.9" y="677" width="464.1" height="15.0" fill="rgb(243,14,7)" rx="2" ry="2" />
+<text  x="205.87" y="687.5" >NaClSysRead</text>
+</g>
+<g >
+<title>hashbrown::map::HashMap&lt;K,V,S,A&gt;::get (9 samples, 0.01%)</title><rect x="157.6" y="677" width="0.1" height="15.0" fill="rgb(205,70,25)" rx="2" ry="2" />
+<text  x="160.57" y="687.5" ></text>
+</g>
+<g >
+<title>std::sync::rwlock::RwLockReadGuard&lt;T&gt;::new (37 samples, 0.05%)</title><rect x="879.0" y="549" width="0.5" height="15.0" fill="rgb(208,72,21)" rx="2" ry="2" />
+<text  x="882.00" y="559.5" ></text>
+</g>
+<g >
+<title>NaClAppThreadFromThreadContext (75 samples, 0.09%)</title><rect x="179.5" y="693" width="1.1" height="15.0" fill="rgb(248,100,54)" rx="2" ry="2" />
+<text  x="182.48" y="703.5" ></text>
+</g>
+<g >
+<title>record__write (9 samples, 0.01%)</title><rect x="122.7" y="645" width="0.1" height="15.0" fill="rgb(220,47,25)" rx="2" ry="2" />
+<text  x="125.68" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (12 samples, 0.01%)</title><rect x="102.7" y="101" width="0.2" height="15.0" fill="rgb(229,112,54)" rx="2" ry="2" />
+<text  x="105.74" y="111.5" ></text>
+</g>
+<g >
+<title>core::intrinsics::copy_nonoverlapping (58 samples, 0.07%)</title><rect x="832.1" y="485" width="0.8" height="15.0" fill="rgb(236,156,17)" rx="2" ry="2" />
+<text  x="835.10" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="693" width="0.4" height="15.0" fill="rgb(235,60,37)" rx="2" ry="2" />
+<text  x="1128.27" y="703.5" ></text>
+</g>
+<g >
+<title>HandleStackContext (15 samples, 0.02%)</title><rect x="159.6" y="709" width="0.2" height="15.0" fill="rgb(205,62,45)" rx="2" ry="2" />
+<text  x="162.63" y="719.5" ></text>
+</g>
+<g >
+<title>std::thread::panicking (17 samples, 0.02%)</title><rect x="909.7" y="549" width="0.3" height="15.0" fill="rgb(231,179,12)" rx="2" ry="2" />
+<text  x="912.73" y="559.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_slice (41 samples, 0.05%)</title><rect x="1166.4" y="709" width="0.6" height="15.0" fill="rgb(226,170,29)" rx="2" ry="2" />
+<text  x="1169.38" y="719.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_load (13 samples, 0.02%)</title><rect x="775.7" y="437" width="0.2" height="15.0" fill="rgb(239,181,24)" rx="2" ry="2" />
+<text  x="778.73" y="447.5" ></text>
+</g>
+<g >
+<title>std::sync::rwlock::RwLock&lt;T&gt;::write (428 samples, 0.52%)</title><rect x="896.0" y="565" width="6.1" height="15.0" fill="rgb(219,205,2)" rx="2" ry="2" />
+<text  x="898.95" y="575.5" ></text>
+</g>
+<g >
+<title>std::sync::poison::Flag::done (12 samples, 0.01%)</title><rect x="765.4" y="533" width="0.2" height="15.0" fill="rgb(246,63,3)" rx="2" ry="2" />
+<text  x="768.38" y="543.5" ></text>
+</g>
+<g >
+<title>NaClHostDescCheckValidity (12 samples, 0.01%)</title><rect x="125.6" y="709" width="0.1" height="15.0" fill="rgb(249,200,52)" rx="2" ry="2" />
+<text  x="128.57" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (194 samples, 0.24%)</title><rect x="119.8" y="245" width="2.8" height="15.0" fill="rgb(208,180,20)" rx="2" ry="2" />
+<text  x="122.84" y="255.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_load (13 samples, 0.02%)</title><rect x="837.9" y="469" width="0.2" height="15.0" fill="rgb(206,33,26)" rx="2" ry="2" />
+<text  x="840.94" y="479.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,073 samples, 1.31%)</title><rect x="107.2" y="501" width="15.4" height="15.0" fill="rgb(207,99,47)" rx="2" ry="2" />
+<text  x="110.19" y="511.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeRemoveVal (22 samples, 0.03%)</title><rect x="1029.0" y="645" width="0.4" height="15.0" fill="rgb(221,167,38)" rx="2" ry="2" />
+<text  x="1032.04" y="655.5" ></text>
+</g>
+<g >
+<title>std::sync::mutex::Mutex&lt;T&gt;::lock (22 samples, 0.03%)</title><rect x="1174.6" y="693" width="0.4" height="15.0" fill="rgb(232,85,37)" rx="2" ry="2" />
+<text  x="1177.64" y="703.5" ></text>
+</g>
+<g >
+<title>NaClXMutexLock (367 samples, 0.45%)</title><rect x="970.0" y="629" width="5.2" height="15.0" fill="rgb(207,123,7)" rx="2" ry="2" />
+<text  x="972.95" y="639.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexLock (12 samples, 0.01%)</title><rect x="936.2" y="661" width="0.2" height="15.0" fill="rgb(229,203,40)" rx="2" ry="2" />
+<text  x="939.19" y="671.5" ></text>
+</g>
+<g >
+<title>[unknown] (872 samples, 1.06%)</title><rect x="90.4" y="517" width="12.5" height="15.0" fill="rgb(248,210,24)" rx="2" ry="2" />
+<text  x="93.36" y="527.5" ></text>
+</g>
+<g >
+<title>NaClXMutexUnlock (478 samples, 0.58%)</title><rect x="670.4" y="645" width="6.9" height="15.0" fill="rgb(228,115,48)" rx="2" ry="2" />
+<text  x="673.44" y="655.5" ></text>
+</g>
+<g >
+<title>NaClRawUserStackAddrNormalize (13 samples, 0.02%)</title><rect x="160.8" y="709" width="0.2" height="15.0" fill="rgb(241,34,18)" rx="2" ry="2" />
+<text  x="163.84" y="719.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::DefaultHasher as core::hash::Hasher&gt;::finish (209 samples, 0.25%)</title><rect x="902.3" y="533" width="3.0" height="15.0" fill="rgb(252,13,11)" rx="2" ry="2" />
+<text  x="905.32" y="543.5" ></text>
+</g>
+<g >
+<title>NaClLog (31 samples, 0.04%)</title><rect x="127.4" y="709" width="0.5" height="15.0" fill="rgb(211,142,53)" rx="2" ry="2" />
+<text  x="130.43" y="719.5" ></text>
+</g>
+<g >
+<title>_int_free (301 samples, 0.37%)</title><rect x="1024.4" y="597" width="4.3" height="15.0" fill="rgb(227,152,16)" rx="2" ry="2" />
+<text  x="1027.39" y="607.5" ></text>
+</g>
+<g >
+<title>core::core_arch::x86::sse2::_mm_loadu_si128 (11 samples, 0.01%)</title><rect x="878.0" y="421" width="0.1" height="15.0" fill="rgb(236,7,5)" rx="2" ry="2" />
+<text  x="880.96" y="431.5" ></text>
+</g>
+<g >
+<title>&lt;std::lazy::SyncLazy&lt;T,F&gt; as core::ops::deref::Deref&gt;::deref (12 samples, 0.01%)</title><rect x="739.2" y="565" width="0.1" height="15.0" fill="rgb(248,123,5)" rx="2" ry="2" />
+<text  x="742.16" y="575.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::make_hash (431 samples, 0.53%)</title><rect x="902.1" y="549" width="6.2" height="15.0" fill="rgb(227,165,36)" rx="2" ry="2" />
+<text  x="905.13" y="559.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawTable&lt;T,A&gt;::find (197 samples, 0.24%)</title><rect x="875.7" y="501" width="2.8" height="15.0" fill="rgb(210,79,20)" rx="2" ry="2" />
+<text  x="878.70" y="511.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_lock@plt (9 samples, 0.01%)</title><rect x="1035.6" y="613" width="0.2" height="15.0" fill="rgb(222,109,24)" rx="2" ry="2" />
+<text  x="1038.62" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (74 samples, 0.09%)</title><rect x="103.2" y="517" width="1.0" height="15.0" fill="rgb(253,209,30)" rx="2" ry="2" />
+<text  x="106.16" y="527.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_access (9,305 samples, 11.35%)</title><rect x="529.0" y="517" width="134.0" height="15.0" fill="rgb(236,27,5)" rx="2" ry="2" />
+<text  x="532.01" y="527.5" >ringbuf::consume..</text>
+</g>
+<g >
+<title>[unknown] (15 samples, 0.02%)</title><rect x="102.7" y="133" width="0.2" height="15.0" fill="rgb(232,199,34)" rx="2" ry="2" />
+<text  x="105.70" y="143.5" ></text>
+</g>
+<g >
+<title>core::intrinsics::copy_nonoverlapping (423 samples, 0.52%)</title><rect x="148.7" y="645" width="6.1" height="15.0" fill="rgb(217,162,34)" rx="2" ry="2" />
+<text  x="151.67" y="655.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_unlock (381 samples, 0.46%)</title><rect x="717.7" y="517" width="5.5" height="15.0" fill="rgb(230,169,4)" rx="2" ry="2" />
+<text  x="720.74" y="527.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawTable&lt;T,A&gt;::find (97 samples, 0.12%)</title><rect x="908.3" y="533" width="1.4" height="15.0" fill="rgb(218,177,42)" rx="2" ry="2" />
+<text  x="911.33" y="543.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_unlock@plt (12 samples, 0.01%)</title><rect x="949.7" y="629" width="0.2" height="15.0" fill="rgb(246,26,52)" rx="2" ry="2" />
+<text  x="952.69" y="639.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_slice (1,017 samples, 1.24%)</title><rect x="140.1" y="709" width="14.7" height="15.0" fill="rgb(214,214,15)" rx="2" ry="2" />
+<text  x="143.12" y="719.5" ></text>
+</g>
+<g >
+<title>&lt;hashbrown::raw::RawIterHashInner&lt;A&gt; as core::iter::traits::iterator::Iterator&gt;::next (53 samples, 0.06%)</title><rect x="876.2" y="469" width="0.8" height="15.0" fill="rgb(245,4,31)" rx="2" ry="2" />
+<text  x="879.19" y="479.5" ></text>
+</g>
+<g >
+<title>std::collections::hash::map::HashMap&lt;K,V,S&gt;::get (17 samples, 0.02%)</title><rect x="139.2" y="693" width="0.3" height="15.0" fill="rgb(243,3,39)" rx="2" ry="2" />
+<text  x="142.25" y="703.5" ></text>
+</g>
+<g >
+<title>[unknown] (13 samples, 0.02%)</title><rect x="102.7" y="117" width="0.2" height="15.0" fill="rgb(231,136,47)" rx="2" ry="2" />
+<text  x="105.73" y="127.5" ></text>
+</g>
+<g >
+<title>lind_write (15,326 samples, 18.70%)</title><rect x="699.2" y="629" width="220.6" height="15.0" fill="rgb(219,28,16)" rx="2" ry="2" />
+<text  x="702.21" y="639.5" >lind_write</text>
+</g>
+<g >
+<title>NaClDescIoDescWrite (15,818 samples, 19.30%)</title><rect x="692.3" y="661" width="227.7" height="15.0" fill="rgb(210,86,15)" rx="2" ry="2" />
+<text  x="695.29" y="671.5" >NaClDescIoDescWrite</text>
+</g>
+<g >
+<title>core::hash::impls::&lt;impl core::hash::Hash for usize&gt;::hash (181 samples, 0.22%)</title><rect x="905.7" y="533" width="2.6" height="15.0" fill="rgb(237,207,20)" rx="2" ry="2" />
+<text  x="908.73" y="543.5" ></text>
+</g>
+<g >
+<title>NaClXMutexUnlock (42 samples, 0.05%)</title><rect x="131.1" y="709" width="0.6" height="15.0" fill="rgb(223,165,54)" rx="2" ry="2" />
+<text  x="134.10" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (5,582 samples, 6.81%)</title><rect x="22.6" y="709" width="80.3" height="15.0" fill="rgb(212,211,54)" rx="2" ry="2" />
+<text  x="25.57" y="719.5" >[unknown]</text>
+</g>
+<g >
+<title>NaClLogUnlock (469 samples, 0.57%)</title><rect x="975.2" y="645" width="6.8" height="15.0" fill="rgb(205,198,1)" rx="2" ry="2" />
+<text  x="978.24" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (68 samples, 0.08%)</title><rect x="103.2" y="501" width="1.0" height="15.0" fill="rgb(243,173,15)" rx="2" ry="2" />
+<text  x="106.25" y="511.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::make_hash (25 samples, 0.03%)</title><rect x="1144.5" y="709" width="0.3" height="15.0" fill="rgb(240,229,5)" rx="2" ry="2" />
+<text  x="1147.46" y="719.5" ></text>
+</g>
+<g >
+<title>NaClSyscallCSegHook (15 samples, 0.02%)</title><rect x="129.8" y="709" width="0.3" height="15.0" fill="rgb(238,186,53)" rx="2" ry="2" />
+<text  x="132.85" y="719.5" ></text>
+</g>
+<g >
+<title>[sel_ldr] (16 samples, 0.02%)</title><rect x="699.0" y="629" width="0.2" height="15.0" fill="rgb(215,160,52)" rx="2" ry="2" />
+<text  x="701.98" y="639.5" ></text>
+</g>
+<g >
+<title>[unknown] (44 samples, 0.05%)</title><rect x="1120.7" y="549" width="0.6" height="15.0" fill="rgb(230,55,6)" rx="2" ry="2" />
+<text  x="1123.71" y="559.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexLock (16 samples, 0.02%)</title><rect x="920.5" y="645" width="0.2" height="15.0" fill="rgb(239,4,17)" rx="2" ry="2" />
+<text  x="923.48" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (62 samples, 0.08%)</title><rect x="104.4" y="357" width="0.9" height="15.0" fill="rgb(230,185,43)" rx="2" ry="2" />
+<text  x="107.44" y="367.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::DefaultHasher as core::hash::Hasher&gt;::finish (357 samples, 0.44%)</title><rect x="866.7" y="501" width="5.2" height="15.0" fill="rgb(211,212,46)" rx="2" ry="2" />
+<text  x="869.72" y="511.5" ></text>
+</g>
+<g >
+<title>NaClRefCountRef (881 samples, 1.07%)</title><rect x="952.7" y="613" width="12.7" height="15.0" fill="rgb(217,85,21)" rx="2" ry="2" />
+<text  x="955.74" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (80 samples, 0.10%)</title><rect x="103.1" y="693" width="1.1" height="15.0" fill="rgb(217,220,12)" rx="2" ry="2" />
+<text  x="106.07" y="703.5" ></text>
+</g>
+<g >
+<title>core::ptr::const_ptr::&lt;impl *const T&gt;::guaranteed_eq (16 samples, 0.02%)</title><rect x="1174.2" y="677" width="0.2" height="15.0" fill="rgb(251,194,41)" rx="2" ry="2" />
+<text  x="1177.15" y="687.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::mutex::Mutex::unlock (18 samples, 0.02%)</title><rect x="1174.4" y="645" width="0.2" height="15.0" fill="rgb(234,107,51)" rx="2" ry="2" />
+<text  x="1177.38" y="655.5" ></text>
+</g>
+<g >
+<title>NaClDescIoDescRead (32,243 samples, 39.33%)</title><rect x="202.9" y="661" width="464.1" height="15.0" fill="rgb(213,25,54)" rx="2" ry="2" />
+<text  x="205.88" y="671.5" >NaClDescIoDescRead</text>
+</g>
+<g >
+<title>core::hash::Hasher::write_usize (12 samples, 0.01%)</title><rect x="1144.6" y="677" width="0.2" height="15.0" fill="rgb(229,139,51)" rx="2" ry="2" />
+<text  x="1147.64" y="687.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_access (276 samples, 0.34%)</title><rect x="829.5" y="517" width="3.9" height="15.0" fill="rgb(215,119,13)" rx="2" ry="2" />
+<text  x="832.45" y="527.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawTableInner&lt;A&gt;::probe_seq (18 samples, 0.02%)</title><rect x="909.3" y="469" width="0.2" height="15.0" fill="rgb(227,209,45)" rx="2" ry="2" />
+<text  x="912.25" y="479.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::fetch_add (487 samples, 0.59%)</title><rect x="888.9" y="517" width="7.1" height="15.0" fill="rgb(236,106,30)" rx="2" ry="2" />
+<text  x="891.94" y="527.5" ></text>
+</g>
+<g >
+<title>core::hash::impls::&lt;impl core::hash::Hash for i32&gt;::hash (189 samples, 0.23%)</title><rect x="873.0" y="501" width="2.7" height="15.0" fill="rgb(253,216,32)" rx="2" ry="2" />
+<text  x="875.98" y="511.5" ></text>
+</g>
+<g >
+<title>std::panicking::panicking (17 samples, 0.02%)</title><rect x="909.7" y="533" width="0.3" height="15.0" fill="rgb(251,191,11)" rx="2" ry="2" />
+<text  x="912.73" y="543.5" ></text>
+</g>
+<g >
+<title>[unknown] (83 samples, 0.10%)</title><rect x="105.8" y="565" width="1.2" height="15.0" fill="rgb(227,133,9)" rx="2" ry="2" />
+<text  x="108.82" y="575.5" ></text>
+</g>
+<g >
+<title>core::num::&lt;impl u64&gt;::wrapping_add (12 samples, 0.01%)</title><rect x="903.4" y="469" width="0.2" height="15.0" fill="rgb(215,85,51)" rx="2" ry="2" />
+<text  x="906.42" y="479.5" ></text>
+</g>
+<g >
+<title>&lt;alloc::vec::Vec&lt;T,A&gt; as core::ops::deref::DerefMut&gt;::deref_mut (830 samples, 1.01%)</title><rect x="556.2" y="485" width="12.0" height="15.0" fill="rgb(243,207,2)" rx="2" ry="2" />
+<text  x="559.22" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (25 samples, 0.03%)</title><rect x="106.7" y="485" width="0.3" height="15.0" fill="rgb(229,92,28)" rx="2" ry="2" />
+<text  x="109.66" y="495.5" ></text>
+</g>
+<g >
+<title>core::hash::sip::u8to64_le (78 samples, 0.10%)</title><rect x="874.6" y="405" width="1.1" height="15.0" fill="rgb(225,109,2)" rx="2" ry="2" />
+<text  x="877.58" y="415.5" ></text>
+</g>
+<g >
+<title>perf_mmap__push (1,083 samples, 1.32%)</title><rect x="107.1" y="645" width="15.6" height="15.0" fill="rgb(219,217,43)" rx="2" ry="2" />
+<text  x="110.09" y="655.5" ></text>
+</g>
+<g >
+<title>NaClLog (9 samples, 0.01%)</title><rect x="679.9" y="677" width="0.2" height="15.0" fill="rgb(222,148,44)" rx="2" ry="2" />
+<text  x="682.94" y="687.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_slice (9,682 samples, 11.81%)</title><rect x="527.6" y="549" width="139.4" height="15.0" fill="rgb(207,75,0)" rx="2" ry="2" />
+<text  x="530.60" y="559.5" >ringbuf::consumer..</text>
+</g>
+<g >
+<title>[unknown] (40 samples, 0.05%)</title><rect x="102.3" y="309" width="0.6" height="15.0" fill="rgb(213,110,9)" rx="2" ry="2" />
+<text  x="105.34" y="319.5" ></text>
+</g>
+<g >
+<title>[unknown]  (1,374 samples, 1.68%)</title><rect x="1101.6" y="725" width="19.7" height="15.0" fill="rgb(208,160,23)" rx="2" ry="2" />
+<text  x="1104.56" y="735.5" ></text>
+</g>
+<g >
+<title>NaClVmIoWillStart (10 samples, 0.01%)</title><rect x="1095.1" y="677" width="0.1" height="15.0" fill="rgb(211,137,52)" rx="2" ry="2" />
+<text  x="1098.06" y="687.5" ></text>
+</g>
+<g >
+<title>core::intrinsics::copy_nonoverlapping (29 samples, 0.04%)</title><rect x="155.3" y="645" width="0.4" height="15.0" fill="rgb(219,59,17)" rx="2" ry="2" />
+<text  x="158.27" y="655.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawIterHash&lt;T,A&gt;::new (77 samples, 0.09%)</title><rect x="877.4" y="469" width="1.1" height="15.0" fill="rgb(243,140,53)" rx="2" ry="2" />
+<text  x="880.43" y="479.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreePrint (69 samples, 0.08%)</title><rect x="126.4" y="709" width="1.0" height="15.0" fill="rgb(244,78,27)" rx="2" ry="2" />
+<text  x="129.42" y="719.5" ></text>
+</g>
+<g >
+<title>std::panicking::panic_count::count_is_zero (17 samples, 0.02%)</title><rect x="909.7" y="517" width="0.3" height="15.0" fill="rgb(225,74,12)" rx="2" ry="2" />
+<text  x="912.73" y="527.5" ></text>
+</g>
+<g >
+<title>[perf-2002.map] (73 samples, 0.09%)</title><rect x="158.1" y="725" width="1.0" height="15.0" fill="rgb(244,208,7)" rx="2" ry="2" />
+<text  x="161.06" y="735.5" ></text>
+</g>
+<g >
+<title>_int_free (115 samples, 0.14%)</title><rect x="136.9" y="709" width="1.7" height="15.0" fill="rgb(229,213,52)" rx="2" ry="2" />
+<text  x="139.93" y="719.5" ></text>
+</g>
+<g >
+<title>NaClDescUnref (1,126 samples, 1.37%)</title><rect x="920.0" y="661" width="16.2" height="15.0" fill="rgb(250,40,44)" rx="2" ry="2" />
+<text  x="922.98" y="671.5" ></text>
+</g>
+<g >
+<title>NaClXMutexLock (16 samples, 0.02%)</title><rect x="1095.2" y="693" width="0.2" height="15.0" fill="rgb(231,52,20)" rx="2" ry="2" />
+<text  x="1098.20" y="703.5" ></text>
+</g>
+<g >
+<title>__GI___libc_malloc (70 samples, 0.09%)</title><rect x="1126.5" y="709" width="1.0" height="15.0" fill="rgb(213,64,51)" rx="2" ry="2" />
+<text  x="1129.46" y="719.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::sse2::Group::match_byte (15 samples, 0.02%)</title><rect x="909.5" y="469" width="0.2" height="15.0" fill="rgb(244,16,31)" rx="2" ry="2" />
+<text  x="912.51" y="479.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeNodeInit (579 samples, 0.71%)</title><rect x="1013.6" y="613" width="8.4" height="15.0" fill="rgb(222,50,17)" rx="2" ry="2" />
+<text  x="1016.64" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (13 samples, 0.02%)</title><rect x="1125.5" y="469" width="0.2" height="15.0" fill="rgb(254,188,34)" rx="2" ry="2" />
+<text  x="1128.48" y="479.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_unlock (93 samples, 0.11%)</title><rect x="135.1" y="709" width="1.3" height="15.0" fill="rgb(223,207,25)" rx="2" ry="2" />
+<text  x="138.06" y="719.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (16 samples, 0.02%)</title><rect x="1029.9" y="613" width="0.3" height="15.0" fill="rgb(247,197,50)" rx="2" ry="2" />
+<text  x="1032.95" y="623.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexLock (10 samples, 0.01%)</title><rect x="952.2" y="613" width="0.1" height="15.0" fill="rgb(231,83,7)" rx="2" ry="2" />
+<text  x="955.16" y="623.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_unlock (11 samples, 0.01%)</title><rect x="943.8" y="629" width="0.2" height="15.0" fill="rgb(211,191,10)" rx="2" ry="2" />
+<text  x="946.81" y="639.5" ></text>
+</g>
+<g >
+<title>NaClGetThreadCtxSp (38 samples, 0.05%)</title><rect x="176.0" y="677" width="0.5" height="15.0" fill="rgb(231,151,7)" rx="2" ry="2" />
+<text  x="178.95" y="687.5" ></text>
+</g>
+<g >
+<title>[unknown] (130 samples, 0.16%)</title><rect x="120.8" y="229" width="1.8" height="15.0" fill="rgb(250,184,12)" rx="2" ry="2" />
+<text  x="123.76" y="239.5" ></text>
+</g>
+<g >
+<title>[unknown] (21 samples, 0.03%)</title><rect x="102.6" y="229" width="0.3" height="15.0" fill="rgb(227,143,51)" rx="2" ry="2" />
+<text  x="105.61" y="239.5" ></text>
+</g>
+<g >
+<title>NaClUserToSysAddrRange (115 samples, 0.14%)</title><rect x="677.3" y="661" width="1.7" height="15.0" fill="rgb(210,197,10)" rx="2" ry="2" />
+<text  x="680.32" y="671.5" ></text>
+</g>
+<g >
+<title>cmd_record (1,291 samples, 1.57%)</title><rect x="104.2" y="709" width="18.6" height="15.0" fill="rgb(213,128,6)" rx="2" ry="2" />
+<text  x="107.22" y="719.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_unlock_usercnt (305 samples, 0.37%)</title><rect x="960.1" y="581" width="4.4" height="15.0" fill="rgb(230,115,30)" rx="2" ry="2" />
+<text  x="963.11" y="591.5" ></text>
+</g>
+<g >
+<title>[unknown] (890 samples, 1.09%)</title><rect x="1177.2" y="725" width="12.8" height="15.0" fill="rgb(244,197,6)" rx="2" ry="2" />
+<text  x="1180.19" y="735.5" ></text>
+</g>
+<g >
+<title>rustposix::safeposix::syscalls::fs_calls::&lt;impl rustposix::safeposix::cage::Cage&gt;::write_syscall (142 samples, 0.17%)</title><rect x="156.0" y="709" width="2.1" height="15.0" fill="rgb(223,61,37)" rx="2" ry="2" />
+<text  x="159.02" y="719.5" ></text>
+</g>
+<g >
+<title>std::sync::poison::Flag::get (8 samples, 0.01%)</title><rect x="879.0" y="517" width="0.1" height="15.0" fill="rgb(226,31,53)" rx="2" ry="2" />
+<text  x="882.00" y="527.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_unlock (14 samples, 0.02%)</title><rect x="1087.9" y="613" width="0.2" height="15.0" fill="rgb(236,163,29)" rx="2" ry="2" />
+<text  x="1090.92" y="623.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::mutex::MutexGuard&lt;T&gt; as core::ops::drop::Drop&gt;::drop (18 samples, 0.02%)</title><rect x="1174.4" y="677" width="0.2" height="15.0" fill="rgb(210,191,15)" rx="2" ry="2" />
+<text  x="1177.38" y="687.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="645" width="0.4" height="15.0" fill="rgb(223,215,32)" rx="2" ry="2" />
+<text  x="1128.27" y="655.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::fetch_add (184 samples, 0.22%)</title><rect x="710.9" y="581" width="2.7" height="15.0" fill="rgb(205,117,0)" rx="2" ry="2" />
+<text  x="713.94" y="591.5" ></text>
+</g>
+<g >
+<title>core::hash::sip::Hasher&lt;S&gt;::new_with_keys (45 samples, 0.05%)</title><rect x="872.3" y="469" width="0.7" height="15.0" fill="rgb(250,66,2)" rx="2" ry="2" />
+<text  x="875.33" y="479.5" ></text>
+</g>
+<g >
+<title>NaClAvlTreeBalanceRight (254 samples, 0.31%)</title><rect x="1003.6" y="581" width="3.6" height="15.0" fill="rgb(226,32,42)" rx="2" ry="2" />
+<text  x="1006.57" y="591.5" ></text>
+</g>
+<g >
+<title>[unknown] (83 samples, 0.10%)</title><rect x="1120.1" y="613" width="1.2" height="15.0" fill="rgb(245,121,8)" rx="2" ry="2" />
+<text  x="1123.14" y="623.5" ></text>
+</g>
+<g >
+<title>core::ptr::mut_ptr::&lt;impl *mut T&gt;::add (7 samples, 0.01%)</title><rect x="569.1" y="437" width="0.1" height="15.0" fill="rgb(254,39,0)" rx="2" ry="2" />
+<text  x="572.13" y="447.5" ></text>
+</g>
+<g >
+<title>std::panicking::panic_count::count_is_zero (12 samples, 0.01%)</title><rect x="765.4" y="485" width="0.2" height="15.0" fill="rgb(212,193,31)" rx="2" ry="2" />
+<text  x="768.38" y="495.5" ></text>
+</g>
+<g >
+<title>all (81,977 samples, 100%)</title><rect x="10.0" y="757" width="1180.0" height="15.0" fill="rgb(213,41,3)" rx="2" ry="2" />
+<text  x="13.00" y="767.5" ></text>
+</g>
+<g >
+<title>[unknown] (788 samples, 0.96%)</title><rect x="111.3" y="309" width="11.3" height="15.0" fill="rgb(243,74,7)" rx="2" ry="2" />
+<text  x="114.29" y="319.5" ></text>
+</g>
+<g >
+<title>[unknown] (890 samples, 1.09%)</title><rect x="1177.2" y="677" width="12.8" height="15.0" fill="rgb(208,150,32)" rx="2" ry="2" />
+<text  x="1180.19" y="687.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeAddInterval (2,175 samples, 2.65%)</title><rect x="1048.1" y="645" width="31.3" height="15.0" fill="rgb(219,170,43)" rx="2" ry="2" />
+<text  x="1051.09" y="655.5" >Na..</text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_slice (572 samples, 0.70%)</title><rect x="654.7" y="501" width="8.3" height="15.0" fill="rgb(238,42,49)" rx="2" ry="2" />
+<text  x="657.72" y="511.5" ></text>
+</g>
+<g >
+<title>NaClXMutexLock (33 samples, 0.04%)</title><rect x="130.6" y="709" width="0.5" height="15.0" fill="rgb(250,177,51)" rx="2" ry="2" />
+<text  x="133.62" y="719.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexUnlock (450 samples, 0.55%)</title><rect x="943.4" y="645" width="6.5" height="15.0" fill="rgb(223,44,45)" rx="2" ry="2" />
+<text  x="946.38" y="655.5" ></text>
+</g>
+<g >
+<title>NaClCopyInFromUserAndDropLock (15 samples, 0.02%)</title><rect x="124.6" y="709" width="0.2" height="15.0" fill="rgb(235,147,44)" rx="2" ry="2" />
+<text  x="127.61" y="719.5" ></text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;alloc::sync::Arc&lt;rustposix::interface::pipe::EmulatedPipe&gt;&gt; (523 samples, 0.64%)</title><rect x="739.3" y="565" width="7.6" height="15.0" fill="rgb(237,13,5)" rx="2" ry="2" />
+<text  x="742.33" y="575.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::Hasher&lt;S&gt; as core::hash::Hasher&gt;::write (151 samples, 0.18%)</title><rect x="905.9" y="469" width="2.2" height="15.0" fill="rgb(212,66,24)" rx="2" ry="2" />
+<text  x="908.94" y="479.5" ></text>
+</g>
+<g >
+<title>[unknown] (9 samples, 0.01%)</title><rect x="102.8" y="53" width="0.1" height="15.0" fill="rgb(232,43,32)" rx="2" ry="2" />
+<text  x="105.79" y="63.5" ></text>
+</g>
+<g >
+<title>[unknown] (62 samples, 0.08%)</title><rect x="106.1" y="549" width="0.9" height="15.0" fill="rgb(229,229,40)" rx="2" ry="2" />
+<text  x="109.13" y="559.5" ></text>
+</g>
+<g >
+<title>lind_write (11 samples, 0.01%)</title><rect x="919.8" y="645" width="0.2" height="15.0" fill="rgb(209,33,18)" rx="2" ry="2" />
+<text  x="922.82" y="655.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_unlock_usercnt (288 samples, 0.35%)</title><rect x="977.7" y="597" width="4.1" height="15.0" fill="rgb(230,25,12)" rx="2" ry="2" />
+<text  x="980.66" y="607.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::read_unlock (10 samples, 0.01%)</title><rect x="157.1" y="645" width="0.2" height="15.0" fill="rgb(215,123,8)" rx="2" ry="2" />
+<text  x="160.12" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (52 samples, 0.06%)</title><rect x="1120.6" y="565" width="0.7" height="15.0" fill="rgb(225,221,18)" rx="2" ry="2" />
+<text  x="1123.59" y="575.5" ></text>
+</g>
+<g >
+<title>NaClMutexUnlock (439 samples, 0.54%)</title><rect x="671.0" y="629" width="6.3" height="15.0" fill="rgb(247,83,41)" rx="2" ry="2" />
+<text  x="674.00" y="639.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::Sip13Rounds as core::hash::sip::Sip&gt;::c_rounds (74 samples, 0.09%)</title><rect x="867.2" y="453" width="1.1" height="15.0" fill="rgb(211,74,22)" rx="2" ry="2" />
+<text  x="870.24" y="463.5" ></text>
+</g>
+<g >
+<title>[unknown] (115 samples, 0.14%)</title><rect x="1188.3" y="517" width="1.7" height="15.0" fill="rgb(206,10,26)" rx="2" ry="2" />
+<text  x="1191.34" y="527.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::read_unlock (650 samples, 0.79%)</title><rect x="755.8" y="533" width="9.4" height="15.0" fill="rgb(235,125,28)" rx="2" ry="2" />
+<text  x="758.83" y="543.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (315 samples, 0.38%)</title><rect x="938.6" y="629" width="4.6" height="15.0" fill="rgb(221,227,38)" rx="2" ry="2" />
+<text  x="941.65" y="639.5" ></text>
+</g>
+<g >
+<title>[unknown] (63 samples, 0.08%)</title><rect x="104.4" y="469" width="0.9" height="15.0" fill="rgb(242,83,19)" rx="2" ry="2" />
+<text  x="107.43" y="479.5" ></text>
+</g>
+<g >
+<title>[unknown] (79 samples, 0.10%)</title><rect x="103.1" y="645" width="1.1" height="15.0" fill="rgb(211,140,15)" rx="2" ry="2" />
+<text  x="106.09" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (876 samples, 1.07%)</title><rect x="1177.4" y="661" width="12.6" height="15.0" fill="rgb(226,13,36)" rx="2" ry="2" />
+<text  x="1180.39" y="671.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_load (19 samples, 0.02%)</title><rect x="831.6" y="485" width="0.3" height="15.0" fill="rgb(218,62,23)" rx="2" ry="2" />
+<text  x="834.60" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (7 samples, 0.01%)</title><rect x="122.7" y="517" width="0.1" height="15.0" fill="rgb(243,147,46)" rx="2" ry="2" />
+<text  x="125.71" y="527.5" ></text>
+</g>
+<g >
+<title>NaClHostDescWrite (11 samples, 0.01%)</title><rect x="965.9" y="661" width="0.2" height="15.0" fill="rgb(213,47,7)" rx="2" ry="2" />
+<text  x="968.91" y="671.5" ></text>
+</g>
+<g >
+<title>NaClStackSafetyNowOnTrustedStack (11 samples, 0.01%)</title><rect x="1124.9" y="709" width="0.2" height="15.0" fill="rgb(226,86,27)" rx="2" ry="2" />
+<text  x="1127.89" y="719.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (3,567 samples, 4.35%)</title><rect x="603.4" y="469" width="51.3" height="15.0" fill="rgb(234,159,31)" rx="2" ry="2" />
+<text  x="606.38" y="479.5" >__mem..</text>
+</g>
+<g >
+<title>std::sync::poison::Flag::borrow (26 samples, 0.03%)</title><rect x="837.9" y="517" width="0.4" height="15.0" fill="rgb(233,17,32)" rx="2" ry="2" />
+<text  x="840.94" y="527.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::write (14 samples, 0.02%)</title><rect x="157.9" y="677" width="0.2" height="15.0" fill="rgb(240,126,0)" rx="2" ry="2" />
+<text  x="160.86" y="687.5" ></text>
+</g>
+<g >
+<title>NaClXMutexLock (30 samples, 0.04%)</title><rect x="1093.8" y="661" width="0.5" height="15.0" fill="rgb(243,56,53)" rx="2" ry="2" />
+<text  x="1096.83" y="671.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::fetch_sub (521 samples, 0.64%)</title><rect x="739.4" y="533" width="7.5" height="15.0" fill="rgb(235,31,2)" rx="2" ry="2" />
+<text  x="742.36" y="543.5" ></text>
+</g>
+<g >
+<title>NaClHostDescWrite (15,636 samples, 19.07%)</title><rect x="694.8" y="645" width="225.0" height="15.0" fill="rgb(224,101,47)" rx="2" ry="2" />
+<text  x="697.75" y="655.5" >NaClHostDescWrite</text>
+</g>
+<g >
+<title>core::ptr::mut_ptr::&lt;impl *mut T&gt;::add (47 samples, 0.06%)</title><rect x="234.6" y="501" width="0.7" height="15.0" fill="rgb(208,44,35)" rx="2" ry="2" />
+<text  x="237.61" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (71 samples, 0.09%)</title><rect x="1189.0" y="501" width="1.0" height="15.0" fill="rgb(229,196,9)" rx="2" ry="2" />
+<text  x="1191.98" y="511.5" ></text>
+</g>
+<g >
+<title>NaClAppThreadSetSuspendState (870 samples, 1.06%)</title><rect x="180.6" y="693" width="12.5" height="15.0" fill="rgb(211,36,35)" rx="2" ry="2" />
+<text  x="183.56" y="703.5" ></text>
+</g>
+<g >
+<title>dispatcher (43 samples, 0.05%)</title><rect x="1143.8" y="709" width="0.7" height="15.0" fill="rgb(236,162,44)" rx="2" ry="2" />
+<text  x="1146.84" y="719.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (44 samples, 0.05%)</title><rect x="679.0" y="661" width="0.7" height="15.0" fill="rgb(233,5,38)" rx="2" ry="2" />
+<text  x="682.05" y="671.5" ></text>
+</g>
+<g >
+<title>core::num::&lt;impl u64&gt;::rotate_left (29 samples, 0.04%)</title><rect x="903.0" y="469" width="0.4" height="15.0" fill="rgb(207,114,48)" rx="2" ry="2" />
+<text  x="906.01" y="479.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (10 samples, 0.01%)</title><rect x="136.8" y="709" width="0.1" height="15.0" fill="rgb(232,191,21)" rx="2" ry="2" />
+<text  x="139.78" y="719.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::read_unlock (14 samples, 0.02%)</title><rect x="157.3" y="661" width="0.2" height="15.0" fill="rgb(216,145,53)" rx="2" ry="2" />
+<text  x="160.27" y="671.5" ></text>
+</g>
+<g >
+<title>NaClRefCountRef (14 samples, 0.02%)</title><rect x="965.4" y="629" width="0.2" height="15.0" fill="rgb(221,181,48)" rx="2" ry="2" />
+<text  x="968.42" y="639.5" ></text>
+</g>
+<g >
+<title>ringbuf::ring_buffer::RingBuffer&lt;T&gt;::remaining (287 samples, 0.35%)</title><rect x="833.7" y="533" width="4.2" height="15.0" fill="rgb(225,109,51)" rx="2" ry="2" />
+<text  x="836.74" y="543.5" ></text>
+</g>
+<g >
+<title>[unknown] (890 samples, 1.09%)</title><rect x="1177.2" y="693" width="12.8" height="15.0" fill="rgb(231,165,6)" rx="2" ry="2" />
+<text  x="1180.19" y="703.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawTable&lt;T,A&gt;::get (97 samples, 0.12%)</title><rect x="908.3" y="549" width="1.4" height="15.0" fill="rgb(220,210,1)" rx="2" ry="2" />
+<text  x="911.33" y="559.5" ></text>
+</g>
+<g >
+<title>core::cmp::Ord::min (465 samples, 0.57%)</title><rect x="226.7" y="533" width="6.7" height="15.0" fill="rgb(249,206,19)" rx="2" ry="2" />
+<text  x="229.72" y="543.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawTable&lt;T,A&gt;::iter_hash (77 samples, 0.09%)</title><rect x="877.4" y="485" width="1.1" height="15.0" fill="rgb(224,208,38)" rx="2" ry="2" />
+<text  x="880.43" y="495.5" ></text>
+</g>
+<g >
+<title>NaClUserToSysAddrRange (118 samples, 0.14%)</title><rect x="982.9" y="661" width="1.7" height="15.0" fill="rgb(213,180,15)" rx="2" ry="2" />
+<text  x="985.87" y="671.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::DefaultHasher as core::hash::Hasher&gt;::write (166 samples, 0.20%)</title><rect x="905.9" y="501" width="2.4" height="15.0" fill="rgb(237,155,46)" rx="2" ry="2" />
+<text  x="908.94" y="511.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::raw_unlock (402 samples, 0.49%)</title><rect x="759.4" y="501" width="5.8" height="15.0" fill="rgb(207,56,11)" rx="2" ry="2" />
+<text  x="762.40" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (8 samples, 0.01%)</title><rect x="122.7" y="565" width="0.1" height="15.0" fill="rgb(226,194,33)" rx="2" ry="2" />
+<text  x="125.69" y="575.5" ></text>
+</g>
+<g >
+<title>core::core_arch::simd::i8x16::new (15 samples, 0.02%)</title><rect x="909.5" y="421" width="0.2" height="15.0" fill="rgb(220,119,16)" rx="2" ry="2" />
+<text  x="912.51" y="431.5" ></text>
+</g>
+<g >
+<title>record__mmap_read_evlist (1,095 samples, 1.34%)</title><rect x="107.0" y="661" width="15.8" height="15.0" fill="rgb(223,8,0)" rx="2" ry="2" />
+<text  x="110.05" y="671.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::read_unlock (608 samples, 0.74%)</title><rect x="746.9" y="517" width="8.7" height="15.0" fill="rgb(206,98,28)" rx="2" ry="2" />
+<text  x="749.86" y="527.5" ></text>
+</g>
+<g >
+<title>core::hash::Hasher::write_i32 (13 samples, 0.02%)</title><rect x="1144.5" y="677" width="0.1" height="15.0" fill="rgb(206,181,42)" rx="2" ry="2" />
+<text  x="1147.46" y="687.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (243 samples, 0.30%)</title><rect x="971.5" y="597" width="3.5" height="15.0" fill="rgb(222,95,32)" rx="2" ry="2" />
+<text  x="974.54" y="607.5" ></text>
+</g>
+<g >
+<title>[unknown] (106 samples, 0.13%)</title><rect x="105.5" y="629" width="1.5" height="15.0" fill="rgb(205,5,39)" rx="2" ry="2" />
+<text  x="108.49" y="639.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_unlock_usercnt (397 samples, 0.48%)</title><rect x="944.0" y="629" width="5.7" height="15.0" fill="rgb(237,106,21)" rx="2" ry="2" />
+<text  x="946.97" y="639.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_unlock@plt (8 samples, 0.01%)</title><rect x="1044.9" y="613" width="0.1" height="15.0" fill="rgb(206,97,10)" rx="2" ry="2" />
+<text  x="1047.92" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (10 samples, 0.01%)</title><rect x="1189.9" y="437" width="0.1" height="15.0" fill="rgb(210,150,1)" rx="2" ry="2" />
+<text  x="1192.86" y="447.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::remaining (287 samples, 0.35%)</title><rect x="833.7" y="549" width="4.2" height="15.0" fill="rgb(251,140,18)" rx="2" ry="2" />
+<text  x="836.74" y="559.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_unlock@plt (14 samples, 0.02%)</title><rect x="964.5" y="581" width="0.2" height="15.0" fill="rgb(233,5,38)" rx="2" ry="2" />
+<text  x="967.50" y="591.5" ></text>
+</g>
+<g >
+<title>[unknown] (5,046 samples, 6.16%)</title><rect x="30.3" y="613" width="72.6" height="15.0" fill="rgb(232,214,6)" rx="2" ry="2" />
+<text  x="33.28" y="623.5" >[unknown]</text>
+</g>
+<g >
+<title>NaClMutexLock (387 samples, 0.47%)</title><rect x="1030.2" y="629" width="5.6" height="15.0" fill="rgb(215,126,34)" rx="2" ry="2" />
+<text  x="1033.18" y="639.5" ></text>
+</g>
+<g >
+<title>[unknown] (76 samples, 0.09%)</title><rect x="103.1" y="549" width="1.1" height="15.0" fill="rgb(237,73,50)" rx="2" ry="2" />
+<text  x="106.13" y="559.5" ></text>
+</g>
+<g >
+<title>NaClValidateCode (33 samples, 0.04%)</title><rect x="202.3" y="645" width="0.4" height="15.0" fill="rgb(250,62,14)" rx="2" ry="2" />
+<text  x="205.26" y="655.5" ></text>
+</g>
+<g >
+<title>std::sys_common::mutex::MovableMutex::raw_unlock (3,714 samples, 4.53%)</title><rect x="775.9" y="517" width="53.5" height="15.0" fill="rgb(229,186,22)" rx="2" ry="2" />
+<text  x="778.92" y="527.5" >std::..</text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_add (487 samples, 0.59%)</title><rect x="888.9" y="501" width="7.1" height="15.0" fill="rgb(238,119,0)" rx="2" ry="2" />
+<text  x="891.94" y="511.5" ></text>
+</g>
+<g >
+<title>NaClXMutexLock (391 samples, 0.48%)</title><rect x="193.8" y="677" width="5.6" height="15.0" fill="rgb(244,145,37)" rx="2" ry="2" />
+<text  x="196.76" y="687.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::write_unlock (541 samples, 0.66%)</title><rect x="765.6" y="533" width="7.7" height="15.0" fill="rgb(251,17,0)" rx="2" ry="2" />
+<text  x="768.56" y="543.5" ></text>
+</g>
+<g >
+<title>CompareAndSwap (651 samples, 0.79%)</title><rect x="183.7" y="677" width="9.4" height="15.0" fill="rgb(209,150,16)" rx="2" ry="2" />
+<text  x="186.71" y="687.5" ></text>
+</g>
+<g >
+<title>std::sync::poison::Flag::borrow (35 samples, 0.04%)</title><rect x="896.0" y="533" width="0.5" height="15.0" fill="rgb(228,161,29)" rx="2" ry="2" />
+<text  x="898.95" y="543.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawIterHash&lt;T,A&gt;::new (46 samples, 0.06%)</title><rect x="909.1" y="501" width="0.6" height="15.0" fill="rgb(206,8,2)" rx="2" ry="2" />
+<text  x="912.07" y="511.5" ></text>
+</g>
+<g >
+<title>NaClLogLock (7 samples, 0.01%)</title><rect x="127.9" y="709" width="0.1" height="15.0" fill="rgb(212,111,33)" rx="2" ry="2" />
+<text  x="130.87" y="719.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_load (3,854 samples, 4.70%)</title><rect x="235.3" y="533" width="55.5" height="15.0" fill="rgb(217,190,10)" rx="2" ry="2" />
+<text  x="238.28" y="543.5" >core:..</text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::fetch_sub (248 samples, 0.30%)</title><rect x="755.8" y="501" width="3.6" height="15.0" fill="rgb(244,24,19)" rx="2" ry="2" />
+<text  x="758.83" y="511.5" ></text>
+</g>
+<g >
+<title>core::cmp::min (465 samples, 0.57%)</title><rect x="226.7" y="549" width="6.7" height="15.0" fill="rgb(206,143,47)" rx="2" ry="2" />
+<text  x="229.72" y="559.5" ></text>
+</g>
+<g >
+<title>NaClXMutexLock (444 samples, 0.54%)</title><rect x="1029.4" y="645" width="6.4" height="15.0" fill="rgb(221,47,46)" rx="2" ry="2" />
+<text  x="1032.36" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (75 samples, 0.09%)</title><rect x="104.3" y="533" width="1.0" height="15.0" fill="rgb(211,45,37)" rx="2" ry="2" />
+<text  x="107.25" y="543.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_unlock_usercnt (341 samples, 0.42%)</title><rect x="672.1" y="613" width="4.9" height="15.0" fill="rgb(209,5,43)" rx="2" ry="2" />
+<text  x="675.14" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (63 samples, 0.08%)</title><rect x="104.4" y="389" width="0.9" height="15.0" fill="rgb(231,140,1)" rx="2" ry="2" />
+<text  x="107.43" y="399.5" ></text>
+</g>
+<g >
+<title>std::panicking::panicking (20 samples, 0.02%)</title><rect x="896.2" y="501" width="0.3" height="15.0" fill="rgb(216,172,28)" rx="2" ry="2" />
+<text  x="899.17" y="511.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::raw_unlock (12 samples, 0.01%)</title><rect x="138.8" y="629" width="0.2" height="15.0" fill="rgb(215,224,54)" rx="2" ry="2" />
+<text  x="141.83" y="639.5" ></text>
+</g>
+<g >
+<title>perf_evsel__run_ioctl (77 samples, 0.09%)</title><rect x="104.2" y="645" width="1.1" height="15.0" fill="rgb(223,145,36)" rx="2" ry="2" />
+<text  x="107.22" y="655.5" ></text>
+</g>
+<g >
+<title>NaClGetDescMu (20 samples, 0.02%)</title><rect x="965.6" y="661" width="0.3" height="15.0" fill="rgb(216,64,5)" rx="2" ry="2" />
+<text  x="968.62" y="671.5" ></text>
+</g>
+<g >
+<title>[unknown] (55 samples, 0.07%)</title><rect x="1189.2" y="485" width="0.8" height="15.0" fill="rgb(206,18,22)" rx="2" ry="2" />
+<text  x="1192.21" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (389 samples, 0.47%)</title><rect x="1184.4" y="565" width="5.6" height="15.0" fill="rgb(217,62,20)" rx="2" ry="2" />
+<text  x="1187.40" y="575.5" ></text>
+</g>
+<g >
+<title>NaClXMutexUnlock (431 samples, 0.53%)</title><rect x="975.8" y="629" width="6.2" height="15.0" fill="rgb(225,210,39)" rx="2" ry="2" />
+<text  x="978.78" y="639.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::load (13 samples, 0.02%)</title><rect x="775.7" y="453" width="0.2" height="15.0" fill="rgb(215,62,12)" rx="2" ry="2" />
+<text  x="778.73" y="463.5" ></text>
+</g>
+<g >
+<title>[unknown] (9 samples, 0.01%)</title><rect x="1121.2" y="517" width="0.1" height="15.0" fill="rgb(239,206,34)" rx="2" ry="2" />
+<text  x="1124.21" y="527.5" ></text>
+</g>
+<g >
+<title>std::sync::mutex::MutexGuard&lt;T&gt;::new (31 samples, 0.04%)</title><rect x="837.9" y="533" width="0.4" height="15.0" fill="rgb(209,146,37)" rx="2" ry="2" />
+<text  x="840.87" y="543.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_copy::{{closure}} (423 samples, 0.52%)</title><rect x="148.7" y="661" width="6.1" height="15.0" fill="rgb(213,20,11)" rx="2" ry="2" />
+<text  x="151.67" y="671.5" ></text>
+</g>
+<g >
+<title>HandleStackContext (802 samples, 0.98%)</title><rect x="167.9" y="693" width="11.6" height="15.0" fill="rgb(237,80,31)" rx="2" ry="2" />
+<text  x="170.93" y="703.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_load (13 samples, 0.02%)</title><rect x="838.1" y="437" width="0.2" height="15.0" fill="rgb(217,59,19)" rx="2" ry="2" />
+<text  x="841.13" y="447.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::DefaultHasher as core::hash::Hasher&gt;::write (15 samples, 0.02%)</title><rect x="908.1" y="469" width="0.2" height="15.0" fill="rgb(247,158,41)" rx="2" ry="2" />
+<text  x="911.12" y="479.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::read (11 samples, 0.01%)</title><rect x="157.7" y="677" width="0.2" height="15.0" fill="rgb(211,39,9)" rx="2" ry="2" />
+<text  x="160.70" y="687.5" ></text>
+</g>
+<g >
+<title>__GI___libc_free (13 samples, 0.02%)</title><rect x="131.7" y="709" width="0.2" height="15.0" fill="rgb(227,204,53)" rx="2" ry="2" />
+<text  x="134.72" y="719.5" ></text>
+</g>
+<g >
+<title>fdarray__poll (115 samples, 0.14%)</title><rect x="105.4" y="677" width="1.6" height="15.0" fill="rgb(212,104,22)" rx="2" ry="2" />
+<text  x="108.38" y="687.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicBool::load (3,854 samples, 4.70%)</title><rect x="235.3" y="549" width="55.5" height="15.0" fill="rgb(231,184,6)" rx="2" ry="2" />
+<text  x="238.28" y="559.5" >core:..</text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::raw_unlock (10 samples, 0.01%)</title><rect x="157.1" y="629" width="0.2" height="15.0" fill="rgb(218,192,9)" rx="2" ry="2" />
+<text  x="160.12" y="639.5" ></text>
+</g>
+<g >
+<title>std::sync::rwlock::RwLock&lt;T&gt;::read (684 samples, 0.83%)</title><rect x="909.7" y="597" width="9.9" height="15.0" fill="rgb(205,198,49)" rx="2" ry="2" />
+<text  x="912.73" y="607.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,051 samples, 1.28%)</title><rect x="107.5" y="373" width="15.1" height="15.0" fill="rgb(231,201,2)" rx="2" ry="2" />
+<text  x="110.51" y="383.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::Hasher&lt;S&gt; as core::hash::Hasher&gt;::finish (357 samples, 0.44%)</title><rect x="866.7" y="469" width="5.2" height="15.0" fill="rgb(213,119,8)" rx="2" ry="2" />
+<text  x="869.72" y="479.5" ></text>
+</g>
+<g >
+<title>NaClSysDyncodeCreate (40 samples, 0.05%)</title><rect x="202.2" y="677" width="0.6" height="15.0" fill="rgb(234,152,27)" rx="2" ry="2" />
+<text  x="205.21" y="687.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeAddInterval (35 samples, 0.04%)</title><rect x="966.1" y="661" width="0.5" height="15.0" fill="rgb(233,1,11)" rx="2" ry="2" />
+<text  x="969.07" y="671.5" ></text>
+</g>
+<g >
+<title>core::num::&lt;impl u64&gt;::rotate_left (125 samples, 0.15%)</title><rect x="869.1" y="437" width="1.8" height="15.0" fill="rgb(232,29,10)" rx="2" ry="2" />
+<text  x="872.12" y="447.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,073 samples, 1.31%)</title><rect x="107.2" y="549" width="15.4" height="15.0" fill="rgb(251,25,20)" rx="2" ry="2" />
+<text  x="110.19" y="559.5" ></text>
+</g>
+<g >
+<title>[unknown] (9 samples, 0.01%)</title><rect x="1189.9" y="421" width="0.1" height="15.0" fill="rgb(234,141,12)" rx="2" ry="2" />
+<text  x="1192.87" y="431.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_copy (423 samples, 0.52%)</title><rect x="148.7" y="693" width="6.1" height="15.0" fill="rgb(236,101,40)" rx="2" ry="2" />
+<text  x="151.67" y="703.5" ></text>
+</g>
+<g >
+<title>free@plt (22 samples, 0.03%)</title><rect x="1028.7" y="613" width="0.3" height="15.0" fill="rgb(246,126,42)" rx="2" ry="2" />
+<text  x="1031.73" y="623.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::rwlock::RwLockWriteGuard&lt;T&gt; as core::ops::drop::Drop&gt;::drop (567 samples, 0.69%)</title><rect x="765.2" y="549" width="8.1" height="15.0" fill="rgb(208,97,21)" rx="2" ry="2" />
+<text  x="768.18" y="559.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::mutex::MutexGuard&lt;T&gt; as core::ops::deref::DerefMut&gt;::deref_mut (407 samples, 0.50%)</title><rect x="220.8" y="549" width="5.9" height="15.0" fill="rgb(252,62,47)" rx="2" ry="2" />
+<text  x="223.85" y="559.5" ></text>
+</g>
+<g >
+<title>CompareAndSwap (17 samples, 0.02%)</title><rect x="1121.3" y="709" width="0.3" height="15.0" fill="rgb(206,2,11)" rx="2" ry="2" />
+<text  x="1124.34" y="719.5" ></text>
+</g>
+<g >
+<title>&lt;core::ops::range::Range&lt;usize&gt; as core::slice::index::SliceIndex&lt;[T]&gt;&gt;::get_unchecked_mut (47 samples, 0.06%)</title><rect x="234.6" y="517" width="0.7" height="15.0" fill="rgb(236,66,18)" rx="2" ry="2" />
+<text  x="237.61" y="527.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_lock@plt (12 samples, 0.01%)</title><rect x="1085.6" y="613" width="0.2" height="15.0" fill="rgb(238,142,11)" rx="2" ry="2" />
+<text  x="1088.58" y="623.5" ></text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;std::sync::rwlock::RwLockReadGuard&lt;std::collections::hash::map::HashMap&lt;u64,alloc::sync::Arc&lt;rustposix::safeposix::cage::Cage&gt;&gt;&gt;&gt; (668 samples, 0.81%)</title><rect x="713.6" y="597" width="9.6" height="15.0" fill="rgb(236,147,3)" rx="2" ry="2" />
+<text  x="716.61" y="607.5" ></text>
+</g>
+<g >
+<title>std::panicking::panicking (13 samples, 0.02%)</title><rect x="838.1" y="485" width="0.2" height="15.0" fill="rgb(221,119,50)" rx="2" ry="2" />
+<text  x="841.13" y="495.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::SipHasher13 as core::hash::Hasher&gt;::write (169 samples, 0.21%)</title><rect x="873.3" y="437" width="2.4" height="15.0" fill="rgb(228,185,41)" rx="2" ry="2" />
+<text  x="876.27" y="447.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (300 samples, 0.37%)</title><rect x="954.8" y="581" width="4.3" height="15.0" fill="rgb(225,140,27)" rx="2" ry="2" />
+<text  x="957.81" y="591.5" ></text>
+</g>
+<g >
+<title>[unknown] (11 samples, 0.01%)</title><rect x="1189.8" y="453" width="0.2" height="15.0" fill="rgb(233,15,20)" rx="2" ry="2" />
+<text  x="1192.84" y="463.5" ></text>
+</g>
+<g >
+<title>NaClLog (26 samples, 0.03%)</title><rect x="160.5" y="709" width="0.3" height="15.0" fill="rgb(217,194,0)" rx="2" ry="2" />
+<text  x="163.46" y="719.5" ></text>
+</g>
+<g >
+<title>core::hash::Hasher::write_u32 (189 samples, 0.23%)</title><rect x="873.0" y="469" width="2.7" height="15.0" fill="rgb(227,60,10)" rx="2" ry="2" />
+<text  x="875.98" y="479.5" ></text>
+</g>
+<g >
+<title>NaClSysDyncodeCreateDecoder (40 samples, 0.05%)</title><rect x="202.2" y="693" width="0.6" height="15.0" fill="rgb(231,193,31)" rx="2" ry="2" />
+<text  x="205.21" y="703.5" ></text>
+</g>
+<g >
+<title>[unknown] (2,379 samples, 2.90%)</title><rect x="68.7" y="549" width="34.2" height="15.0" fill="rgb(237,197,29)" rx="2" ry="2" />
+<text  x="71.67" y="559.5" >[u..</text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_load (48 samples, 0.06%)</title><rect x="837.2" y="485" width="0.7" height="15.0" fill="rgb(237,123,54)" rx="2" ry="2" />
+<text  x="840.17" y="495.5" ></text>
+</g>
+<g >
+<title>rustposix::interface::pipe::EmulatedPipe::write_to_pipe (17 samples, 0.02%)</title><rect x="1175.0" y="709" width="0.3" height="15.0" fill="rgb(249,67,5)" rx="2" ry="2" />
+<text  x="1178.02" y="719.5" ></text>
+</g>
+<g >
+<title>core::hash::Hasher::write_usize (181 samples, 0.22%)</title><rect x="905.7" y="517" width="2.6" height="15.0" fill="rgb(209,30,11)" rx="2" ry="2" />
+<text  x="908.73" y="527.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_lock@plt (17 samples, 0.02%)</title><rect x="959.1" y="581" width="0.3" height="15.0" fill="rgb(245,40,10)" rx="2" ry="2" />
+<text  x="962.13" y="591.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::bitmask::BitMask::remove_lowest_bit (12 samples, 0.01%)</title><rect x="908.9" y="469" width="0.2" height="15.0" fill="rgb(212,71,42)" rx="2" ry="2" />
+<text  x="911.89" y="479.5" ></text>
+</g>
+<g >
+<title>[unknown] (69 samples, 0.08%)</title><rect x="101.9" y="373" width="1.0" height="15.0" fill="rgb(221,184,37)" rx="2" ry="2" />
+<text  x="104.92" y="383.5" ></text>
+</g>
+<g >
+<title>core::ptr::const_ptr::&lt;impl *const T&gt;::is_null (11 samples, 0.01%)</title><rect x="155.9" y="693" width="0.1" height="15.0" fill="rgb(242,125,51)" rx="2" ry="2" />
+<text  x="158.86" y="703.5" ></text>
+</g>
+<g >
+<title>kworker/u32:0 (6,455 samples, 7.87%)</title><rect x="10.0" y="741" width="92.9" height="15.0" fill="rgb(227,107,4)" rx="2" ry="2" />
+<text  x="13.00" y="751.5" >kworker/u32:0</text>
+</g>
+<g >
+<title>core::slice::index::&lt;impl core::ops::index::IndexMut&lt;I&gt; for [T]&gt;::index_mut (130 samples, 0.16%)</title><rect x="233.4" y="549" width="1.9" height="15.0" fill="rgb(241,33,26)" rx="2" ry="2" />
+<text  x="236.41" y="559.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::mutex::Mutex::lock (22 samples, 0.03%)</title><rect x="1174.6" y="661" width="0.4" height="15.0" fill="rgb(205,88,38)" rx="2" ry="2" />
+<text  x="1177.64" y="671.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeNodeInit (22 samples, 0.03%)</title><rect x="126.1" y="709" width="0.3" height="15.0" fill="rgb(240,82,18)" rx="2" ry="2" />
+<text  x="129.10" y="719.5" ></text>
+</g>
+<g >
+<title>NaClLogUnlock (20 samples, 0.02%)</title><rect x="982.5" y="661" width="0.3" height="15.0" fill="rgb(220,25,21)" rx="2" ry="2" />
+<text  x="985.52" y="671.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="533" width="0.4" height="15.0" fill="rgb(238,3,4)" rx="2" ry="2" />
+<text  x="1128.27" y="543.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,053 samples, 1.28%)</title><rect x="107.5" y="421" width="15.1" height="15.0" fill="rgb(214,70,19)" rx="2" ry="2" />
+<text  x="110.48" y="431.5" ></text>
+</g>
+<g >
+<title>[unknown] (63 samples, 0.08%)</title><rect x="104.4" y="405" width="0.9" height="15.0" fill="rgb(233,213,33)" rx="2" ry="2" />
+<text  x="107.43" y="415.5" ></text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;std::sync::rwlock::RwLockReadGuard&lt;std::collections::hash::map::HashMap&lt;i32,alloc::sync::Arc&lt;rustposix::interface::pipe::EmulatedPipe&gt;&gt;&gt;&gt; (608 samples, 0.74%)</title><rect x="746.9" y="565" width="8.7" height="15.0" fill="rgb(247,63,36)" rx="2" ry="2" />
+<text  x="749.86" y="575.5" ></text>
+</g>
+<g >
+<title>[unknown] (145 samples, 0.18%)</title><rect x="100.8" y="453" width="2.1" height="15.0" fill="rgb(244,50,36)" rx="2" ry="2" />
+<text  x="103.83" y="463.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::read (1,139 samples, 1.39%)</title><rect x="879.6" y="533" width="16.4" height="15.0" fill="rgb(217,56,44)" rx="2" ry="2" />
+<text  x="882.56" y="543.5" ></text>
+</g>
+<g >
+<title>NaClMutexUnlock (24 samples, 0.03%)</title><rect x="1124.5" y="709" width="0.3" height="15.0" fill="rgb(205,203,4)" rx="2" ry="2" />
+<text  x="1127.46" y="719.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_copy (298 samples, 0.36%)</title><rect x="829.5" y="533" width="4.2" height="15.0" fill="rgb(244,150,30)" rx="2" ry="2" />
+<text  x="832.45" y="543.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_unlock_usercnt (384 samples, 0.47%)</title><rect x="1088.1" y="613" width="5.5" height="15.0" fill="rgb(239,83,17)" rx="2" ry="2" />
+<text  x="1091.12" y="623.5" ></text>
+</g>
+<g >
+<title>NaClLog (12 samples, 0.01%)</title><rect x="952.6" y="613" width="0.1" height="15.0" fill="rgb(242,91,39)" rx="2" ry="2" />
+<text  x="955.57" y="623.5" ></text>
+</g>
+<g >
+<title>CompareAndSwap (17 samples, 0.02%)</title><rect x="123.5" y="709" width="0.3" height="15.0" fill="rgb(242,14,6)" rx="2" ry="2" />
+<text  x="126.51" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (38 samples, 0.05%)</title><rect x="103.7" y="437" width="0.5" height="15.0" fill="rgb(245,98,27)" rx="2" ry="2" />
+<text  x="106.68" y="447.5" ></text>
+</g>
+<g >
+<title>rustposix::interface::pipe::EmulatedPipe::write_to_pipe (23 samples, 0.03%)</title><rect x="155.7" y="709" width="0.3" height="15.0" fill="rgb(213,26,16)" rx="2" ry="2" />
+<text  x="158.68" y="719.5" ></text>
+</g>
+<g >
+<title>&lt;core::ops::range::Range&lt;usize&gt; as core::slice::index::SliceIndex&lt;[T]&gt;&gt;::index_mut (130 samples, 0.16%)</title><rect x="233.4" y="533" width="1.9" height="15.0" fill="rgb(232,16,43)" rx="2" ry="2" />
+<text  x="236.41" y="543.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::load (19 samples, 0.02%)</title><rect x="831.6" y="501" width="0.3" height="15.0" fill="rgb(245,74,22)" rx="2" ry="2" />
+<text  x="834.60" y="511.5" ></text>
+</g>
+<g >
+<title>core::hash::sip::Hasher&lt;S&gt;::reset (45 samples, 0.05%)</title><rect x="872.3" y="453" width="0.7" height="15.0" fill="rgb(247,160,46)" rx="2" ry="2" />
+<text  x="875.33" y="463.5" ></text>
+</g>
+<g >
+<title>[unknown] (358 samples, 0.44%)</title><rect x="1184.8" y="549" width="5.2" height="15.0" fill="rgb(252,180,5)" rx="2" ry="2" />
+<text  x="1187.85" y="559.5" ></text>
+</g>
+<g >
+<title>NaClHostDescCheckValidity (158 samples, 0.19%)</title><rect x="696.7" y="629" width="2.3" height="15.0" fill="rgb(212,27,10)" rx="2" ry="2" />
+<text  x="699.71" y="639.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::SipHasher13 as core::hash::Hasher&gt;::write (166 samples, 0.20%)</title><rect x="905.9" y="485" width="2.4" height="15.0" fill="rgb(232,185,21)" rx="2" ry="2" />
+<text  x="908.94" y="495.5" ></text>
+</g>
+<g >
+<title>NaClStackSafetyNowOnTrustedStack (16 samples, 0.02%)</title><rect x="201.1" y="693" width="0.3" height="15.0" fill="rgb(244,76,36)" rx="2" ry="2" />
+<text  x="204.14" y="703.5" ></text>
+</g>
+<g >
+<title>NaClLogLock (417 samples, 0.51%)</title><rect x="969.2" y="645" width="6.0" height="15.0" fill="rgb(251,65,7)" rx="2" ry="2" />
+<text  x="972.23" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (40 samples, 0.05%)</title><rect x="106.4" y="517" width="0.6" height="15.0" fill="rgb(208,72,13)" rx="2" ry="2" />
+<text  x="109.44" y="527.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreePrint (8 samples, 0.01%)</title><rect x="1009.9" y="565" width="0.1" height="15.0" fill="rgb(252,48,18)" rx="2" ry="2" />
+<text  x="1012.86" y="575.5" ></text>
+</g>
+<g >
+<title>NaClXMutexUnlock (22 samples, 0.03%)</title><rect x="1094.3" y="661" width="0.3" height="15.0" fill="rgb(222,171,52)" rx="2" ry="2" />
+<text  x="1097.26" y="671.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::Sip13Rounds as core::hash::sip::Sip&gt;::c_rounds (62 samples, 0.08%)</title><rect x="906.4" y="453" width="0.9" height="15.0" fill="rgb(248,59,1)" rx="2" ry="2" />
+<text  x="909.45" y="463.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::HashMap&lt;K,V,S,A&gt;::get_inner (528 samples, 0.64%)</title><rect x="902.1" y="565" width="7.6" height="15.0" fill="rgb(239,99,51)" rx="2" ry="2" />
+<text  x="905.13" y="575.5" ></text>
+</g>
+<g >
+<title>NaClGetDescMu (1,095 samples, 1.34%)</title><rect x="949.9" y="645" width="15.7" height="15.0" fill="rgb(248,172,15)" rx="2" ry="2" />
+<text  x="952.86" y="655.5" ></text>
+</g>
+<g >
+<title>NaClSysWrite (28,787 samples, 35.12%)</title><rect x="680.2" y="677" width="414.4" height="15.0" fill="rgb(231,162,40)" rx="2" ry="2" />
+<text  x="683.21" y="687.5" >NaClSysWrite</text>
+</g>
+<g >
+<title>rustposix::safeposix::cage::PIPE_TABLE (17 samples, 0.02%)</title><rect x="1175.0" y="725" width="0.3" height="15.0" fill="rgb(214,94,4)" rx="2" ry="2" />
+<text  x="1178.02" y="735.5" ></text>
+</g>
+<g >
+<title>[unknown] (77 samples, 0.09%)</title><rect x="104.2" y="597" width="1.1" height="15.0" fill="rgb(237,137,39)" rx="2" ry="2" />
+<text  x="107.22" y="607.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawIterHashInner&lt;A&gt;::new (77 samples, 0.09%)</title><rect x="877.4" y="453" width="1.1" height="15.0" fill="rgb(250,120,36)" rx="2" ry="2" />
+<text  x="880.43" y="463.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_rdlock (391 samples, 0.48%)</title><rect x="910.3" y="549" width="5.6" height="15.0" fill="rgb(223,202,27)" rx="2" ry="2" />
+<text  x="913.30" y="559.5" ></text>
+</g>
+<g >
+<title>[unknown] (76 samples, 0.09%)</title><rect x="103.1" y="565" width="1.1" height="15.0" fill="rgb(212,190,24)" rx="2" ry="2" />
+<text  x="106.13" y="575.5" ></text>
+</g>
+<g >
+<title>dispatcher (63 samples, 0.08%)</title><rect x="138.6" y="709" width="0.9" height="15.0" fill="rgb(251,193,41)" rx="2" ry="2" />
+<text  x="141.58" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (58 samples, 0.07%)</title><rect x="103.4" y="485" width="0.8" height="15.0" fill="rgb(213,82,2)" rx="2" ry="2" />
+<text  x="106.39" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (86 samples, 0.10%)</title><rect x="1120.1" y="629" width="1.2" height="15.0" fill="rgb(238,162,51)" rx="2" ry="2" />
+<text  x="1123.10" y="639.5" ></text>
+</g>
+<g >
+<title>ringbuf::ring_buffer::RingBuffer&lt;T&gt;::len (208 samples, 0.25%)</title><rect x="834.9" y="517" width="3.0" height="15.0" fill="rgb(220,156,53)" rx="2" ry="2" />
+<text  x="837.88" y="527.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="581" width="0.4" height="15.0" fill="rgb(208,157,32)" rx="2" ry="2" />
+<text  x="1128.27" y="591.5" ></text>
+</g>
+<g >
+<title>NaClLogTagNext_mu (12 samples, 0.01%)</title><rect x="128.0" y="709" width="0.1" height="15.0" fill="rgb(245,77,40)" rx="2" ry="2" />
+<text  x="130.98" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (80 samples, 0.10%)</title><rect x="103.1" y="661" width="1.1" height="15.0" fill="rgb(247,89,29)" rx="2" ry="2" />
+<text  x="106.07" y="671.5" ></text>
+</g>
+<g >
+<title>[unknown] (862 samples, 1.05%)</title><rect x="1177.6" y="645" width="12.4" height="15.0" fill="rgb(232,63,33)" rx="2" ry="2" />
+<text  x="1180.59" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (80 samples, 0.10%)</title><rect x="103.1" y="677" width="1.1" height="15.0" fill="rgb(234,178,52)" rx="2" ry="2" />
+<text  x="106.07" y="687.5" ></text>
+</g>
+<g >
+<title>NaClCopyInFromUserAndDropLock (756 samples, 0.92%)</title><rect x="668.8" y="677" width="10.9" height="15.0" fill="rgb(232,226,1)" rx="2" ry="2" />
+<text  x="671.83" y="687.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_slice (34 samples, 0.04%)</title><rect x="832.9" y="501" width="0.5" height="15.0" fill="rgb(235,42,18)" rx="2" ry="2" />
+<text  x="835.94" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (25 samples, 0.03%)</title><rect x="106.7" y="501" width="0.3" height="15.0" fill="rgb(243,164,32)" rx="2" ry="2" />
+<text  x="109.66" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown]  (382 samples, 0.47%)</title><rect x="1095.5" y="725" width="5.5" height="15.0" fill="rgb(235,35,46)" rx="2" ry="2" />
+<text  x="1098.47" y="735.5" ></text>
+</g>
+<g >
+<title>[unknown] (8 samples, 0.01%)</title><rect x="122.7" y="549" width="0.1" height="15.0" fill="rgb(215,117,16)" rx="2" ry="2" />
+<text  x="125.69" y="559.5" ></text>
+</g>
+<g >
+<title>DynArrayGet (71 samples, 0.09%)</title><rect x="950.8" y="629" width="1.0" height="15.0" fill="rgb(247,49,42)" rx="2" ry="2" />
+<text  x="953.82" y="639.5" ></text>
+</g>
+<g >
+<title>[unknown] (115 samples, 0.14%)</title><rect x="101.3" y="421" width="1.6" height="15.0" fill="rgb(248,108,21)" rx="2" ry="2" />
+<text  x="104.26" y="431.5" ></text>
+</g>
+<g >
+<title>core::hash::sip::Hasher&lt;S&gt;::new_with_keys (11 samples, 0.01%)</title><rect x="905.6" y="501" width="0.1" height="15.0" fill="rgb(207,228,42)" rx="2" ry="2" />
+<text  x="908.57" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,056 samples, 1.29%)</title><rect x="107.4" y="453" width="15.2" height="15.0" fill="rgb(240,47,50)" rx="2" ry="2" />
+<text  x="110.43" y="463.5" ></text>
+</g>
+<g >
+<title>NaClAvlTreeExtract (1,325 samples, 1.62%)</title><rect x="994.5" y="597" width="19.1" height="15.0" fill="rgb(214,52,0)" rx="2" ry="2" />
+<text  x="997.50" y="607.5" ></text>
+</g>
+<g >
+<title>std::sync::rwlock::RwLock&lt;T&gt;::read (1,178 samples, 1.44%)</title><rect x="879.0" y="565" width="17.0" height="15.0" fill="rgb(235,134,12)" rx="2" ry="2" />
+<text  x="882.00" y="575.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="661" width="0.4" height="15.0" fill="rgb(236,106,14)" rx="2" ry="2" />
+<text  x="1128.27" y="671.5" ></text>
+</g>
+<g >
+<title>core::hash::sip::SipHasher13::new_with_keys (17 samples, 0.02%)</title><rect x="905.5" y="517" width="0.2" height="15.0" fill="rgb(206,144,26)" rx="2" ry="2" />
+<text  x="908.48" y="527.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_wrlock (363 samples, 0.44%)</title><rect x="896.8" y="517" width="5.3" height="15.0" fill="rgb(225,167,41)" rx="2" ry="2" />
+<text  x="899.83" y="527.5" ></text>
+</g>
+<g >
+<title>NaClSysWriteDecoder (15 samples, 0.02%)</title><rect x="161.0" y="709" width="0.2" height="15.0" fill="rgb(242,9,38)" rx="2" ry="2" />
+<text  x="164.02" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,054 samples, 1.29%)</title><rect x="107.5" y="437" width="15.1" height="15.0" fill="rgb(240,117,18)" rx="2" ry="2" />
+<text  x="110.46" y="447.5" ></text>
+</g>
+<g >
+<title>sel_ldr (73,114 samples, 89.19%)</title><rect x="122.8" y="741" width="1052.5" height="15.0" fill="rgb(241,146,6)" rx="2" ry="2" />
+<text  x="125.84" y="751.5" >sel_ldr</text>
+</g>
+<g >
+<title>_int_free (13 samples, 0.02%)</title><rect x="1143.7" y="709" width="0.1" height="15.0" fill="rgb(251,222,28)" rx="2" ry="2" />
+<text  x="1146.65" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (45 samples, 0.05%)</title><rect x="122.0" y="197" width="0.6" height="15.0" fill="rgb(243,5,13)" rx="2" ry="2" />
+<text  x="124.99" y="207.5" ></text>
+</g>
+<g >
+<title>[unknown] (29 samples, 0.04%)</title><rect x="103.8" y="421" width="0.4" height="15.0" fill="rgb(242,1,9)" rx="2" ry="2" />
+<text  x="106.81" y="431.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicBool::load (15 samples, 0.02%)</title><rect x="896.0" y="501" width="0.2" height="15.0" fill="rgb(208,215,2)" rx="2" ry="2" />
+<text  x="898.95" y="511.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::mutex::MutexGuard&lt;T&gt; as core::ops::drop::Drop&gt;::drop (3,727 samples, 4.55%)</title><rect x="775.7" y="533" width="53.7" height="15.0" fill="rgb(242,51,51)" rx="2" ry="2" />
+<text  x="778.73" y="543.5" >&lt;std:..</text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_add (253 samples, 0.31%)</title><rect x="915.9" y="533" width="3.7" height="15.0" fill="rgb(234,27,41)" rx="2" ry="2" />
+<text  x="918.93" y="543.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::HashMap&lt;K,V,S,A&gt;::get_inner (17 samples, 0.02%)</title><rect x="139.2" y="661" width="0.3" height="15.0" fill="rgb(231,127,17)" rx="2" ry="2" />
+<text  x="142.25" y="671.5" ></text>
+</g>
+<g >
+<title>NaClXMutexLock (14 samples, 0.02%)</title><rect x="982.0" y="645" width="0.2" height="15.0" fill="rgb(241,88,34)" rx="2" ry="2" />
+<text  x="984.99" y="655.5" ></text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;std::sync::rwlock::RwLockWriteGuard&lt;rustposix::safeposix::cage::FileDescriptor&gt;&gt; (567 samples, 0.69%)</title><rect x="765.2" y="565" width="8.1" height="15.0" fill="rgb(205,183,32)" rx="2" ry="2" />
+<text  x="768.18" y="575.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_slice (22 samples, 0.03%)</title><rect x="833.4" y="517" width="0.3" height="15.0" fill="rgb(246,136,34)" rx="2" ry="2" />
+<text  x="836.42" y="527.5" ></text>
+</g>
+<g >
+<title>std::sys_common::mutex::MovableMutex::raw_lock (1,908 samples, 2.33%)</title><rect x="838.3" y="533" width="27.5" height="15.0" fill="rgb(242,221,39)" rx="2" ry="2" />
+<text  x="841.32" y="543.5" >s..</text>
+</g>
+<g >
+<title>NaClFastMutexUnlock (405 samples, 0.49%)</title><rect x="929.5" y="629" width="5.8" height="15.0" fill="rgb(215,92,4)" rx="2" ry="2" />
+<text  x="932.51" y="639.5" ></text>
+</g>
+<g >
+<title>&lt;hashbrown::raw::bitmask::BitMaskIter as core::iter::traits::iterator::Iterator&gt;::next (26 samples, 0.03%)</title><rect x="876.6" y="453" width="0.4" height="15.0" fill="rgb(247,194,7)" rx="2" ry="2" />
+<text  x="879.58" y="463.5" ></text>
+</g>
+<g >
+<title>NaClCopyInFromUserAndDropLock (14 samples, 0.02%)</title><rect x="193.1" y="693" width="0.2" height="15.0" fill="rgb(250,140,25)" rx="2" ry="2" />
+<text  x="196.08" y="703.5" ></text>
+</g>
+<g >
+<title>std::sync::poison::Flag::borrow (37 samples, 0.05%)</title><rect x="879.0" y="533" width="0.5" height="15.0" fill="rgb(220,185,47)" rx="2" ry="2" />
+<text  x="882.00" y="543.5" ></text>
+</g>
+<g >
+<title>std::sync::rwlock::RwLockWriteGuard&lt;T&gt;::new (35 samples, 0.04%)</title><rect x="896.0" y="549" width="0.5" height="15.0" fill="rgb(252,19,3)" rx="2" ry="2" />
+<text  x="898.95" y="559.5" ></text>
+</g>
+<g >
+<title>core::intrinsics::copy_nonoverlapping (12 samples, 0.01%)</title><rect x="875.5" y="389" width="0.2" height="15.0" fill="rgb(205,210,41)" rx="2" ry="2" />
+<text  x="878.53" y="399.5" ></text>
+</g>
+<g >
+<title>NaClVmIoHasEnded (4,201 samples, 5.12%)</title><rect x="984.6" y="661" width="60.4" height="15.0" fill="rgb(227,195,3)" rx="2" ry="2" />
+<text  x="987.56" y="671.5" >NaClVm..</text>
+</g>
+<g >
+<title>&lt;core::hash::sip::Hasher&lt;S&gt; as core::hash::Hasher&gt;::finish (209 samples, 0.25%)</title><rect x="902.3" y="501" width="3.0" height="15.0" fill="rgb(247,78,52)" rx="2" ry="2" />
+<text  x="905.32" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="677" width="0.4" height="15.0" fill="rgb(229,229,28)" rx="2" ry="2" />
+<text  x="1128.27" y="687.5" ></text>
+</g>
+<g >
+<title>[unknown] (2,548 samples, 3.11%)</title><rect x="66.2" y="565" width="36.7" height="15.0" fill="rgb(230,91,54)" rx="2" ry="2" />
+<text  x="69.24" y="575.5" >[un..</text>
+</g>
+<g >
+<title>[unknown] (456 samples, 0.56%)</title><rect x="96.4" y="485" width="6.5" height="15.0" fill="rgb(220,91,44)" rx="2" ry="2" />
+<text  x="99.35" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (16 samples, 0.02%)</title><rect x="102.7" y="181" width="0.2" height="15.0" fill="rgb(240,151,49)" rx="2" ry="2" />
+<text  x="105.68" y="191.5" ></text>
+</g>
+<g >
+<title>ValidateChunkAMD64 (33 samples, 0.04%)</title><rect x="202.3" y="613" width="0.4" height="15.0" fill="rgb(224,187,28)" rx="2" ry="2" />
+<text  x="205.26" y="623.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeRemoveVal (2,835 samples, 3.46%)</title><rect x="988.2" y="629" width="40.8" height="15.0" fill="rgb(220,22,30)" rx="2" ry="2" />
+<text  x="991.24" y="639.5" >NaC..</text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_rdlock (58 samples, 0.07%)</title><rect x="134.2" y="709" width="0.9" height="15.0" fill="rgb(208,221,3)" rx="2" ry="2" />
+<text  x="137.22" y="719.5" ></text>
+</g>
+<g >
+<title>NaClRangeStatsUpdate (209 samples, 0.25%)</title><rect x="1010.5" y="581" width="3.1" height="15.0" fill="rgb(244,26,1)" rx="2" ry="2" />
+<text  x="1013.55" y="591.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,074 samples, 1.31%)</title><rect x="107.2" y="565" width="15.4" height="15.0" fill="rgb(214,140,29)" rx="2" ry="2" />
+<text  x="110.18" y="575.5" ></text>
+</g>
+<g >
+<title>[unknown] (77 samples, 0.09%)</title><rect x="104.2" y="581" width="1.1" height="15.0" fill="rgb(220,207,48)" rx="2" ry="2" />
+<text  x="107.22" y="591.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::raw_unlock (381 samples, 0.46%)</title><rect x="717.7" y="533" width="5.5" height="15.0" fill="rgb(248,21,6)" rx="2" ry="2" />
+<text  x="720.74" y="543.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::raw_unlock (7 samples, 0.01%)</title><rect x="157.5" y="629" width="0.1" height="15.0" fill="rgb(244,46,9)" rx="2" ry="2" />
+<text  x="160.47" y="639.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,067 samples, 1.30%)</title><rect x="107.3" y="485" width="15.3" height="15.0" fill="rgb(227,7,30)" rx="2" ry="2" />
+<text  x="110.28" y="495.5" ></text>
+</g>
+<g >
+<title>rustposix::safeposix::syscalls::fs_calls::&lt;impl rustposix::safeposix::cage::Cage&gt;::write_syscall (12,400 samples, 15.13%)</title><rect x="723.6" y="581" width="178.5" height="15.0" fill="rgb(216,107,8)" rx="2" ry="2" />
+<text  x="726.63" y="591.5" >rustposix::safeposix::s..</text>
+</g>
+<g >
+<title>std::lazy::SyncOnceCell&lt;T&gt;::get_or_init (12 samples, 0.01%)</title><rect x="739.2" y="533" width="0.1" height="15.0" fill="rgb(244,30,23)" rx="2" ry="2" />
+<text  x="742.16" y="543.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexLock (14 samples, 0.02%)</title><rect x="125.0" y="709" width="0.2" height="15.0" fill="rgb(228,92,22)" rx="2" ry="2" />
+<text  x="128.04" y="719.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_unlock@plt (13 samples, 0.02%)</title><rect x="981.8" y="597" width="0.2" height="15.0" fill="rgb(214,69,26)" rx="2" ry="2" />
+<text  x="984.80" y="607.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::rwlock::RwLockReadGuard&lt;T&gt; as core::ops::drop::Drop&gt;::drop (668 samples, 0.81%)</title><rect x="713.6" y="581" width="9.6" height="15.0" fill="rgb(227,60,51)" rx="2" ry="2" />
+<text  x="716.61" y="591.5" ></text>
+</g>
+<g >
+<title>record__mmap_read_all (1,095 samples, 1.34%)</title><rect x="107.0" y="677" width="15.8" height="15.0" fill="rgb(249,167,10)" rx="2" ry="2" />
+<text  x="110.05" y="687.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="597" width="0.4" height="15.0" fill="rgb(229,194,46)" rx="2" ry="2" />
+<text  x="1128.27" y="607.5" ></text>
+</g>
+<g >
+<title>dispatcher (14,914 samples, 18.19%)</title><rect x="704.9" y="613" width="214.7" height="15.0" fill="rgb(212,48,31)" rx="2" ry="2" />
+<text  x="707.90" y="623.5" >dispatcher</text>
+</g>
+<g >
+<title>rustposix::safeposix::dispatcher::dispatcher::{{closure}} (17 samples, 0.02%)</title><rect x="139.0" y="693" width="0.2" height="15.0" fill="rgb(209,198,28)" rx="2" ry="2" />
+<text  x="142.00" y="703.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_sub (248 samples, 0.30%)</title><rect x="755.8" y="485" width="3.6" height="15.0" fill="rgb(250,72,17)" rx="2" ry="2" />
+<text  x="758.83" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (117 samples, 0.14%)</title><rect x="1119.7" y="709" width="1.6" height="15.0" fill="rgb(225,154,31)" rx="2" ry="2" />
+<text  x="1122.66" y="719.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::raw_unlock (14 samples, 0.02%)</title><rect x="157.3" y="629" width="0.2" height="15.0" fill="rgb(215,26,36)" rx="2" ry="2" />
+<text  x="160.27" y="639.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeNodeInit (8 samples, 0.01%)</title><rect x="1078.6" y="629" width="0.2" height="15.0" fill="rgb(244,199,26)" rx="2" ry="2" />
+<text  x="1081.65" y="639.5" ></text>
+</g>
+<g >
+<title>[unknown] (44 samples, 0.05%)</title><rect x="103.6" y="453" width="0.6" height="15.0" fill="rgb(234,156,41)" rx="2" ry="2" />
+<text  x="106.59" y="463.5" ></text>
+</g>
+<g >
+<title>core::slice::index::&lt;impl core::ops::index::IndexMut&lt;I&gt; for [T]&gt;::index_mut (74 samples, 0.09%)</title><rect x="568.2" y="485" width="1.0" height="15.0" fill="rgb(251,177,39)" rx="2" ry="2" />
+<text  x="571.17" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (19 samples, 0.02%)</title><rect x="102.6" y="197" width="0.3" height="15.0" fill="rgb(229,2,52)" rx="2" ry="2" />
+<text  x="105.64" y="207.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::rwlock::RwLockReadGuard&lt;T&gt; as core::ops::drop::Drop&gt;::drop (14 samples, 0.02%)</title><rect x="157.3" y="677" width="0.2" height="15.0" fill="rgb(238,43,35)" rx="2" ry="2" />
+<text  x="160.27" y="687.5" ></text>
+</g>
+<g >
+<title>[unknown] (132 samples, 0.16%)</title><rect x="101.0" y="437" width="1.9" height="15.0" fill="rgb(214,78,32)" rx="2" ry="2" />
+<text  x="104.02" y="447.5" ></text>
+</g>
+<g >
+<title>NaClAppThreadSetSuspendState (34 samples, 0.04%)</title><rect x="159.8" y="709" width="0.5" height="15.0" fill="rgb(249,56,34)" rx="2" ry="2" />
+<text  x="162.84" y="719.5" ></text>
+</g>
+<g >
+<title>NaClXMutexLock (419 samples, 0.51%)</title><rect x="1079.7" y="645" width="6.1" height="15.0" fill="rgb(226,11,24)" rx="2" ry="2" />
+<text  x="1082.73" y="655.5" ></text>
+</g>
+<g >
+<title>NaClDescRef (15 samples, 0.02%)</title><rect x="937.6" y="645" width="0.2" height="15.0" fill="rgb(243,87,36)" rx="2" ry="2" />
+<text  x="940.61" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (63 samples, 0.08%)</title><rect x="104.4" y="437" width="0.9" height="15.0" fill="rgb(245,87,20)" rx="2" ry="2" />
+<text  x="107.43" y="447.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexLock (365 samples, 0.45%)</title><rect x="954.1" y="597" width="5.3" height="15.0" fill="rgb(212,203,9)" rx="2" ry="2" />
+<text  x="957.12" y="607.5" ></text>
+</g>
+<g >
+<title>&lt;alloc::vec::Vec&lt;T,A&gt; as core::ops::index::IndexMut&lt;I&gt;&gt;::index_mut (25 samples, 0.03%)</title><rect x="831.2" y="501" width="0.4" height="15.0" fill="rgb(233,88,30)" rx="2" ry="2" />
+<text  x="834.24" y="511.5" ></text>
+</g>
+<g >
+<title>rustposix::safeposix::syscalls::fs_calls::&lt;impl rustposix::safeposix::cage::Cage&gt;::write_syscall (32 samples, 0.04%)</title><rect x="878.5" y="501" width="0.5" height="15.0" fill="rgb(221,221,25)" rx="2" ry="2" />
+<text  x="881.54" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (8 samples, 0.01%)</title><rect x="104.1" y="405" width="0.1" height="15.0" fill="rgb(207,73,5)" rx="2" ry="2" />
+<text  x="107.11" y="415.5" ></text>
+</g>
+<g >
+<title>std::sync::rwlock::RwLock&lt;T&gt;::write (14 samples, 0.02%)</title><rect x="157.9" y="693" width="0.2" height="15.0" fill="rgb(205,26,41)" rx="2" ry="2" />
+<text  x="160.86" y="703.5" ></text>
+</g>
+<g >
+<title>std::panicking::panic_count::count_is_zero (13 samples, 0.02%)</title><rect x="838.1" y="469" width="0.2" height="15.0" fill="rgb(215,130,51)" rx="2" ry="2" />
+<text  x="841.13" y="479.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_slice (64 samples, 0.08%)</title><rect x="154.8" y="709" width="0.9" height="15.0" fill="rgb(241,71,21)" rx="2" ry="2" />
+<text  x="157.76" y="719.5" ></text>
+</g>
+<g >
+<title>std::panicking::panic_count::count_is_zero (13 samples, 0.02%)</title><rect x="775.7" y="469" width="0.2" height="15.0" fill="rgb(208,64,30)" rx="2" ry="2" />
+<text  x="778.73" y="479.5" ></text>
+</g>
+<g >
+<title>core::num::&lt;impl u64&gt;::rotate_left (68 samples, 0.08%)</title><rect x="903.9" y="469" width="0.9" height="15.0" fill="rgb(232,229,18)" rx="2" ry="2" />
+<text  x="906.86" y="479.5" ></text>
+</g>
+<g >
+<title>std::thread::panicking (20 samples, 0.02%)</title><rect x="896.2" y="517" width="0.3" height="15.0" fill="rgb(224,118,39)" rx="2" ry="2" />
+<text  x="899.17" y="527.5" ></text>
+</g>
+<g >
+<title>std::thread::panicking (29 samples, 0.04%)</title><rect x="879.1" y="517" width="0.4" height="15.0" fill="rgb(209,220,51)" rx="2" ry="2" />
+<text  x="882.11" y="527.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_load (2,691 samples, 3.28%)</title><rect x="481.5" y="501" width="38.7" height="15.0" fill="rgb(236,113,23)" rx="2" ry="2" />
+<text  x="484.46" y="511.5" >cor..</text>
+</g>
+<g >
+<title>core::num::&lt;impl u64&gt;::wrapping_add (34 samples, 0.04%)</title><rect x="904.8" y="469" width="0.5" height="15.0" fill="rgb(209,136,13)" rx="2" ry="2" />
+<text  x="907.83" y="479.5" ></text>
+</g>
+<g >
+<title>[unknown] (683 samples, 0.83%)</title><rect x="112.8" y="293" width="9.8" height="15.0" fill="rgb(214,144,49)" rx="2" ry="2" />
+<text  x="115.80" y="303.5" ></text>
+</g>
+<g >
+<title>[unknown] (8 samples, 0.01%)</title><rect x="122.7" y="533" width="0.1" height="15.0" fill="rgb(236,88,23)" rx="2" ry="2" />
+<text  x="125.69" y="543.5" ></text>
+</g>
+<g >
+<title>[unknown] (3,113 samples, 3.80%)</title><rect x="58.1" y="581" width="44.8" height="15.0" fill="rgb(215,51,10)" rx="2" ry="2" />
+<text  x="61.11" y="591.5" >[unk..</text>
+</g>
+<g >
+<title>std::lazy::SyncOnceCell&lt;T&gt;::get (12 samples, 0.01%)</title><rect x="739.2" y="501" width="0.1" height="15.0" fill="rgb(220,138,25)" rx="2" ry="2" />
+<text  x="742.16" y="511.5" ></text>
+</g>
+<g >
+<title>std::lazy::SyncOnceCell&lt;T&gt;::get_or_try_init (12 samples, 0.01%)</title><rect x="739.2" y="517" width="0.1" height="15.0" fill="rgb(230,15,51)" rx="2" ry="2" />
+<text  x="742.16" y="527.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::write_unlock (7 samples, 0.01%)</title><rect x="157.5" y="661" width="0.1" height="15.0" fill="rgb(223,147,20)" rx="2" ry="2" />
+<text  x="160.47" y="671.5" ></text>
+</g>
+<g >
+<title>core::hash::Hasher::write_u32 (13 samples, 0.02%)</title><rect x="1144.5" y="661" width="0.1" height="15.0" fill="rgb(228,58,39)" rx="2" ry="2" />
+<text  x="1147.46" y="671.5" ></text>
+</g>
+<g >
+<title>core::cmp::impls::&lt;impl core::cmp::Ord for usize&gt;::cmp (540 samples, 0.66%)</title><rect x="569.2" y="501" width="7.8" height="15.0" fill="rgb(244,114,38)" rx="2" ry="2" />
+<text  x="572.23" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (35 samples, 0.04%)</title><rect x="102.4" y="293" width="0.5" height="15.0" fill="rgb(222,15,33)" rx="2" ry="2" />
+<text  x="105.41" y="303.5" ></text>
+</g>
+<g >
+<title>[unknown] (63 samples, 0.08%)</title><rect x="104.4" y="485" width="0.9" height="15.0" fill="rgb(221,226,14)" rx="2" ry="2" />
+<text  x="107.43" y="495.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeNodeFactory (14 samples, 0.02%)</title><rect x="1122.9" y="709" width="0.2" height="15.0" fill="rgb(247,13,24)" rx="2" ry="2" />
+<text  x="1125.87" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (75 samples, 0.09%)</title><rect x="104.3" y="565" width="1.0" height="15.0" fill="rgb(215,49,19)" rx="2" ry="2" />
+<text  x="107.25" y="575.5" ></text>
+</g>
+<g >
+<title>[unknown] (7 samples, 0.01%)</title><rect x="1189.9" y="389" width="0.1" height="15.0" fill="rgb(205,27,38)" rx="2" ry="2" />
+<text  x="1192.90" y="399.5" ></text>
+</g>
+<g >
+<title>[unknown] (108 samples, 0.13%)</title><rect x="105.5" y="645" width="1.5" height="15.0" fill="rgb(220,157,17)" rx="2" ry="2" />
+<text  x="108.46" y="655.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::read (1,141 samples, 1.39%)</title><rect x="879.5" y="549" width="16.5" height="15.0" fill="rgb(252,221,29)" rx="2" ry="2" />
+<text  x="882.53" y="559.5" ></text>
+</g>
+<g >
+<title>__cmd_record (1,291 samples, 1.57%)</title><rect x="104.2" y="693" width="18.6" height="15.0" fill="rgb(243,170,32)" rx="2" ry="2" />
+<text  x="107.22" y="703.5" ></text>
+</g>
+<g >
+<title>[unknown] (76 samples, 0.09%)</title><rect x="103.1" y="597" width="1.1" height="15.0" fill="rgb(241,1,4)" rx="2" ry="2" />
+<text  x="106.13" y="607.5" ></text>
+</g>
+<g >
+<title>[unknown] (152 samples, 0.19%)</title><rect x="1187.8" y="533" width="2.2" height="15.0" fill="rgb(220,77,44)" rx="2" ry="2" />
+<text  x="1190.81" y="543.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeRemoveVal (10 samples, 0.01%)</title><rect x="1123.5" y="709" width="0.2" height="15.0" fill="rgb(247,174,53)" rx="2" ry="2" />
+<text  x="1126.51" y="719.5" ></text>
+</g>
+<g >
+<title>NaClMutexLock (32 samples, 0.04%)</title><rect x="128.1" y="709" width="0.5" height="15.0" fill="rgb(223,75,15)" rx="2" ry="2" />
+<text  x="131.15" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (5,592 samples, 6.82%)</title><rect x="22.4" y="725" width="80.5" height="15.0" fill="rgb(250,163,49)" rx="2" ry="2" />
+<text  x="25.42" y="735.5" >[unknown]</text>
+</g>
+<g >
+<title>NaClLogGetVerbosity (10 samples, 0.01%)</title><rect x="680.1" y="677" width="0.1" height="15.0" fill="rgb(229,134,45)" rx="2" ry="2" />
+<text  x="683.07" y="687.5" ></text>
+</g>
+<g >
+<title>[unknown] (9 samples, 0.01%)</title><rect x="102.8" y="37" width="0.1" height="15.0" fill="rgb(253,93,45)" rx="2" ry="2" />
+<text  x="105.79" y="47.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::read_unlock (668 samples, 0.81%)</title><rect x="713.6" y="549" width="9.6" height="15.0" fill="rgb(207,132,9)" rx="2" ry="2" />
+<text  x="716.61" y="559.5" ></text>
+</g>
+<g >
+<title>record__pushfn (1,079 samples, 1.32%)</title><rect x="107.1" y="629" width="15.6" height="15.0" fill="rgb(217,29,49)" rx="2" ry="2" />
+<text  x="110.15" y="639.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreePrint (44 samples, 0.05%)</title><rect x="1078.8" y="629" width="0.6" height="15.0" fill="rgb(228,37,17)" rx="2" ry="2" />
+<text  x="1081.76" y="639.5" ></text>
+</g>
+<g >
+<title>[unknown] (7 samples, 0.01%)</title><rect x="1125.6" y="453" width="0.1" height="15.0" fill="rgb(219,137,35)" rx="2" ry="2" />
+<text  x="1128.57" y="463.5" ></text>
+</g>
+<g >
+<title>[unknown] (103 samples, 0.13%)</title><rect x="1119.9" y="693" width="1.4" height="15.0" fill="rgb(233,3,24)" rx="2" ry="2" />
+<text  x="1122.86" y="703.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::rwlock::RwLockWriteGuard&lt;T&gt; as core::ops::drop::Drop&gt;::drop (7 samples, 0.01%)</title><rect x="157.5" y="677" width="0.1" height="15.0" fill="rgb(243,31,13)" rx="2" ry="2" />
+<text  x="160.47" y="687.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexUnlock (370 samples, 0.45%)</title><rect x="959.4" y="597" width="5.3" height="15.0" fill="rgb(239,218,17)" rx="2" ry="2" />
+<text  x="962.37" y="607.5" ></text>
+</g>
+<g >
+<title>NaClHostDescCheckValidity (14 samples, 0.02%)</title><rect x="694.5" y="645" width="0.3" height="15.0" fill="rgb(234,85,37)" rx="2" ry="2" />
+<text  x="697.55" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (848 samples, 1.03%)</title><rect x="110.4" y="325" width="12.2" height="15.0" fill="rgb(233,94,36)" rx="2" ry="2" />
+<text  x="113.43" y="335.5" ></text>
+</g>
+<g >
+<title>__evlist__enable (77 samples, 0.09%)</title><rect x="104.2" y="677" width="1.1" height="15.0" fill="rgb(217,102,12)" rx="2" ry="2" />
+<text  x="107.22" y="687.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,053 samples, 1.28%)</title><rect x="107.5" y="405" width="15.1" height="15.0" fill="rgb(206,21,32)" rx="2" ry="2" />
+<text  x="110.48" y="415.5" ></text>
+</g>
+<g >
+<title>[unknown] (63 samples, 0.08%)</title><rect x="104.4" y="421" width="0.9" height="15.0" fill="rgb(244,26,36)" rx="2" ry="2" />
+<text  x="107.43" y="431.5" ></text>
+</g>
+<g >
+<title>&lt;core::ops::range::Range&lt;usize&gt; as core::slice::index::SliceIndex&lt;[T]&gt;&gt;::get_unchecked_mut (7 samples, 0.01%)</title><rect x="569.1" y="453" width="0.1" height="15.0" fill="rgb(206,193,18)" rx="2" ry="2" />
+<text  x="572.13" y="463.5" ></text>
+</g>
+<g >
+<title>core::ptr::mut_ptr::&lt;impl *mut T&gt;::offset (7 samples, 0.01%)</title><rect x="569.1" y="421" width="0.1" height="15.0" fill="rgb(214,208,39)" rx="2" ry="2" />
+<text  x="572.13" y="431.5" ></text>
+</g>
+<g >
+<title>[unknown] (5,495 samples, 6.70%)</title><rect x="23.8" y="661" width="79.1" height="15.0" fill="rgb(218,164,8)" rx="2" ry="2" />
+<text  x="26.82" y="671.5" >[unknown]</text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeRemoveInterval (2,956 samples, 3.61%)</title><rect x="986.5" y="645" width="42.5" height="15.0" fill="rgb(222,175,29)" rx="2" ry="2" />
+<text  x="989.49" y="655.5" >NaCl..</text>
+</g>
+<g >
+<title>NaClIntervalRangeTreePrint (40 samples, 0.05%)</title><rect x="1010.0" y="581" width="0.5" height="15.0" fill="rgb(225,6,11)" rx="2" ry="2" />
+<text  x="1012.97" y="591.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::write (393 samples, 0.48%)</title><rect x="896.5" y="533" width="5.6" height="15.0" fill="rgb(238,158,13)" rx="2" ry="2" />
+<text  x="899.46" y="543.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::SipHasher13 as core::hash::Hasher&gt;::finish (209 samples, 0.25%)</title><rect x="902.3" y="517" width="3.0" height="15.0" fill="rgb(253,211,45)" rx="2" ry="2" />
+<text  x="905.32" y="527.5" ></text>
+</g>
+<g >
+<title>[unknown] (41 samples, 0.05%)</title><rect x="1101.0" y="725" width="0.6" height="15.0" fill="rgb(225,118,42)" rx="2" ry="2" />
+<text  x="1103.97" y="735.5" ></text>
+</g>
+<g >
+<title>NaClAvlTreeInsert (113 samples, 0.14%)</title><rect x="1058.6" y="613" width="1.6" height="15.0" fill="rgb(247,1,51)" rx="2" ry="2" />
+<text  x="1061.62" y="623.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (1,908 samples, 2.33%)</title><rect x="838.3" y="501" width="27.5" height="15.0" fill="rgb(225,122,50)" rx="2" ry="2" />
+<text  x="841.32" y="511.5" >_..</text>
+</g>
+<g >
+<title>&lt;alloc::sync::Arc&lt;T&gt; as core::clone::Clone&gt;::clone (965 samples, 1.18%)</title><rect x="725.3" y="565" width="13.9" height="15.0" fill="rgb(221,0,39)" rx="2" ry="2" />
+<text  x="728.27" y="575.5" ></text>
+</g>
+<g >
+<title>&lt;hashbrown::raw::bitmask::BitMaskIter as core::iter::traits::iterator::Iterator&gt;::next (24 samples, 0.03%)</title><rect x="908.7" y="485" width="0.4" height="15.0" fill="rgb(218,211,19)" rx="2" ry="2" />
+<text  x="911.72" y="495.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::Hasher&lt;S&gt; as core::hash::Hasher&gt;::write (169 samples, 0.21%)</title><rect x="873.3" y="421" width="2.4" height="15.0" fill="rgb(246,229,51)" rx="2" ry="2" />
+<text  x="876.27" y="431.5" ></text>
+</g>
+<g >
+<title>[unknown] (5,578 samples, 6.80%)</title><rect x="22.6" y="677" width="80.3" height="15.0" fill="rgb(213,114,25)" rx="2" ry="2" />
+<text  x="25.62" y="687.5" >[unknown]</text>
+</g>
+<g >
+<title>&lt;core::hash::sip::Sip13Rounds as core::hash::sip::Sip&gt;::d_rounds (120 samples, 0.15%)</title><rect x="903.6" y="485" width="1.7" height="15.0" fill="rgb(212,88,6)" rx="2" ry="2" />
+<text  x="906.60" y="495.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_copy::{{closure}} (29 samples, 0.04%)</title><rect x="155.3" y="661" width="0.4" height="15.0" fill="rgb(219,15,44)" rx="2" ry="2" />
+<text  x="158.27" y="671.5" ></text>
+</g>
+<g >
+<title>[unknown] (3,419 samples, 4.17%)</title><rect x="53.7" y="597" width="49.2" height="15.0" fill="rgb(229,204,17)" rx="2" ry="2" />
+<text  x="56.70" y="607.5" >[unk..</text>
+</g>
+<g >
+<title>std::panicking::panicking (29 samples, 0.04%)</title><rect x="879.1" y="501" width="0.4" height="15.0" fill="rgb(225,84,39)" rx="2" ry="2" />
+<text  x="882.11" y="511.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::load (48 samples, 0.06%)</title><rect x="837.2" y="501" width="0.7" height="15.0" fill="rgb(242,204,19)" rx="2" ry="2" />
+<text  x="840.17" y="511.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawTable&lt;T,A&gt;::get (229 samples, 0.28%)</title><rect x="875.7" y="517" width="3.3" height="15.0" fill="rgb(210,107,17)" rx="2" ry="2" />
+<text  x="878.70" y="527.5" ></text>
+</g>
+<g >
+<title>NaClLog (28 samples, 0.03%)</title><rect x="1123.7" y="709" width="0.4" height="15.0" fill="rgb(254,132,22)" rx="2" ry="2" />
+<text  x="1126.66" y="719.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_slice (279 samples, 0.34%)</title><rect x="663.0" y="517" width="4.0" height="15.0" fill="rgb(231,15,23)" rx="2" ry="2" />
+<text  x="665.95" y="527.5" ></text>
+</g>
+<g >
+<title>&lt;hashbrown::raw::RawIterHash&lt;T,A&gt; as core::iter::traits::iterator::Iterator&gt;::next (53 samples, 0.06%)</title><rect x="876.2" y="485" width="0.8" height="15.0" fill="rgb(251,195,48)" rx="2" ry="2" />
+<text  x="879.19" y="495.5" ></text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;std::sync::rwlock::RwLockReadGuard&lt;std::collections::hash::map::HashMap&lt;i32,alloc::sync::Arc&lt;std::sync::rwlock::RwLock&lt;rustposix::safeposix::cage::FileDescriptor&gt;&gt;&gt;&gt;&gt; (14 samples, 0.02%)</title><rect x="157.3" y="693" width="0.2" height="15.0" fill="rgb(249,157,16)" rx="2" ry="2" />
+<text  x="160.27" y="703.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_sub (287 samples, 0.35%)</title><rect x="713.6" y="517" width="4.1" height="15.0" fill="rgb(231,161,27)" rx="2" ry="2" />
+<text  x="716.61" y="527.5" ></text>
+</g>
+<g >
+<title>__GI___libc_free (55 samples, 0.07%)</title><rect x="1125.7" y="709" width="0.8" height="15.0" fill="rgb(207,51,7)" rx="2" ry="2" />
+<text  x="1128.67" y="719.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexLock (386 samples, 0.47%)</title><rect x="937.8" y="645" width="5.6" height="15.0" fill="rgb(229,221,49)" rx="2" ry="2" />
+<text  x="940.83" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="565" width="0.4" height="15.0" fill="rgb(245,218,43)" rx="2" ry="2" />
+<text  x="1128.27" y="575.5" ></text>
+</g>
+<g >
+<title>[unknown] (18 samples, 0.02%)</title><rect x="1125.4" y="485" width="0.3" height="15.0" fill="rgb(236,150,28)" rx="2" ry="2" />
+<text  x="1128.41" y="495.5" ></text>
+</g>
+<g >
+<title>core::hash::impls::&lt;impl core::hash::Hash for usize&gt;::hash (12 samples, 0.01%)</title><rect x="1144.6" y="693" width="0.2" height="15.0" fill="rgb(246,70,1)" rx="2" ry="2" />
+<text  x="1147.64" y="703.5" ></text>
+</g>
+<g >
+<title>[unknown] (76 samples, 0.09%)</title><rect x="103.1" y="581" width="1.1" height="15.0" fill="rgb(232,192,33)" rx="2" ry="2" />
+<text  x="106.13" y="591.5" ></text>
+</g>
+<g >
+<title>core::ptr::const_ptr::&lt;impl *const T&gt;::guaranteed_eq (11 samples, 0.01%)</title><rect x="155.9" y="677" width="0.1" height="15.0" fill="rgb(215,78,22)" rx="2" ry="2" />
+<text  x="158.86" y="687.5" ></text>
+</g>
+<g >
+<title>NaClLog (59 samples, 0.07%)</title><rect x="935.3" y="629" width="0.9" height="15.0" fill="rgb(215,164,5)" rx="2" ry="2" />
+<text  x="938.34" y="639.5" ></text>
+</g>
+<g >
+<title>ringbuf::ring_buffer::RingBuffer&lt;T&gt;::capacity (60 samples, 0.07%)</title><rect x="834.0" y="517" width="0.9" height="15.0" fill="rgb(224,135,13)" rx="2" ry="2" />
+<text  x="837.02" y="527.5" ></text>
+</g>
+<g >
+<title>std::sync::mutex::Mutex&lt;T&gt;::lock (1,939 samples, 2.37%)</title><rect x="837.9" y="549" width="27.9" height="15.0" fill="rgb(236,189,11)" rx="2" ry="2" />
+<text  x="840.87" y="559.5" >s..</text>
+</g>
+<g >
+<title>NaClAvlTreeInsert (83 samples, 0.10%)</title><rect x="1046.9" y="645" width="1.2" height="15.0" fill="rgb(234,210,38)" rx="2" ry="2" />
+<text  x="1049.89" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (48 samples, 0.06%)</title><rect x="102.2" y="325" width="0.7" height="15.0" fill="rgb(207,66,29)" rx="2" ry="2" />
+<text  x="105.22" y="335.5" ></text>
+</g>
+<g >
+<title>[unknown] (63 samples, 0.08%)</title><rect x="104.4" y="453" width="0.9" height="15.0" fill="rgb(232,46,22)" rx="2" ry="2" />
+<text  x="107.43" y="463.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::Sip13Rounds as core::hash::sip::Sip&gt;::d_rounds (246 samples, 0.30%)</title><rect x="868.3" y="453" width="3.5" height="15.0" fill="rgb(228,215,47)" rx="2" ry="2" />
+<text  x="871.30" y="463.5" ></text>
+</g>
+<g >
+<title>[unknown] (98 samples, 0.12%)</title><rect x="101.5" y="405" width="1.4" height="15.0" fill="rgb(233,112,35)" rx="2" ry="2" />
+<text  x="104.50" y="415.5" ></text>
+</g>
+<g >
+<title>rustposix::interface::pipe::EmulatedPipe::write_to_pipe (6,422 samples, 7.83%)</title><rect x="773.3" y="565" width="92.5" height="15.0" fill="rgb(244,130,48)" rx="2" ry="2" />
+<text  x="776.34" y="575.5" >rustposix::..</text>
+</g>
+<g >
+<title>core::intrinsics::copy_nonoverlapping (12 samples, 0.01%)</title><rect x="907.9" y="453" width="0.2" height="15.0" fill="rgb(215,5,0)" rx="2" ry="2" />
+<text  x="910.94" y="463.5" ></text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;std::sync::mutex::MutexGuard&lt;ringbuf::producer::Producer&lt;u8&gt;&gt;&gt; (3,727 samples, 4.55%)</title><rect x="775.7" y="549" width="53.7" height="15.0" fill="rgb(216,52,14)" rx="2" ry="2" />
+<text  x="778.73" y="559.5" >core:..</text>
+</g>
+<g >
+<title>__pthread_mutex_unlock_usercnt (427 samples, 0.52%)</title><rect x="1038.8" y="613" width="6.1" height="15.0" fill="rgb(205,137,51)" rx="2" ry="2" />
+<text  x="1041.77" y="623.5" ></text>
+</g>
+<g >
+<title>std::panicking::panic_count::count_is_zero (20 samples, 0.02%)</title><rect x="896.2" y="485" width="0.3" height="15.0" fill="rgb(252,30,53)" rx="2" ry="2" />
+<text  x="899.17" y="495.5" ></text>
+</g>
+<g >
+<title>std::sync::rwlock::RwLockReadGuard&lt;T&gt;::new (17 samples, 0.02%)</title><rect x="909.7" y="581" width="0.3" height="15.0" fill="rgb(247,140,19)" rx="2" ry="2" />
+<text  x="912.73" y="591.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_copy::{{closure}} (61 samples, 0.07%)</title><rect x="832.1" y="501" width="0.8" height="15.0" fill="rgb(227,42,1)" rx="2" ry="2" />
+<text  x="835.06" y="511.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::DefaultHasher as core::hash::Hasher&gt;::write (169 samples, 0.21%)</title><rect x="873.3" y="453" width="2.4" height="15.0" fill="rgb(241,154,46)" rx="2" ry="2" />
+<text  x="876.27" y="463.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawIterHashInner&lt;A&gt;::new (46 samples, 0.06%)</title><rect x="909.1" y="485" width="0.6" height="15.0" fill="rgb(234,40,43)" rx="2" ry="2" />
+<text  x="912.07" y="495.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::DefaultHasher as core::hash::Hasher&gt;::write (9 samples, 0.01%)</title><rect x="907.3" y="453" width="0.2" height="15.0" fill="rgb(205,156,4)" rx="2" ry="2" />
+<text  x="910.34" y="463.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::read_unlock (12 samples, 0.01%)</title><rect x="138.8" y="645" width="0.2" height="15.0" fill="rgb(209,7,4)" rx="2" ry="2" />
+<text  x="141.83" y="655.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeNodeFactory (20 samples, 0.02%)</title><rect x="125.8" y="709" width="0.3" height="15.0" fill="rgb(210,128,46)" rx="2" ry="2" />
+<text  x="128.82" y="719.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::sse2::Group::load (11 samples, 0.01%)</title><rect x="878.0" y="437" width="0.1" height="15.0" fill="rgb(217,96,7)" rx="2" ry="2" />
+<text  x="880.96" y="447.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeAddInterval (29 samples, 0.04%)</title><rect x="1122.2" y="709" width="0.4" height="15.0" fill="rgb(249,134,40)" rx="2" ry="2" />
+<text  x="1125.20" y="719.5" ></text>
+</g>
+<g >
+<title>core::cmp::min_by (193 samples, 0.24%)</title><rect x="226.7" y="517" width="2.8" height="15.0" fill="rgb(233,117,7)" rx="2" ry="2" />
+<text  x="229.72" y="527.5" ></text>
+</g>
+<g >
+<title>[unknown] (19 samples, 0.02%)</title><rect x="106.7" y="469" width="0.3" height="15.0" fill="rgb(234,155,17)" rx="2" ry="2" />
+<text  x="109.74" y="479.5" ></text>
+</g>
+<g >
+<title>&lt;alloc::vec::Vec&lt;T,A&gt; as core::ops::index::IndexMut&lt;I&gt;&gt;::index_mut (904 samples, 1.10%)</title><rect x="556.2" y="501" width="13.0" height="15.0" fill="rgb(246,101,29)" rx="2" ry="2" />
+<text  x="559.22" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (9 samples, 0.01%)</title><rect x="122.7" y="597" width="0.1" height="15.0" fill="rgb(254,166,14)" rx="2" ry="2" />
+<text  x="125.68" y="607.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::load (13 samples, 0.02%)</title><rect x="838.1" y="453" width="0.2" height="15.0" fill="rgb(215,72,51)" rx="2" ry="2" />
+<text  x="841.13" y="463.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_slice (1,498 samples, 1.83%)</title><rect x="1144.8" y="709" width="21.6" height="15.0" fill="rgb(206,184,49)" rx="2" ry="2" />
+<text  x="1147.82" y="719.5" >r..</text>
+</g>
+<g >
+<title>[sel_ldr] (1,257 samples, 1.53%)</title><rect x="1101.6" y="709" width="18.1" height="15.0" fill="rgb(207,78,6)" rx="2" ry="2" />
+<text  x="1104.56" y="719.5" ></text>
+</g>
+<g >
+<title>dispatcher@plt (17 samples, 0.02%)</title><rect x="919.6" y="613" width="0.2" height="15.0" fill="rgb(250,9,14)" rx="2" ry="2" />
+<text  x="922.57" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (88 samples, 0.11%)</title><rect x="1120.1" y="645" width="1.2" height="15.0" fill="rgb(209,64,12)" rx="2" ry="2" />
+<text  x="1123.07" y="655.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::RawTable&lt;T,A&gt;::iter_hash (46 samples, 0.06%)</title><rect x="909.1" y="517" width="0.6" height="15.0" fill="rgb(225,103,25)" rx="2" ry="2" />
+<text  x="912.07" y="527.5" ></text>
+</g>
+<g >
+<title>std::panicking::panic_count::count_is_zero (29 samples, 0.04%)</title><rect x="879.1" y="485" width="0.4" height="15.0" fill="rgb(205,70,39)" rx="2" ry="2" />
+<text  x="882.11" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (75 samples, 0.09%)</title><rect x="104.3" y="549" width="1.0" height="15.0" fill="rgb(224,224,0)" rx="2" ry="2" />
+<text  x="107.25" y="559.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="613" width="0.4" height="15.0" fill="rgb(239,123,13)" rx="2" ry="2" />
+<text  x="1128.27" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (821 samples, 1.00%)</title><rect x="1178.2" y="629" width="11.8" height="15.0" fill="rgb(225,163,12)" rx="2" ry="2" />
+<text  x="1181.18" y="639.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,373 samples, 1.67%)</title><rect x="103.1" y="725" width="19.7" height="15.0" fill="rgb(230,124,13)" rx="2" ry="2" />
+<text  x="106.06" y="735.5" ></text>
+</g>
+<g >
+<title>[unknown] (62 samples, 0.08%)</title><rect x="104.4" y="373" width="0.9" height="15.0" fill="rgb(222,145,39)" rx="2" ry="2" />
+<text  x="107.44" y="383.5" ></text>
+</g>
+<g >
+<title>NaClCopyTakeLock (424 samples, 0.52%)</title><rect x="193.3" y="693" width="6.1" height="15.0" fill="rgb(223,123,16)" rx="2" ry="2" />
+<text  x="196.28" y="703.5" ></text>
+</g>
+<g >
+<title>NaClVmIoWillStart (20 samples, 0.02%)</title><rect x="130.3" y="709" width="0.3" height="15.0" fill="rgb(212,167,31)" rx="2" ry="2" />
+<text  x="133.34" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (8 samples, 0.01%)</title><rect x="1189.9" y="405" width="0.1" height="15.0" fill="rgb(242,181,20)" rx="2" ry="2" />
+<text  x="1192.88" y="415.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (161 samples, 0.20%)</title><rect x="131.9" y="709" width="2.3" height="15.0" fill="rgb(223,51,50)" rx="2" ry="2" />
+<text  x="134.91" y="719.5" ></text>
+</g>
+<g >
+<title>core::core_arch::x86::sse2::_mm_set1_epi8 (15 samples, 0.02%)</title><rect x="909.5" y="453" width="0.2" height="15.0" fill="rgb(217,181,23)" rx="2" ry="2" />
+<text  x="912.51" y="463.5" ></text>
+</g>
+<g >
+<title>&lt;alloc::sync::Arc&lt;T&gt; as core::clone::Clone&gt;::clone (184 samples, 0.22%)</title><rect x="710.9" y="597" width="2.7" height="15.0" fill="rgb(220,20,52)" rx="2" ry="2" />
+<text  x="713.94" y="607.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::mutex::Mutex::unlock (3,714 samples, 4.53%)</title><rect x="775.9" y="501" width="53.5" height="15.0" fill="rgb(240,227,28)" rx="2" ry="2" />
+<text  x="778.92" y="511.5" >std::..</text>
+</g>
+<g >
+<title>NaClCopyDropLock (512 samples, 0.62%)</title><rect x="669.9" y="661" width="7.4" height="15.0" fill="rgb(237,132,7)" rx="2" ry="2" />
+<text  x="672.95" y="671.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::DefaultHasher as core::hash::Hasher&gt;::write (20 samples, 0.02%)</title><rect x="875.2" y="389" width="0.3" height="15.0" fill="rgb(205,177,14)" rx="2" ry="2" />
+<text  x="878.24" y="399.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::equivalent_key::{{closure}} (33 samples, 0.04%)</title><rect x="877.0" y="485" width="0.4" height="15.0" fill="rgb(237,202,39)" rx="2" ry="2" />
+<text  x="879.95" y="495.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreePrint (13 samples, 0.02%)</title><rect x="1123.2" y="709" width="0.1" height="15.0" fill="rgb(252,116,30)" rx="2" ry="2" />
+<text  x="1126.15" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (3,725 samples, 4.54%)</title><rect x="1121.3" y="725" width="53.7" height="15.0" fill="rgb(251,81,54)" rx="2" ry="2" />
+<text  x="1124.34" y="735.5" >[unkn..</text>
+</g>
+<g >
+<title>__GI___pthread_mutex_unlock (15 samples, 0.02%)</title><rect x="959.9" y="581" width="0.2" height="15.0" fill="rgb(251,140,1)" rx="2" ry="2" />
+<text  x="962.89" y="591.5" ></text>
+</g>
+<g >
+<title>NaClLogGetVerbosity (965 samples, 1.18%)</title><rect x="968.6" y="661" width="13.9" height="15.0" fill="rgb(218,0,3)" rx="2" ry="2" />
+<text  x="971.63" y="671.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicBool::load (13 samples, 0.02%)</title><rect x="837.9" y="485" width="0.2" height="15.0" fill="rgb(235,192,20)" rx="2" ry="2" />
+<text  x="840.94" y="495.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::HashMap&lt;K,V,S,A&gt;::get (917 samples, 1.12%)</title><rect x="865.8" y="549" width="13.2" height="15.0" fill="rgb(232,112,21)" rx="2" ry="2" />
+<text  x="868.80" y="559.5" ></text>
+</g>
+<g >
+<title>[unknown] (77 samples, 0.09%)</title><rect x="104.2" y="613" width="1.1" height="15.0" fill="rgb(207,159,26)" rx="2" ry="2" />
+<text  x="107.22" y="623.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::load (2,691 samples, 3.28%)</title><rect x="481.5" y="517" width="38.7" height="15.0" fill="rgb(214,215,36)" rx="2" ry="2" />
+<text  x="484.46" y="527.5" >cor..</text>
+</g>
+<g >
+<title>NaClLog (126 samples, 0.15%)</title><rect x="966.8" y="661" width="1.8" height="15.0" fill="rgb(243,147,29)" rx="2" ry="2" />
+<text  x="969.82" y="671.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::write_unlock (533 samples, 0.65%)</title><rect x="765.7" y="517" width="7.6" height="15.0" fill="rgb(232,143,10)" rx="2" ry="2" />
+<text  x="768.67" y="527.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_lock@plt (14 samples, 0.02%)</title><rect x="943.2" y="629" width="0.2" height="15.0" fill="rgb(207,206,48)" rx="2" ry="2" />
+<text  x="946.18" y="639.5" ></text>
+</g>
+<g >
+<title>NaClMutexUnlock (517 samples, 0.63%)</title><rect x="1086.4" y="629" width="7.4" height="15.0" fill="rgb(220,196,26)" rx="2" ry="2" />
+<text  x="1089.39" y="639.5" ></text>
+</g>
+<g >
+<title>__GI___libc_malloc (210 samples, 0.26%)</title><rect x="1075.4" y="613" width="3.0" height="15.0" fill="rgb(235,197,30)" rx="2" ry="2" />
+<text  x="1078.39" y="623.5" ></text>
+</g>
+<g >
+<title>NaClAvlTreeInsert (720 samples, 0.88%)</title><rect x="1052.2" y="629" width="10.4" height="15.0" fill="rgb(246,58,53)" rx="2" ry="2" />
+<text  x="1055.22" y="639.5" ></text>
+</g>
+<g >
+<title>std::sync::rwlock::RwLock&lt;T&gt;::read (11 samples, 0.01%)</title><rect x="157.7" y="693" width="0.2" height="15.0" fill="rgb(240,118,36)" rx="2" ry="2" />
+<text  x="160.70" y="703.5" ></text>
+</g>
+<g >
+<title>[unknown] (76 samples, 0.09%)</title><rect x="103.1" y="533" width="1.1" height="15.0" fill="rgb(215,2,30)" rx="2" ry="2" />
+<text  x="106.13" y="543.5" ></text>
+</g>
+<g >
+<title>[unknown] (535 samples, 0.65%)</title><rect x="1182.3" y="597" width="7.7" height="15.0" fill="rgb(252,156,51)" rx="2" ry="2" />
+<text  x="1185.30" y="607.5" ></text>
+</g>
+<g >
+<title>[sel_ldr] (65,051 samples, 79.35%)</title><rect x="159.1" y="725" width="936.4" height="15.0" fill="rgb(214,110,36)" rx="2" ry="2" />
+<text  x="162.11" y="735.5" >[sel_ldr]</text>
+</g>
+<g >
+<title>__GI___pthread_mutex_unlock (18 samples, 0.02%)</title><rect x="775.9" y="485" width="0.3" height="15.0" fill="rgb(249,202,46)" rx="2" ry="2" />
+<text  x="778.92" y="495.5" ></text>
+</g>
+<g >
+<title>core::core_arch::x86::sse2::_mm_set1_epi8 (29 samples, 0.04%)</title><rect x="878.1" y="421" width="0.4" height="15.0" fill="rgb(216,42,23)" rx="2" ry="2" />
+<text  x="881.12" y="431.5" ></text>
+</g>
+<g >
+<title>rustposix::interface::pipe::EmulatedPipe::read_from_pipe (272 samples, 0.33%)</title><rect x="229.5" y="517" width="3.9" height="15.0" fill="rgb(234,183,17)" rx="2" ry="2" />
+<text  x="232.50" y="527.5" ></text>
+</g>
+<g >
+<title>NaClRangeStatsUpdate (162 samples, 0.20%)</title><rect x="1060.2" y="613" width="2.4" height="15.0" fill="rgb(239,114,28)" rx="2" ry="2" />
+<text  x="1063.25" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,142 samples, 1.39%)</title><rect x="86.5" y="533" width="16.4" height="15.0" fill="rgb(240,218,52)" rx="2" ry="2" />
+<text  x="89.48" y="543.5" ></text>
+</g>
+<g >
+<title>[unknown] (8 samples, 0.01%)</title><rect x="122.7" y="581" width="0.1" height="15.0" fill="rgb(236,106,45)" rx="2" ry="2" />
+<text  x="125.69" y="591.5" ></text>
+</g>
+<g >
+<title>[unknown] (890 samples, 1.09%)</title><rect x="1177.2" y="709" width="12.8" height="15.0" fill="rgb(205,22,13)" rx="2" ry="2" />
+<text  x="1180.19" y="719.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_lock@plt (12 samples, 0.01%)</title><rect x="199.2" y="645" width="0.2" height="15.0" fill="rgb(238,147,44)" rx="2" ry="2" />
+<text  x="202.21" y="655.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::fetch_add (253 samples, 0.31%)</title><rect x="915.9" y="549" width="3.7" height="15.0" fill="rgb(206,17,45)" rx="2" ry="2" />
+<text  x="918.93" y="559.5" ></text>
+</g>
+<g >
+<title>[unknown] (79 samples, 0.10%)</title><rect x="101.8" y="389" width="1.1" height="15.0" fill="rgb(244,6,50)" rx="2" ry="2" />
+<text  x="104.78" y="399.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_unlock_usercnt (8 samples, 0.01%)</title><rect x="1143.5" y="709" width="0.2" height="15.0" fill="rgb(207,115,0)" rx="2" ry="2" />
+<text  x="1146.54" y="719.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::fetch_add (964 samples, 1.18%)</title><rect x="725.3" y="549" width="13.9" height="15.0" fill="rgb(253,110,47)" rx="2" ry="2" />
+<text  x="728.28" y="559.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::mutex::Mutex::lock (1,908 samples, 2.33%)</title><rect x="838.3" y="517" width="27.5" height="15.0" fill="rgb(207,12,24)" rx="2" ry="2" />
+<text  x="841.32" y="527.5" >s..</text>
+</g>
+<g >
+<title>NaClAvlTreeExtract (12 samples, 0.01%)</title><rect x="992.7" y="613" width="0.1" height="15.0" fill="rgb(232,10,42)" rx="2" ry="2" />
+<text  x="995.65" y="623.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::read (667 samples, 0.81%)</title><rect x="910.0" y="565" width="9.6" height="15.0" fill="rgb(205,217,19)" rx="2" ry="2" />
+<text  x="912.97" y="575.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="549" width="0.4" height="15.0" fill="rgb(211,69,17)" rx="2" ry="2" />
+<text  x="1128.27" y="559.5" ></text>
+</g>
+<g >
+<title>__libc_write (9 samples, 0.01%)</title><rect x="122.7" y="613" width="0.1" height="15.0" fill="rgb(221,117,2)" rx="2" ry="2" />
+<text  x="125.68" y="623.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::write (14 samples, 0.02%)</title><rect x="157.9" y="661" width="0.2" height="15.0" fill="rgb(211,119,51)" rx="2" ry="2" />
+<text  x="160.86" y="671.5" ></text>
+</g>
+<g >
+<title>std::sync::poison::Flag::get (15 samples, 0.02%)</title><rect x="896.0" y="517" width="0.2" height="15.0" fill="rgb(227,161,31)" rx="2" ry="2" />
+<text  x="898.95" y="527.5" ></text>
+</g>
+<g >
+<title>NaClRefCountUnref (1,043 samples, 1.27%)</title><rect x="921.2" y="645" width="15.0" height="15.0" fill="rgb(243,175,38)" rx="2" ry="2" />
+<text  x="924.17" y="655.5" ></text>
+</g>
+<g >
+<title>std::collections::hash::map::HashMap&lt;K,V,S&gt;::get (529 samples, 0.65%)</title><rect x="902.1" y="597" width="7.6" height="15.0" fill="rgb(232,140,40)" rx="2" ry="2" />
+<text  x="905.11" y="607.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (42 samples, 0.05%)</title><rect x="1127.5" y="709" width="0.6" height="15.0" fill="rgb(209,29,18)" rx="2" ry="2" />
+<text  x="1130.47" y="719.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_unlock@plt (10 samples, 0.01%)</title><rect x="935.2" y="613" width="0.1" height="15.0" fill="rgb(253,161,14)" rx="2" ry="2" />
+<text  x="938.19" y="623.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_store (13 samples, 0.02%)</title><rect x="831.9" y="485" width="0.2" height="15.0" fill="rgb(218,214,35)" rx="2" ry="2" />
+<text  x="834.87" y="495.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_unlock@plt (19 samples, 0.02%)</title><rect x="677.0" y="613" width="0.3" height="15.0" fill="rgb(228,114,40)" rx="2" ry="2" />
+<text  x="680.05" y="623.5" ></text>
+</g>
+<g >
+<title>std::panicking::panicking (12 samples, 0.01%)</title><rect x="765.4" y="501" width="0.2" height="15.0" fill="rgb(242,100,49)" rx="2" ry="2" />
+<text  x="768.38" y="511.5" ></text>
+</g>
+<g >
+<title>NaClRawUserStackAddrNormalize (14 samples, 0.02%)</title><rect x="200.9" y="693" width="0.2" height="15.0" fill="rgb(210,103,50)" rx="2" ry="2" />
+<text  x="203.94" y="703.5" ></text>
+</g>
+<g >
+<title>std::lazy::SyncOnceCell&lt;T&gt;::is_initialized (12 samples, 0.01%)</title><rect x="739.2" y="485" width="0.1" height="15.0" fill="rgb(218,134,45)" rx="2" ry="2" />
+<text  x="742.16" y="495.5" ></text>
+</g>
+<g >
+<title>[anon] (2,445 samples, 2.98%)</title><rect x="122.9" y="725" width="35.2" height="15.0" fill="rgb(245,176,23)" rx="2" ry="2" />
+<text  x="125.87" y="735.5" >[a..</text>
+</g>
+<g >
+<title>[unknown] (15 samples, 0.02%)</title><rect x="102.7" y="149" width="0.2" height="15.0" fill="rgb(237,176,24)" rx="2" ry="2" />
+<text  x="105.70" y="159.5" ></text>
+</g>
+<g >
+<title>NaClLogTagNext_mu (14 samples, 0.02%)</title><rect x="969.8" y="629" width="0.2" height="15.0" fill="rgb(234,184,12)" rx="2" ry="2" />
+<text  x="972.75" y="639.5" ></text>
+</g>
+<g >
+<title>NaClGetDescMu (18 samples, 0.02%)</title><rect x="125.2" y="709" width="0.3" height="15.0" fill="rgb(212,128,38)" rx="2" ry="2" />
+<text  x="128.24" y="719.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (1,038 samples, 1.27%)</title><rect x="1128.6" y="709" width="14.9" height="15.0" fill="rgb(214,70,3)" rx="2" ry="2" />
+<text  x="1131.59" y="719.5" ></text>
+</g>
+<g >
+<title>core::hash::sip::Hasher&lt;S&gt;::reset (11 samples, 0.01%)</title><rect x="905.6" y="485" width="0.1" height="15.0" fill="rgb(220,210,33)" rx="2" ry="2" />
+<text  x="908.57" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,053 samples, 1.28%)</title><rect x="107.5" y="389" width="15.1" height="15.0" fill="rgb(221,137,18)" rx="2" ry="2" />
+<text  x="110.48" y="399.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_unlock (16 samples, 0.02%)</title><rect x="930.0" y="613" width="0.2" height="15.0" fill="rgb(239,143,36)" rx="2" ry="2" />
+<text  x="933.01" y="623.5" ></text>
+</g>
+<g >
+<title>rustposix::interface::pipe::EmulatedPipe::read_from_pipe (32,240 samples, 39.33%)</title><rect x="202.9" y="565" width="464.1" height="15.0" fill="rgb(236,4,13)" rx="2" ry="2" />
+<text  x="205.90" y="575.5" >rustposix::interface::pipe::EmulatedPipe::read_from_pipe</text>
+</g>
+<g >
+<title>core::ptr::const_ptr::&lt;impl *const T&gt;::is_null (16 samples, 0.02%)</title><rect x="1174.2" y="693" width="0.2" height="15.0" fill="rgb(212,168,14)" rx="2" ry="2" />
+<text  x="1177.15" y="703.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,073 samples, 1.31%)</title><rect x="107.2" y="533" width="15.4" height="15.0" fill="rgb(224,48,10)" rx="2" ry="2" />
+<text  x="110.19" y="543.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::HashMap&lt;K,V,S,A&gt;::get_inner (9 samples, 0.01%)</title><rect x="157.6" y="661" width="0.1" height="15.0" fill="rgb(230,225,16)" rx="2" ry="2" />
+<text  x="160.57" y="671.5" ></text>
+</g>
+<g >
+<title>std::thread::panicking (13 samples, 0.02%)</title><rect x="838.1" y="501" width="0.2" height="15.0" fill="rgb(218,68,51)" rx="2" ry="2" />
+<text  x="841.13" y="511.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_load (1,002 samples, 1.22%)</title><rect x="577.0" y="485" width="14.4" height="15.0" fill="rgb(248,41,4)" rx="2" ry="2" />
+<text  x="580.01" y="495.5" ></text>
+</g>
+<g >
+<title>dispatcher (16 samples, 0.02%)</title><rect x="699.0" y="613" width="0.2" height="15.0" fill="rgb(232,47,52)" rx="2" ry="2" />
+<text  x="701.98" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (77 samples, 0.09%)</title><rect x="103.1" y="613" width="1.1" height="15.0" fill="rgb(221,100,25)" rx="2" ry="2" />
+<text  x="106.12" y="623.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::read_unlock (668 samples, 0.81%)</title><rect x="713.6" y="565" width="9.6" height="15.0" fill="rgb(243,126,16)" rx="2" ry="2" />
+<text  x="716.61" y="575.5" ></text>
+</g>
+<g >
+<title>NaClAvlTreeExtract (39 samples, 0.05%)</title><rect x="124.0" y="709" width="0.5" height="15.0" fill="rgb(252,22,28)" rx="2" ry="2" />
+<text  x="126.96" y="719.5" ></text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;std::sync::rwlock::RwLockReadGuard&lt;std::collections::hash::map::HashMap&lt;u64,alloc::sync::Arc&lt;rustposix::safeposix::cage::Cage&gt;&gt;&gt;&gt; (12 samples, 0.01%)</title><rect x="138.8" y="693" width="0.2" height="15.0" fill="rgb(252,206,20)" rx="2" ry="2" />
+<text  x="141.83" y="703.5" ></text>
+</g>
+<g >
+<title>[unknown] (479 samples, 0.58%)</title><rect x="1183.1" y="581" width="6.9" height="15.0" fill="rgb(216,37,53)" rx="2" ry="2" />
+<text  x="1186.11" y="591.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_load (15 samples, 0.02%)</title><rect x="896.0" y="485" width="0.2" height="15.0" fill="rgb(217,211,21)" rx="2" ry="2" />
+<text  x="898.95" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (20 samples, 0.02%)</title><rect x="102.6" y="213" width="0.3" height="15.0" fill="rgb(205,117,13)" rx="2" ry="2" />
+<text  x="105.63" y="223.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_access (423 samples, 0.52%)</title><rect x="148.7" y="677" width="6.1" height="15.0" fill="rgb(236,164,20)" rx="2" ry="2" />
+<text  x="151.67" y="687.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexUnlock (18 samples, 0.02%)</title><rect x="936.4" y="661" width="0.2" height="15.0" fill="rgb(233,221,0)" rx="2" ry="2" />
+<text  x="939.36" y="671.5" ></text>
+</g>
+<g >
+<title>NaClLog (15 samples, 0.02%)</title><rect x="921.0" y="645" width="0.2" height="15.0" fill="rgb(231,104,0)" rx="2" ry="2" />
+<text  x="923.96" y="655.5" ></text>
+</g>
+<g >
+<title>&lt;hashbrown::raw::RawIterHashInner&lt;A&gt; as core::iter::traits::iterator::Iterator&gt;::next (33 samples, 0.04%)</title><rect x="908.6" y="501" width="0.5" height="15.0" fill="rgb(229,24,51)" rx="2" ry="2" />
+<text  x="911.59" y="511.5" ></text>
+</g>
+<g >
+<title>NaClXMutexUnlock (561 samples, 0.68%)</title><rect x="1085.8" y="645" width="8.0" height="15.0" fill="rgb(229,95,36)" rx="2" ry="2" />
+<text  x="1088.76" y="655.5" ></text>
+</g>
+<g >
+<title>rustposix::safeposix::dispatcher::dispatcher::{{closure}} (12,428 samples, 15.16%)</title><rect x="723.2" y="597" width="178.9" height="15.0" fill="rgb(241,173,15)" rx="2" ry="2" />
+<text  x="726.22" y="607.5" >rustposix::safeposix::d..</text>
+</g>
+<g >
+<title>hashbrown::map::HashMap&lt;K,V,S,A&gt;::get (529 samples, 0.65%)</title><rect x="902.1" y="581" width="7.6" height="15.0" fill="rgb(249,28,22)" rx="2" ry="2" />
+<text  x="905.11" y="591.5" ></text>
+</g>
+<g >
+<title>NaClMutexLock (28 samples, 0.03%)</title><rect x="1124.1" y="709" width="0.4" height="15.0" fill="rgb(213,192,16)" rx="2" ry="2" />
+<text  x="1127.06" y="719.5" ></text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;std::sync::mutex::MutexGuard&lt;ringbuf::producer::Producer&lt;u8&gt;&gt;&gt; (18 samples, 0.02%)</title><rect x="1174.4" y="693" width="0.2" height="15.0" fill="rgb(213,137,25)" rx="2" ry="2" />
+<text  x="1177.38" y="703.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::read_unlock (10 samples, 0.01%)</title><rect x="157.1" y="661" width="0.2" height="15.0" fill="rgb(254,52,34)" rx="2" ry="2" />
+<text  x="160.12" y="671.5" ></text>
+</g>
+<g >
+<title>[unknown] (62 samples, 0.08%)</title><rect x="1120.4" y="581" width="0.9" height="15.0" fill="rgb(249,7,12)" rx="2" ry="2" />
+<text  x="1123.45" y="591.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_add (964 samples, 1.18%)</title><rect x="725.3" y="533" width="13.9" height="15.0" fill="rgb(237,222,24)" rx="2" ry="2" />
+<text  x="728.28" y="543.5" ></text>
+</g>
+<g >
+<title>core::hash::sip::u8to64_le (33 samples, 0.04%)</title><rect x="907.5" y="453" width="0.4" height="15.0" fill="rgb(205,162,19)" rx="2" ry="2" />
+<text  x="910.47" y="463.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,067 samples, 1.30%)</title><rect x="107.3" y="469" width="15.3" height="15.0" fill="rgb(239,146,4)" rx="2" ry="2" />
+<text  x="110.28" y="479.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::make_hash (8 samples, 0.01%)</title><rect x="868.2" y="437" width="0.1" height="15.0" fill="rgb(221,133,18)" rx="2" ry="2" />
+<text  x="871.19" y="447.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_unlock (526 samples, 0.64%)</title><rect x="765.8" y="485" width="7.5" height="15.0" fill="rgb(221,106,13)" rx="2" ry="2" />
+<text  x="768.77" y="495.5" ></text>
+</g>
+<g >
+<title>NaClAvlTreeBalanceRight (14 samples, 0.02%)</title><rect x="994.3" y="597" width="0.2" height="15.0" fill="rgb(240,112,14)" rx="2" ry="2" />
+<text  x="997.30" y="607.5" ></text>
+</g>
+<g >
+<title>rustposix::interface::pipe::EmulatedPipe::read_from_pipe (476 samples, 0.58%)</title><rect x="1167.0" y="709" width="6.8" height="15.0" fill="rgb(250,130,7)" rx="2" ry="2" />
+<text  x="1169.97" y="719.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::len (16,454 samples, 20.07%)</title><rect x="290.8" y="549" width="236.8" height="15.0" fill="rgb(222,192,43)" rx="2" ry="2" />
+<text  x="293.76" y="559.5" >ringbuf::consumer::Consumer&lt;T&gt;:..</text>
+</g>
+<g >
+<title>[unknown] (259 samples, 0.32%)</title><rect x="99.2" y="469" width="3.7" height="15.0" fill="rgb(232,58,10)" rx="2" ry="2" />
+<text  x="102.19" y="479.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_rdlock (619 samples, 0.76%)</title><rect x="880.0" y="517" width="8.9" height="15.0" fill="rgb(224,21,26)" rx="2" ry="2" />
+<text  x="883.03" y="527.5" ></text>
+</g>
+<g >
+<title>core::num::&lt;impl u64&gt;::wrapping_add (24 samples, 0.03%)</title><rect x="867.8" y="437" width="0.4" height="15.0" fill="rgb(219,69,34)" rx="2" ry="2" />
+<text  x="870.84" y="447.5" ></text>
+</g>
+<g >
+<title>std::panicking::panicking (13 samples, 0.02%)</title><rect x="775.7" y="485" width="0.2" height="15.0" fill="rgb(227,39,35)" rx="2" ry="2" />
+<text  x="778.73" y="495.5" ></text>
+</g>
+<g >
+<title>NaClAvlTreeInsert (25 samples, 0.03%)</title><rect x="1121.8" y="709" width="0.3" height="15.0" fill="rgb(218,81,12)" rx="2" ry="2" />
+<text  x="1124.79" y="719.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_unlock_usercnt (344 samples, 0.42%)</title><rect x="930.2" y="613" width="5.0" height="15.0" fill="rgb(229,76,14)" rx="2" ry="2" />
+<text  x="933.24" y="623.5" ></text>
+</g>
+<g >
+<title>std::collections::hash::map::HashMap&lt;K,V,S&gt;::get (917 samples, 1.12%)</title><rect x="865.8" y="565" width="13.2" height="15.0" fill="rgb(228,186,11)" rx="2" ry="2" />
+<text  x="868.80" y="575.5" ></text>
+</g>
+<g >
+<title>core::core_arch::simd::i8x16::new (29 samples, 0.04%)</title><rect x="878.1" y="389" width="0.4" height="15.0" fill="rgb(205,188,52)" rx="2" ry="2" />
+<text  x="881.12" y="399.5" ></text>
+</g>
+<g >
+<title>__ioctl (77 samples, 0.09%)</title><rect x="104.2" y="629" width="1.1" height="15.0" fill="rgb(214,25,8)" rx="2" ry="2" />
+<text  x="107.22" y="639.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::make_hash (663 samples, 0.81%)</title><rect x="866.2" y="517" width="9.5" height="15.0" fill="rgb(235,179,16)" rx="2" ry="2" />
+<text  x="869.16" y="527.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_load (12 samples, 0.01%)</title><rect x="765.4" y="453" width="0.2" height="15.0" fill="rgb(237,6,1)" rx="2" ry="2" />
+<text  x="768.38" y="463.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::h2 (13 samples, 0.02%)</title><rect x="877.8" y="437" width="0.2" height="15.0" fill="rgb(233,219,28)" rx="2" ry="2" />
+<text  x="880.77" y="447.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::write_unlock (7 samples, 0.01%)</title><rect x="157.5" y="645" width="0.1" height="15.0" fill="rgb(238,3,5)" rx="2" ry="2" />
+<text  x="160.47" y="655.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::fetch_sub (287 samples, 0.35%)</title><rect x="713.6" y="533" width="4.1" height="15.0" fill="rgb(243,139,37)" rx="2" ry="2" />
+<text  x="716.61" y="543.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::Sip13Rounds as core::hash::sip::Sip&gt;::c_rounds (57 samples, 0.07%)</title><rect x="902.8" y="485" width="0.8" height="15.0" fill="rgb(232,16,14)" rx="2" ry="2" />
+<text  x="905.78" y="495.5" ></text>
+</g>
+<g >
+<title>std::sync::once::Once::is_completed (12 samples, 0.01%)</title><rect x="739.2" y="469" width="0.1" height="15.0" fill="rgb(247,70,9)" rx="2" ry="2" />
+<text  x="742.16" y="479.5" ></text>
+</g>
+<g >
+<title>[unknown] (5,403 samples, 6.59%)</title><rect x="25.1" y="645" width="77.8" height="15.0" fill="rgb(226,44,47)" rx="2" ry="2" />
+<text  x="28.14" y="655.5" >[unknown]</text>
+</g>
+<g >
+<title>alloc::vec::Vec&lt;T,A&gt;::as_mut_ptr (374 samples, 0.46%)</title><rect x="556.2" y="469" width="5.4" height="15.0" fill="rgb(216,72,54)" rx="2" ry="2" />
+<text  x="559.22" y="479.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::fetch_sub (291 samples, 0.35%)</title><rect x="746.9" y="501" width="4.1" height="15.0" fill="rgb(222,205,11)" rx="2" ry="2" />
+<text  x="749.86" y="511.5" ></text>
+</g>
+<g >
+<title>NaClAppThreadFromThreadContext (13 samples, 0.02%)</title><rect x="123.8" y="709" width="0.2" height="15.0" fill="rgb(209,199,39)" rx="2" ry="2" />
+<text  x="126.77" y="719.5" ></text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;std::sync::rwlock::RwLockReadGuard&lt;std::collections::hash::map::HashMap&lt;i32,alloc::sync::Arc&lt;std::sync::rwlock::RwLock&lt;rustposix::safeposix::cage::FileDescriptor&gt;&gt;&gt;&gt;&gt; (665 samples, 0.81%)</title><rect x="755.6" y="565" width="9.6" height="15.0" fill="rgb(231,205,19)" rx="2" ry="2" />
+<text  x="758.61" y="575.5" ></text>
+</g>
+<g >
+<title>[unknown] (61 samples, 0.07%)</title><rect x="121.8" y="213" width="0.8" height="15.0" fill="rgb(205,168,21)" rx="2" ry="2" />
+<text  x="124.76" y="223.5" ></text>
+</g>
+<g >
+<title>NaClMutexUnlock (379 samples, 0.46%)</title><rect x="976.5" y="613" width="5.5" height="15.0" fill="rgb(232,39,40)" rx="2" ry="2" />
+<text  x="979.53" y="623.5" ></text>
+</g>
+<g >
+<title>std::lazy::SyncLazy&lt;T,F&gt;::force (12 samples, 0.01%)</title><rect x="739.2" y="549" width="0.1" height="15.0" fill="rgb(214,38,51)" rx="2" ry="2" />
+<text  x="742.16" y="559.5" ></text>
+</g>
+<g >
+<title>core::intrinsics::copy_nonoverlapping (11 samples, 0.01%)</title><rect x="878.0" y="405" width="0.1" height="15.0" fill="rgb(242,107,45)" rx="2" ry="2" />
+<text  x="880.96" y="415.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_copy (29 samples, 0.04%)</title><rect x="155.3" y="693" width="0.4" height="15.0" fill="rgb(208,110,18)" rx="2" ry="2" />
+<text  x="158.27" y="703.5" ></text>
+</g>
+<g >
+<title>ringbuf::ring_buffer::RingBuffer&lt;T&gt;::capacity (515 samples, 0.63%)</title><rect x="520.2" y="517" width="7.4" height="15.0" fill="rgb(211,225,42)" rx="2" ry="2" />
+<text  x="523.19" y="527.5" ></text>
+</g>
+<g >
+<title>NaClMutexLock (319 samples, 0.39%)</title><rect x="970.6" y="613" width="4.6" height="15.0" fill="rgb(224,16,34)" rx="2" ry="2" />
+<text  x="973.65" y="623.5" ></text>
+</g>
+<g >
+<title>rustposix::safeposix::syscalls::fs_calls::&lt;impl rustposix::safeposix::cage::Cage&gt;::read_syscall (32,242 samples, 39.33%)</title><rect x="202.9" y="581" width="464.1" height="15.0" fill="rgb(240,50,33)" rx="2" ry="2" />
+<text  x="205.90" y="591.5" >rustposix::safeposix::syscalls::fs_calls::&lt;impl rustposix::safe..</text>
+</g>
+<g >
+<title>&lt;hashbrown::raw::RawIterHash&lt;T,A&gt; as core::iter::traits::iterator::Iterator&gt;::next (33 samples, 0.04%)</title><rect x="908.6" y="517" width="0.5" height="15.0" fill="rgb(217,182,2)" rx="2" ry="2" />
+<text  x="911.59" y="527.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::read_unlock (12 samples, 0.01%)</title><rect x="138.8" y="661" width="0.2" height="15.0" fill="rgb(254,40,25)" rx="2" ry="2" />
+<text  x="141.83" y="671.5" ></text>
+</g>
+<g >
+<title>NaClVmIoWillStart (3,390 samples, 4.14%)</title><rect x="1045.0" y="661" width="48.8" height="15.0" fill="rgb(208,182,52)" rx="2" ry="2" />
+<text  x="1048.04" y="671.5" >NaCl..</text>
+</g>
+<g >
+<title>NaClSysWriteDecoder (29,743 samples, 36.28%)</title><rect x="667.1" y="693" width="428.1" height="15.0" fill="rgb(229,102,0)" rx="2" ry="2" />
+<text  x="670.07" y="703.5" >NaClSysWriteDecoder</text>
+</g>
+<g >
+<title>NaClVmIoHasEnded (17 samples, 0.02%)</title><rect x="1094.8" y="677" width="0.3" height="15.0" fill="rgb(232,126,6)" rx="2" ry="2" />
+<text  x="1097.81" y="687.5" ></text>
+</g>
+<g >
+<title>std::sys_common::mutex::MovableMutex::raw_lock (22 samples, 0.03%)</title><rect x="1174.6" y="677" width="0.4" height="15.0" fill="rgb(211,111,16)" rx="2" ry="2" />
+<text  x="1177.64" y="687.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeExtract (1,446 samples, 1.76%)</title><rect x="992.8" y="613" width="20.8" height="15.0" fill="rgb(243,189,3)" rx="2" ry="2" />
+<text  x="995.83" y="623.5" ></text>
+</g>
+<g >
+<title>ApplyDfaValidator_x86_64 (33 samples, 0.04%)</title><rect x="202.3" y="629" width="0.4" height="15.0" fill="rgb(245,10,12)" rx="2" ry="2" />
+<text  x="205.26" y="639.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (331 samples, 0.40%)</title><rect x="1080.8" y="613" width="4.8" height="15.0" fill="rgb(222,10,47)" rx="2" ry="2" />
+<text  x="1083.82" y="623.5" ></text>
+</g>
+<g >
+<title>NaClTextDyncodeCreate (37 samples, 0.05%)</title><rect x="202.2" y="661" width="0.5" height="15.0" fill="rgb(221,207,8)" rx="2" ry="2" />
+<text  x="205.21" y="671.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_lock@plt (14 samples, 0.02%)</title><rect x="975.0" y="597" width="0.2" height="15.0" fill="rgb(244,25,40)" rx="2" ry="2" />
+<text  x="978.04" y="607.5" ></text>
+</g>
+<g >
+<title>[unknown] (54 samples, 0.07%)</title><rect x="103.4" y="469" width="0.8" height="15.0" fill="rgb(215,63,29)" rx="2" ry="2" />
+<text  x="106.45" y="479.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::HashMap&lt;K,V,S,A&gt;::get_inner (917 samples, 1.12%)</title><rect x="865.8" y="533" width="13.2" height="15.0" fill="rgb(218,45,27)" rx="2" ry="2" />
+<text  x="868.80" y="543.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeExtract (17 samples, 0.02%)</title><rect x="1122.6" y="709" width="0.3" height="15.0" fill="rgb(221,192,11)" rx="2" ry="2" />
+<text  x="1125.62" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (76 samples, 0.09%)</title><rect x="1120.2" y="597" width="1.1" height="15.0" fill="rgb(218,105,44)" rx="2" ry="2" />
+<text  x="1123.25" y="607.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_slice (298 samples, 0.36%)</title><rect x="829.5" y="549" width="4.2" height="15.0" fill="rgb(251,185,42)" rx="2" ry="2" />
+<text  x="832.45" y="559.5" ></text>
+</g>
+<g >
+<title>NaClUserToSysAddrRange (16 samples, 0.02%)</title><rect x="130.1" y="709" width="0.2" height="15.0" fill="rgb(220,64,16)" rx="2" ry="2" />
+<text  x="133.06" y="719.5" ></text>
+</g>
+<g >
+<title>&lt;core::hash::sip::SipHasher13 as core::hash::Hasher&gt;::finish (357 samples, 0.44%)</title><rect x="866.7" y="485" width="5.2" height="15.0" fill="rgb(241,33,19)" rx="2" ry="2" />
+<text  x="869.72" y="495.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::DefaultHasher as core::hash::Hasher&gt;::write (35 samples, 0.04%)</title><rect x="874.1" y="405" width="0.5" height="15.0" fill="rgb(215,30,7)" rx="2" ry="2" />
+<text  x="877.07" y="415.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_copy (9,584 samples, 11.69%)</title><rect x="529.0" y="533" width="138.0" height="15.0" fill="rgb(230,62,5)" rx="2" ry="2" />
+<text  x="532.01" y="543.5" >ringbuf::consumer..</text>
+</g>
+<g >
+<title>&lt;std::sync::rwlock::RwLockReadGuard&lt;T&gt; as core::ops::drop::Drop&gt;::drop (608 samples, 0.74%)</title><rect x="746.9" y="549" width="8.7" height="15.0" fill="rgb(246,96,22)" rx="2" ry="2" />
+<text  x="749.86" y="559.5" ></text>
+</g>
+<g >
+<title>core::hash::Hasher::write_i32 (189 samples, 0.23%)</title><rect x="873.0" y="485" width="2.7" height="15.0" fill="rgb(214,123,38)" rx="2" ry="2" />
+<text  x="875.98" y="495.5" ></text>
+</g>
+<g >
+<title>NaClSyscallCSegHook (64,903 samples, 79.17%)</title><rect x="161.2" y="709" width="934.3" height="15.0" fill="rgb(233,175,31)" rx="2" ry="2" />
+<text  x="164.24" y="719.5" >NaClSyscallCSegHook</text>
+</g>
+<g >
+<title>__libc_write (1,077 samples, 1.31%)</title><rect x="107.2" y="581" width="15.5" height="15.0" fill="rgb(236,27,16)" rx="2" ry="2" />
+<text  x="110.16" y="591.5" ></text>
+</g>
+<g >
+<title>NaClUserToSysAddrRange (15 samples, 0.02%)</title><rect x="1125.1" y="709" width="0.2" height="15.0" fill="rgb(253,191,42)" rx="2" ry="2" />
+<text  x="1128.05" y="719.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (328 samples, 0.40%)</title><rect x="1030.9" y="613" width="4.7" height="15.0" fill="rgb(251,173,20)" rx="2" ry="2" />
+<text  x="1033.90" y="623.5" ></text>
+</g>
+<g >
+<title>core::intrinsics::copy_nonoverlapping (4,387 samples, 5.35%)</title><rect x="591.6" y="485" width="63.1" height="15.0" fill="rgb(246,221,41)" rx="2" ry="2" />
+<text  x="594.57" y="495.5" >core::..</text>
+</g>
+<g >
+<title>NaClDescRef (943 samples, 1.15%)</title><rect x="951.8" y="629" width="13.6" height="15.0" fill="rgb(251,6,17)" rx="2" ry="2" />
+<text  x="954.85" y="639.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::HashMap&lt;K,V,S,A&gt;::get (17 samples, 0.02%)</title><rect x="139.2" y="677" width="0.3" height="15.0" fill="rgb(235,130,4)" rx="2" ry="2" />
+<text  x="142.25" y="687.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_unlock (12 samples, 0.01%)</title><rect x="977.5" y="597" width="0.2" height="15.0" fill="rgb(238,1,54)" rx="2" ry="2" />
+<text  x="980.48" y="607.5" ></text>
+</g>
+<g >
+<title>NaClRangeStatsUpdate (14 samples, 0.02%)</title><rect x="129.3" y="709" width="0.2" height="15.0" fill="rgb(227,206,49)" rx="2" ry="2" />
+<text  x="132.27" y="719.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_unlock (401 samples, 0.49%)</title><rect x="759.4" y="485" width="5.8" height="15.0" fill="rgb(243,29,41)" rx="2" ry="2" />
+<text  x="762.41" y="495.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_unlock (15 samples, 0.02%)</title><rect x="671.9" y="613" width="0.2" height="15.0" fill="rgb(219,13,45)" rx="2" ry="2" />
+<text  x="674.92" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (52 samples, 0.06%)</title><rect x="106.3" y="533" width="0.7" height="15.0" fill="rgb(222,181,42)" rx="2" ry="2" />
+<text  x="109.27" y="543.5" ></text>
+</g>
+<g >
+<title>[unknown] (12 samples, 0.01%)</title><rect x="102.7" y="69" width="0.2" height="15.0" fill="rgb(209,89,15)" rx="2" ry="2" />
+<text  x="105.74" y="79.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeNodeInit (708 samples, 0.86%)</title><rect x="1065.2" y="613" width="10.2" height="15.0" fill="rgb(227,2,47)" rx="2" ry="2" />
+<text  x="1068.20" y="623.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::load (12 samples, 0.01%)</title><rect x="765.4" y="469" width="0.2" height="15.0" fill="rgb(210,229,12)" rx="2" ry="2" />
+<text  x="768.38" y="479.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeNodeFactory (1,116 samples, 1.36%)</title><rect x="1062.6" y="629" width="16.0" height="15.0" fill="rgb(213,116,46)" rx="2" ry="2" />
+<text  x="1065.58" y="639.5" ></text>
+</g>
+<g >
+<title>&lt;alloc::sync::Arc&lt;T&gt; as core::ops::drop::Drop&gt;::drop (523 samples, 0.64%)</title><rect x="739.3" y="549" width="7.6" height="15.0" fill="rgb(244,113,19)" rx="2" ry="2" />
+<text  x="742.33" y="559.5" ></text>
+</g>
+<g >
+<title>std::thread::panicking (13 samples, 0.02%)</title><rect x="775.7" y="501" width="0.2" height="15.0" fill="rgb(215,100,28)" rx="2" ry="2" />
+<text  x="778.73" y="511.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_copy::{{closure}} (4,396 samples, 5.36%)</title><rect x="591.4" y="501" width="63.3" height="15.0" fill="rgb(215,59,16)" rx="2" ry="2" />
+<text  x="594.44" y="511.5" >ringbu..</text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_add (184 samples, 0.22%)</title><rect x="710.9" y="565" width="2.7" height="15.0" fill="rgb(224,155,4)" rx="2" ry="2" />
+<text  x="713.94" y="575.5" ></text>
+</g>
+<g >
+<title>NaClSysWrite (14 samples, 0.02%)</title><rect x="129.6" y="709" width="0.2" height="15.0" fill="rgb(207,160,4)" rx="2" ry="2" />
+<text  x="132.65" y="719.5" ></text>
+</g>
+<g >
+<title>core::hash::impls::&lt;impl core::hash::Hash for i32&gt;::hash (13 samples, 0.02%)</title><rect x="1144.5" y="693" width="0.1" height="15.0" fill="rgb(210,206,19)" rx="2" ry="2" />
+<text  x="1147.46" y="703.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_unlock@plt (13 samples, 0.02%)</title><rect x="1093.6" y="613" width="0.2" height="15.0" fill="rgb(247,45,30)" rx="2" ry="2" />
+<text  x="1096.64" y="623.5" ></text>
+</g>
+<g >
+<title>std::sync::poison::Flag::done (13 samples, 0.02%)</title><rect x="775.7" y="517" width="0.2" height="15.0" fill="rgb(227,221,12)" rx="2" ry="2" />
+<text  x="778.73" y="527.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeExtract (17 samples, 0.02%)</title><rect x="987.8" y="629" width="0.2" height="15.0" fill="rgb(217,98,15)" rx="2" ry="2" />
+<text  x="990.76" y="639.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_unlock_usercnt (3,696 samples, 4.51%)</title><rect x="776.2" y="485" width="53.2" height="15.0" fill="rgb(231,34,31)" rx="2" ry="2" />
+<text  x="779.18" y="495.5" >__pth..</text>
+</g>
+<g >
+<title>rustposix::safeposix::dispatcher::dispatcher::{{closure}} (32,243 samples, 39.33%)</title><rect x="202.9" y="597" width="464.1" height="15.0" fill="rgb(243,112,50)" rx="2" ry="2" />
+<text  x="205.88" y="607.5" >rustposix::safeposix::dispatcher::dispatcher::{{closure}}</text>
+</g>
+<g >
+<title>NaClLog (50 samples, 0.06%)</title><rect x="964.7" y="597" width="0.7" height="15.0" fill="rgb(217,97,39)" rx="2" ry="2" />
+<text  x="967.70" y="607.5" ></text>
+</g>
+<g >
+<title>hashbrown::raw::sse2::Group::match_byte (29 samples, 0.04%)</title><rect x="878.1" y="437" width="0.4" height="15.0" fill="rgb(253,80,34)" rx="2" ry="2" />
+<text  x="881.12" y="447.5" ></text>
+</g>
+<g >
+<title>ion (9 samples, 0.01%)</title><rect x="122.7" y="629" width="0.1" height="15.0" fill="rgb(223,58,41)" rx="2" ry="2" />
+<text  x="125.68" y="639.5" ></text>
+</g>
+<g >
+<title>core::core_arch::x86::sse2::_mm_set_epi8 (15 samples, 0.02%)</title><rect x="909.5" y="437" width="0.2" height="15.0" fill="rgb(211,216,32)" rx="2" ry="2" />
+<text  x="912.51" y="447.5" ></text>
+</g>
+<g >
+<title>[unknown] (23 samples, 0.03%)</title><rect x="1125.3" y="517" width="0.4" height="15.0" fill="rgb(223,119,35)" rx="2" ry="2" />
+<text  x="1128.34" y="527.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::read (667 samples, 0.81%)</title><rect x="910.0" y="581" width="9.6" height="15.0" fill="rgb(229,42,41)" rx="2" ry="2" />
+<text  x="912.97" y="591.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="629" width="0.4" height="15.0" fill="rgb(222,204,47)" rx="2" ry="2" />
+<text  x="1128.27" y="639.5" ></text>
+</g>
+<g >
+<title>[unknown] (795 samples, 0.97%)</title><rect x="1178.6" y="613" width="11.4" height="15.0" fill="rgb(214,84,53)" rx="2" ry="2" />
+<text  x="1181.56" y="623.5" ></text>
+</g>
+<g >
+<title>rustposix::interface::types::get_int (11 samples, 0.01%)</title><rect x="723.5" y="581" width="0.1" height="15.0" fill="rgb(211,207,2)" rx="2" ry="2" />
+<text  x="726.47" y="591.5" ></text>
+</g>
+<g >
+<title>ringbuf::producer::Producer&lt;T&gt;::push_access (29 samples, 0.04%)</title><rect x="155.3" y="677" width="0.4" height="15.0" fill="rgb(205,148,6)" rx="2" ry="2" />
+<text  x="158.27" y="687.5" ></text>
+</g>
+<g >
+<title>hashbrown::map::make_hash (43 samples, 0.05%)</title><rect x="139.5" y="709" width="0.6" height="15.0" fill="rgb(235,75,31)" rx="2" ry="2" />
+<text  x="142.49" y="719.5" ></text>
+</g>
+<g >
+<title>NaClDescIoDescWrite (8 samples, 0.01%)</title><rect x="679.7" y="677" width="0.1" height="15.0" fill="rgb(226,194,23)" rx="2" ry="2" />
+<text  x="682.71" y="687.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (49 samples, 0.06%)</title><rect x="832.2" y="469" width="0.7" height="15.0" fill="rgb(220,126,25)" rx="2" ry="2" />
+<text  x="835.23" y="479.5" ></text>
+</g>
+<g >
+<title>[unknown] (958 samples, 1.17%)</title><rect x="108.8" y="341" width="13.8" height="15.0" fill="rgb(229,120,41)" rx="2" ry="2" />
+<text  x="111.85" y="351.5" ></text>
+</g>
+<g >
+<title>NaClGetDesc (2,015 samples, 2.46%)</title><rect x="936.6" y="661" width="29.0" height="15.0" fill="rgb(243,200,10)" rx="2" ry="2" />
+<text  x="939.62" y="671.5" >Na..</text>
+</g>
+<g >
+<title>NaClMutexLock (383 samples, 0.47%)</title><rect x="1080.2" y="629" width="5.6" height="15.0" fill="rgb(213,181,1)" rx="2" ry="2" />
+<text  x="1083.24" y="639.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::RandomState as core::hash::BuildHasher&gt;::build_hasher (28 samples, 0.03%)</title><rect x="905.3" y="533" width="0.4" height="15.0" fill="rgb(218,127,0)" rx="2" ry="2" />
+<text  x="908.32" y="543.5" ></text>
+</g>
+<g >
+<title>core::slice::index::&lt;impl core::ops::index::IndexMut&lt;I&gt; for [T]&gt;::index_mut (25 samples, 0.03%)</title><rect x="831.2" y="485" width="0.4" height="15.0" fill="rgb(254,101,2)" rx="2" ry="2" />
+<text  x="834.24" y="495.5" ></text>
+</g>
+<g >
+<title>[unknown] (30 samples, 0.04%)</title><rect x="102.5" y="277" width="0.4" height="15.0" fill="rgb(247,142,3)" rx="2" ry="2" />
+<text  x="105.48" y="287.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreePrint (12 samples, 0.01%)</title><rect x="988.1" y="629" width="0.1" height="15.0" fill="rgb(240,220,3)" rx="2" ry="2" />
+<text  x="991.06" y="639.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::raw_unlock (317 samples, 0.39%)</title><rect x="751.0" y="501" width="4.6" height="15.0" fill="rgb(214,12,46)" rx="2" ry="2" />
+<text  x="754.05" y="511.5" ></text>
+</g>
+<g >
+<title>NaClDescRef (9 samples, 0.01%)</title><rect x="124.9" y="709" width="0.1" height="15.0" fill="rgb(229,112,48)" rx="2" ry="2" />
+<text  x="127.88" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (60 samples, 0.07%)</title><rect x="102.1" y="357" width="0.8" height="15.0" fill="rgb(222,27,13)" rx="2" ry="2" />
+<text  x="105.05" y="367.5" ></text>
+</g>
+<g >
+<title>perf_evsel__enable_cpu (77 samples, 0.09%)</title><rect x="104.2" y="661" width="1.1" height="15.0" fill="rgb(231,136,26)" rx="2" ry="2" />
+<text  x="107.22" y="671.5" ></text>
+</g>
+<g >
+<title>[unknown] (5,582 samples, 6.81%)</title><rect x="22.6" y="693" width="80.3" height="15.0" fill="rgb(208,219,10)" rx="2" ry="2" />
+<text  x="25.57" y="703.5" >[unknown]</text>
+</g>
+<g >
+<title>core::sync::atomic::atomic_sub (521 samples, 0.64%)</title><rect x="739.4" y="517" width="7.5" height="15.0" fill="rgb(206,103,54)" rx="2" ry="2" />
+<text  x="742.36" y="527.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::read_unlock (650 samples, 0.79%)</title><rect x="755.8" y="517" width="9.4" height="15.0" fill="rgb(237,191,31)" rx="2" ry="2" />
+<text  x="758.83" y="527.5" ></text>
+</g>
+<g >
+<title>ringbuf::ring_buffer::RingBuffer&lt;T&gt;::len (16,396 samples, 20.00%)</title><rect x="291.6" y="533" width="236.0" height="15.0" fill="rgb(244,21,4)" rx="2" ry="2" />
+<text  x="294.60" y="543.5" >ringbuf::ring_buffer::RingBuffe..</text>
+</g>
+<g >
+<title>NaClMutexUnlock (591 samples, 0.72%)</title><rect x="1036.5" y="629" width="8.5" height="15.0" fill="rgb(248,122,23)" rx="2" ry="2" />
+<text  x="1039.53" y="639.5" ></text>
+</g>
+<g >
+<title>record__write (1,079 samples, 1.32%)</title><rect x="107.1" y="613" width="15.6" height="15.0" fill="rgb(221,137,17)" rx="2" ry="2" />
+<text  x="110.15" y="623.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicBool::load (8 samples, 0.01%)</title><rect x="879.0" y="501" width="0.1" height="15.0" fill="rgb(247,173,12)" rx="2" ry="2" />
+<text  x="882.00" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (22 samples, 0.03%)</title><rect x="1125.4" y="501" width="0.3" height="15.0" fill="rgb(241,112,46)" rx="2" ry="2" />
+<text  x="1128.36" y="511.5" ></text>
+</g>
+<g >
+<title>std::sync::poison::Flag::get (13 samples, 0.02%)</title><rect x="837.9" y="501" width="0.2" height="15.0" fill="rgb(229,55,50)" rx="2" ry="2" />
+<text  x="840.94" y="511.5" ></text>
+</g>
+<g >
+<title>&lt;core::ops::range::Range&lt;usize&gt; as core::slice::index::SliceIndex&lt;[T]&gt;&gt;::index_mut (25 samples, 0.03%)</title><rect x="831.2" y="469" width="0.4" height="15.0" fill="rgb(224,110,51)" rx="2" ry="2" />
+<text  x="834.24" y="479.5" ></text>
+</g>
+<g >
+<title>NaClMutexUnlock (46 samples, 0.06%)</title><rect x="128.6" y="709" width="0.7" height="15.0" fill="rgb(205,87,7)" rx="2" ry="2" />
+<text  x="131.61" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,039 samples, 1.27%)</title><rect x="107.7" y="357" width="14.9" height="15.0" fill="rgb(250,84,31)" rx="2" ry="2" />
+<text  x="110.68" y="367.5" ></text>
+</g>
+<g >
+<title>core::hash::sip::SipHasher13::new_with_keys (57 samples, 0.07%)</title><rect x="872.2" y="485" width="0.8" height="15.0" fill="rgb(213,148,14)" rx="2" ry="2" />
+<text  x="875.16" y="495.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_unlock (317 samples, 0.39%)</title><rect x="751.0" y="485" width="4.6" height="15.0" fill="rgb(236,60,41)" rx="2" ry="2" />
+<text  x="754.05" y="495.5" ></text>
+</g>
+<g >
+<title>lind_read (32,243 samples, 39.33%)</title><rect x="202.9" y="629" width="464.1" height="15.0" fill="rgb(219,27,27)" rx="2" ry="2" />
+<text  x="205.88" y="639.5" >lind_read</text>
+</g>
+<g >
+<title>core::ptr::drop_in_place&lt;std::sync::rwlock::RwLockWriteGuard&lt;rustposix::safeposix::cage::FileDescriptor&gt;&gt; (7 samples, 0.01%)</title><rect x="157.5" y="693" width="0.1" height="15.0" fill="rgb(247,29,20)" rx="2" ry="2" />
+<text  x="160.47" y="703.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::store (13 samples, 0.02%)</title><rect x="831.9" y="501" width="0.2" height="15.0" fill="rgb(225,156,30)" rx="2" ry="2" />
+<text  x="834.87" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (557 samples, 0.68%)</title><rect x="114.6" y="277" width="8.0" height="15.0" fill="rgb(237,80,7)" rx="2" ry="2" />
+<text  x="117.62" y="287.5" ></text>
+</g>
+<g >
+<title>NaClRefCountUnref (12 samples, 0.01%)</title><rect x="129.5" y="709" width="0.1" height="15.0" fill="rgb(244,55,41)" rx="2" ry="2" />
+<text  x="132.47" y="719.5" ></text>
+</g>
+<g >
+<title>NaClSwitchToApp (42 samples, 0.05%)</title><rect x="201.6" y="693" width="0.6" height="15.0" fill="rgb(253,3,50)" rx="2" ry="2" />
+<text  x="204.60" y="703.5" ></text>
+</g>
+<g >
+<title>swapper (1,024 samples, 1.25%)</title><rect x="1175.3" y="741" width="14.7" height="15.0" fill="rgb(212,124,25)" rx="2" ry="2" />
+<text  x="1178.26" y="751.5" ></text>
+</g>
+<g >
+<title>__GI___poll (113 samples, 0.14%)</title><rect x="105.4" y="661" width="1.6" height="15.0" fill="rgb(224,48,18)" rx="2" ry="2" />
+<text  x="108.39" y="671.5" ></text>
+</g>
+<g >
+<title>[unknown] (52 samples, 0.06%)</title><rect x="102.2" y="341" width="0.7" height="15.0" fill="rgb(236,213,37)" rx="2" ry="2" />
+<text  x="105.17" y="351.5" ></text>
+</g>
+<g >
+<title>std::sync::poison::Flag::borrow (17 samples, 0.02%)</title><rect x="909.7" y="565" width="0.3" height="15.0" fill="rgb(208,206,0)" rx="2" ry="2" />
+<text  x="912.73" y="575.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::read_unlock (608 samples, 0.74%)</title><rect x="746.9" y="533" width="8.7" height="15.0" fill="rgb(214,87,27)" rx="2" ry="2" />
+<text  x="749.86" y="543.5" ></text>
+</g>
+<g >
+<title>[unknown] (80 samples, 0.10%)</title><rect x="103.1" y="709" width="1.1" height="15.0" fill="rgb(205,13,28)" rx="2" ry="2" />
+<text  x="106.07" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (102 samples, 0.12%)</title><rect x="105.5" y="581" width="1.5" height="15.0" fill="rgb(206,49,28)" rx="2" ry="2" />
+<text  x="108.55" y="591.5" ></text>
+</g>
+<g >
+<title>pthread_mutex_lock@plt (20 samples, 0.02%)</title><rect x="929.2" y="613" width="0.3" height="15.0" fill="rgb(226,154,15)" rx="2" ry="2" />
+<text  x="932.22" y="623.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreePrint (18 samples, 0.02%)</title><rect x="1022.0" y="613" width="0.2" height="15.0" fill="rgb(205,213,9)" rx="2" ry="2" />
+<text  x="1024.98" y="623.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeRemoveInterval (12 samples, 0.01%)</title><rect x="1123.3" y="709" width="0.2" height="15.0" fill="rgb(210,213,15)" rx="2" ry="2" />
+<text  x="1126.34" y="719.5" ></text>
+</g>
+<g >
+<title>NaClXMutexUnlock (645 samples, 0.79%)</title><rect x="1035.8" y="645" width="9.2" height="15.0" fill="rgb(228,28,26)" rx="2" ry="2" />
+<text  x="1038.75" y="655.5" ></text>
+</g>
+<g >
+<title>core::ptr::mut_ptr::&lt;impl *mut T&gt;::offset (47 samples, 0.06%)</title><rect x="234.6" y="485" width="0.7" height="15.0" fill="rgb(243,214,24)" rx="2" ry="2" />
+<text  x="237.61" y="495.5" ></text>
+</g>
+<g >
+<title>NaClAvlTreeExtract (191 samples, 0.23%)</title><rect x="1007.2" y="581" width="2.8" height="15.0" fill="rgb(219,149,23)" rx="2" ry="2" />
+<text  x="1010.22" y="591.5" ></text>
+</g>
+<g >
+<title>std::sys_common::mutex::MovableMutex::raw_unlock (18 samples, 0.02%)</title><rect x="1174.4" y="661" width="0.2" height="15.0" fill="rgb(210,18,32)" rx="2" ry="2" />
+<text  x="1177.38" y="671.5" ></text>
+</g>
+<g >
+<title>rustposix::interface::pipe::EmulatedPipe::write_to_pipe (79 samples, 0.10%)</title><rect x="1173.8" y="709" width="1.2" height="15.0" fill="rgb(240,213,6)" rx="2" ry="2" />
+<text  x="1176.82" y="719.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1189.6" y="469" width="0.4" height="15.0" fill="rgb(222,66,48)" rx="2" ry="2" />
+<text  x="1192.60" y="479.5" ></text>
+</g>
+<g >
+<title>[unknown] (15 samples, 0.02%)</title><rect x="1121.1" y="533" width="0.2" height="15.0" fill="rgb(237,197,23)" rx="2" ry="2" />
+<text  x="1124.12" y="543.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::read_unlock (14 samples, 0.02%)</title><rect x="157.3" y="645" width="0.2" height="15.0" fill="rgb(206,151,25)" rx="2" ry="2" />
+<text  x="160.27" y="655.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeRemoveInterval (17 samples, 0.02%)</title><rect x="966.6" y="661" width="0.2" height="15.0" fill="rgb(250,78,3)" rx="2" ry="2" />
+<text  x="969.57" y="671.5" ></text>
+</g>
+<g >
+<title>ion (1,077 samples, 1.31%)</title><rect x="107.2" y="597" width="15.5" height="15.0" fill="rgb(217,35,45)" rx="2" ry="2" />
+<text  x="110.16" y="607.5" ></text>
+</g>
+<g >
+<title>NaClSysReadDecoder (32,246 samples, 39.34%)</title><rect x="202.9" y="693" width="464.1" height="15.0" fill="rgb(241,88,14)" rx="2" ry="2" />
+<text  x="205.87" y="703.5" >NaClSysReadDecoder</text>
+</g>
+<g >
+<title>[unknown] (66 samples, 0.08%)</title><rect x="104.4" y="517" width="0.9" height="15.0" fill="rgb(210,89,3)" rx="2" ry="2" />
+<text  x="107.38" y="527.5" ></text>
+</g>
+<g >
+<title>NaClStackSafetyNowOnUntrustedStack (16 samples, 0.02%)</title><rect x="201.4" y="693" width="0.2" height="15.0" fill="rgb(239,197,29)" rx="2" ry="2" />
+<text  x="204.37" y="703.5" ></text>
+</g>
+<g >
+<title>NaClCopyDropLock (11 samples, 0.01%)</title><rect x="668.7" y="677" width="0.1" height="15.0" fill="rgb(214,118,36)" rx="2" ry="2" />
+<text  x="671.67" y="687.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::mutex::MutexGuard&lt;T&gt; as core::ops::deref::DerefMut&gt;::deref_mut (13 samples, 0.02%)</title><rect x="775.5" y="549" width="0.1" height="15.0" fill="rgb(253,127,33)" rx="2" ry="2" />
+<text  x="778.46" y="559.5" ></text>
+</g>
+<g >
+<title>dispatcher (32,243 samples, 39.33%)</title><rect x="202.9" y="613" width="464.1" height="15.0" fill="rgb(253,181,22)" rx="2" ry="2" />
+<text  x="205.88" y="623.5" >dispatcher</text>
+</g>
+<g >
+<title>[unknown] (26 samples, 0.03%)</title><rect x="102.5" y="261" width="0.4" height="15.0" fill="rgb(247,5,22)" rx="2" ry="2" />
+<text  x="105.54" y="271.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::raw_unlock (526 samples, 0.64%)</title><rect x="765.8" y="501" width="7.5" height="15.0" fill="rgb(239,92,22)" rx="2" ry="2" />
+<text  x="768.77" y="511.5" ></text>
+</g>
+<g >
+<title>NaClFastMutexLock (447 samples, 0.55%)</title><rect x="923.1" y="629" width="6.4" height="15.0" fill="rgb(252,129,14)" rx="2" ry="2" />
+<text  x="926.07" y="639.5" ></text>
+</g>
+<g >
+<title>[unknown] (28 samples, 0.03%)</title><rect x="1125.3" y="709" width="0.4" height="15.0" fill="rgb(254,13,34)" rx="2" ry="2" />
+<text  x="1128.27" y="719.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_unlock (17 samples, 0.02%)</title><rect x="1038.5" y="613" width="0.3" height="15.0" fill="rgb(216,178,0)" rx="2" ry="2" />
+<text  x="1041.53" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (12 samples, 0.01%)</title><rect x="102.7" y="85" width="0.2" height="15.0" fill="rgb(215,182,43)" rx="2" ry="2" />
+<text  x="105.74" y="95.5" ></text>
+</g>
+<g >
+<title>core::num::&lt;impl u64&gt;::wrapping_add (22 samples, 0.03%)</title><rect x="907.0" y="437" width="0.3" height="15.0" fill="rgb(224,149,42)" rx="2" ry="2" />
+<text  x="910.02" y="447.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::DefaultHasher as core::hash::Hasher&gt;::write (45 samples, 0.05%)</title><rect x="122.9" y="709" width="0.6" height="15.0" fill="rgb(216,198,27)" rx="2" ry="2" />
+<text  x="125.87" y="719.5" ></text>
+</g>
+<g >
+<title>core::core_arch::x86::sse2::_mm_set_epi8 (29 samples, 0.04%)</title><rect x="878.1" y="405" width="0.4" height="15.0" fill="rgb(237,13,50)" rx="2" ry="2" />
+<text  x="881.12" y="415.5" ></text>
+</g>
+<g >
+<title>ringbuf::consumer::Consumer&lt;T&gt;::pop_slice (456 samples, 0.56%)</title><rect x="561.6" y="469" width="6.6" height="15.0" fill="rgb(236,91,29)" rx="2" ry="2" />
+<text  x="564.60" y="479.5" ></text>
+</g>
+<g >
+<title>[unknown] (101 samples, 0.12%)</title><rect x="1119.9" y="661" width="1.4" height="15.0" fill="rgb(226,2,38)" rx="2" ry="2" />
+<text  x="1122.89" y="671.5" ></text>
+</g>
+<g >
+<title>std::collections::hash::map::HashMap&lt;K,V,S&gt;::get (9 samples, 0.01%)</title><rect x="157.6" y="693" width="0.1" height="15.0" fill="rgb(221,0,18)" rx="2" ry="2" />
+<text  x="160.57" y="703.5" ></text>
+</g>
+<g >
+<title>&lt;core::ops::range::Range&lt;usize&gt; as core::slice::index::SliceIndex&lt;[T]&gt;&gt;::index_mut (74 samples, 0.09%)</title><rect x="568.2" y="469" width="1.0" height="15.0" fill="rgb(227,88,53)" rx="2" ry="2" />
+<text  x="571.17" y="479.5" ></text>
+</g>
+<g >
+<title>core::sync::atomic::AtomicUsize::load (1,002 samples, 1.22%)</title><rect x="577.0" y="501" width="14.4" height="15.0" fill="rgb(206,93,40)" rx="2" ry="2" />
+<text  x="580.01" y="511.5" ></text>
+</g>
+<g >
+<title>[unknown] (79 samples, 0.10%)</title><rect x="103.1" y="629" width="1.1" height="15.0" fill="rgb(248,177,30)" rx="2" ry="2" />
+<text  x="106.09" y="639.5" ></text>
+</g>
+<g >
+<title>std::sys::unix::rwlock::RWLock::read (11 samples, 0.01%)</title><rect x="157.7" y="661" width="0.2" height="15.0" fill="rgb(216,168,41)" rx="2" ry="2" />
+<text  x="160.70" y="671.5" ></text>
+</g>
+<g >
+<title>NaClLog (108 samples, 0.13%)</title><rect x="199.4" y="693" width="1.5" height="15.0" fill="rgb(238,173,54)" rx="2" ry="2" />
+<text  x="202.39" y="703.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_wrlock (27 samples, 0.03%)</title><rect x="136.4" y="709" width="0.4" height="15.0" fill="rgb(236,23,19)" rx="2" ry="2" />
+<text  x="139.40" y="719.5" ></text>
+</g>
+<g >
+<title>core::num::&lt;impl u64&gt;::rotate_left (26 samples, 0.03%)</title><rect x="906.6" y="437" width="0.4" height="15.0" fill="rgb(217,108,35)" rx="2" ry="2" />
+<text  x="909.65" y="447.5" ></text>
+</g>
+<g >
+<title>NaClCopyTakeLock (9 samples, 0.01%)</title><rect x="160.3" y="709" width="0.2" height="15.0" fill="rgb(208,142,8)" rx="2" ry="2" />
+<text  x="163.33" y="719.5" ></text>
+</g>
+<g >
+<title>NaClUserToSysStackAddr (27 samples, 0.03%)</title><rect x="179.1" y="677" width="0.4" height="15.0" fill="rgb(222,205,50)" rx="2" ry="2" />
+<text  x="182.09" y="687.5" ></text>
+</g>
+<g >
+<title>[unknown] (65 samples, 0.08%)</title><rect x="104.4" y="501" width="0.9" height="15.0" fill="rgb(243,158,12)" rx="2" ry="2" />
+<text  x="107.40" y="511.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::rwlock::RwLockReadGuard&lt;T&gt; as core::ops::drop::Drop&gt;::drop (10 samples, 0.01%)</title><rect x="157.1" y="677" width="0.2" height="15.0" fill="rgb(206,148,53)" rx="2" ry="2" />
+<text  x="160.12" y="687.5" ></text>
+</g>
+<g >
+<title>core::num::&lt;impl u64&gt;::wrapping_add (64 samples, 0.08%)</title><rect x="870.9" y="437" width="0.9" height="15.0" fill="rgb(220,144,2)" rx="2" ry="2" />
+<text  x="873.92" y="447.5" ></text>
+</g>
+<g >
+<title>[unknown] (451 samples, 0.55%)</title><rect x="116.1" y="261" width="6.5" height="15.0" fill="rgb(218,93,44)" rx="2" ry="2" />
+<text  x="119.14" y="271.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::rwlock::RwLockReadGuard&lt;T&gt; as core::ops::drop::Drop&gt;::drop (12 samples, 0.01%)</title><rect x="138.8" y="677" width="0.2" height="15.0" fill="rgb(250,28,39)" rx="2" ry="2" />
+<text  x="141.83" y="687.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_rwlock_unlock (34 samples, 0.04%)</title><rect x="1128.1" y="709" width="0.5" height="15.0" fill="rgb(221,63,25)" rx="2" ry="2" />
+<text  x="1131.10" y="719.5" ></text>
+</g>
+<g >
+<title>malloc@plt (16 samples, 0.02%)</title><rect x="1078.4" y="613" width="0.2" height="15.0" fill="rgb(215,137,43)" rx="2" ry="2" />
+<text  x="1081.42" y="623.5" ></text>
+</g>
+<g >
+<title>NaClIntervalRangeTreeNodeFactory (20 samples, 0.02%)</title><rect x="1079.4" y="645" width="0.3" height="15.0" fill="rgb(249,88,35)" rx="2" ry="2" />
+<text  x="1082.39" y="655.5" ></text>
+</g>
+<g >
+<title>NaClHostDescRead (32,243 samples, 39.33%)</title><rect x="202.9" y="645" width="464.1" height="15.0" fill="rgb(209,0,35)" rx="2" ry="2" />
+<text  x="205.88" y="655.5" >NaClHostDescRead</text>
+</g>
+<g >
+<title>NaClHostDescWrite (16 samples, 0.02%)</title><rect x="1029.9" y="629" width="0.3" height="15.0" fill="rgb(246,160,7)" rx="2" ry="2" />
+<text  x="1032.95" y="639.5" ></text>
+</g>
+<g >
+<title>&lt;std::collections::hash::map::RandomState as core::hash::BuildHasher&gt;::build_hasher (78 samples, 0.10%)</title><rect x="871.9" y="501" width="1.1" height="15.0" fill="rgb(215,45,27)" rx="2" ry="2" />
+<text  x="874.86" y="511.5" ></text>
+</g>
+<g >
+<title>&lt;std::sync::rwlock::RwLockReadGuard&lt;T&gt; as core::ops::drop::Drop&gt;::drop (665 samples, 0.81%)</title><rect x="755.6" y="549" width="9.6" height="15.0" fill="rgb(238,83,54)" rx="2" ry="2" />
+<text  x="758.61" y="559.5" ></text>
+</g>
+<g >
+<title>__GI___pthread_mutex_lock (272 samples, 0.33%)</title><rect x="195.3" y="645" width="3.9" height="15.0" fill="rgb(254,1,51)" rx="2" ry="2" />
+<text  x="198.30" y="655.5" ></text>
+</g>
+<g >
+<title>NaClSandboxCodeAddr (180 samples, 0.22%)</title><rect x="176.5" y="677" width="2.6" height="15.0" fill="rgb(242,223,4)" rx="2" ry="2" />
+<text  x="179.50" y="687.5" ></text>
+</g>
+<g >
+<title>NaClXMutexUnlock (23 samples, 0.03%)</title><rect x="982.2" y="645" width="0.3" height="15.0" fill="rgb(242,107,31)" rx="2" ry="2" />
+<text  x="985.19" y="655.5" ></text>
+</g>
+<g >
+<title>[unknown] (105 samples, 0.13%)</title><rect x="105.5" y="597" width="1.5" height="15.0" fill="rgb(253,69,2)" rx="2" ry="2" />
+<text  x="108.51" y="607.5" ></text>
+</g>
+<g >
+<title>NaClUserToSysAddrRange (16 samples, 0.02%)</title><rect x="1094.6" y="677" width="0.2" height="15.0" fill="rgb(244,94,49)" rx="2" ry="2" />
+<text  x="1097.58" y="687.5" ></text>
+</g>
+<g >
+<title>__GI___libc_free (451 samples, 0.55%)</title><rect x="1022.2" y="613" width="6.5" height="15.0" fill="rgb(249,84,24)" rx="2" ry="2" />
+<text  x="1025.23" y="623.5" ></text>
+</g>
+<g >
+<title>[unknown] (103 samples, 0.13%)</title><rect x="1119.9" y="677" width="1.4" height="15.0" fill="rgb(232,182,19)" rx="2" ry="2" />
+<text  x="1122.86" y="687.5" ></text>
+</g>
+<g >
+<title>std::sys_common::rwlock::MovableRWLock::write (393 samples, 0.48%)</title><rect x="896.5" y="549" width="5.6" height="15.0" fill="rgb(244,157,7)" rx="2" ry="2" />
+<text  x="899.46" y="559.5" ></text>
+</g>
+</g>
+</svg>
