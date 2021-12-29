@@ -51,7 +51,8 @@ jobs:
           git --git-dir $(pwd)/src/safeposix-rust/.git remote update origin --prune;
           git --git-dir $(pwd)/src/safeposix-rust/.git fetch;
           git --git-dir $(pwd)/src/safeposix-rust/.git branch;
-          git --git-dir $(pwd)/src/safeposix-rust/.git branch -r;
+          git --git-dir $(pwd)/src/safeposix-rust/.git branch -r > out.txt;
+          cat out.txt;
           git --git-dir $(pwd)/src/safeposix-rust/.git checkout origin/github-actions;
           echo SafeposixDone.
           
