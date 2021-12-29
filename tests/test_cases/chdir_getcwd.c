@@ -12,7 +12,7 @@ int main() {
   else
     printf("current working directory is: %s :: %s\n", cwd, result);
   //---------------------------
-  chdir("/usr");
+  chdir("/test");
   //---------------------------
   result = getcwd(cwd, sizeof(cwd));
 
