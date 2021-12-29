@@ -50,8 +50,8 @@ jobs:
         run: |        
           git --git-dir $(pwd)/src/safeposix-rust/.git checkout remotes/origin/github-actions;
           git --git-dir $(pwd)/src/native_client/.git checkout remotes/origin/github-actions;
-          git --git-dir $(pwd)/src/safeposix-rust/.git checkout remotes/origin/github-actions;
           git --git-dir $(pwd)/.git checkout remotes/origin/github-actions;
+#         git --git-dir $(pwd)/src/safeposix-rust/.git checkout remotes/origin/github-actions;
         
       - name: Check update.
         run: |
