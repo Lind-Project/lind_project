@@ -24,6 +24,8 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
+        with:
+          submodules: true
       
       - uses: actions-rs/toolchain@v1
         with:
@@ -42,11 +44,14 @@ jobs:
         run: |
           cargo -V
           rustup -Version
-          
+
+
+#         bash -c "docker build --build-arg=BRANCH=github-actions -t securesystemslab/lind ."
+#         docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched; exec /fork"'
+#         docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind "make test"
       - name: Build docker and run a test case.
         run: |
-          cd ./src/docker/lind-full
-          bash -c "docker build --build-arg=BRANCH=github-actions -t securesystemslab/lind ."
+          cd ./src/safeposix-rust
+          ls
+          cat Cargo.toml
           echo Done1
-          docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched; exec /fork"'
-          docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind "make test"
