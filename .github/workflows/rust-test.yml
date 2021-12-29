@@ -52,6 +52,7 @@ jobs:
 #         docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind "make test"
       - name: Get all branches up to date.
         run: |
+          ls
           git --git-dir ~/lind_project/src/safeposix-rust/.git checkout remotes/origin/github-actions;
           git --git-dir ~/lind_project/src/native_client/.git checkout remotes/origin/github-actions;
           git --git-dir ~/lind_project/src/safeposix-rust/.git checkout remotes/origin/github-actions;
