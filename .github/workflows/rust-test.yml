@@ -47,13 +47,15 @@ jobs:
 #         docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched; exec /fork"'
 #         docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind "make test"
       - name: Getting a branch to update.
-        run: |        
+        run: | 
+          echo Remote-update begin
           git remote update origin --prune;
+          echo Fetch begin
           git fetch;
           cd ./src/safeposix-rust
           git branch -r > out.txt;
           cat out.txt;
-          git --git-dir $(pwd)/src/safeposix-rust/.git checkout origin/github-actions;      
+          git checkout origin/github-actions;      
           
       - name: Get all branches up to date.
         run: |        
