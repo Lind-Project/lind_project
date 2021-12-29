@@ -46,20 +46,22 @@ jobs:
 #         bash -c "docker build --build-arg=BRANCH=github-actions -t securesystemslab/lind ."
 #         docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched; exec /fork"'
 #         docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind "make test"
+      - name: Getting a branch to update.
+        run: |        
+          git remote update origin --prune;
+          git fetch;
+          cd ./src/safeposix-rust
+          git branch -r > out.txt;
+          cat out.txt;
+          git --git-dir $(pwd)/src/safeposix-rust/.git checkout origin/github-actions;      
+          
       - name: Get all branches up to date.
         run: |        
-          git --git-dir $(pwd)/src/safeposix-rust/.git remote update origin --prune;
-          git --git-dir $(pwd)/src/safeposix-rust/.git fetch;
-          git --git-dir $(pwd)/src/safeposix-rust/.git branch;
-          git --git-dir $(pwd)/src/safeposix-rust/.git branch -r > out.txt;
-          cat out.txt;
-          git --git-dir $(pwd)/src/safeposix-rust/.git checkout origin/github-actions;
-          echo SafeposixDone.
-          
-          git --git-dir $(pwd)/src/native_client/.git checkout origin/github-actions;
           git --git-dir $(pwd)/.git checkout origin/github-actions;
+          git --git-dir $(pwd)/src/safeposix-rust/.git checkout origin/github-actions;         
+          git --git-dir $(pwd)/src/native_client/.git checkout origin/github-actions;
           git --git-dir $(pwd)/src/lind_glibc/.git checkout remotes/origin/github-actions;
-        
+          
       - name: Check update.
         run: |
           cd ./src/safeposix-rust
