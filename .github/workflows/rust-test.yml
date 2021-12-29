@@ -34,10 +34,6 @@ jobs:
             override: true
             components: rustfmt, clippy
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script.
-        run: echo Hello, world!
-        
           
 
       # Runs a set of commands using the runners shell
@@ -52,14 +48,10 @@ jobs:
 #         docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind "make test"
       - name: Get all branches up to date.
         run: |
-          pwd
-          cd ./src/safeposix-rust
-          ls 
-          
-          git --git-dir ~/lind_project/src/safeposix-rust/.git checkout remotes/origin/github-actions;
-          git --git-dir ~/lind_project/src/native_client/.git checkout remotes/origin/github-actions;
-          git --git-dir ~/lind_project/src/safeposix-rust/.git checkout remotes/origin/github-actions;
-          git --git-dir ~/lind_project/.git checkout remotes/origin/github-actions;
+          git --git-dir $(pwd)/src/safeposix-rust/.git checkout remotes/origin/github-actions;
+          git --git-dir $(pwd)/src/native_client/.git checkout remotes/origin/github-actions;
+          git --git-dir $(pwd)/lind_project/src/safeposix-rust/.git checkout remotes/origin/github-actions;
+          git --git-dir $(pwd)/lind_project/.git checkout remotes/origin/github-actions;
         
       - name: Check update.
         run: |
