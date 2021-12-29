@@ -48,11 +48,11 @@ jobs:
 #         docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind "make test"
       - name: Getting a branch to update.
         run: | 
+          cd ./src/safeposix-rust
           echo Remote-update begin
           git remote update origin --prune;
           echo Fetch begin
           git fetch;
-          cd ./src/safeposix-rust
           git branch -r > out.txt;
           cat out.txt;
           git checkout origin/github-actions;      
