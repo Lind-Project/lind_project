@@ -26,6 +26,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
+          ref: github-actions
       
       - uses: actions-rs/toolchain@v1
         with:
