@@ -26,8 +26,11 @@ jobs:
     steps:
       # Runs a set of commands using the runners shell
       - name: Test
-        run: |
+        run: | 
+          pwd
+          echo ls-out
           ls -a
+          echo lindfsls-out
           lindfs ls .
 #         bash -c "docker build --build-arg=BRANCH=github-actions -t securesystemslab/lind ."
 #         docker run --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind lind /bin/bash -c 'a="regex_test_string"; [[ $a =~ reg.*ng$ ]] && echo "string matched; exec /fork"'
