@@ -4,8 +4,9 @@ import re
 import sys
 
 def forkandopen(results):
-    fdlist = re.findall('[-\d]+', results)
-    assert(int(fdlist[-4]) != -1)
+    pidlist = re.findall('[-\d]+', results)
+    print pidlist
+    assert(int(pidlist[-4]) != -1)  # Checks if parent PID is not -1, which means failure
 
 lind_results = sys.argv[1]
 native_results = sys.argv[2]

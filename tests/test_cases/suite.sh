@@ -31,9 +31,9 @@ echo "Compiling test cases"
 for var in "${totalarray[@]}"; do
     echo "Compiling test: $var"
     varnexe="${var%.*}.nexe";
-    x86_64-nacl-gcc-4.4.3 $var -o test_out/$varnexe -std=gnu99;
+    x86_64-nacl-gcc-4.4.3 $var -o test_out/$varnexe -std=gnu99 -lpthread;
     varnonexe="${var%.*}";
-    gcc $var -o test_out/$varnonexe
+    gcc $var -o test_out/$varnonexe -lpthread
 done
 echo "Copying test cases"
 lindfs cp $PWD/test_out/ /automated_tests/ &> /dev/null
