@@ -1,11 +1,16 @@
-#include <stdio.h>
 #include <unistd.h>
-
-#define BUFSIZE 64
+#include <stdio.h>
 
 int main() {
-    char buf[BUFSIZE]; 
-    getcwd(buf, BUFSIZE);
-    printf("Current working directory: %s\n", buf); 
-    return 0; 
-} 
+  int buffersize = 256;
+  char cwd[buffersize];
+
+  char* result = getcwd(cwd, sizeof(cwd));
+
+  if (result == NULL)
+    perror("getcwd() error");
+  else
+    printf("current working directory is: %s :: %s\n", cwd, result);
+
+  return 0;
+}
