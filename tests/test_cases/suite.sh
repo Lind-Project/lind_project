@@ -81,13 +81,13 @@ for var in "${nondeterministicinput[@]}"; do
     exec 2>&3
 
     if [ "$verbose" = true ] ; then
-        echo "lindoutput:"
+        echo "Lind Output:"
         echo "$lindoutput"
         echo "------------------------------------------------------------------"
-        echo "regularoutput"
+        echo "Regular Output:"
         echo "$regularoutput"
         echo "------------------------------------------------------------------"
-        echo "Does lindoutput fit to regularoutput in script?"
+        echo "Does lind output fit to regular output in script?"
     fi
 
 
