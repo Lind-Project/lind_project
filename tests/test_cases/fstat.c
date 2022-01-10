@@ -45,7 +45,8 @@ int main(int argc, char **argv)
 
 	if (argc < 2) {
 		struct stat st = {0};
-		printf("usage: %s <files>\n", argv[0]);
+		//printf("usage: %s <files>\n", argv[0]); //-causes a silly error on dettest - 
+		//usage: /automated_tests/fstat.NEXE <files> and usage: ./automated_tests/fstat <files> do not match.
 		printf("running fstat(\"testfile.txt\")\n"); //argv[0] to specify any file
 		fd = open("testfile.txt", O_RDONLY);
 		if (fstat(fd, &st) < 0) {

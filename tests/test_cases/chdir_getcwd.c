@@ -13,7 +13,7 @@ int main() {
     printf("current working directory is: %s :: %s\n", cwd, result);
   //---------------------------
   /* Chdir into /test causes issues on native as we don't have the permissions to create a folder in /. 
-  Creating a folder "test" under cwd would be better. Note that we still need to create folders manually/by an external script. -Kapkic */
+  Creating a folder under $cwd would be better. We are currently using the test suite's folder. -Kapkic */
   chdir("automated_tests/"); 
   //---------------------------
   result = getcwd(cwd, sizeof(cwd));

@@ -19,7 +19,7 @@ int main(void)
   Lind does not support touch, so creating a folder inside lindsh and pasting it would be way easier.
   Perhaps we can use automated_tests/test_out.
   */
-  char* arr[] = {"ls", "testdir/",NULL};
+  char* arr[] = {"ls", "automated_tests/",NULL};
   execv("/bin/ls", arr); // Issue: requires coreutils to be preinstalled. We will have to implement it to our CI/CD.
   
   }

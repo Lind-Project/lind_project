@@ -19,9 +19,6 @@ template(native_results)
 lind_result_split = lind_results.split('\n')
 native_result_split = native_results.split('\n')
 
-lind_result_split = [line for line in lind_result_split if line != "waitpid(): No child processes"] #lind doesn't handle x correctly
-lind_result_split = [line for line in lind_result_split if line != "wait(): No child processes"]
-
 lind_result_sort = lind_result_split.sort()
 native_result_sort = native_result_split.sort()
 
@@ -32,8 +29,6 @@ if len(lind_result_split) != len(lind_result_split):
 
 resultLen = len(lind_result_split)
 for line in range(0,resultLen):
-    print lind_result_split[line].translate(None, string.digits+'-')
-    print native_result_split[line].translate(None, string.digits+'-')
     if lind_result_split[line].translate(None, string.digits+'-') != native_result_split[line].translate(None, string.digits+'-'):
         print "Nondeterministic lines of an unrecognized format!"
         exit(-1)
