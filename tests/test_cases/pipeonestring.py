@@ -23,9 +23,9 @@ lind_parent = lind_result[1].split(' ')[-1]
 lind_child = lind_result[2].split(' ')[-1]
 host_parent = host_result[1].split(' ')[-1]
 host_child = host_result[2].split(' ')[-1]
-if (lind_parent.isdigit() or lind_child.isdigit()):
+if not (lind_parent.isdigit() or lind_child.isdigit()):
     print "Nondeterministic lines of unrecognized format in lind output."
     exit(-1)
-if (host_parent.isdigit() or host_child.isdigit()):
+if not (host_parent.isdigit() or host_child.isdigit()):
     print "Nondeterministic lines of unrecognized format in regular output."
     exit(-1)
