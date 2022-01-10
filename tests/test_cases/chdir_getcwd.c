@@ -12,7 +12,9 @@ int main() {
   else
     printf("current working directory is: %s :: %s\n", cwd, result);
   //---------------------------
-  chdir("/test");
+  /* Chdir into /test causes issues on native as we don't have the permissions to create a folder in /. 
+  Creating a folder "test" under cwd would be better. Note that we still need to create folders manually/by an external script. -Kapkic */
+  chdir("test/"); 
   //---------------------------
   result = getcwd(cwd, sizeof(cwd));
 

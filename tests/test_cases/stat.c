@@ -44,8 +44,8 @@ int main(int argc, char **argv)
 	if (argc < 2) {
 		struct stat st = {0};
 		printf("usage: %s <files>\n", argv[0]);
-		printf("running stat(\"%s\")\n", argv[0]);
-		if (stat(argv[0], &st) < 0) {
+		printf("running stat(\"testfile.txt\")\n"); //argv[0] to specify any file
+		if (stat("testfile.txt", &st) < 0) {
 			perror("stat");
 			printf("errno: %d\n", errno);
 			exit(1);
