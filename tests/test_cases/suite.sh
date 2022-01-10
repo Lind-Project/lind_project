@@ -38,6 +38,7 @@ done
 echo "Copying test cases"
 lindfs cp $PWD/automated_tests/ /automated_tests/ &> /dev/null
 lindfs cp $PWD/testfile.txt /testfile.txt &> /dev/null # Copies the text file to be used in several test files.
+lindfs cp $PWD/ls /bin/ls &> /dev/null # Copies the precompiled ls file to be used in forkexecv.c.
 
 echo "Executing deterministic test cases"
 for var in "${deterministicinput[@]}"; do
