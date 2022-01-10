@@ -37,10 +37,10 @@ jobs:
       - name: Install Rust
         run: |
           cd /home/lind/lind_project/
-          rustup toolchain install nightly --allow-downgrade --profile minimal --component clippy
           rustup -V
           cargo -V
-                    
+#         rustup toolchain install nightly --allow-downgrade --profile minimal --component clippy
+
       - name: Checkout lind-project
         run: |
           git --git-dir /home/lind/lind_project/.git remote update origin --prune;
