@@ -20,4 +20,4 @@ filetest1000.c
 mmaptest.c
 fstat.c
 stat.c
-forkexecv.C
+forkexecv.c
