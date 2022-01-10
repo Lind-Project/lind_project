@@ -26,6 +26,6 @@ if len(lind_result_split) != len(lind_result_split):
 
 resultLen = len(lind_result_split)
 for line in range(0,resultLen):
-    if lind_result_split[line].translate(None, string.digits) != native_result_split[line].translate(None, string.digits):
+    if lind_result_split[line].translate(None, string.digits+'-') != native_result_split[line].translate(None, string.digits+'-'):
         print "Nondeterministic lines of an unrecognized format!"
         exit(-1)
