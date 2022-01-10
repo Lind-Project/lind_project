@@ -1,0 +1,73 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Container Self-Host Testing
+
+# Controls when the workflow will run
+on:
+  pull_request:
+    branches:
+      - develop
+  # Triggers the workflow on push or pull request events but only for the master branch
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+## We don't need to even download files, we only need the docker container.
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: self-hosted
+    container: 
+      image: securesystemslab/lind
+      options: --privileged --ipc=host --cap-add=SYS_PTRACE
+    
+    #  options: --privileged --ipc=host --cap-add=SYS_PTRACE
+
+    steps:
+      # Runs a set of commands using the runners shell
+    
+      - name: Echo out branch values
+        run: | 
+          echo github.base_ref: ${{ github.base_ref }}
+          echo github.head_ref: ${{ github.head_ref }}
+          echo github.ref: ${{ github.ref }}
+          
+      - name: Install Rust
+        run: |
+          cd /home/lind/lind_project/
+          rustup toolchain install nightly --allow-downgrade --profile minimal --component clippy
+          rustup -V
+          cargo -V
+                    
+      - name: Checkout lind-project
+        run: |
+          git --git-dir /home/lind/lind_project/.git remote update origin --prune;
+          git --git-dir /home/lind/lind_project/.git checkout --force remotes/origin/develop;
+          
+      - name: In the land of RUSTPOSIX where the shadows lie
+        run: | 
+         git --git-dir /home/lind/lind_project/src/safeposix-rust/.git remote update origin --prune;
+         git --git-dir /home/lind/lind_project/src/safeposix-rust/.git checkout remotes/origin/develop;
+         make rustposix;
+       
+      - name: One NACL to rule them all
+        run: | 
+         git --git-dir /home/lind/lind_project/src/native_client/.git remote update origin --prune;
+         git --git-dir /home/lind/lind_project/src/native_client/.git checkout remotes/origin/develop;
+         make nacl; 
+
+      - name: One GLIBC to find them
+        run: | 
+         git --git-dir /home/lind/lind_project/src/lind_glibc/.git remote update origin --prune;
+         git --git-dir /home/lind/lind_project/src/lind_glibc/.git checkout remotes/origin/develop;
+         make glibc; 
+
+      - name: One ring to INSTALL them all
+        run: | 
+          make install;
+
+      - name: And in darkness TEST them
+        run: | 
+          make test-verbose;
