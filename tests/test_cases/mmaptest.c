@@ -10,9 +10,9 @@
         return st.st_size;
     }
     int main(void) {
-        size_t filesize = getFilesize("nondet.txt");
+        size_t filesize = getFilesize("testfile.txt");
         //Open file
-        int fd = open("nondet.txt", O_RDONLY, 0);
+        int fd = open("testfile.txt", O_RDONLY, 0);
         assert(fd != -1);
         //Execute mmap
         void* mmappedData = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE | MAP_POPULATE, fd, 0);

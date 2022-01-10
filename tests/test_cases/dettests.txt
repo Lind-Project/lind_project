@@ -10,9 +10,11 @@ exit.c
 readbytes.c
 writeloop.c
 writepartial.c
-socket.c
 noforkfiles.c
 pread_pwrite.c
 makepipe.c
 mprotect.c
 doubleclose.c
+filetest.c
+filetest1000.c
+mmaptest.c
