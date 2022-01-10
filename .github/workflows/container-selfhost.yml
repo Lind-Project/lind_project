@@ -26,13 +26,6 @@ jobs:
     #  options: --privileged --ipc=host --cap-add=SYS_PTRACE
 
     steps:
-      # Runs a set of commands using the runners shell
-      - uses: actions-rs/toolchain@v1
-        with:
-            toolchain: nightly
-            override: true
-            components: rustfmt, clippy
-    
       - name: Echo out branch values
         run: | 
           echo github.base_ref: ${{ github.base_ref }}
@@ -41,10 +34,12 @@ jobs:
         
       - name: Install Rust
         run: |
+          pwd
           cd /home/lind/lind_project/
+          pwd
           ls
           cargo -V
-#          rustup -V          
+#         rustup -V          
 #         rustup toolchain install nightly --allow-downgrade --profile minimal --component clippy
 
       - name: Checkout lind-project
