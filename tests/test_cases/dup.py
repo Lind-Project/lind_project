@@ -14,7 +14,7 @@ lind_result.remove('')
 host_result.remove('')
 host_result.remove('')
 
-# Checks nondeterministic (pid) output validtiy by digit checking.
+# Checks nondeterministic (pid) output validity by digit checking.
 if not (lind_result[0][-1].isdigit() and host_result[0][-1].isdigit()):
     print "Nondeterministic lines of unrecognized format"
     exit(-1)

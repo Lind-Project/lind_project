@@ -18,3 +18,4 @@ doubleclose.c
 filetest.c
 filetest1000.c
 mmaptest.c
+forkexecv.c

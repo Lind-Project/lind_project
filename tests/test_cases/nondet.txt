@@ -11,3 +11,10 @@ pipeinput.c
 pipeinput2.c
 pipewrite.c
 pipeonestring.c
+chdir_getcwd.c
+segfault.c
+sysconf.c
+fstat.c
+stat.c
+fork_simple.c
+template.c

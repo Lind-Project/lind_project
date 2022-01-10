@@ -1,4 +1,4 @@
-mkdir -p test_out
+mkdir -p automated_tests
 deterministicinput=()
 nondeterministicinput=()
 verbose=false
@@ -31,12 +31,12 @@ echo "Compiling test cases"
 for var in "${totalarray[@]}"; do
     echo "Compiling test: $var"
     varnexe="${var%.*}.nexe";
-    x86_64-nacl-gcc-4.4.3 $var -o test_out/$varnexe -std=gnu99 -lpthread;
+    x86_64-nacl-gcc-4.4.3 $var -o automated_tests/$varnexe -std=gnu99 -lpthread;
     varnonexe="${var%.*}";
-    gcc $var -o test_out/$varnonexe -lpthread
+    gcc $var -o automated_tests/$varnonexe -lpthread
 done
 echo "Copying test cases"
-lindfs cp $PWD/test_out/ /automated_tests/ &> /dev/null
+lindfs cp $PWD/automated_tests/ /automated_tests/ &> /dev/null
 lindfs cp $PWD/testfile.txt /testfile.txt &> /dev/null # Copies the text file to be used in several test files.
 
 echo "Executing deterministic test cases"
@@ -48,7 +48,7 @@ for var in "${deterministicinput[@]}"; do
     exec 3>&2
     exec 2> /dev/null
     lindoutput=$(lind "/automated_tests/$nexefile");
-    regularoutput=$(./test_out/$varnonexe)
+    regularoutput=$(./automated_tests/$varnonexe)
     exec 2>&3
 
     if [ "$verbose" = true ] ; then
@@ -78,7 +78,7 @@ for var in "${nondeterministicinput[@]}"; do
     exec 3>&2
     exec 2> /dev/null
     lindoutput="$(lind "/automated_tests/$nexefile")";
-    regularoutput="$(./test_out/$varnonexe)";
+    regularoutput="$(./automated_tests/$varnonexe)";
     exec 2>&3
 
     if [ "$verbose" = true ] ; then
@@ -103,7 +103,7 @@ for var in "${nondeterministicinput[@]}"; do
     fi;
 done
 
-rm ./test_out/* &> /dev/null
+rm ./automated_tests/* &> /dev/null
 lindfs deltree "/automated_tests/" &> /dev/null
 lindfs rm "/testfile.txt" &> /dev/null
 
