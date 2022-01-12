@@ -21,7 +21,7 @@ jobs:
     runs-on: self-hosted
     container: 
       image: securesystemslab/lind
-      options: --privileged --ipc=host --cap-add=SYS_PTRACE
+      options: --user lind --privileged --ipc=host --cap-add=SYS_PTRACE
     
     #  options: --privileged --ipc=host --cap-add=SYS_PTRACE
 
