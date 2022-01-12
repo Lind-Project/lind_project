@@ -62,9 +62,7 @@ for var in "${deterministicinput[@]}"; do
 
     if [[ "$lindoutput" = "$regularoutput" ]]; then
         echo TEST PASSED;
-    e
-    
-    e 
+    else
         echo TEST FAILED; 
         error=1;
         detfails=$((detfails+1))
