@@ -16,7 +16,7 @@ int main()
 	
     for (int j = 0; j < 1000; j++) {
 
-    	int test_fd = open("filetimes.txt", O_RDWR);
+    	int test_fd = open("testfile.txt", O_RDWR);
     	write(test_fd, buffer, WRITE_BUFFER_SIZE);
     	lseek(test_fd, 0, SEEK_SET);
     	read(test_fd, readbuffer, WRITE_BUFFER_SIZE);

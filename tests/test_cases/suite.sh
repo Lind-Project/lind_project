@@ -1,4 +1,5 @@
-mkdir -p test_out
+mkdir -p automated_tests
+mkdir -p lind_tests
 deterministicinput=()
 nondeterministicinput=()
 verbose=false
@@ -27,27 +28,28 @@ echo ${deterministicinput[@]}
 echo ${nondeterministicinput[@]}
 totalarray=( "${deterministicinput[@]}" "${nondeterministicinput[@]}" )
 echo "Compiling test cases"
-x86_64-nacl-gcc-4.4.3 hello.c -o test_out/hello -std=gnu99;
+
 for var in "${totalarray[@]}"; do
     echo "Compiling test: $var"
-    varnexe="${var%.*}.nexe";
-    x86_64-nacl-gcc-4.4.3 $var -o test_out/$varnexe -std=gnu99 -lpthread;
+    varnexe="${var%.*}";
+    x86_64-nacl-gcc-4.4.3 $var -o lind_tests/$varnexe -std=gnu99 -lpthread;
     varnonexe="${var%.*}";
-    gcc $var -o test_out/$varnonexe -lpthread
+    gcc $var -o automated_tests/$varnonexe -lpthread
 done
 echo "Copying test cases"
-lindfs cp $PWD/test_out/ /automated_tests/ &> /dev/null
+lindfs cp $PWD/lind_tests/ /automated_tests/ &> /dev/null
+lindfs cp $PWD/testfile.txt /testfile.txt &> /dev/null # Copies the text file to be used in several test files.
 
 echo "Executing deterministic test cases"
 for var in "${deterministicinput[@]}"; do
     echo "------------------------------------------------------------------"
     echo "Running test: $var"
-    nexefile="${var%.*}.nexe";
+    nexefile="${var%.*}";
     varnonexe="${var%.*}";
     exec 3>&2
     exec 2> /dev/null
     lindoutput=$(lind "/automated_tests/$nexefile");
-    regularoutput=$(./test_out/$varnonexe)
+    regularoutput=$(./automated_tests/$varnonexe)
     exec 2>&3
 
     if [ "$verbose" = true ] ; then
@@ -60,7 +62,7 @@ for var in "${deterministicinput[@]}"; do
 
     if [[ "$lindoutput" = "$regularoutput" ]]; then
         echo TEST PASSED;
-    else 
+    else
         echo TEST FAILED; 
         error=1;
         detfails=$((detfails+1))
@@ -72,22 +74,22 @@ for var in "${nondeterministicinput[@]}"; do
     echo "------------------------------------------------------------------"
     echo "Running test: $var"
 
-    nexefile="${var%.*}.nexe";
+    nexefile="${var%.*}";
     varnonexe="${var%.*}";
     exec 3>&2
     exec 2> /dev/null
     lindoutput="$(lind "/automated_tests/$nexefile")";
-    regularoutput="$(./test_out/$varnonexe)";
+    regularoutput="$(./automated_tests/$varnonexe)";
     exec 2>&3
 
     if [ "$verbose" = true ] ; then
-        echo "lindoutput:"
+        echo "Lind Output:"
         echo "$lindoutput"
         echo "------------------------------------------------------------------"
-        echo "regularoutput"
+        echo "Regular Output:"
         echo "$regularoutput"
         echo "------------------------------------------------------------------"
-        echo "Does lindoutput fit to regularoutput in script?"
+        echo "Does lind output fit to regular output in script?"
     fi
 
 
@@ -102,8 +104,11 @@ for var in "${nondeterministicinput[@]}"; do
     fi;
 done
 
-rm ./test_out/* &> /dev/null
+rm ./automated_tests/* &> /dev/null
+rm ./lind_tests/* &> /dev/null
+rm -f foo.txt &> /dev/null
 lindfs deltree "/automated_tests/" &> /dev/null
+lindfs rm "/testfile.txt" &> /dev/null
 
 echo "------------------------------------------------------------------"
 
