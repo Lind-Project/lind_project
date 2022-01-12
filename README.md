@@ -1,4 +1,4 @@
-# Lind [![Build Status](https://travis-ci.org/Lind-Project/lind_project.svg?branch=develop)](https://travis-ci.org/Lind-Project/lind_project)
+# Lind ![Build Status](https://github.com/Lind-Project/lind_project/actions/workflows/container-selfhost.yml/badge.svg)
 
 Lind is a single-process sandbox that provides an option to safely execute
 programs and control its resource (network, file, memory, cpu, etc.) usage
