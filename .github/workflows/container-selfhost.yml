@@ -30,18 +30,21 @@ jobs:
           echo github.head_ref: ${{ github.head_ref }}
           echo github.ref: ${{ github.ref }}
         
-      - name: Install Rust
+      - name: Init
         run: |
-          whoami
-          pwd
           cd /home/lind/lind_project/
-          pwd
-          ls
 #         cargo -V
 #         rustup -V          
 #         rustup toolchain install nightly --allow-downgrade --profile minimal --component clippy
 
-      - name: Checkout lind-project
+      - name: Checkout lind-project with PR branch
+        if: ${{ github.head_ref }} != ""
+        run: |
+          git --git-dir /home/lind/lind_project/.git remote update origin --prune;
+          git --git-dir /home/lind/lind_project/.git checkout --force remotes/origin/${{ github.head_ref }};
+        
+      - name: Checkout lind-project with develop branch
+        if: ${{ github.head_ref }} == ""
         run: |
           git --git-dir /home/lind/lind_project/.git remote update origin --prune;
           git --git-dir /home/lind/lind_project/.git checkout --force remotes/origin/develop;
