@@ -1,4 +1,5 @@
 mkdir -p automated_tests
+mkdir -p lind_tests
 deterministicinput=()
 nondeterministicinput=()
 verbose=false
@@ -30,13 +31,13 @@ echo "Compiling test cases"
 
 for var in "${totalarray[@]}"; do
     echo "Compiling test: $var"
-    varnexe="${var%.*}.nexe";
-    x86_64-nacl-gcc-4.4.3 $var -o automated_tests/$varnexe -std=gnu99 -lpthread;
+    varnexe="${var%.*}";
+    x86_64-nacl-gcc-4.4.3 $var -o lind_tests/$varnexe -std=gnu99 -lpthread;
     varnonexe="${var%.*}";
     gcc $var -o automated_tests/$varnonexe -lpthread
 done
 echo "Copying test cases"
-lindfs cp $PWD/automated_tests/ /automated_tests/ &> /dev/null
+lindfs cp $PWD/lind_tests/ /automated_tests/ &> /dev/null
 lindfs cp $PWD/testfile.txt /testfile.txt &> /dev/null # Copies the text file to be used in several test files.
 lindfs cp $PWD/ls /bin/ls &> /dev/null # Copies the precompiled ls file to be used in forkexecv.c.
 
@@ -44,7 +45,7 @@ echo "Executing deterministic test cases"
 for var in "${deterministicinput[@]}"; do
     echo "------------------------------------------------------------------"
     echo "Running test: $var"
-    nexefile="${var%.*}.nexe";
+    nexefile="${var%.*}";
     varnonexe="${var%.*}";
     exec 3>&2
     exec 2> /dev/null
@@ -74,7 +75,7 @@ for var in "${nondeterministicinput[@]}"; do
     echo "------------------------------------------------------------------"
     echo "Running test: $var"
 
-    nexefile="${var%.*}.nexe";
+    nexefile="${var%.*}";
     varnonexe="${var%.*}";
     exec 3>&2
     exec 2> /dev/null
@@ -105,6 +106,7 @@ for var in "${nondeterministicinput[@]}"; do
 done
 
 rm ./automated_tests/* &> /dev/null
+rm ./lind_tests/* &> /dev/null
 lindfs deltree "/automated_tests/" &> /dev/null
 lindfs rm "/testfile.txt" &> /dev/null
 
