@@ -19,9 +19,6 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: self-hosted
-    container: 
-      image: securesystemslab/lind
-      options: --privileged --ipc=host --cap-add=SYS_PTRACE
 
     steps:
       - name: Echo out branch values
