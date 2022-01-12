@@ -38,7 +38,7 @@ jobs:
           cd /home/lind/lind_project/
           pwd
           ls
-          cargo -V
+#         cargo -V
 #         rustup -V          
 #         rustup toolchain install nightly --allow-downgrade --profile minimal --component clippy
 
