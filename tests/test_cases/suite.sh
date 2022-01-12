@@ -107,6 +107,7 @@ done
 
 rm ./automated_tests/* &> /dev/null
 rm ./lind_tests/* &> /dev/null
+rm foo.txt &> /dev/null
 lindfs deltree "/automated_tests/" &> /dev/null
 lindfs rm "/testfile.txt" &> /dev/null
 
