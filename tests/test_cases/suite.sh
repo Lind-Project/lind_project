@@ -1,5 +1,6 @@
 mkdir -p automated_tests
 mkdir -p lind_tests
+rm -f foo.txt &> /dev/null
 deterministicinput=()
 nondeterministicinput=()
 verbose=false
