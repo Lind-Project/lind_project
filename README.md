@@ -1,4 +1,4 @@
-# Lind ![Build Status](https://github.com/Lind-Project/lind_project/actions/workflows/lind-selfhost.yml/badge.svg?branch=more-test-cases)](https://github.com/Lind-Project/lind_project/actions/workflows/lind-selfhost.yml)
+# Lind ![Build Status](https://github.com/Lind-Project/lind_project/actions/workflows/lind-selfhost.yml/badge.svg?branch=develop)]
 
 Lind is a single-process sandbox that provides an option to safely execute
 programs and control its resource (network, file, memory, cpu, etc.) usage
