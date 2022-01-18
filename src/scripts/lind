@@ -19,7 +19,7 @@ while getopts :a:l:dfghstvx opt; do
 		[[ "${extra_args[*]}" != *-g* ]] && extra_args+=('-g');;
 	# add environment variables
 	e)
-		[[ "${extra_args[*]}" != *-e* ]] && extra_args+=('-e');;
+		[[ "${extra_args[*]}" != *-E* ]] && extra_args+=('-E');;
 	# enable fuzz testing (quit after leading nacl app)
 	f)
 		[[ "${extra_args[*]}" != *-F* ]] && extra_args+=('-F');;
