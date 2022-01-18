@@ -6,7 +6,7 @@ ldr_cmd=('sel_ldr')
 ldr_args=()
 gdb_arg_str=('')
 print_arg_str=''
-usage="usage: ${0##*/} -[fghstvx] [-a <sel_ldr extra args>] [-l <blob library>] [-e <environment vars>]-- [nacl_file] [args]"
+usage="usage: ${0##*/} -[fghstvx] [-a <sel_ldr extra args>] [-l <blob library>] [-e <environment variable>]-- [nacl_file] [args]"
 
 # check for xtrace flag
 while getopts :a:l:e:dfghstvx opt; do
@@ -17,7 +17,7 @@ while getopts :a:l:e:dfghstvx opt; do
 	# enable gdb debug hook
 	d)
 		[[ "${extra_args[*]}" != *-g* ]] && extra_args+=('-g');;
-	# add environment variables
+	# add environment variable
 	e)
 		extra_args+=('-E' "$OPTARG");;
 	# enable fuzz testing (quit after leading nacl app)
