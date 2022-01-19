@@ -6,10 +6,10 @@ ldr_cmd=('sel_ldr')
 ldr_args=()
 gdb_arg_str=('')
 print_arg_str=''
-usage="usage: ${0##*/} -[fghstvx] [-a <sel_ldr extra args>] [-l <blob library>] [-e <environment variable>]-- [nacl_file] [args]"
+usage="usage: ${0##*/} -[fghpstvx] [-a <sel_ldr extra args>] [-l <blob library>] [-e <environment variable>]-- [nacl_file] [args]"
 
 # check for xtrace flag
-while getopts :a:l:e:dfghstvx opt; do
+while getopts :a:l:e:dfghpstvx opt; do
 	case "$opt" in
 	# append custom args
 	a)
@@ -32,6 +32,9 @@ while getopts :a:l:e:dfghstvx opt; do
 	# enable signal handling
 	s)
 		[[ "${extra_args[*]}" != *-S* ]] && extra_args+=('-S');;
+	# user perf mode
+	t)
+		[[ "${extra_args[*]}" != *-p* ]] && extra_args+=('-p');;
 	# increase verbosity
 	v)
 		extra_args+=('-v');;
