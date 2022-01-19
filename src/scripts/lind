@@ -33,7 +33,7 @@ while getopts :a:l:e:dfghpstvx opt; do
 	s)
 		[[ "${extra_args[*]}" != *-S* ]] && extra_args+=('-S');;
 	# user perf mode
-	t)
+	p)
 		[[ "${extra_args[*]}" != *-p* ]] && extra_args+=('-p');;
 	# increase verbosity
 	v)
