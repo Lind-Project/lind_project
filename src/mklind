@@ -1,12 +1,17 @@
 #!/bin/bash
 #
-# try to ease the burden of building lind (repy, nacl, and glibc toolchain)
+# try to ease the burden of building lind (rustposix, nacl, and glibc toolchain)
 #
 # Created by Chris Matthews <cmatthew@cs.uvic.ca>
 # Updated by Joey Pabalinas <joeypabalinas@gmail.com>
 # Updated by Nicholas Renner <nrenner@nyu.edu>
+# Updated by Jonathan Singer <jes965@nyu.edu>
 
 # version and usage strings
+
+# export LD_LIBRARY_PATH just for builds
+export LD_LIBRARY_PATH="/lib/glibc"
+
 cd ..
 readonly version=1.0.0-rc4
 usage+=$'\n'"Lind $version NaCl Toolchain Build Script"$'\n'
@@ -99,8 +104,8 @@ if ((default_env)); then
 	export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
 	export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
 	export LIND_SRC="${LIND_SRC:-$LIND_BASE/lind}"
-	export REPY_PATH="${REPY_PATH:-$LIND_SRC/repy}"
-	export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$REPY_PATH/sdk}"
+	export LIND_ENV_PATH="${LIND_ENV_PATH:-$LIND_SRC/lindenv}"
+	export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$LIND_ENV_PATH/sdk}"
 	export PYTHON="${PYTHON:-python2}"
 	export PNACLPYTHON="${PNACLPYTHON:-python2}"
 	export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
@@ -115,7 +120,7 @@ if ((default_env)); then
 		export LIND_PREFIX="$LIND_PREFIX"
 		export LIND_BASE="$LIND_BASE"
 		export LIND_SRC="$LIND_SRC"
-		export REPY_PATH="$REPY_PATH"
+		export LIND_ENV_PATH="$LIND_ENV_PATH"
 		export NACL_SDK_ROOT="$NACL_SDK_ROOT"
 		export PYTHON="$PYTHON"
 		export PNACLPYTHON="$PNACLPYTHON"
@@ -127,8 +132,8 @@ if ((default_env)); then
 	print
 fi
 
-if [[ -z "$REPY_PATH" ]]; then
-	print "Need to set REPY_PATH" >&2
+if [[ -z "$LIND_ENV_PATH" ]]; then
+	print "Need to set LIND_ENV_PATH" >&2
 	false
 fi
 if [[ -z "$LIND_BASE" ]]; then
@@ -165,20 +170,17 @@ readonly NACL_TOOLCHAIN_BASE="$NACL_BASE/tools"
 readonly LIND_GLIBC_SRC="$LIND_BASE/src/lind_glibc"
 readonly NACL_GCC_SRC="$LIND_BASE/src/nacl-gcc"
 readonly NACL_BINUTILS_SRC="$LIND_BASE/src/nacl-binutils"
-readonly NACL_REPY="$LIND_BASE/src/nacl_repy"
 
-readonly REPY_PATH="$REPY_PATH"
-readonly REPY_PATH_BIN="$REPY_PATH/bin"
-readonly REPY_PATH_REPY="$REPY_PATH/repy"
-readonly REPY_PATH_LIB="$REPY_PATH/lib"
-readonly REPY_PATH_SDK="$REPY_PATH/sdk"
-readonly NACL_SDK_ROOT="$REPY_PATH_SDK"
+readonly LIND_ENV_PATH="$LIND_ENV_PATH"
+readonly LIND_ENV_PATH_BIN="$LIND_ENV_PATH/bin"
+readonly LIND_ENV_PATH_SDK="$LIND_ENV_PATH/sdk"
+readonly NACL_SDK_ROOT="$LIND_ENV_PATH_SDK"
 
 readonly LIND_URL='https://github.com/Lind-Project/lind_project.git'
 readonly LIND_EXPERIMENTS_URL='https://github.com/Lind-Project/lind_experiments.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly LSS_URL='https://github.com/Lind-Project/linux-syscall-support.git'
-readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
+readonly RUSTPOSIX_URL='https://github.com/Lind-Project/safeposix-rust.git'
 readonly NACL_GCC_URL='https://github.com/Lind-Project/nacl-gcc.git'
 readonly NACL_BINUTILS_URL='https://github.com/Lind-Project/nacl-binutils.git'
 readonly NATIVE_CLIENT_URL='https://github.com/Lind-Project/native_client.git'
@@ -200,7 +202,7 @@ function clean_src() {
 	print "Cleaning Lind..."
 	cd "$LIND_BASE"
 	rm -rf -- lind_experiments lind-misc lss
-	rm -rf -- nacl_repy nacl-gcc nacl-binutils lind_glibc
+	rm -rf -- safeposix-rust nacl-gcc nacl-binutils lind_glibc
 }
 
 # download sources
@@ -208,14 +210,14 @@ function clean_src() {
 function download_src() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
-	local pip_bin pip_ver nacl_rev
+	local  nacl_rev
 	local -A git_deps toolchain_deps
 
 	# populate associative arrays
 	git_deps[lind_experiments]="$LIND_EXPERIMENTS_URL"
 	git_deps[lind-misc]="$LIND_MISC_URL"
 	git_deps[lss]="$LSS_URL"
-	git_deps[nacl_repy]="$NACL_REPY_URL"
+	git_deps[safeposix-rust]="$RUSTPOSIX_URL"
 	git_deps[nacl-gcc]="$NACL_GCC_URL"
 	git_deps[nacl-binutils]="$NACL_BINUTILS_URL"
 	git_deps[lind_glibc]="$LIND_GLIBC_URL"
@@ -226,6 +228,7 @@ function download_src() {
 
 	# clone and symlink dependencies
 	mkdir -p "$LIND_BASE" "$LIND_SRC" "$NACL_SRC"
+	
 	cd "$LIND_BASE"
 
 	# make sure we are in the git root of "Lind-Project/lind_project"
@@ -271,13 +274,18 @@ function download_src() {
 	cd "$LIND_BASE"
 	git checkout -- Makefile
 	rm -rfv -- _gclient_* _bad_scm
+
+	# create lindenv dirs
+	cd "$LIND_SRC"
+	mkdir -p lindenv/
+	mkdir -p lindenv/fs lindenv/bin
 }
 
-#checkout glibc, nacl, and repy to develop
+#checkout glibc, nacl, and safeposix-rust to develop
 function update_all() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 	
-	local git_deps=(nacl_repy lind_glibc native_client)
+	local git_deps=(safeposix-rust lind_glibc native_client)
 	
 	cd "$LIND_BASE"
 	
@@ -303,82 +311,30 @@ function clean_toolchain() {
 	cd "$NACL_TOOLCHAIN_BASE" && rm -rf out BUILD
 }
 
-# copy the toolchain into the repy subdir
+# copy the toolchain into the lindenv subdir
 #
 function install_to_path() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
-	print "** Sending NaCl files to $REPY_PATH **"
+	print "** Sending NaCl files to $LIND_ENV_PATH **"
 
-	mkdir -p "$REPY_PATH_BIN"
-	mkdir -p "$REPY_PATH_LIB/glibc"
-	mkdir -p "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
-	mkdir -p "$REPY_PATH_SDK/tools"
+	mkdir -p "$LIND_ENV_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
+	mkdir -p "$LIND_ENV_PATH_SDK/tools"
 
-	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/" "$REPY_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
+	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/" "$LIND_ENV_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
 
-	"${RSYNC[@]}" "$NACL_BASE/scons-out/${MODE}-x86-64/staging/" "$REPY_PATH_BIN"
+	"${RSYNC[@]}" "$NACL_BASE/scons-out/${MODE}-x86-64/staging/" "$LIND_ENV_PATH_BIN"
 
-	#install scripts
-	cp -pfv "$MISC_DIR/lind" "$REPY_PATH_BIN/lind"
-	cp -pfv "$MISC_DIR/lindfs" "$REPY_PATH_BIN/lindfs"
-	chmod +x "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
+	#install lind script
+	cp -pfv "$MISC_DIR/lind" "$LIND_ENV_PATH_BIN/lind"
 
-	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"  "$REPY_PATH_LIB/glibc"
 
-	print "Copying glibc into repy virtual filesytem"
-	cd "$REPY_PATH/repy"
-	"$REPY_PATH_BIN/lindfs" cp "$REPY_PATH_LIB/"
+	print "Copying glibc into lindenv virtual filesytem"
+	cd "$LIND_ENV_PATH/fs"
+	"$LIND_ENV_PATH_BIN/lind_fs_utils" mkdir "/lib"
+	"$LIND_ENV_PATH_BIN/lind_fs_utils" update "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"  "/lib/glibc"
 
 	print "Done."
-}
-
-# install repy into $REPY_PATH with the prepare_tests script.
-#
-function build_repy() {
-	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
-
-	set -o errexit
-
-	local short_ver lind_serv
-
-	mkdir -pv "$REPY_PATH_REPY"
-	print "Building Repy in $REPY_SRC to $REPY_PATH"
-
-	# checkout the correct revision if building inside travis
-	cd "$NACL_REPY"
-	if [[ -n "$BRANCH" ]]; then
-		git fetch --all
-		# TODO: make branch names consistent across our repositories and
-		# avoid the need for the `|| true` here
-		#
-		# Some branches such as the lind branch in native_client don't have
-		# matching branches in the other submodules and the checkout fails
-		# if you tried to checkout, say, the lind branch of nacl_repy
-		#
-		# -jp
-		git checkout "$BRANCH" || true
-	fi
-	cp -fv ./seattlelib/xmlrpc* "$REPY_PATH_REPY/"
-	python2 ./preparetest.py -t -f "$REPY_PATH_REPY"
-	print "Done building Repy in \"$REPY_PATH_REPY\""
-	cd seattlelib
-
-	# strip the patch version for repy
-	short_ver="${version%.*-*}${version/*-/-}"
-	lind_serv=lind_server.mix
-	sed '/VERSION/ s/\$[^\$]*\$/\$'"$short_ver"'\$/' \
-		<"./$lind_serv" \
-		>"./$lind_serv.new"
-	cat \
-		<"./$lind_serv.new" \
-		>"./$lind_serv"
-	rm -fv -- -- "./$lind_serv.new"
-	for file in *.mix; do
-		"$MISC_DIR/check_includes.sh" "$file"
-	done
-
-	set +o errexit
 }
 
 # run applications test suites.
@@ -406,52 +362,6 @@ function test_glibc() {
 	lind "$MISC_DIR/glibc_test/glibc_tester.nexe"
 }
 
-# run repy test suites.
-#
-function test_repy() {
-	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
-
-	# some of our unit tests fail
-	set +o errexit
-	cd "$REPY_PATH/repy"
-
-	# ignore these signals during testing
-	trap -- '' ERR TERM
-	for file in ut_lind_*; do
-		print "$file"
-		python2 "$file"
-	done
-	# reset signal dispositions
-	trap -- - ERR TERM
-
-	# run the struct test
-	file="ut_seattlelibtests_teststruct.py"
-	print "$file"
-	python2 "$file"
-}
-
-# run system call test suites.
-#
-function test_syscalls() {
-	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
-
-	local cc_cmd
-
-	cd "$LIND_BASE/test_cases"
-	cc_cmd="$REPY_PATH_SDK/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc"
-
-	# ignore these signals during testing
-	trap '' ERR TERM
-	for file in *.c; do
-		print "" "** Testing $file **" ""
-		"$cc_cmd" "$file" -o "$REPY_PATH/repy/${file%%.c}"
-		"$REPY_PATH_BIN/lindfs" update "$REPY_PATH/repy/${file%%.c}"
-		"$REPY_PATH_BIN/lind" "/${file%%.c}"
-	done
-	print ""
-	# reset signal dispositions
-	trap - ERR INT TERM
-}
 
 # update, build and test everything. if there is a problem, freak out.
 #
@@ -464,7 +374,7 @@ function nightly_build() {
 
 	download_src
 	build_nacl
-	build_repy
+	build_rustposix
 	build_glibc
 	install_to_path
 
@@ -472,8 +382,23 @@ function nightly_build() {
 
 	# test_apps
 	# test_glibc
-	# test_repy
-	test_syscalls
+}
+
+function build_rustposix() {
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
+
+	print "Building RustPOSIX"
+    cd "$LIND_BASE/src/safeposix-rust"
+    if [[ "$DEBUG_RUSTPOSIX" == "true" ]]; then 
+        cargo build
+        cp "target/debug/librustposix.so"  "$LIND_ENV_PATH/librustposix.so"
+        cp "target/debug/lind_fs_utils"  "$LIND_ENV_PATH_BIN/lind_fs_utils"
+    else
+        cargo build --release
+        cp "target/release/librustposix.so"  "$LIND_ENV_PATH/librustposix.so"
+        cp "target/release/lind_fs_utils"  "$LIND_ENV_PATH_BIN/lind_fs_utils"
+    fi
+	print "Done."
 }
 
 # run the nacl build.
@@ -547,6 +472,9 @@ function clean_nacl() {
 function build_glibc() {
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
 
+	PERL_VER=$(perl -e 'print "$^V"' | cut -c 2-5)
+	export PERL5LIB=/usr/lib/perl5/$PERL_VER
+
 	# the build is long and boring, so execute this first if it exists
 	print ""
 	fortune 2>/dev/null || print "Fortune Not Found. Skipping." >&2
@@ -611,10 +539,10 @@ function build_docker() {
 
 # prompt for target if none given on command line
 PS3=$'\n'"Build which target? "
-list=(all update repy nacl glibc install)
+list=(all update rustposix nacl glibc install)
 list+=(cleanall cleannacl cleansources cleantoolchain)
 list+=(updateglibc updateglibc2 docker nightly testall)
-list+=(testapps testglibc testrepy testsyscalls download)
+list+=(testapps testglibc download)
 if ((!$#)); then
 	select choice in "${list[@]}"; do
 		set -- "$choice"
@@ -625,44 +553,6 @@ fi
 # all scripts assume we start here
 start_time="$(date +%s)"
 
-# start virtualenv if needed
-if [[ -z "$VIRTUAL_ENV" ]]; then
-
-	# find pip executable
-	if command -v pip2 >/dev/null 2>&1; then
-		pip_bin="pip2"
-	elif command -v pip >/dev/null 2>&1; then
-		pip_bin="pip"
-	else
-		print "Need to install pip/pip2 in order to build Lind" >&2
-		false
-	fi
-
-	pip_ver="$("$pip_bin" --version | sed 's/.*(python \([0-9\.]\+\)).*/\1/')"
-	if [[ "$pip_ver" != 2* ]]; then
-		print "Need python2 version of pip in order to build Lind" >&2
-		false
-	fi
-
-	if [[ "$("$pip_bin" show virtualenv | grep Version\: | grep -o [0-9]*\\.[0-9]*\\.[0-9]*)" != '20.0.23' ]]; then
-		print "Need python virtualenv/virtualenv2 in order to build Lind" >&2
-		false
-	fi
-
-	# start up virtualenv
-	if ! python2 -m virtualenv "$LIND_BASE/venv"; then
-		print "Command \`python2 -m virtualenv ./venv\` failed" >&2
-		false
-	fi
-	# shellcheck disable=SC1090
-	. "$LIND_BASE/venv/bin/activate"
-	# install pip dependencies
-	if ! pip install -Ur "$LIND_BASE/requirements.txt"; then
-		print "Installing dependencies from requirements.txt failed" >&2
-		false
-	fi
-fi
-
 # show command that will be executed
 print "" "Command line arguments: $0 $*" ""
 
@@ -672,15 +562,15 @@ for word in "$@"; do
 		download_src;;
 	update)
 		update_all;;
-	repy)
-		build_repy;;
+	rustposix)
+		build_rustposix;;
 	nacl)
 		build_nacl;;
 	glibc)
 		build_glibc;;
 	all)
+		build_rustposix
 		build_nacl
-		build_repy
 		build_glibc
 		install_to_path;;
 	install)
@@ -708,23 +598,16 @@ for word in "$@"; do
 	testall)
 		print "Testing all"
 		test_apps
-		test_glibc
-		test_repy
-		test_syscalls;;
+		test_glibc;;
 	testapps)
 		print "Testing applications"
 		test_apps;;
 	testglibc)
 		print "Testing glibc"
 		test_glibc;;
-	testrepy)
-		print "Testing repy"
-		test_repy;;
-	testsyscalls)
-		print "Testing syscalls"
-		test_syscalls;;
 	*)
 		print "Error: Did not find a build target for that number. Exiting..." >&2
 		abort;;
 	esac
 done
+

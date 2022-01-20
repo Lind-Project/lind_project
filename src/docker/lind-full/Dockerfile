@@ -8,18 +8,20 @@ ARG BRANCH
 ENV PATH "/root/bin:/home/lind/bin:$PATH"
 ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 ENV PATH "/home/lind/lind_project:$PATH"
-ENV PATH "/home/lind/lind_project/lind/repy/bin:$PATH"
-ENV PATH "/home/lind/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
+ENV PATH "/home/lind/lind_project/lind/lindenv/bin:$PATH"
+ENV PATH "/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin:$PATH"
+# This is needed for lindsh and others
 ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
 
+# Environment variables for the make toolchain
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
 ENV LIND_SRC "$LIND_BASE/lind"
-ENV REPY_PATH "$LIND_SRC/repy"
-ENV NACL_SDK_ROOT "$REPY_PATH/sdk"
+ENV LIND_ENV_PATH "$LIND_SRC/lindenv"
+ENV NACL_SDK_ROOT "$LIND_ENV_PATH/sdk"
 ENV PYTHON "python2"
 ENV PNACLPYTHON "python2"
-ENV LD_LIBRARY_PATH "/lib/glibc"
+ENV LD_LIBRARY_PATH "/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
 
 ENV TEST_CASES "cpuid dup2 dup exec fgets fork fork_simple getpid hello mprotec pipe read read_input segfault stat sysconf template write"
 
@@ -29,17 +31,16 @@ WORKDIR /home/lind/lind_project
 
 # finish install
 RUN git pull -t -j8
-RUN for t in nacl repy install; do ./src/mklind -q "$t"; done
+RUN for t in rustposix nacl install; do ./src/mklind -q "$t"; done
 # make tests
-RUN mkdir -p lind/repy/repy/tests
-RUN for c in $TEST_CASES; do x86_64-nacl-gcc -std=c99 "tests/test_cases/$c.c" -o "lind/repy/repy/tests/$c"; done
+run mkdir -p lind/lindenv/tests
+run for c in $test_cases; do x86_64-nacl-gcc -std=c99 "tests/test_cases/$c.c" -o "lind/lindenv/tests/$c"; done
 # make bash
 WORKDIR /home/lind/lind_project/tests/applications/bash/
-RUN ./bootstrap_nacl --prefix="/home/lind/lind_project/lind/repy/repy"
-RUN make install
+RUN ./bootstrap_nacl --prefix="/home/lind/lind_project/lind/lindenv"
 
 # Set up the sandbox and copy bash
-WORKDIR /home/lind/lind_project/lind/repy/repy/
+WORKDIR /home/lind/lind_project/lind/lindenv
 RUN for f in ./bin/ ./lib/ ./share/ ./.bashrc ./.bash_logout ./.bash_profile; do lindfs cp "$f"; done
 
 # Copy and run the single-file tests

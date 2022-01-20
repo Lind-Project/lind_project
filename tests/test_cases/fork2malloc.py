@@ -5,10 +5,11 @@ import sys
 lind_result = sys.argv[1].split('\n')
 host_result = sys.argv[2].split('\n')
 
+# Directly compare deterministic parts/lines.
 if len(lind_result) != len(host_result):
     print "Mismatched number of lines"
     exit(-1)
-
+# Nondeterministic checks are done by value checking for integer.
 for i in range(len(lind_result)):
     curr_line = lind_result[i].split(' ')
     if curr_line[0] == "Address":

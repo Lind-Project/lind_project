@@ -1,4 +1,4 @@
-FROM archlinux/base
+FROM archlinux:latest
 LABEL lind "v1.0-rc5"
 LABEL description "Lind NaCl Glibc Toolchain (Base)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
@@ -12,8 +12,8 @@ ARG BRANCH
 ENV PATH "/root/bin:/home/lind/bin:$PATH"
 ENV PATH "/root/.local/bin:/home/lind/.local/bin:$PATH"
 ENV PATH "/home/lind/lind_project:$PATH"
-ENV PATH "/home/lind/lind_project/lind/repy/bin:$PATH"
-ENV PATH "/home/lind/lind_project/lind/repy/sdk/toolchain/linux_x86_glibc/bin:$PATH"
+ENV PATH "/home/lind/lind_project/lind/lindenv/bin:$PATH"
+ENV PATH "/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin:$PATH"
 # This is needed for lindsh and others
 ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
 
@@ -21,11 +21,11 @@ ENV PATH "/home/lind/lind_project/src/scripts:$PATH"
 ENV LIND_PREFIX "/home/lind"
 ENV LIND_BASE "$LIND_PREFIX/lind_project"
 ENV LIND_SRC "$LIND_BASE/lind"
-ENV REPY_PATH "$LIND_SRC/repy"
-ENV NACL_SDK_ROOT "$REPY_PATH/sdk"
+ENV LIND_ENV_PATH "$LIND_SRC/lindenv"
+ENV NACL_SDK_ROOT "$LIND_ENV_PATH/sdk"
 ENV PYTHON "python2"
 ENV PNACLPYTHON "python2"
-ENV LD_LIBRARY_PATH "/lib/glibc"
+ENV LD_LIBRARY_PATH "/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
 
 USER root
 
@@ -49,12 +49,19 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 	tmux screen bash-completion mlocate shadow ncdu \
 	bind-tools cowsay filesystem linux-headers \
 	grml-zsh-config linux-docs man-pages man-db \
-	util-linux help2man rlwrap
+	util-linux help2man rlwrap \
+    glibc lib32-glibc libxcrypt rustup
 RUN pkgfile --update
 
-USER lind
+WORKDIR /usr/bin
+RUN ln -sf python2 python
 
+USER lind
 WORKDIR /home/lind/
+
+RUN rustup default nightly
+
+
 RUN git config --global user.name "lind"
 RUN git config --global user.email "lind@nyu.edu"
 RUN git config --global core.excludesFile "/home/lind/.cvsignore"
@@ -72,15 +79,6 @@ RUN ln -rsv "/home/lind/lind_project" "./"
 WORKDIR /root/build/
 RUN lesskey
 
-
-USER lind
-WORKDIR /home/lind/build/
-RUN git clone https://aur.archlinux.org/downgrade.git downgrade
-WORKDIR /home/lind/build/downgrade
-RUN makepkg --noconfirm -sci
-USER root
-RUN pacman -U *.pkg.tar.xz --noconfirm
-
 USER lind
 
 WORKDIR /home/lind/build/make-3.82/
@@ -90,12 +88,8 @@ RUN ./configure --prefix="/home/lind/.local" && make install
 
 USER root
 
-
 WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/" "/var/cache/pacman/pkg/"
 RUN chown -Rc lind:lind .
-
-RUN yes | downgrade gcc=9.3.0 gcc-libs=9.3.0
-RUN pip2 install -U --user virtualenv==20.0.23
 
 CMD bash
