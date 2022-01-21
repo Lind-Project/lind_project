@@ -1,0 +1,48 @@
+name: Daily Builds
+
+# Controls when the workflow will run
+on:
+  schedule:
+   - cron: '00 8 * * *'
+  # UTC Time, works at 3-4 AM each day.
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Echo out branch values
+        run: | 
+          echo github.base_ref: ${{ github.base_ref }}
+          echo github.head_ref: ${{ github.head_ref }}
+          echo github.ref: ${{ github.ref }}
+          cd /home/lind/lind_project/
+      - name: Checkout lind-project with default branch (develop)
+        run: |
+          git --git-dir /home/lind/lind_project/.git remote update origin --prune;
+          git --git-dir /home/lind/lind_project/.git checkout --force remotes/origin/develop;
+
+      - name: In the land of RUSTPOSIX where the shadows lie
+        run: | 
+         git --git-dir /home/lind/lind_project/src/safeposix-rust/.git remote update origin --prune;
+         git --git-dir /home/lind/lind_project/src/safeposix-rust/.git checkout remotes/origin/develop;
+         make rustposix;
+       
+      - name: One NACL to rule them all
+        run: | 
+         git --git-dir /home/lind/lind_project/src/native_client/.git remote update origin --prune;
+         git --git-dir /home/lind/lind_project/src/native_client/.git checkout remotes/origin/develop;
+         make nacl; 
+
+      - name: One GLIBC to find them
+        run: | 
+         git --git-dir /home/lind/lind_project/src/lind_glibc/.git remote update origin --prune;
+         git --git-dir /home/lind/lind_project/src/lind_glibc/.git checkout remotes/origin/develop;
+         make glibc; 
+
+      - name: One ring to INSTALL them all
+        run: | 
+          make install;
+
+      - name: And in darkness TEST them
+        run: | 
+          make test-verbose;
