@@ -54,9 +54,9 @@ for var in "${deterministicinput[@]}"; do
     exec 2>&3
 
     if [ "$verbose" = true ] ; then
-        echo "lindoutput"
+        echo "Lind Output"
         echo "$lindoutput"
-        echo "regularoutput"
+        echo "Regular Output"
         echo "$regularoutput"
         echo "Does lindoutput == regularoutput?"
     fi

@@ -21,3 +21,5 @@ mmaptest.c
 fstat.c
 stat.c
 forkexecv.c
+getids.c
+forkexecvid.c
