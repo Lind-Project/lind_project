@@ -6,10 +6,10 @@ ldr_cmd=('sel_ldr')
 ldr_args=()
 gdb_arg_str=('')
 print_arg_str=''
-usage="usage: ${0##*/} -[fghstvx] [-a <sel_ldr extra args>] [-l <blob library>] -- [nacl_file] [args]"
+usage="usage: ${0##*/} -[fghpstvx] [-a <sel_ldr extra args>] [-l <blob library>] [-e <environment variable>]-- [nacl_file] [args]"
 
 # check for xtrace flag
-while getopts :a:l:dfghstvx opt; do
+while getopts :a:l:e:dfghpstvx opt; do
 	case "$opt" in
 	# append custom args
 	a)
@@ -17,6 +17,9 @@ while getopts :a:l:dfghstvx opt; do
 	# enable gdb debug hook
 	d)
 		[[ "${extra_args[*]}" != *-g* ]] && extra_args+=('-g');;
+	# add environment variable
+	e)
+		extra_args+=('-E' "$OPTARG");;
 	# enable fuzz testing (quit after leading nacl app)
 	f)
 		[[ "${extra_args[*]}" != *-F* ]] && extra_args+=('-F');;
@@ -29,12 +32,15 @@ while getopts :a:l:dfghstvx opt; do
 	# enable signal handling
 	s)
 		[[ "${extra_args[*]}" != *-S* ]] && extra_args+=('-S');;
+	# user perf mode
+	p)
+		[[ "${extra_args[*]}" != *-p* ]] && extra_args+=('-p');;
 	# increase verbosity
 	v)
 		extra_args+=('-v');;
 	# add timing
 	t)
-		[[ "${extra_args[*]}" != *-S* ]] && extra_args+=('-t');;
+		[[ "${extra_args[*]}" != *-t* ]] && extra_args+=('-t');;
 	# use xtrace
 	x)
 		set -o xtrace;;
@@ -55,16 +61,14 @@ shift "$((OPTIND - 1))"
 export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
 export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
 export LIND_SRC="${LIND_SRC:-$LIND_BASE/lind}"
-export REPY_PATH="${REPY_PATH:-$LIND_SRC/repy}"
-export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$REPY_PATH/sdk}"
-export PYTHON="${PYTHON:-python2}"
-export PNACLPYTHON="${PNACLPYTHON:-python2}"
+export LIND_ENV_PATH="${LIND_ENV_PATH:-$LIND_SRC/lindenv}"
+export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$LIND_ENV_PATH/sdk}"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
 
-cd "$REPY_PATH/repy" || exit 1
+cd "$LIND_ENV_PATH/fs" || exit 1
 
-print_arg_str+="${extra_args[*]} -- \"$LD_LIBRARY_PATH/runnable-ld.so\" --library-path \"$LD_LIBRARY_PATH\" $*"
-ldr_args+=("${extra_args[@]}" -- "$LD_LIBRARY_PATH/runnable-ld.so" --library-path "$LD_LIBRARY_PATH" "$@")
+print_arg_str+="${extra_args[*]} -- \"/lib/glibc/runnable-ld.so\" --library-path \"/lib/glibc\" $*"
+ldr_args+=("${extra_args[@]}" -- "/lib/glibc/runnable-ld.so" --library-path "/lib/glibc" "$@")
 
 if [[ -n "${gdb_arg_str[*]}" ]]; then
 	# concatenate so we can pass the argument list to gdb

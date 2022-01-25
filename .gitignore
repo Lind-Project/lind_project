@@ -8,6 +8,7 @@ nacl
 misc
 nacl_repy
 /lind/Makefile
+/lind/safeposix-rust
 
 # lind specific directories
 repy/
@@ -115,6 +116,7 @@ config.status
 
 # Executables
 *.exe
+*.nexe
 *.out
 *.app
 *.i*86
