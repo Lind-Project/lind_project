@@ -5,19 +5,19 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-int main(void)
-{
+int main(void) {
   pid_t pid;
-  	puts("printing getgid:");
-	printf("%d\n", getgid());
-	puts("printing getuid:");
-	printf("%d\n", getuid());
-	puts("printing getegid:");
-	printf("%d\n", getegid());
-	puts("printing geteuid:");
-	printf("%d\n", geteuid());
-
-  if ((pid = fork()) == -1) {
+  puts("printing getgid:");
+  printf("%d\n", getgid());
+  puts("printing getuid:");
+  printf("%d\n", getuid());
+  puts("printing getegid:");
+  printf("%d\n", getegid());
+  puts("printing geteuid:");
+  printf("%d\n", geteuid());
+  
+  pid = fork();	
+  if (pid == -1) {
     perror("fork error");
   }
   else if (pid == 0) {
