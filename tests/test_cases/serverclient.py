@@ -1,3 +1,6 @@
+#!/bin/python2
+# Checks if serverclient.c runs the same natively as it does within Lind
+# The result is sorted to avoid different ordered outputs, and compared with each other.
 import re
 import sys
 import string
