@@ -11,7 +11,8 @@ int main()
 {
     char buffer[WRITE_BUFFER_SIZE] = "";
     char readbuffer[WRITE_BUFFER_SIZE];
-    for (int i = 0; i < WRITE_BUFFER_SIZE; i++) buffer[i] = 'A';
+    for (int i = 0; i < WRITE_BUFFER_SIZE - 1; i++) buffer[i] = 'A';
+    buffer[WRITE_BUFFER_SIZE] = 0;
 	
     for (int j = 0; j < 1000; j++) {
 
