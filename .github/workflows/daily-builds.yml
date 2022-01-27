@@ -4,7 +4,7 @@ name: Daily Builds
 on:
   schedule:
    - cron: '00 8 * * *'
-  # UTC Time, works at 3-4 AM each day.
+  # 8 AM UTC Time, works at 3-4 AM EST each day.
 
 jobs:
   build:
