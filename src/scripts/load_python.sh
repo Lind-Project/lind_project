@@ -1,7 +1,7 @@
 echo "Building python"
 cd /home/lind/lind_project/tests/applications/python/;
 ./bootstrap_nacl || true;
-lindfs cp /home/lind/lind_project/tests/applications/python/python /python;
+lindfs cp /home/lind/lind_project/tests/applications/python/python /bin/python;
 
 echo "Copying libraries and configs"
 lindfs cp /home/lind/lind_project/tests/applications/python/Lib /usr/local/lib/python2.7	
