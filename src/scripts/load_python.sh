@@ -1,6 +1,9 @@
+#!/bin/bash
+# Builds and loads python executable into lind.
+
 echo "Building python"
 cd /home/lind/lind_project/tests/applications/python/;
-./bootstrap_nacl || true;
+./bootstrap_nacl;
 lindfs cp /home/lind/lind_project/tests/applications/python/python /bin/python;
 
 echo "Copying libraries and configs"
