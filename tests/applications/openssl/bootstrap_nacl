@@ -1,2 +1,2 @@
-./Configure linux-x86_64 --prefix=build/ --openssldir=build/ssl -fPIC -shared
+./Configure linux-x86_64 no-hw no-asm no-krb5 --prefix=build/ --openssldir=build/ssl -fPIC -shared -D_GNU_SOURCE
 make CC=x86_64-nacl-gcc RANLIB=x86_64-nacl-ranlib LD=x86_64-nacl-ld MAKEDEPPROG=x86_64-nacl-gcc

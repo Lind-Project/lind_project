@@ -1,5 +1,8 @@
+cd /home/lind/lind_project/src/scripts
 ./load_bash.sh
+cd /home/lind/lind_project/src/scripts
 ./load_python.sh
+cd /home/lind/lind_project/src/scripts
 ./load_pylibs.sh
 
 #!/bin/bash
