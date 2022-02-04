@@ -1,3 +1,5 @@
+# Imports built modules and flask.
+
 import __builtin__
 import imp
 import marshal
@@ -35,4 +37,3 @@ app = Flask(__name__)
 @app.route("/")
 def hello_world():
     return "<p>Hello Flask!</p>"
-    
