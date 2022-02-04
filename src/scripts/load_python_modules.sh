@@ -6,3 +6,6 @@ load_flask(){
 
 echo "Loading flask..."
 load_flask
+
+echo "Loading psycopg2..."
+./load_psycopg2
