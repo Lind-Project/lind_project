@@ -72,6 +72,8 @@ HIDDEN PyObject *psyco_null = NULL;
 /* The type of the cursor.description items */
 HIDDEN PyObject *psyco_DescriptionType = NULL;
 
+char *PSYCOPG_VERSION = "2.7 (dt dec pq3 ext lo64)";
+
 /** connect module-level function **/
 #define psyco_connect_doc \
 "_connect(dsn, [connection_factory], [async]) -- New database connection.\n\n"
