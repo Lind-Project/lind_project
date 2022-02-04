@@ -10,7 +10,7 @@ cd /home/lind/lind_project/src/scripts
 
 echo "Building psycopg2"
 cd /home/lind/lind_project/src/scripts
-./load_psycopg2
+./load_psycopg2.sh
 
 lindfs cp /home/lind/lind_project/src/scripts/includes/test_psycopg2.py /hello.py
 lindfs cp /home/lind/lind_project/src/scripts/includes/pythonscript.sh /pythonscript.sh

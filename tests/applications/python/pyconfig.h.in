@@ -940,7 +940,8 @@
 #undef PYLONG_BITS_IN_DIGIT
 
 /* Define to printf format modifier for long long type */
-#undef PY_FORMAT_LONG_LONG
+/*#undef PY_FORMAT_LONG_LONG*/
+#define PY_FORMAT_LONG_LONG "ll"
 
 /* Define to printf format modifier for Py_ssize_t */
 #undef PY_FORMAT_SIZE_T
