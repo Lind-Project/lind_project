@@ -1,5 +1,5 @@
 #!/bin/bash
-# Tests psycopg2 is running in lind.
+#Builds everything needed to test psycopg2 in lind.
 
 cd /home/lind/lind_project/src/scripts
 ./load_bash.sh
@@ -11,7 +11,3 @@ cd /home/lind/lind_project/src/scripts
 echo "Building psycopg2"
 cd /home/lind/lind_project/src/scripts
 ./load_psycopg2.sh
-
-lindfs cp /home/lind/lind_project/src/scripts/includes/test_psycopg2.py /hello.py
-lindfs cp /home/lind/lind_project/src/scripts/includes/pythonscript.sh /pythonscript.sh
-lind /bin/bash /pythonscript.sh
