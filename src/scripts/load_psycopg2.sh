@@ -1,4 +1,4 @@
-# Compiles 
+# Compiles postgres and psycopg2
 
 ./load_postgres.sh
 cd /home/lind/lind_project/tests/applications/python-modules/psycopg2/
