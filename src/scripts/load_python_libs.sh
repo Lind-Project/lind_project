@@ -7,11 +7,12 @@ cd /home/lind/lind_project/tests/applications/python
 # Copies 
 echo Copying files...
 libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata')
+length=${#libsarray[@]}
 for (( i = 0; i < length; i++ ));
 do
-        lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/${libsarray[i]}.so /usr/local/lib/python2.7/lib-dynload/${libsarray[i]}.so
+    lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/${libsarray[i]}.so /usr/local/lib/python2.7/lib-dynload/${libsarray[i]}.so
 done
-lindfs cp /home/lind/lind_project/tests/applications/python/libpython2.7.so.1.0 /lib/glibc/libpython2.7.so.1.0
+
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/datetime.so /usr/local/lib/python2.7/lib-dynload/datetime.so
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/_io.so /usr/local/lib/python2.7/lib-dynload/_io.so
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/zlib.so /usr/local/lib/python2.7/lib-dynload/zlib.so

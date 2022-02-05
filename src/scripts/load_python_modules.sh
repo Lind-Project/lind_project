@@ -5,7 +5,7 @@ load_flask(){
 }
 
 echo "Loading flask..."
-load_flask
+./load_flask.sh
 
 echo "Loading psycopg2..."
-./load_psycopg2
+./load_psycopg2.sh
