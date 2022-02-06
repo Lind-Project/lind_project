@@ -15,11 +15,10 @@ lindfs cp /home/lind/lind_project/src/scripts/includes/passwd /etc/passwd
 
 #Python Libs
 echo Copying files...
-libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata')
-length=${#libsarray[@]}
-for (( i = 0; i < length; i++ ));
+libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata' 'fcntl')
+for lib in "${libsarray[@]}"
 do
-    lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/${libsarray[i]}.so /usr/local/lib/python2.7/lib-dynload/${libsarray[i]}.so
+    lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/$lib.so /usr/local/lib/python2.7/lib-dynload/$lib.so
 done
 
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/datetime.so /usr/local/lib/python2.7/lib-dynload/datetime.so

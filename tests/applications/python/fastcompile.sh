@@ -2,17 +2,17 @@ echo "Starting...";
 
 mkdir -p /home/lind/lind_project/tests/applications/python/build/lib
 
-modulesarray=('_collectionsmodule' 'operator' 'itertoolsmodule' '_struct' 'mathmodule' 'binascii' 'timemodule' 'cStringIO' '_randommodule' 'arraymodule' 'socketmodule' '_functoolsmodule' 'cPickle' '_struct' 'selectmodule' 'arraymodule' 'unicodedata')
-libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata')
+modulesarray=('_collectionsmodule' 'operator' 'itertoolsmodule' '_struct' 'mathmodule' 'binascii' 'timemodule' 'cStringIO' '_randommodule' 'arraymodule' 'socketmodule' '_functoolsmodule' 'cPickle' '_struct' 'selectmodule' 'arraymodule' 'unicodedata' 'fcntlmodule')
+libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata' 'fcntl')
 
 echo Compiling...
-length=${#libsarray[@]}
-for (( i = 0; i < length; i++ ));
+for var in "${modulesarray[@]}"
 do
-        x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -c Modules/${modulesarray[i]}.c -o build/${modulesarray[i]}.o
+        x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -c Modules/$var.c -o build/$var.o
 done
 
 echo Building libraries...
+length=${#libsarray[@]}
 for (( i = 0; i < length; i++ ));
 do
         x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/${modulesarray[i]}.o -L. -lpython2.7 -o build/lib/${libsarray[i]}.so
@@ -25,10 +25,9 @@ x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build
 
 echo _io...
 ioarray=('bufferedio' 'bytesio' 'fileio' 'iobase' '_iomodule' 'stringio' 'textio')
-length=${#ioarray[@]}
-for (( i = 0; i < length; i++ ));
+for iomodule in "${ioarray[@]}"
 do
-    x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -IModules/_io -c Modules/_io/${ioarray[i]}.c -o build/${ioarray[i]}.o
+    x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -IModules/_io -c Modules/_io/$iomodule.c -o build/$iomodule.o
 done
 x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/bufferedio.o build/bytesio.o build/fileio.o build/iobase.o build/_iomodule.o build/stringio.o build/textio.o -L. -lpython2.7 -o build/lib/_io.so
 
