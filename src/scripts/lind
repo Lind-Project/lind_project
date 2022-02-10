@@ -6,10 +6,10 @@ ldr_cmd=('sel_ldr')
 ldr_args=()
 gdb_arg_str=('')
 print_arg_str=''
-usage="usage: ${0##*/} -[fghpstvx] [-a <sel_ldr extra args>] [-l <blob library>] [-e <environment variable>]-- [nacl_file] [args]"
+usage="usage: ${0##*/} -[fghpstvxk] [-a <sel_ldr extra args>] [-l <blob library>] [-e <environment variable>]-- [nacl_file] [args]"
 
 # check for xtrace flag
-while getopts :a:l:e:dfghpstvx opt; do
+while getopts :a:l:e:dfghkpstvx opt; do
 	case "$opt" in
 	# append custom args
 	a)
@@ -27,6 +27,9 @@ while getopts :a:l:e:dfghpstvx opt; do
 	g)
 		gdb_arg_str=('run');;
 	# add blob library
+	k)
+		extra_args+=('-k');;
+	# disable loadable kernel module
 	l)
 		extra_args+=('-B' "$OPTARG");;
 	# enable signal handling
