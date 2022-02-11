@@ -1,0 +1,64 @@
+name: Lind Project Build
+
+# Controls when the workflow will run
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+  # Triggers the workflow on push or pull request events but only for the develop branch
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Echo out branch values
+        run: | 
+          echo github.base_ref: ${{ github.base_ref }}
+          echo github.head_ref: ${{ github.head_ref }}
+          echo github.ref: ${{ github.ref }}
+          cd /home/lind/lind_project/
+
+      - name: Checkout lind-project with PR branch
+        if: github.head_ref != ''
+        run: |
+          git --git-dir /home/lind/lind_project/.git remote update origin --prune;
+          git --git-dir /home/lind/lind_project/.git checkout --force remotes/origin/${{ github.head_ref }};
+
+      - name: Checkout lind-project with default branch (develop)
+        if: github.head_ref == ''
+        run: |
+          git --git-dir /home/lind/lind_project/.git remote update origin --prune;
+          git --git-dir /home/lind/lind_project/.git checkout --force remotes/origin/develop;
+
+      - name: In the land of RUSTPOSIX where the shadows lie
+        run: | 
+         git --git-dir /home/lind/lind_project/src/safeposix-rust/.git remote update origin --prune;
+         git --git-dir /home/lind/lind_project/src/safeposix-rust/.git checkout remotes/origin/develop;
+         make rustposix;
+       
+      - name: One NACL to rule them all
+        run: | 
+         git --git-dir /home/lind/lind_project/src/native_client/.git remote update origin --prune;
+         git --git-dir /home/lind/lind_project/src/native_client/.git checkout remotes/origin/develop;
+         make nacl; 
+
+      - name: One GLIBC to find them
+        run: | 
+         git --git-dir /home/lind/lind_project/src/lind_glibc/.git remote update origin --prune;
+         git --git-dir /home/lind/lind_project/src/lind_glibc/.git checkout remotes/origin/develop;
+         make glibc; 
+
+      - name: One ring to INSTALL them all
+        run: | 
+          make install;
+
+      - name: And in darkness TEST them
+        run: | 
+          make test-verbose;

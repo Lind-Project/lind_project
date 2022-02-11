@@ -13,7 +13,6 @@ int main(void)
 
 	printf("%d\n", getpid());
 	perror("");
-
 	puts("getpid() succeeded");
 
 	return 0;

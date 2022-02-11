@@ -6,10 +6,10 @@ ldr_cmd=('sel_ldr')
 ldr_args=()
 gdb_arg_str=('')
 print_arg_str=''
-usage="usage: ${0##*/} -[fghstvx] [-a <sel_ldr extra args>] [-l <blob library>] -- [nacl_file] [args]"
+usage="usage: ${0##*/} -[fghpstvxk] [-a <sel_ldr extra args>] [-l <blob library>] [-e <environment variable>]-- [nacl_file] [args]"
 
 # check for xtrace flag
-while getopts :a:l:dfghstvx opt; do
+while getopts :a:l:e:dfghkpstvx opt; do
 	case "$opt" in
 	# append custom args
 	a)
@@ -17,6 +17,9 @@ while getopts :a:l:dfghstvx opt; do
 	# enable gdb debug hook
 	d)
 		[[ "${extra_args[*]}" != *-g* ]] && extra_args+=('-g');;
+	# add environment variable
+	e)
+		extra_args+=('-E' "$OPTARG");;
 	# enable fuzz testing (quit after leading nacl app)
 	f)
 		[[ "${extra_args[*]}" != *-F* ]] && extra_args+=('-F');;
@@ -24,17 +27,23 @@ while getopts :a:l:dfghstvx opt; do
 	g)
 		gdb_arg_str=('run');;
 	# add blob library
+	k)
+		extra_args+=('-k');;
+	# disable loadable kernel module
 	l)
 		extra_args+=('-B' "$OPTARG");;
 	# enable signal handling
 	s)
 		[[ "${extra_args[*]}" != *-S* ]] && extra_args+=('-S');;
+	# user perf mode
+	p)
+		[[ "${extra_args[*]}" != *-p* ]] && extra_args+=('-p');;
 	# increase verbosity
 	v)
 		extra_args+=('-v');;
 	# add timing
 	t)
-		[[ "${extra_args[*]}" != *-S* ]] && extra_args+=('-t');;
+		[[ "${extra_args[*]}" != *-t* ]] && extra_args+=('-t');;
 	# use xtrace
 	x)
 		set -o xtrace;;
