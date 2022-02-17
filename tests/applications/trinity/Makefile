@@ -4,13 +4,13 @@ INSTALL_PREFIX ?= $(DESTDIR)
 INSTALL_PREFIX ?= $(HOME)
 NR_CPUS := $(shell grep ^processor /proc/cpuinfo | /usr/bin/wc -l)
 
-export CC=x86_64-nacl-gcc
-export CXX=x86_64-nacl-g++
-export LD=x86_64-nacl-ld
-export CFLAGS='-g -fno-pie'
-export CXXFLAGS='-g -fno-pie'
-export LDFLAGS='-g -fno-pie'
-export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+CC=x86_64-nacl-gcc
+CXX=x86_64-nacl-g++
+LD=x86_64-nacl-ld
+CFLAGS=-g -fno-pie
+CXXFLAGS=-g -fno-pie
+LDFLAGS=-g -fno-pie
+PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 
 
 CFLAGS += -Wall -Wextra -g -O2 -I. -Iinclude/ -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -D__linux__
