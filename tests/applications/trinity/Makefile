@@ -93,6 +93,7 @@ trinity: version test $(OBJS) $(HEADERS)
 df = $(DEPDIR)/$(*D)/$(*F)
 
 %.o : %.c
+	x86_64-nacl-gcc
 	@pwd
 	$(CC) $(CFLAGS) -o $@ -c $<
 	@mkdir -p $(DEPDIR)/$(*D)
