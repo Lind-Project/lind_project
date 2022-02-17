@@ -14,9 +14,7 @@ PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 
 
 CFLAGS += -Wall -Wextra -g -O2 -I. -Iinclude/ -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -D__linux__
-
 CFLAGS += -std=gnu99
-
 CFLAGS += -Wdeclaration-after-statement
 CFLAGS += -Wformat=2
 CFLAGS += -Winit-self
@@ -28,16 +26,14 @@ CFLAGS += -Wundef
 CFLAGS += -Wwrite-strings
 CFLAGS += -Wno-format-nonliteral
 CFLAGS += -Wstrict-prototypes -Wmissing-prototypes
+CFLAGS += -Wlogical-op
+CFLAGS += -Wstrict-aliasing=3
+
 
 # needed for show_backtrace() to work correctly.
 LDFLAGS += -rdynamic
-
 # glibc versions before 2.17 for clock_gettime
 LDLIBS += -lrt
-
-
-CFLAGS += -Wlogical-op
-CFLAGS += -Wstrict-aliasing=3
 
 V	= @
 Q	= $(V:1=)
