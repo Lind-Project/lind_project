@@ -41,8 +41,6 @@ CFLAGS += -Wstrict-aliasing=3
 
 V	= @
 Q	= $(V:1=)
-QUIET_CC = $(Q:@=@echo    '  CC	'$@;)
-
 
 all: trinity
 
@@ -93,13 +91,13 @@ DEPDIR= .deps
 -include $(SRCS:%.c=$(DEPDIR)/%.d)
 
 trinity: version test $(OBJS) $(HEADERS)
-	$(QUIET_CC)$(CC) $(CFLAGS) $(LDFLAGS) -o trinity $(OBJS) $(LDLIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o trinity $(OBJS) $(LDLIBS)
 	@mkdir -p tmp
 
 df = $(DEPDIR)/$(*D)/$(*F)
 
 %.o : %.c
-	$(QUIET_CC)$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $<
 	@mkdir -p $(DEPDIR)/$(*D)
 	@$(CC) -MM $(CFLAGS) $*.c > $(df).d
 	@mv -f $(df).d $(df).d.tmp
