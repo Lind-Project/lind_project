@@ -10,7 +10,7 @@ LD=x86_64-nacl-ld
 CFLAGS=-g -fno-pie
 CXXFLAGS=-g -fno-pie
 LDFLAGS=-g -fno-pie
-PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+PATH=/usr/bin:/usr/sbin:/bin:/sbin:$PATH
 
 
 CFLAGS += -Wall -Wextra -g -O2 -I. -Iinclude/ -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -D__linux__
