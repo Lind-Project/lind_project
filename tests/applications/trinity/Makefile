@@ -4,26 +4,19 @@ INSTALL_PREFIX ?= $(DESTDIR)
 INSTALL_PREFIX ?= $(HOME)
 NR_CPUS := $(shell grep ^processor /proc/cpuinfo | /usr/bin/wc -l)
 
-ifeq ($(CC),"")
-CC := gcc
-endif
-CC := $(CROSS_COMPILE)$(CC)
-LD := $(CROSS_COMPILE)$(LD)
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS='-g -fno-pie'
+export CXXFLAGS='-g -fno-pie'
+export LDFLAGS='-g -fno-pie'
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+
 
 CFLAGS += -Wall -Wextra -g -O2 -I. -Iinclude/ -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -D__linux__
 
-CFLAGS += $(shell if $(CC) -std=gnu11 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-std=gnu11"; else echo "-std=gnu99"; fi)
+CFLAGS += -std=gnu99
 
-# Only enabled during development, and on gcc 4.9+
-CPP_MAJOR := $(shell $(CPP) -dumpversion 2>&1 | cut -d'.' -f1)
-CPP_MINOR := $(shell $(CPP) -dumpversion 2>&1 | cut -d'.' -f2)
-DEVEL	:= $(shell grep VERSION Makefile | head -n1 | grep pre | wc -l)
-CFLAGS	+= $(shell if [ $(CPP_MAJOR) -eq 5 -a $(CPP_MINOR) -ge 1 -a $(DEVEL) -eq 1 ] ; then echo "-Werror"; else echo ""; fi)
-
-ifneq ($(SYSROOT),)
-CFLAGS += --sysroot=$(SYSROOT)
-endif
-#CFLAGS += $(shell if $(CC) -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-m32"; fi)
 CFLAGS += -Wdeclaration-after-statement
 CFLAGS += -Wformat=2
 CFLAGS += -Winit-self
@@ -42,15 +35,9 @@ LDFLAGS += -rdynamic
 # glibc versions before 2.17 for clock_gettime
 LDLIBS += -lrt
 
-# gcc only.
-ifneq ($(shell $(CC) -v 2>&1 | grep -c "clang"), 1)
+
 CFLAGS += -Wlogical-op
 CFLAGS += -Wstrict-aliasing=3
-CFLAGS += $(shell if [ $(DEVEL) -eq 0 ]; then echo "-Wno-maybe-uninitialized"; else echo ""; fi)
-endif
-
-# Sometimes useful for debugging. more useful with clang than gcc.
-#CFLAGS += -fsanitize=address
 
 V	= @
 Q	= $(V:1=)
