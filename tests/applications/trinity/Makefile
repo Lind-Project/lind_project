@@ -91,8 +91,6 @@ trinity: version test $(OBJS) $(HEADERS)
 df = $(DEPDIR)/$(*D)/$(*F)
 
 %.o : %.c
-	echo PATH
-	@pwd
 	$(CC) $(CFLAGS) -o $@ -c $<
 	@mkdir -p $(DEPDIR)/$(*D)
 	@$(CC) -MM $(CFLAGS) $*.c > $(df).d
