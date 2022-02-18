@@ -11,7 +11,7 @@ CFLAGS=-g -fno-pie
 CXXFLAGS=-g -fno-pie -std=gnu++99
 LDFLAGS=-g -fno-pie
 
-CFLAGS += -Wall -W -g -O2 -I. -Iinclude/ -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -D__linux__
+CFLAGS += -Wall -W -g -O2 -I. -Iinclude/ -I/usr/include -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -D__linux__
 CFLAGS += -Wdeclaration-after-statement
 CFLAGS += -Wformat=2
 CFLAGS += -Winit-self
