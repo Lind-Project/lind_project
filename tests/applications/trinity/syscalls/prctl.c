@@ -14,7 +14,6 @@
 
 #include "net.h"
 #include "maps.h"
-#include "random.h"
 #include "sanitise.h"
 #include "shm.h"
 #include "syscall.h"
@@ -35,7 +34,7 @@ static int prctl_opts[] = {
 	PR_GET_NO_NEW_PRIVS, PR_GET_TID_ADDRESS, PR_SET_THP_DISABLE, PR_GET_THP_DISABLE,
 	PR_MPX_ENABLE_MANAGEMENT, PR_MPX_DISABLE_MANAGEMENT,
 #ifdef __mips__
-	PR_GET_FP_MODE, PR_SET_FP_MODE,
+	GET_FP_MODE, SET_FP_MODE,
 #endif
 	PR_CAP_AMBIENT,
 };
@@ -61,7 +60,7 @@ static void do_set_seccomp(__unused__ struct syscallrecord *rec) { }
 /* We already got a generic_sanitise at this point */
 static void sanitise_prctl(struct syscallrecord *rec)
 {
-	int option = prctl_opts[rnd() % NR_PRCTL_OPTS];
+	int option = prctl_opts[rand() % NR_PRCTL_OPTS];
 
 // For now, just do SECCOMP, the other options need some attention.
 	option = PR_SET_SECCOMP;

@@ -14,10 +14,6 @@ static void sanitise_getrandom(__unused__ struct syscallrecord *rec)
 	(void) common_set_mmap_ptr_len();
 }
 
-static unsigned long getrandom_flags[] = {
-	GRND_NONBLOCK, GRND_RANDOM,
-};
-
 struct syscallentry syscall_getrandom = {
 	.name = "getrandom",
 	.num_args = 3,
@@ -26,6 +22,17 @@ struct syscallentry syscall_getrandom = {
 	.arg2name = "count",
 	.arg3name = "flags",
 	.arg3type = ARG_LIST,
-	.arg3list = ARGLIST(getrandom_flags),
+	.arg3list = {
+		.num = 2,
+		.values = {
+			GRND_NONBLOCK, GRND_RANDOM,
+		},
+	},
+	.errnos = {
+		.num = 4,
+		.values = {
+			EINVAL, EFAULT, EAGAIN, EINTR,
+		},
+	},
 	.sanitise = sanitise_getrandom,
 };

@@ -17,46 +17,53 @@
 void * get_writable_address(unsigned long size)
 {
 	struct map *map;
-	struct object *obj;
 	void *addr = NULL;
-	int tries = 0;
 
-retry:	tries++;
-	if (tries == 100)
-		return NULL;
+retry:
+	map = get_map();
 
-	if (RAND_BOOL()) {
-		map = get_map();
-		if (map->size < size)
-			goto retry;
+	if (map->size < size)
+		goto retry;
 
-		addr = map->ptr;
-		map->prot = PROT_READ | PROT_WRITE;
-	} else {
-		obj = get_random_object(OBJ_SYSV_SHM, OBJ_GLOBAL);
-		if (obj->sysv_shm.size < size)
-			goto retry;
-		addr = obj->sysv_shm.ptr;
-	}
-
-	mprotect(addr, size, PROT_READ | PROT_WRITE);
+	addr = map->ptr;
+	mprotect(addr, map->size, PROT_READ | PROT_WRITE);
+	map->prot = PROT_READ | PROT_WRITE;
 
 	return addr;
 }
 
-void * get_non_null_address(void)
+static void * _get_address(unsigned char null_allowed)
 {
-	unsigned long size = RAND_ARRAY(mapping_sizes);
+	void *addr = NULL;
+	int i;
 
-	return get_writable_address(size);
+	if (null_allowed == TRUE)
+		i = rand() % 4;
+	else
+		i = RAND_RANGE(1, 3);
+
+	switch (i) {
+	case 0: addr = NULL;
+		break;
+	case 1:	addr = (void *) KERNEL_ADDR;
+		break;
+	case 2:	addr = (void *)(unsigned long)rand64();
+		break;
+
+	case 3:	addr = get_writable_address(page_size);
+		break;
+	}
+	return addr;
 }
 
 void * get_address(void)
 {
-	if (ONE_IN(100))
-		return NULL;
+	return _get_address(TRUE);
+}
 
-	return get_non_null_address();
+void * get_non_null_address(void)
+{
+	return _get_address(FALSE);
 }
 
 static bool is_arg_address(enum argtype argtype)
@@ -109,10 +116,11 @@ struct iovec * alloc_iovec(unsigned int num)
 	iov = zmalloc(num * sizeof(struct iovec));	/* freed by generic_free_arg */
 
 	for (i = 0; i < num; i++) {
-		struct map *map = get_map();
+		struct map *map;
 
+		map = get_map();
 		iov[i].iov_base = map->ptr;
-		iov[i].iov_len = rnd() % map->size;
+		iov[i].iov_len = rand() % map->size;
 	}
 
 	return iov;

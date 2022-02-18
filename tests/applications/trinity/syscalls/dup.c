@@ -45,10 +45,6 @@ struct syscallentry syscall_dup2 = {
  * On error, -1 is returned, and errno is set appropriately.
  */
 
-static unsigned long dup3_flags[] = {
-	O_CLOEXEC,
-};
-
 struct syscallentry syscall_dup3 = {
 	.name = "dup3",
 	.num_args = 3,
@@ -58,7 +54,10 @@ struct syscallentry syscall_dup3 = {
 	.arg2type = ARG_FD,
 	.arg3name = "flags",
 	.arg3type = ARG_LIST,
-	.arg3list = ARGLIST(dup3_flags),
+	.arg3list = {
+		.num = 1,
+		.values = { O_CLOEXEC },
+	},
 	.rettype = RET_FD,
 	.flags = NEED_ALARM,
 };

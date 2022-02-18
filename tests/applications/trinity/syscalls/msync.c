@@ -20,10 +20,6 @@ static void sanitise_msync(struct syscallrecord *rec)
 		rec->a3 |= MS_INVALIDATE;
 }
 
-static unsigned long msync_flags[] = {
-	MS_ASYNC, MS_SYNC,
-};
-
 struct syscallentry syscall_msync = {
 	.name = "msync",
 	.num_args = 3,
@@ -32,7 +28,10 @@ struct syscallentry syscall_msync = {
 	.arg2name = "len",
 	.arg3name = "flags",
 	.arg3type = ARG_OP,
-	.arg3list = ARGLIST(msync_flags),
+	.arg3list = {
+		.num = 2,
+		.values = { MS_ASYNC, MS_SYNC },
+	},
 	.group = GROUP_VM,
 	.sanitise = sanitise_msync,
 };

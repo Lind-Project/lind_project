@@ -328,19 +328,7 @@ struct syscalltable syscalls_x86_64[] = {
 	{ .entry = &syscall_seccomp },
 	{ .entry = &syscall_memfd_create },
 	{ .entry = &syscall_kexec_file_load },
-#ifdef USE_BPF
 	{ .entry = &syscall_bpf },
-#else
-	{ .entry = NULL },
-#endif
 	{ .entry = &syscall_execveat },
 	{ .entry = &syscall_userfaultfd },
-	{ .entry = &syscall_membarrier },
-	{ .entry = &syscall_mlock2 },
-	{ .entry = &syscall_copy_file_range },
-	{ .entry = &syscall_preadv2 },
-	{ .entry = &syscall_pwritev2 },
-	{ .entry = &syscall_pkey_mprotect },
-	{ .entry = &syscall_pkey_alloc },
-	{ .entry = &syscall_pkey_free },
 };

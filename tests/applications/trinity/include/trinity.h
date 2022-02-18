@@ -8,6 +8,9 @@ extern bool no_bind_to_cpu;
 extern char *progname;
 
 void main_loop(void);
+void exit_main_fail(void);
+
+void init_watchdog(void);
 
 void panic(int reason);
 

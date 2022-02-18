@@ -22,7 +22,7 @@ static void sanitise_remap_file_pages(struct syscallrecord *rec)
 	map = common_set_mmap_ptr_len();
 
 	if (RAND_BOOL()) {
-		start = rnd() % map->size;
+		start = rand() % map->size;
 		start &= PAGE_MASK;
 		rec->a1 += start;
 	}
@@ -31,7 +31,7 @@ static void sanitise_remap_file_pages(struct syscallrecord *rec)
 	if (RAND_BOOL())
 		size = page_size;
 	else {
-		size = rnd() % map->size;
+		size = rand() % map->size;
 
 		/* if we screwed with the start, we need to take it
 		 * into account so we don't go off the end.
@@ -46,15 +46,11 @@ static void sanitise_remap_file_pages(struct syscallrecord *rec)
 
 	/* Pick a random pgoff. */
 	if (RAND_BOOL())
-		offset = rnd() & (size / page_size);
+		offset = rand() & (size / page_size);
 	else
 		offset = 0;
 	rec->a4 = offset;
 }
-
-static unsigned long remap_file_pages_flags[] = {
-	MAP_NONBLOCK,
-};
 
 struct syscallentry syscall_remap_file_pages = {
 	.name = "remap_file_pages",
@@ -66,7 +62,10 @@ struct syscallentry syscall_remap_file_pages = {
 	.arg4name = "pgoff",
 	.arg5name = "flags",
 	.arg5type = ARG_LIST,
-	.arg5list = ARGLIST(remap_file_pages_flags),
+	.arg5list = {
+		.num = 1,
+		.values = { MAP_NONBLOCK },
+	},
 	.group = GROUP_VM,
 	.sanitise = sanitise_remap_file_pages,
 };

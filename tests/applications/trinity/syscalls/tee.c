@@ -3,8 +3,6 @@
  */
 #include <fcntl.h>
 #include <stdlib.h>
-#include "pipes.h"
-#include "random.h"
 #include "sanitise.h"
 #include "shm.h"
 #include "syscall.h"
@@ -13,15 +11,11 @@
 
 static void sanitise_tee(struct syscallrecord *rec)
 {
-	if ((rnd() % 10) > 0) {
-		rec->a1 = get_rand_pipe_fd();
-		rec->a2 = get_rand_pipe_fd();
+	if ((rand() % 10) > 0) {
+		rec->a1 = shm->pipe_fds[rand() % MAX_PIPE_FDS];
+		rec->a2 = shm->pipe_fds[rand() % MAX_PIPE_FDS];
 	}
 }
-
-static unsigned long tee_flags[] = {
-	SPLICE_F_MOVE, SPLICE_F_NONBLOCK, SPLICE_F_MORE, SPLICE_F_GIFT,
-};
 
 struct syscallentry syscall_tee = {
 	.name = "tee",
@@ -34,7 +28,10 @@ struct syscallentry syscall_tee = {
 	.arg3type = ARG_LEN,
 	.arg4name = "flags",
 	.arg4type = ARG_LIST,
-	.arg4list = ARGLIST(tee_flags),
+	.arg4list = {
+		.num = 4,
+		.values = { SPLICE_F_MOVE, SPLICE_F_NONBLOCK, SPLICE_F_MORE, SPLICE_F_GIFT },
+	},
 	.sanitise = sanitise_tee,
 	.flags = NEED_ALARM,
 };

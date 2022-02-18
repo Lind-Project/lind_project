@@ -32,7 +32,6 @@ extern bool do_specific_domain;
 extern char *specific_domain_optarg;
 extern bool no_domains[TRINITY_PF_MAX];
 extern bool dry_run;
-extern bool show_unannotated;
 extern bool show_syscall_list;
 extern bool show_ioctl_list;
 extern unsigned char quiet_level;
@@ -48,12 +47,12 @@ extern char *victim_path;
 extern bool random_selection;
 extern unsigned int random_selection_num;
 
-extern bool clowntown;
-extern bool show_stats;
-
 extern unsigned int kernel_taint_mask;
 extern bool kernel_taint_param_occured;
 
 extern unsigned int user_specified_children;
+
+extern int server_port;
+extern char server_addr[INET6_ADDRSTRLEN];
 
 void enable_disable_fd_usage(void);

@@ -11,17 +11,8 @@
 
 static void sanitise_recv(struct syscallrecord *rec)
 {
-	rec->a1 = fd_from_socketinfo((struct socketinfo *) rec->a1);
+	rec->a1 = generic_fd_from_socketinfo((struct socketinfo *) rec->a1);
 }
-
-static unsigned long recv_flags[] = {
-	MSG_OOB, MSG_PEEK, MSG_DONTROUTE, MSG_CTRUNC,
-	MSG_PROBE, MSG_TRUNC, MSG_DONTWAIT, MSG_EOR,
-	MSG_WAITALL, MSG_FIN, MSG_SYN, MSG_CONFIRM,
-	MSG_RST, MSG_ERRQUEUE, MSG_NOSIGNAL, MSG_MORE,
-	MSG_WAITFORONE, MSG_FASTOPEN, MSG_CMSG_CLOEXEC, MSG_CMSG_COMPAT,
-	MSG_BATCH,
-};
 
 struct syscallentry syscall_recv = {
 	.name = "recv",
@@ -34,7 +25,14 @@ struct syscallentry syscall_recv = {
 	.arg3type = ARG_LEN,
 	.arg4name = "flags",
 	.arg4type = ARG_LIST,
-	.arg4list = ARGLIST(recv_flags),
+	.arg4list = {
+		.num = 20,
+		.values = { MSG_OOB, MSG_PEEK, MSG_DONTROUTE, MSG_CTRUNC,
+			    MSG_PROBE, MSG_TRUNC, MSG_DONTWAIT, MSG_EOR,
+			    MSG_WAITALL, MSG_FIN, MSG_SYN, MSG_CONFIRM,
+			    MSG_RST, MSG_ERRQUEUE, MSG_NOSIGNAL, MSG_MORE,
+			    MSG_WAITFORONE, MSG_FASTOPEN, MSG_CMSG_CLOEXEC, MSG_CMSG_COMPAT },
+	},
 	.flags = NEED_ALARM,
 	.sanitise = sanitise_recv,
 };
@@ -56,7 +54,14 @@ struct syscallentry syscall_recvfrom = {
 	.arg3type = ARG_LEN,
 	.arg4name = "flags",
 	.arg4type = ARG_LIST,
-	.arg4list = ARGLIST(recv_flags),
+	.arg4list = {
+		.num = 20,
+		.values = { MSG_OOB, MSG_PEEK, MSG_DONTROUTE, MSG_CTRUNC,
+			    MSG_PROBE, MSG_TRUNC, MSG_DONTWAIT, MSG_EOR,
+			    MSG_WAITALL, MSG_FIN, MSG_SYN, MSG_CONFIRM,
+			    MSG_RST, MSG_ERRQUEUE, MSG_NOSIGNAL, MSG_MORE,
+			    MSG_WAITFORONE, MSG_FASTOPEN, MSG_CMSG_CLOEXEC, MSG_CMSG_COMPAT },
+	},
 	.arg5name = "addr",
 	.arg5type = ARG_SOCKADDR,
 	.arg6name = "addr_len",
@@ -78,7 +83,14 @@ struct syscallentry syscall_recvmsg = {
 	.arg2type = ARG_ADDRESS,
 	.arg3name = "flags",
 	.arg3type = ARG_LIST,
-	.arg3list = ARGLIST(recv_flags),
+	.arg3list = {
+		.num = 20,
+		.values = { MSG_OOB, MSG_PEEK, MSG_DONTROUTE, MSG_CTRUNC,
+			    MSG_PROBE, MSG_TRUNC, MSG_DONTWAIT, MSG_EOR,
+			    MSG_WAITALL, MSG_FIN, MSG_SYN, MSG_CONFIRM,
+			    MSG_RST, MSG_ERRQUEUE, MSG_NOSIGNAL, MSG_MORE,
+			    MSG_WAITFORONE, MSG_CMSG_CLOEXEC, MSG_FASTOPEN, MSG_CMSG_COMPAT },
+	},
 	.flags = NEED_ALARM,
 	.sanitise = sanitise_recv,	// same as recv
 };
@@ -99,7 +111,14 @@ struct syscallentry syscall_recvmmsg = {
 	.arg3type = ARG_LEN,
 	.arg4name = "flags",
 	.arg4type = ARG_LIST,
-	.arg4list = ARGLIST(recv_flags),
+	.arg4list = {
+		.num = 20,
+		.values = { MSG_OOB, MSG_PEEK, MSG_DONTROUTE, MSG_CTRUNC,
+			    MSG_PROBE, MSG_TRUNC, MSG_DONTWAIT, MSG_EOR,
+			    MSG_WAITALL, MSG_FIN, MSG_SYN, MSG_CONFIRM,
+			    MSG_RST, MSG_ERRQUEUE, MSG_NOSIGNAL, MSG_MORE,
+			    MSG_WAITFORONE, MSG_CMSG_CLOEXEC, MSG_FASTOPEN, MSG_CMSG_COMPAT },
+	},
 	.arg5name = "timeout",
 	.arg5type = ARG_ADDRESS,
 	.flags = NEED_ALARM,

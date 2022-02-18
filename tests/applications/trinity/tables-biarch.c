@@ -10,9 +10,8 @@
 
 #include "arch.h"
 #include "syscall.h"
-#include "log.h"
 #include "params.h"
-#include "random.h"
+#include "log.h"
 #include "shm.h"
 #include "tables.h"
 
@@ -156,7 +155,7 @@ retry:
 	if (do_64_arch) {
 		struct syscallentry *entry = NULL;
 
-		call64 = rnd() % max_nr_64bit_syscalls;
+		call64 = rand() % max_nr_64bit_syscalls;
 
 		if (validate_specific_syscall_silent(syscalls_64bit, call64) == FALSE)
 			goto retry;
@@ -194,7 +193,7 @@ try32bit:
 			}
 		} else {
 just32:
-			call32 = rnd() % max_nr_32bit_syscalls;
+			call32 = rand() % max_nr_32bit_syscalls;
 		}
 
 		if (validate_specific_syscall_silent(syscalls_32bit, call32) == FALSE)
@@ -216,12 +215,8 @@ int setup_syscall_group_biarch(unsigned int group)
 	unsigned int i;
 
 	for_each_32bit_syscall(i) {
-		struct syscallentry *entry = syscalls_32bit[i].entry;
-		if (entry == NULL)
-			continue;
-
-		if (entry->group == group)
-			toggle_syscall(entry->name, TRUE);
+		if (syscalls_32bit[i].entry->group == group)
+			toggle_syscall(syscalls_32bit[i].entry->name, TRUE);
 	}
 
 	if (shm->nr_active_32bit_syscalls == 0)
@@ -231,12 +226,8 @@ int setup_syscall_group_biarch(unsigned int group)
 
 	/* now the 64 bit table*/
 	for_each_64bit_syscall(i) {
-		struct syscallentry *entry = syscalls_64bit[i].entry;
-		if (entry == NULL)
-		continue;
-
-		if (entry->group == group)
-			toggle_syscall(entry->name, TRUE);
+		if (syscalls_64bit[i].entry->group == group)
+			toggle_syscall(syscalls_64bit[i].entry->name, TRUE);
 	}
 
 	if (shm->nr_active_64bit_syscalls == 0) {
@@ -255,20 +246,14 @@ void mark_all_syscalls_active_biarch(void)
 
 	if (do_32_arch) {
 		for_each_32bit_syscall(i) {
-			struct syscallentry *entry = syscalls_32bit[i].entry;
-			if (entry == NULL)
-				continue;
-			entry->flags |= ACTIVE;
+			syscalls_32bit[i].entry->flags |= ACTIVE;
 			activate_syscall32(i);
 		}
 	}
 
 	if (do_64_arch) {
 		for_each_64bit_syscall(i) {
-			struct syscallentry *entry = syscalls_64bit[i].entry;
-			if (entry == NULL)
-				continue;
-			entry->flags |= ACTIVE;
+			syscalls_64bit[i].entry->flags |= ACTIVE;
 			activate_syscall64(i);
 		}
 	}
@@ -281,9 +266,6 @@ void init_syscalls_biarch(void)
 
 	for_each_64bit_syscall(i) {
 		entry = syscalls_64bit[i].entry;
-		if (entry == NULL)
-			continue;
-
 		if (entry->flags & ACTIVE)
 			if (entry->init)
 				entry->init();
@@ -291,9 +273,6 @@ void init_syscalls_biarch(void)
 
 	for_each_32bit_syscall(i) {
 		entry = syscalls_32bit[i].entry;
-		if (entry == NULL)
-			continue;
-
 		if (entry->flags & ACTIVE)
 			if (entry->init)
 				entry->init();
@@ -307,9 +286,6 @@ void deactivate_disabled_syscalls_biarch(void)
 
 	for_each_64bit_syscall(i) {
 		entry = syscalls_64bit[i].entry;
-		if (entry == NULL)
-			continue;
-
 		if (entry->flags & TO_BE_DEACTIVATED) {
 			entry->flags &= ~(ACTIVE|TO_BE_DEACTIVATED);
 			deactivate_syscall64(i);
@@ -320,9 +296,6 @@ void deactivate_disabled_syscalls_biarch(void)
 
 	for_each_32bit_syscall(i) {
 		entry = syscalls_32bit[i].entry;
-		if (entry == NULL)
-			continue;
-
 		if (entry->flags & TO_BE_DEACTIVATED) {
 			entry->flags &= ~(ACTIVE|TO_BE_DEACTIVATED);
 			deactivate_syscall32(i);
@@ -342,9 +315,6 @@ void dump_syscall_tables_biarch(void)
 
 	for_each_32bit_syscall(i) {
 		entry = syscalls_32bit[i].entry;
-		if (entry == NULL)
-			continue;
-
 		outputstd("entrypoint %d %s : [32-bit] ",
 			entry->number, entry->name);
 		show_state(entry->flags & ACTIVE);
@@ -357,8 +327,6 @@ void dump_syscall_tables_biarch(void)
 
 	for_each_64bit_syscall(i) {
 		entry = syscalls_64bit[i].entry;
-		if (entry == NULL)
-			continue;
 
 		outputstd("entrypoint %d %s : [64-bit] ",
 			entry->number, entry->name);
@@ -378,18 +346,12 @@ void display_enabled_syscalls_biarch(void)
 
 	for_each_64bit_syscall(i) {
 		entry = syscalls_64bit[i].entry;
-		if (entry == NULL)
-			continue;
-
 		if (entry->flags & ACTIVE)
 			output(0, "64-bit syscall %d:%s enabled.\n", i, entry->name);
 	}
 
 	for_each_32bit_syscall(i) {
 		entry = syscalls_32bit[i].entry;
-		if (entry == NULL)
-			continue;
-
 		if (entry->flags & ACTIVE)
 			output(0, "32-bit syscall %d:%s enabled.\n", i, entry->name);
 	}

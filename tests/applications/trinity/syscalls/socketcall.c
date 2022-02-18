@@ -15,7 +15,7 @@
 
 static void socketcall_socket(unsigned long *args)
 {
-	struct socket_triplet st = { .family = 0, .protocol = 0, .type = 0 };
+	struct socket_triplet st;
 
 	gen_socket_args(&st);
 
@@ -60,7 +60,7 @@ static void sanitise_socketcall(struct syscallrecord *rec)
 
 	args = zmalloc(6 * sizeof(unsigned long));
 
-	//rec->a1 = rnd() % ARRAY_SIZE(socketcallptrs);
+	//rec->a1 = rand() % ARRAY_SIZE(socketcallptrs);
 	rec->a1 = SYS_SOCKET;	//FIXME: Add other options and remove this hardcode.
 
 	for (i = 0; i < ARRAY_SIZE(socketcallptrs); i++) {

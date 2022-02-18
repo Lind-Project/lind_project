@@ -9,7 +9,7 @@
 
 static void sanitise_accept(struct syscallrecord *rec)
 {
-	rec->a1 = fd_from_socketinfo((struct socketinfo *) rec->a1);
+	rec->a1 = generic_fd_from_socketinfo((struct socketinfo *) rec->a1);
 }
 
 struct syscallentry syscall_accept = {
@@ -36,10 +36,6 @@ struct syscallentry syscall_accept = {
  *
  */
 
-static unsigned long accept4_flags[] = {
-	SOCK_NONBLOCK, SOCK_CLOEXEC,
-};
-
 struct syscallentry syscall_accept4 = {
 	.name = "accept4",
 	.num_args = 4,
@@ -51,7 +47,10 @@ struct syscallentry syscall_accept4 = {
 	.arg3type = ARG_SOCKADDRLEN,
 	.arg4name = "flags",
 	.arg4type = ARG_LIST,
-	.arg4list = ARGLIST(accept4_flags),
+	.arg4list = {
+		.num = 2,
+		.values = { SOCK_NONBLOCK, SOCK_CLOEXEC },
+	},
 	.rettype = RET_FD,
 	.flags = NEED_ALARM,
 	.sanitise = sanitise_accept,	// use same as accept.

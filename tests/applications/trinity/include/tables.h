@@ -45,7 +45,6 @@ void show_state(unsigned int state);
 void dump_syscall_tables(void);
 void dump_syscall_tables_uniarch(void);
 void dump_syscall_tables_biarch(void);
-void show_unannotated_args(void);
 
 int setup_syscall_group(unsigned int desired_group);
 int setup_syscall_group_uniarch(unsigned int desired_group);
@@ -58,6 +57,7 @@ int validate_syscall_table_32(void);
 void sanity_check_tables(void);
 const char * print_syscall_name(unsigned int callno, bool is32bit);
 
+void enable_random_syscalls(void);
 void enable_random_syscalls_biarch(void);
 void enable_random_syscalls_uniarch(void);
 

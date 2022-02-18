@@ -4,29 +4,22 @@
 #include <sys/types.h>
 #include <linux/msg.h>
 #include "compat.h"
-#include "random.h"
 #include "sanitise.h"
-
-static void sanitise_msgrcv(struct syscallrecord *rec)
-{
-	rec->a3 = rnd() % MSGMAX;
-}
-
-static unsigned long msgrcv_flags[] = {
-	MSG_NOERROR, MSG_EXCEPT, MSG_COPY, IPC_NOWAIT,
-};
 
 struct syscallentry syscall_msgrcv = {
 	.name = "msgrcv",
 	.num_args = 5,
 	.arg1name = "msqid",
 	.arg2name = "msgp",
-	.arg2type = ARG_NON_NULL_ADDRESS,
+	.arg2type = ARG_ADDRESS,
 	.arg3name = "msgsz",
+	.arg3type = ARG_LEN,
 	.arg4name = "msgtyp",
 	.arg5name = "msgflg",
 	.arg5type = ARG_LIST,
-	.arg5list = ARGLIST(msgrcv_flags),
-	.flags = IGNORE_ENOSYS | NEED_ALARM,
-	.sanitise = sanitise_msgrcv,
+	.arg5list = {
+		.num = 4,
+		.values = { MSG_NOERROR, MSG_EXCEPT, MSG_COPY, IPC_NOWAIT },
+	},
+	.flags = IGNORE_ENOSYS,
 };

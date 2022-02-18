@@ -1,10 +1,9 @@
 #pragma once
 
-#include <time.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include "locks.h"
 #include "types.h"
-#include "utils.h"
 
 #define PREBUFFER_LEN	4096 * 6
 #define POSTBUFFER_LEN	128
@@ -17,9 +16,11 @@ enum syscallstate {
 	BEFORE,		/* about to do syscall */
 	GOING_AWAY,	/* used when we don't expect to come back (execve for eg) */
 	AFTER,		/* returned from doing syscall. */
+	DONE,		/* moved to previous */
 };
 
 struct syscallrecord {
+	struct timeval tv;
 	unsigned int nr;
 	unsigned long a1;
 	unsigned long a2;
@@ -28,8 +29,9 @@ struct syscallrecord {
 	unsigned long a5;
 	unsigned long a6;
 	unsigned long retval;
-
 	int errno_post;	/* what errno was after the syscall. */
+
+	unsigned long op_nr;	/* used to tell if we're making progress. */
 
 	bool do32bit;
 	lock_t lock;
@@ -61,24 +63,12 @@ enum argtype {
 
 struct arglist {
 	unsigned int num;
-	unsigned long *values;
+	unsigned long values[32];
 };
 
-#define ARGLIST(vals)		\
-{				\
-	.num = ARRAY_SIZE(vals),\
-	.values = vals,		\
-}
-
-#define NR_ERRNOS 133	// Number in /usr/include/asm-generic/errno.h
-
-struct results {
-	union {
-		// ARG_FD.  -1 = Avoid. 0 = untested. 1 = Works.
-		int fdmap[1024];
-		// ARG_LEN
-		unsigned int min, max;
-	};
+struct errnos {
+	unsigned int num;
+	int values[32];
 };
 
 struct syscallentry {
@@ -107,16 +97,6 @@ struct syscallentry {
 	const char *arg5name;
 	const char *arg6name;
 
-	struct results results1;
-	struct results results2;
-	struct results results3;
-	struct results results4;
-	struct results results5;
-	struct results results6;
-
-	unsigned int successes, failures, attempted;
-	unsigned int errnos[NR_ERRNOS];
-
 	/* FIXME: At some point, if we grow more type specific parts here,
 	 * it may be worth union-ising this
 	 */
@@ -139,6 +119,8 @@ struct syscallentry {
 
 	const unsigned int group;
 	const int rettype;
+
+	struct errnos errnos;
 };
 
 #define RET_BORING		-1
@@ -172,6 +154,6 @@ struct syscalltable {
 void do_syscall(struct syscallrecord *rec);
 void handle_syscall_ret(struct syscallrecord *rec);
 
-#define for_each_arg(_e, _i) \
-	for (_i = 1; _i <= _e->num_args; _i++)
+#define for_each_arg(i) \
+	for (i = 1; i <= entry->num_args; i++)
 

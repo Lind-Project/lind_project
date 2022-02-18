@@ -7,10 +7,6 @@
 #include <linux/xattr.h>
 #include "sanitise.h"
 
-static unsigned long setxattr_flags[] = {
-	XATTR_CREATE, XATTR_REPLACE,
-};
-
 struct syscallentry syscall_setxattr = {
 	.name = "setxattr",
 	.num_args = 5,
@@ -24,5 +20,8 @@ struct syscallentry syscall_setxattr = {
 	.arg4type = ARG_LEN,
 	.arg5name = "flags",
 	.arg5type = ARG_LIST,
-	.arg5list = ARGLIST(setxattr_flags),
+	.arg5list = {
+		.num = 2,
+		.values = { XATTR_CREATE, XATTR_REPLACE },
+	},
 };

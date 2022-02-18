@@ -13,9 +13,60 @@
 #include "types.h"
 #include "utils.h"
 
-int rnd(void)
+void generate_rand_bytes(unsigned char *ptr, unsigned int len)
 {
-	return rand();
+	unsigned int i;
+	unsigned int startoffset = 0, remain;
+	unsigned char separators[] = { ':', ',', '.', ' ', '-', '\0', };
+	unsigned char separator;
+
+	switch (rand() % 3) {
+	case 0:
+		/* Complete garbage. */
+		for (i = 0; i < len; i++)
+			ptr[i] = RAND_BYTE();
+		break;
+	case 1:
+		/* printable text strings. */
+		for (i = 0; i < len; i++)
+			ptr[i] = 32 + rand() % (0x7f - 32);
+		break;
+	case 2:
+		/* numbers (for now, decimal only) */
+
+		separator = separators[rand() % sizeof(separators)];
+
+		remain = len;
+
+		while (remain > 0) {
+			unsigned int runlen;
+
+			/* Sometimes make the numbers be negative. */
+			if (RAND_BOOL()) {
+				ptr[startoffset++] = '-';
+				remain--;
+				if (remain == 0)
+					break;
+			}
+
+			/* At most make this run 10 chars. */
+			runlen = min(remain, (unsigned int) rand() % 10);
+
+			for (i = startoffset; i < startoffset + runlen; i++)
+				ptr[i] = '0' + rand() % 10;
+
+			startoffset += runlen;
+			remain -= runlen;
+
+			/* insert commas and/or spaces */
+			if (remain > 0) {
+				ptr[i++] = separator;
+				startoffset++;
+				remain--;
+			}
+		}
+		break;
+	}
 }
 
 /*
@@ -33,7 +84,7 @@ unsigned long set_rand_bitmask(unsigned int num, const unsigned long *values)
 		return mask;
 
 	for (i = 0; i < bits; i++)
-		mask |= values[rnd() % num];
+		mask |= values[rand() % num];
 
 	return mask;
 }
@@ -46,7 +97,7 @@ unsigned long rand_single_bit(unsigned char size)
 	if (size > __WORDSIZE)
 		size = __WORDSIZE;
 
-	return (1UL << (rnd() % size));
+	return (1UL << (rand() % size));
 }
 
 /*
@@ -54,12 +105,12 @@ unsigned long rand_single_bit(unsigned char size)
  */
 static unsigned long randbits(int limit)
 {
-	unsigned int num = rnd() % (limit / 2);
+	unsigned int num = rand() % (limit / 2);
 	unsigned int i;
 	unsigned long r = 0;
 
 	for (i = 0; i < num; i++)
-		r |= (1UL << (rnd() % (limit - 1)));
+		r |= (1UL << (rand() % (limit - 1)));
 
 	return r;
 }
@@ -80,75 +131,22 @@ static unsigned long rept_byte(void)
 }
 
 /*
- * Generate, and munge a 16bit number.
- */
-unsigned short rand16(void)
-{
-	unsigned short r = 0, r2;
-
-	switch (rnd() % 6) {
-	case 0:	r = RAND_BYTE();
-		break;
-
-	case 1: r = rand_single_bit(16);
-		break;
-	case 2:	r = randbits(16);
-		break;
-	case 3: r = rnd();
-		break;
-	case 4:	r2 = rnd() & 0xff;
-		r = r2 | r2 << 8;
-		break;
-	case 5: return 0 - ((rnd() % 10) + 1);
-	}
-
-	/* Sometimes flip sign */
-	if (ONE_IN(25))
-		r = ~r + 1;
-
-	if (ONE_IN(25)) {
-		int _div = 1 << RAND_RANGE(1, 4);	/* 2,4,8 or 16 */
-		r /= _div;
-	}
-
-	if (RAND_BOOL()) {
-		/* limit the size */
-		switch (rnd() % 3) {
-		case 0: r &= 0xff;
-			break;
-		case 1: r &= 0xfff;
-			break;
-		case 2: r &= PAGE_MASK;
-			break;
-		}
-	}
-	return r;
-}
-
-/*
  * Generate, and munge a 32bit number.
  */
 unsigned int rand32(void)
 {
 	unsigned long r = 0;
 
-	switch (rnd() % 8) {
-	case 0:	r = RAND_BYTE();
+	switch (rand() % 5) {
+	case 0: r = rand_single_bit(32);
 		break;
-	case 1:	r = rand16();
+	case 1:	r = randbits(32);
 		break;
-	case 2: r = rand_single_bit(32);
+	case 2: r = RAND_32();
 		break;
-	case 3:	r = randbits(32);
+	case 3:	r = rept_byte();
 		break;
-	case 4: r = rnd();
-		break;
-	case 5:	r = rept_byte();
-		break;
-
-	case 6:	return get_interesting_value();
-
-	case 7: return 0 - ((rnd() % 10) + 1);
+	case 4:	return get_interesting_value();
 	}
 
 	/* Sometimes deduct it from INT_MAX */
@@ -160,23 +158,23 @@ unsigned int rand32(void)
 		r = ~r + 1;
 
 	/* we might get lucky if something is counting ints/longs etc. */
-	if (ONE_IN(25)) {
+	if (ONE_IN(4)) {
 		int _div = 1 << RAND_RANGE(1, 4);	/* 2,4,8 or 16 */
 		r /= _div;
 	}
 
-	if (RAND_BOOL()) {
-		/* limit the size */
-		switch (rnd() % 4) {
-		case 0: r &= 0xff;
-			break;
-		case 1: r &= 0xffff;
-			break;
-		case 2: r &= PAGE_MASK;
-			break;
-		case 3: r &= 0xffffff;
-			break;
-		}
+	/* limit the size */
+	switch (rand() % 5) {
+	case 0: r &= 0xff;
+		break;
+	case 1: r &= 0xffff;
+		break;
+	case 2: r &= PAGE_MASK;
+		break;
+	case 3: r &= 0xffffff;
+		break;
+	case 4:	// do nothing
+		break;
 	}
 
 	return r;
@@ -187,49 +185,38 @@ unsigned int rand32(void)
  */
 u64 rand64(void)
 {
-	u64 r = 0;
+	unsigned long r = 0;
 
-	switch (rnd() % 9) {
+	if (RAND_BOOL()) {
+		/* 32-bit ranges. */
+		r = rand32();
 
-	/* 8-bit ranges */
-	case 0:	r = RAND_BYTE();
-		break;
+	} else {
+		/* 33:64-bit ranges. */
+		switch (rand() % 5) {
+		case 0:	r = rand_single_bit(64);
+			break;
+		case 1:	r = randbits(64);
+			break;
+		case 2:	r = RAND_64();
+			break;
+		case 3:	r = rept_byte();
+			break;
+		/* Sometimes pick a not-so-random number. */
+		case 4:	return get_interesting_value();
+		}
 
-	/* 16-bit ranges */
-	case 1:	r = rand16();
-		break;
-
-	/* 32-bit ranges. */
-	case 2:	r = rand32();
-		break;
-
-	/* 33:64-bit ranges. */
-	case 3:	r = rand_single_bit(64);
-		break;
-	case 4:	r = randbits(64);
-		break;
-	case 5:	r = (u64) rnd() << 32 | rnd();
-		break;
-	case 6:	r = rept_byte();
-		break;
-
-	/* Sometimes pick a not-so-random number. */
-	case 7:	return get_interesting_value();
-
-	// small 64bit negative number.
-	case 8: return 0 - ((rnd() % 10) + 1);
-	}
-
-	/* limit the size */
-	switch (rnd() % 4) {
-	case 0: r &= 0x000000ffffffffffULL;
-		break;
-	case 1: r &= 0x0000ffffffffffffULL;
-		break;
-	case 2: r &= 0x00ffffffffffffffULL;
-		break;
-	default: /* no limiting. */
-		break;
+		/* limit the size */
+		switch (rand() % 4) {
+		case 0: r &= 0x000000ffffffffffULL;
+			break;
+		case 1: r &= 0x0000ffffffffffffULL;
+			break;
+		case 2: r &= 0x00ffffffffffffffULL;
+			break;
+		default: /* no limiting. */
+			break;
+		}
 	}
 
 	/* Sometimes invert the generated number. */
@@ -241,9 +228,9 @@ u64 rand64(void)
 		unsigned int i;
 		unsigned int rounds;
 
-		rounds = rnd() % 4;
+		rounds = rand() % 4;
 		for (i = 0; i < rounds; i++)
-			r |= (1UL << ((__WORDSIZE - 1) - (rnd() % 8)));
+			r |= (1UL << ((__WORDSIZE - 1) - (rand() % 8)));
 	}
 
 	/* Sometimes flip sign */

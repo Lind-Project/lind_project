@@ -6,10 +6,6 @@
 #define MODULE_INIT_IGNORE_MODVERSIONS  1
 #define MODULE_INIT_IGNORE_VERMAGIC     2
 
-static unsigned long finit_module_flags[] = {
-	MODULE_INIT_IGNORE_MODVERSIONS, MODULE_INIT_IGNORE_VERMAGIC,
-};
-
 struct syscallentry syscall_finit_module = {
 	.name = "finit_module",
 	.num_args = 3,
@@ -19,5 +15,8 @@ struct syscallentry syscall_finit_module = {
 	.arg2type = ARG_ADDRESS,
 	.arg3name = "flags",
 	.arg3type = ARG_LIST,
-	.arg3list = ARGLIST(finit_module_flags),
+	.arg3list = {
+		.num = 2,
+		.values = { MODULE_INIT_IGNORE_MODVERSIONS, MODULE_INIT_IGNORE_VERMAGIC },
+	},
 };

@@ -9,7 +9,7 @@
 #include "random.h"
 #include "utils.h"
 
-static void nfc_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
+void nfc_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 {
 	struct sockaddr_nfc *nfc;
 
@@ -17,33 +17,24 @@ static void nfc_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 	nfc = zmalloc(sizeof(struct sockaddr_nfc));
 
 	nfc->sa_family = PF_NFC;
-	nfc->dev_idx = rnd();
-	nfc->target_idx = rnd();
-	nfc->nfc_protocol = rnd() % 5;
+	nfc->dev_idx = rand();
+	nfc->target_idx = rand();
+	nfc->nfc_protocol = rand() % 5;
 	*addr = (struct sockaddr *) nfc;
 	*addrlen = sizeof(struct sockaddr_nfc);
 }
 
-#define SOL_NFC 280
-
-static void nfc_setsockopt(struct sockopt *so, __unused__ struct socket_triplet *triplet)
+void nfc_rand_socket(struct socket_triplet *st)
 {
-	so->level = SOL_NFC;
+	if (RAND_BOOL()) {
+		st->protocol = NFC_SOCKPROTO_LLCP;
+		if (RAND_BOOL())
+			st->type = SOCK_DGRAM;
+		else
+			st->type = SOCK_STREAM;
+		return;
+	}
+
+	st->protocol = NFC_SOCKPROTO_RAW;
+	st->type = SOCK_SEQPACKET;
 }
-
-static struct socket_triplet nfc_triplets[] = {
-	{ .family = PF_NFC, .protocol = NFC_SOCKPROTO_RAW, .type = SOCK_SEQPACKET },
-	{ .family = PF_NFC, .protocol = NFC_SOCKPROTO_RAW, .type = SOCK_RAW },
-
-	{ .family = PF_NFC, .protocol = NFC_SOCKPROTO_LLCP, .type = SOCK_DGRAM },
-	{ .family = PF_NFC, .protocol = NFC_SOCKPROTO_LLCP, .type = SOCK_STREAM },
-	{ .family = PF_NFC, .protocol = NFC_SOCKPROTO_LLCP, .type = SOCK_RAW },
-};
-
-const struct netproto proto_nfc = {
-	.name = "nfc",
-	.setsockopt = nfc_setsockopt,
-	.gen_sockaddr = nfc_gen_sockaddr,
-	.valid_triplets = nfc_triplets,
-	.nr_triplets = ARRAY_SIZE(nfc_triplets),
-};

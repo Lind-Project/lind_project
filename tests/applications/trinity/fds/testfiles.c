@@ -11,7 +11,6 @@
 #include "fd.h"
 #include "files.h"
 #include "log.h"
-#include "objects.h"
 #include "random.h"
 #include "sanitise.h"
 #include "shm.h"
@@ -19,31 +18,18 @@
 #include "testfile.h"
 #include "utils.h"
 
-#define MAX_TESTFILES 4
-#define MAX_TESTFILE_FDS 20
-
-static void testfile_destructor(struct object *obj)
-{
-	close(obj->testfilefd);
-}
-
 static int open_testfile(char *filename)
 {
-	struct objhead *head;
 	int fd;
-
-	head = get_objhead(OBJ_GLOBAL, OBJ_FD_TESTFILE);
-	head->destroy = &testfile_destructor;
 
 	/* file might be around from an earlier run, nuke it. */
 	(void) unlink(filename);
 
 	if (RAND_BOOL()) {
 		fd = open_with_fopen(filename, O_RDWR);
-		if (fd != -1) {
+		if (fd != -1)
 			output(2, "fd[%d] = fopen(\"%s\", O_RDWR)\n", fd, filename);
-			(void) fcntl(fd, F_SETFL, random_fcntl_setfl_flags());
-		}
+		(void) fcntl(fd, F_SETFL, random_fcntl_setfl_flags());
 	} else {
 		const unsigned long open_flags[] = { O_DIRECT, O_DSYNC, O_SYNC, };
 		int flags = 0;
@@ -61,33 +47,21 @@ static int open_testfile(char *filename)
 static int open_testfile_fds(void)
 {
 	char *filename;
-	unsigned int i = 1, nr = 0;
+	unsigned int i = 1;
 	unsigned int fails = 0;
 
 	filename = zmalloc(64);
 
-	while (nr < MAX_TESTFILE_FDS) {
+	while (i <= MAX_TESTFILE_FDS) {
 		int fd;
 
 		sprintf(filename, "trinity-testfile%u", i);
 
 		fd = open_testfile(filename);
 		if (fd != -1) {
-			struct object *obj;
-
-			obj = alloc_object();
-			obj->testfilefd = fd;
-			add_object(obj, OBJ_GLOBAL, OBJ_FD_TESTFILE);
-
+			shm->testfile_fds[i - 1] = fd;
 			i++;
-			if (i > MAX_TESTFILES)
-				i = 1;
-			nr++;
-
 			fails = 0;
-
-			mmap_fd(fd, filename, page_size, PROT_READ|PROT_WRITE, OBJ_GLOBAL, OBJ_MMAP_TESTFILE);
-
 		} else {
 			fails++;
 			if (fails == 100) {
@@ -96,29 +70,18 @@ static int open_testfile_fds(void)
 		}
 	}
 
-	dump_objects(OBJ_GLOBAL, OBJ_MMAP_TESTFILE);
-
 	free(filename);
 	return TRUE;
 }
 
-int get_rand_testfile_fd(void)
+static int get_rand_testfile_fd(void)
 {
-	struct object *obj;
-
-	/* check if testfilefd's unavailable/disabled. */
-	if (objects_empty(OBJ_FD_TESTFILE) == TRUE)
-		return -1;
-
-	obj = get_random_object(OBJ_FD_TESTFILE, OBJ_GLOBAL);
-	return obj->testfilefd;
+	return shm->testfile_fds[rand() % MAX_TESTFILE_FDS];
 }
 
-static const struct fd_provider testfile_fd_provider = {
+const struct fd_provider testfile_fd_provider = {
 	.name = "testfile",
 	.enabled = TRUE,
 	.open = &open_testfile_fds,
 	.get = &get_rand_testfile_fd,
 };
-
-REG_FD_PROV(testfile_fd_provider);

@@ -15,7 +15,6 @@
 #include "params.h"
 #include "pids.h"
 #include "random.h"
-#include "results.h"
 #include "sanitise.h"
 #include "shm.h"
 #include "syscall.h"
@@ -83,50 +82,58 @@ already_done:
 #define syscall32(a,b,c,d,e,f,g) 0
 #endif /* ARCH_IS_BIARCH */
 
-static void __do_syscall(struct syscallrecord *rec, enum syscallstate state)
+static void __do_syscall(struct syscallrecord *rec)
 {
+	int nr, call;
 	unsigned long ret = 0;
+	bool needalarm;
+
+	nr = rec->nr;
+
+	/* Some architectures (IA64/MIPS) start their Linux syscalls
+	 * At non-zero, and have other ABIs below.
+	 */
+	call = nr + SYSCALL_OFFSET;
+
+	needalarm = syscalls[nr].entry->flags & NEED_ALARM;
+	if (needalarm)
+		(void)alarm(1);
 
 	errno = 0;
 
-	shm->stats.op_count++;
-
 	if (dry_run == FALSE) {
-		int nr, call;
-		bool needalarm;
-
-		nr = rec->nr;
-		/* Some architectures (IA64/MIPS) start their Linux syscalls
-		 * At non-zero, and have other ABIs below.
-		 */
-		call = nr + SYSCALL_OFFSET;
-		needalarm = syscalls[nr].entry->flags & NEED_ALARM;
-		if (needalarm)
-			(void)alarm(1);
-
-		lock(&rec->lock);
-		rec->state = state;
-		unlock(&rec->lock);
-
-		if (rec->do32bit == FALSE) {
+		shm_ro();
+		if (rec->do32bit == FALSE)
 			ret = syscall(call, rec->a1, rec->a2, rec->a3, rec->a4, rec->a5, rec->a6);
-		} else {
+		else
 			ret = syscall32(call, rec->a1, rec->a2, rec->a3, rec->a4, rec->a5, rec->a6);
-		}
-		if (needalarm)
-			(void)alarm(0);
+		shm_rw();
 	}
 
+	/* We returned! */
+	shm->stats.total_syscalls_done++;
+
 	lock(&rec->lock);
+	(void)gettimeofday(&rec->tv, NULL);
+
+	rec->op_nr++;
 	rec->errno_post = errno;
 	rec->retval = ret;
 	rec->state = AFTER;
 	unlock(&rec->lock);
+
+	if (IS_ERR(ret))
+		shm->stats.failures++;
+	else
+		shm->stats.successes++;
+
+	if (needalarm)
+		(void)alarm(0);
 }
 
 /* This is a special case for things like execve, which would replace our
  * child process with something unknown to us. We use a 'throwaway' process
- * to do the execve in, and let it run for a max of a second before we kill it
+ * to do the execve in, and let it run for a max of a seconds before we kill it
  */
 static void do_extrafork(struct syscallrecord *rec)
 {
@@ -139,30 +146,23 @@ static void do_extrafork(struct syscallrecord *rec)
 		char childname[]="trinity-subchild";
 		prctl(PR_SET_NAME, (unsigned long) &childname);
 
-		__do_syscall(rec, GOING_AWAY);
+		rec->state = GOING_AWAY;
+		__do_syscall(rec);
 		/* if this was for eg. an successful execve, we should never get here.
 		 * if it failed though... */
+		shm->stats.failures++;
 		_exit(EXIT_SUCCESS);
 	}
 
-	/* misc failure. */
-	if (extrapid == -1) {
-		debugf("Couldn't fork grandchild: %s\n", strerror(errno));
-		return;
-	}
-
-	/* small pause to let grandchild do some work. */
-	if (pid_alive(extrapid) == TRUE)
-		usleep(100);
-
+	/* child */
 	while (pid == 0) {
 		int childstatus;
 
 		pid = waitpid(extrapid, &childstatus, WUNTRACED | WCONTINUED | WNOHANG);
 		if (pid_alive(extrapid) == TRUE)
 			kill(extrapid, SIGKILL);
-		usleep(1000);
 	}
+	shm->stats.successes++;
 }
 
 
@@ -174,11 +174,56 @@ void do_syscall(struct syscallrecord *rec)
 	call = rec->nr;
 	entry = syscalls[call].entry;
 
+	rec->state = BEFORE;
+
 	if (entry->flags & EXTRA_FORK)
 		do_extrafork(rec);
 	else
 		 /* common-case, do the syscall in this child process. */
-		__do_syscall(rec, BEFORE);
+		__do_syscall(rec);
+}
+
+static void check_retval_documented(struct syscallrecord *rec, struct syscallentry *entry)
+{
+	struct errnos *errnos;
+	unsigned int i;
+
+	/* Just return silently if ENOSYS, we'll disable it immediately afterwards. */
+	if (rec->errno_post == ENOSYS)
+		return;
+
+	/* Only check syscalls we've documented so far. */
+	errnos = &entry->errnos;
+	if (errnos->num == 0)
+		return;
+
+	lock(&shm->syscalltable_lock);
+
+	/* Check against the list of known return values. */
+	for (i = 0; i < errnos->num; i++) {
+		if (rec->errno_post == errnos->values[i])
+			goto out;
+	}
+
+	/* if we get here, we have a return value we don't know.
+	 * find space for it, and store it so we don't warn again */
+
+	if (errnos->values[i] == 0) {
+		errnos->values[i] = rec->errno_post;
+		errnos->num++;
+
+		//TODO: if this was the 32bit syscall, we should adjust the 64bit one too.
+		// and vice-versa.
+
+		//output(0, "%s%s\n", rec->prebuffer, rec->postbuffer);
+		output(0, "%s%s returned an undocumented return value (%d:%s)\n",
+			entry->name,
+			rec->do32bit == TRUE ? ":[32BIT]" : "",
+			rec->errno_post, strerror(rec->errno_post));
+	}
+
+out:
+	unlock(&shm->syscalltable_lock);
 }
 
 /*
@@ -188,7 +233,9 @@ void do_syscall(struct syscallrecord *rec)
  */
 static void deactivate_enosys(struct syscallrecord *rec, struct syscallentry *entry, unsigned int call)
 {
-	/* some syscalls return ENOSYS instead of EINVAL etc (futex for eg) */
+	if (rec->errno_post != ENOSYS)
+		return;
+
 	if (entry->flags & IGNORE_ENOSYS)
 		return;
 
@@ -208,54 +255,30 @@ already_done:
 	unlock(&shm->syscalltable_lock);
 }
 
-static void generic_post(const enum argtype type, unsigned long reg)
-{
-	void *ptr = (void *) reg;
-
-	if ((type == ARG_PATHNAME) && (ptr != NULL))
-		free(ptr);
-}
-
 void handle_syscall_ret(struct syscallrecord *rec)
 {
 	struct syscallentry *entry;
+	struct syscallrecord *previous;
 	unsigned int call;
 
 	call = rec->nr;
 	entry = syscalls[call].entry;
 
 	if (rec->retval == -1UL) {
-		int err = rec->errno_post;
-
 		/* only check syscalls that completed. */
 		if (rec->state == AFTER) {
-			if (err == ENOSYS)
-				deactivate_enosys(rec, entry, call);
-
-			entry->failures++;
-			if (err < NR_ERRNOS) {
-				entry->errnos[err]++;
-			} else {
-				printf("errno out of range: %d:%s\n", err, strerror(err));
-			}
-			shm->stats.failures++;
+			check_retval_documented(rec, entry);
+			deactivate_enosys(rec, entry, call);
 		}
-	} else {
-		handle_success(rec);	// Believe me folks, you'll never get bored with winning
-		entry->successes++;
-		shm->stats.successes++;
 	}
-	entry->attempted++;
-
-	generic_post(entry->arg1type, rec->a1);
-	generic_post(entry->arg2type, rec->a2);
-	generic_post(entry->arg3type, rec->a3);
-	generic_post(entry->arg4type, rec->a4);
-	generic_post(entry->arg5type, rec->a5);
-	generic_post(entry->arg6type, rec->a6);
 
 	if (entry->post)
 	    entry->post(rec);
+
+	/* store info for debugging. */
+	previous = &this_child->previous;
+	memcpy(previous, rec, sizeof(struct syscallrecord));
+	previous->state = DONE;
 
 	check_uid();
 

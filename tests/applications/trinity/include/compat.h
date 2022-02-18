@@ -115,9 +115,6 @@ enum {
 #define MAP_STACK 0x20000
 #endif
 
-#ifndef MADV_FREE
-#define MADV_FREE 8
-#endif
 #ifndef MADV_MERGEABLE
 #define MADV_MERGEABLE 12
 #endif
@@ -166,10 +163,6 @@ enum {
 #endif
 #ifndef PF_IB
 #define PF_IB          AF_IB
-#endif
-
-#ifndef PF_MPLS
-#define PF_MPLS		28
 #endif
 
 #ifndef PF_CAN
@@ -221,10 +214,6 @@ enum {
 #define AF_VSOCK PF_VSOCK
 #endif
 
-#ifndef PF_KCM
-#define PF_KCM		41
-#endif
-
 #ifndef NFC_SOCKPROTO_RAW
 #define NFC_SOCKPROTO_RAW	0
 #endif
@@ -234,10 +223,6 @@ enum {
 
 #ifndef MSG_WAITFORONE
 #define MSG_WAITFORONE	0x10000
-#endif
-
-#ifndef MSG_BATCH
-#define MSG_BATCH 0x40000
 #endif
 
 #ifndef MSG_CMSG_CLOEXEC
@@ -279,27 +264,6 @@ enum {
 #endif
 #ifndef NETLINK_CAP_ACK
 #define NETLINK_CAP_ACK 10
-#endif
-#ifndef NETLINK_SOCK_DIAG
-#define NETLINK_SOCK_DIAG 4
-#endif
-#ifndef RTNLGRP_DCB
-#define RTNLGRP_DCB 23
-#endif
-#ifndef RTNLGRP_IPV4_NETCONF
-#define RTNLGRP_IPV4_NETCONF 24
-#endif
-#ifndef RTNLGRP_IPV6_NETCONF
-#define RTNLGRP_IPV6_NETCONF 25
-#endif
-#ifndef RTNLGRP_MDB
-#define RTNLGRP_MDB 26
-#endif
-#ifndef RTNLGRP_MPLS_ROUTE
-#define RTNLGRP_MPLS_ROUTE 27
-#endif
-#ifndef RTNLGRP_NSID
-#define RTNLGRP_NSID 28
 #endif
 
 /* linux/prctl.h */
@@ -472,19 +436,6 @@ enum kcmp_type {
 #define SO_INCOMING_CPU		49
 #endif
 
-#ifndef SO_ATTACH_BPF
-#define SO_ATTACH_BPF		50
-#endif
-
-#ifndef SO_ATTACH_REUSEPORT_CBPF
-#define SO_ATTACH_REUSEPORT_CBPF 51
-#define SO_ATTACH_REUSEPORT_EBPF 52
-#endif
-
-#ifndef SO_CNX_ADVICE
-#define SO_CNX_ADVICE 53
-#endif
-
 /* linux/tcp.h */
 #ifndef TCP_COOKIE_TRANSACTIONS
 #define TCP_COOKIE_TRANSACTIONS	15
@@ -537,10 +488,6 @@ enum kcmp_type {
 #ifndef TCP_SAVE_SYN
 #define TCP_SAVE_SYN		27
 #define TCP_SAVED_SYN		28
-#endif
-
-#ifndef TCP_REPAIR_WINDOW
-#define TCP_REPAIR_WINDOW	29
 #endif
 
 /* linux/if_packet.h */
@@ -1071,19 +1018,12 @@ struct kvm_get_htab_fd {
 #define SWAP_FLAG_DISCARD 0x10000
 #endif
 
-/* linux/fs.h */
+/* unistd.h */
 #ifndef SEEK_DATA
 #define SEEK_DATA 3
 #endif
 #ifndef SEEK_HOLE
 #define SEEK_HOLE 4
-#endif
-#ifndef RWF_HIPRI
-#define RWF_HIPRI 0x00000001 /* high priority request, poll if possible */
-#endif
-#ifndef RWF_DSYNC
-#define RWF_DSYNC 0x00000002 /* per-IO O_DSYNC */
-#define RWF_SYNC  0x00000004 /* per-IO O_SYNC */
 #endif
 
 /* sys/epoll.h */
@@ -1105,28 +1045,4 @@ struct kvm_get_htab_fd {
 #endif
 #ifndef POLL_BUSY_LOOP
 #define POLL_BUSY_LOOP 0x8000
-#endif
-
-/* linux/nvme_ioctl.h */
-#ifndef NVME_IOCTL_RESET
-#define NVME_IOCTL_RESET _IO('N', 0x44)
-#endif
-
-/* linux/shm.h */
-#ifndef SHM_HUGE_SHIFT
-#define SHM_HUGE_SHIFT  26
-#endif
-#ifndef SHM_HUGE_2MB
-#define SHM_HUGE_2MB	(21 << SHM_HUGE_SHIFT)
-#define SHM_HUGE_1GB	(30 << SHM_HUGE_SHIFT)
-#endif
-
-/* bits/shm.h */
-#ifndef SHM_NORESERVE
-# define SHM_NORESERVE 010000
-#endif
-
-/* netfilter/ipset/ipset.h */
-#ifndef SO_IP_SET
-#define SO_IP_SET 83
 #endif

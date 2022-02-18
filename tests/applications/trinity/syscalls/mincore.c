@@ -17,8 +17,7 @@ static void sanitise_mincore(struct syscallrecord *rec)
 
 	map = common_set_mmap_ptr_len();
 
-	len = min(GB(1), map->size);
-	len = len + (page_size - 1) / page_size;
+	len = map->size + (page_size - 1) / page_size;
 
 	rec->a3 = (unsigned long) zmalloc(len);	// FIXME: LEAK
 }

@@ -2,16 +2,28 @@
 
 #include "arch.h"
 #include "child.h"
+#include "drm_fds.h"
+#include "epoll.h"
+#include "eventfd.h"
 #include "exit.h"
 #include "files.h"
+#include "inotify.h"
 #include "locks.h"
+#include "memfd.h"
 #include "net.h"
+#include "pipes.h"
+#include "perf.h"
 #include "stats.h"
 #include "syscall.h"
+#include "testfile.h"
+#include "timerfd.h"
 #include "types.h"
 
 void create_shm(void);
 void init_shm(void);
+
+void shm_ro(void);
+void shm_rw(void);
 
 struct shm_s {
 	struct childdata **children;
@@ -40,12 +52,29 @@ struct shm_s {
 	unsigned int syscalls32_succeeded;
 	unsigned int syscalls32_attempted;
 #endif
-	/* generic object cache*/
-	struct objhead global_objects[MAX_OBJECT_TYPES];
 
-	/* file descriptor info */
+	/* pids */
+	pid_t mainpid;
+	pid_t last_reaped;
+
+	/* file descriptors, created in main, inherited in children */
+	int pipe_fds[MAX_PIPE_FDS];
+	int file_fds[NR_FILE_FDS];
+	int perf_fds[MAX_PERF_FDS];
+	int epoll_fds[MAX_EPOLL_FDS];
+	int eventfd_fds[MAX_EVENTFD_FDS];
+	int timerfd_fds[MAX_TIMERFD_FDS];
+	int testfile_fds[MAX_TESTFILE_FDS];
+	int memfd_fds[MAX_MEMFD_FDS];
+	int drm_fds[MAX_DRM_FDS];
+	int inotify_fds[MAX_INOTIFY_FDS];
+	struct socketinfo sockets[NR_SOCKET_FDS];
 	int current_fd;
 	unsigned int fd_lifetime;
+
+	/* main<>watchdog mutex, for reap_child()
+	 *  provides exclusion so they don't both try at the same time. */
+	lock_t reaper_lock;
 
 	/* to protect from multiple child processes from
 	 * trying to disable the same syscall at the same time. */
@@ -67,8 +96,5 @@ struct shm_s {
 	 * This can be useful if for some reason we don't want to gdb to the child.
 	 */
 	bool debug;
-
-	/* set to true if a child hits an EPERM trying to unshare() */
-	bool unshare_perm_err;
 };
 extern struct shm_s *shm;

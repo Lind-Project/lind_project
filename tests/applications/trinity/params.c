@@ -32,7 +32,6 @@ bool do_specific_domain = FALSE;
 bool no_domains[TRINITY_PF_MAX];
 
 bool dry_run = FALSE;
-bool show_unannotated = FALSE;
 bool show_syscall_list = FALSE;
 bool show_ioctl_list = FALSE;
 unsigned char quiet_level = 0;
@@ -43,9 +42,6 @@ bool dropprivs = FALSE;
 bool do_syslog = FALSE;
 bool random_selection = FALSE;
 unsigned int random_selection_num;
-
-bool clowntown = FALSE;
-bool show_stats = FALSE;
 
 bool user_set_seed = FALSE;
 
@@ -59,6 +55,9 @@ int logging = LOGGING_FILES;
 
 unsigned int kernel_taint_mask = 0xFFFFFFFF;
 bool kernel_taint_param_occured = FALSE;
+
+int server_port = 0;
+char server_addr[INET6_ADDRSTRLEN] = "\0";
 
 void enable_disable_fd_usage(void)
 {
@@ -85,7 +84,8 @@ static void usage(void)
 	outputerr(" --no_domain,-E: specify network domains to be excluded from testing.\n");
 	outputerr(" --quiet,-q: less output.\n");
 	outputerr(" --random,-r#: pick N syscalls at random and just fuzz those\n");
-	outputerr(" --stats: show errno distribution per syscall before exiting\n");
+	outputerr(" --server_addr: supply an IPv4 or IPv6 address to connect, no need for server side.\n");
+	outputerr(" --server_port: supply an server port to listen or connect, will fuzz between port to (port + 100)\n");
 	outputerr(" --syslog,-S: log important info to syslog. (useful if syslog is remote)\n");
 	outputerr(" --verbose,-v: increase output verbosity.\n");
 	outputerr(" --victims,-V: path to victim files.\n");
@@ -102,7 +102,6 @@ static const struct option longopts[] = {
 	{ "arch", required_argument, NULL, 'a' },
 	{ "bdev", required_argument, NULL, 'b' },
 	{ "children", required_argument, NULL, 'C' },
-	{ "clowntown", no_argument, NULL, 0 },
 	{ "dangerous", no_argument, NULL, 'd' },
 	{ "dropprivs", no_argument, NULL, 'X'},
 	{ "debug", no_argument, NULL, 'D' },
@@ -121,8 +120,8 @@ static const struct option longopts[] = {
 	{ "domain", required_argument, NULL, 'P' },
 	{ "quiet", no_argument, NULL, 'q' },
 	{ "random", required_argument, NULL, 'r' },
-	{ "stats", no_argument, NULL, 0 },
-	{ "show-unannotated", no_argument, NULL, 0 },
+	{ "server_addr", required_argument, NULL, 0 },
+	{ "server_port", required_argument, NULL, 0 },
 	{ "syslog", no_argument, NULL, 'S' },
 	{ "verbose", no_argument, NULL, 'v' },
 	{ "victims", required_argument, NULL, 'V' },
@@ -298,8 +297,20 @@ void parse_args(int argc, char *argv[])
 			break;
 
 		case 0:
-			if (strcmp("clowntown", longopts[opt_index].name) == 0)
-				clowntown = TRUE;
+			/*
+			 * FIXME: It's really hard to find two reasonable short
+			 * names since S s P p all have been used. Use long
+			 * options before we fix this issue.
+			*/
+			if (strcmp("server_addr", longopts[opt_index].name) == 0) {
+				unsigned int optarglen = strlen(optarg);
+				unsigned int len = min((unsigned int)sizeof(server_addr), optarglen);
+
+				strncpy(server_addr, optarg, len);
+			}
+
+			if (strcmp("server_port", longopts[opt_index].name) == 0)
+				server_port = atoi(optarg);
 
 			if (strcmp("disable-fds", longopts[opt_index].name) == 0)
 				process_fds_param(optarg, FALSE);
@@ -309,12 +320,6 @@ void parse_args(int argc, char *argv[])
 
 			if (strcmp("dry-run", longopts[opt_index].name) == 0)
 				dry_run = TRUE;
-
-			if (strcmp("show-unannotated", longopts[opt_index].name) == 0)
-				show_unannotated = TRUE;
-
-			if (strcmp("stats", longopts[opt_index].name) == 0)
-				show_stats = TRUE;
 
 			break;
 		}

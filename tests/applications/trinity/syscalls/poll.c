@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <asm/poll.h>
-#include "fd.h"
 #include "random.h"
 #include "sanitise.h"
 #include "utils.h"
@@ -21,7 +20,7 @@ static void sanitise_poll(struct syscallrecord *rec)
 {
 	struct pollfd *pollfd;
 	unsigned int i;
-	unsigned int num_fds = rnd() % 10;
+	unsigned int num_fds = rand() % 10;
 
 	pollfd = zmalloc(num_fds * sizeof(struct pollfd));
 
@@ -80,7 +79,7 @@ static void sanitise_ppoll(struct syscallrecord *rec)
 static void post_ppoll(struct syscallrecord *rec)
 {
 	freeptr(&rec->a1);
-	freeptr(&rec->a3);
+	freeptr(&rec->a4);
 }
 
 struct syscallentry syscall_ppoll = {

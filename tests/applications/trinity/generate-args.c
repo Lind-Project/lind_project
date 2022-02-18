@@ -9,7 +9,6 @@
 #include "log.h"
 #include "maps.h"
 #include "net.h"
-#include "pathnames.h"
 #include "random.h"
 #include "sanitise.h"
 #include "shm.h"
@@ -20,13 +19,13 @@
 static unsigned int get_cpu(void)
 {
 	int i;
-	i = rnd() % 100;
+	i = rand() % 100;
 
 	switch (i) {
 	case 0: return -1;
-	case 1: return rnd() % 4096;
+	case 1: return rand() % 4096;
 	case 2 ... 99:
-		return rnd() % num_online_cpus;
+		return rand() % num_online_cpus;
 	}
 	return 0;
 }
@@ -46,7 +45,7 @@ static unsigned long handle_arg_address(struct syscallrecord *rec, unsigned int 
 
 	addr = find_previous_arg_address(rec, argnum);
 
-	switch (rnd() % 4) {
+	switch (rand() % 4) {
 	case 0:	break;	/* return unmodified */
 	case 1:	addr++;
 		break;
@@ -120,14 +119,12 @@ static void get_num_and_values(struct syscallentry *entry, unsigned int argnum,
 	case 6:	*num = entry->arg6list.num;
 		*values = entry->arg6list.values;
 		break;
-	default:
-		unreachable();
 	}
 
-	if (*num == 0)
+	if (num == 0)
 		BUG("ARG_OP/LIST with 0 args. What?\n");
 
-	if (*values == NULL)
+	if (values == NULL)
 		BUG("ARG_OP/LIST with no values.\n");
 }
 
@@ -142,7 +139,7 @@ static unsigned long handle_arg_op(struct syscallentry *entry, unsigned int argn
 
 	get_num_and_values(entry, argnum, &num, &values);
 
-	op = values[rnd() % num];
+	op = values[rand() % num];
 	return op;
 }
 
@@ -156,9 +153,6 @@ static unsigned long handle_arg_list(struct syscallentry *entry, unsigned int ar
 	const unsigned long *values = NULL;
 
 	get_num_and_values(entry, argnum, &num, &values);
-
-	if (RAND_BOOL())
-		num = min(num, 3U);
 
 	mask = set_rand_bitmask(num, values);
 	return mask;
@@ -189,6 +183,28 @@ static unsigned long handle_arg_iovec(struct syscallentry *entry, struct syscall
 	}
 	return (unsigned long) alloc_iovec(num_entries);
 }
+
+static unsigned long get_argval(struct syscallrecord *rec, unsigned int argnum)
+{
+	unsigned long val = 0;
+
+	switch (argnum) {
+	case 1:	val = rec->a1;
+		break;
+	case 2:	val = rec->a2;
+		break;
+	case 3:	val = rec->a3;
+		break;
+	case 4:	val = rec->a4;
+		break;
+	case 5:	val = rec->a5;
+		break;
+	case 6:	val = rec->a6;
+		break;
+	}
+	return val;
+}
+
 
 static unsigned long handle_arg_sockaddr(struct syscallentry *entry, struct syscallrecord *rec, unsigned int argnum)
 {
@@ -224,12 +240,12 @@ static unsigned long handle_arg_mode_t(void)
 	unsigned int i, count;
 	mode_t mode = 0, op = 0;
 
-	count = rnd() % 9;
+	count = rand() % 9;
 
 	for (i = 0; i < count; i++) {
 		unsigned int j;
 
-		j = rnd() % 16;
+		j = rand() % 15;
 		switch (j) {
 		case  0: op = S_IRWXU; break;
 		case  1: op = S_IRUSR; break;
@@ -258,7 +274,7 @@ static unsigned long handle_arg_mode_t(void)
 	return mode;
 }
 
-enum argtype get_argtype(struct syscallentry *entry, unsigned int argnum)
+static enum argtype get_argtype(struct syscallentry *entry, unsigned int argnum)
 {
 	enum argtype argtype = 0;
 
@@ -301,16 +317,6 @@ static unsigned long fill_arg(struct syscallrecord *rec, unsigned int argnum)
 		return (unsigned long) get_writable_address(page_size);
 
 	case ARG_FD:
-		if (RAND_BOOL()) {
-			unsigned int i;
-			/* If this is the 2nd or more ARG_FD, make it unique */
-			for (i = 0; i < argnum; i++) {
-				enum argtype arg;
-				arg = get_argtype(entry, i);
-				if (arg == ARG_FD)
-					return get_new_random_fd();
-			}
-		}
 		return get_random_fd();
 
 	case ARG_LEN:
@@ -396,7 +402,7 @@ void generic_free_arg(struct syscallrecord *rec)
 
 	entry = syscalls[call].entry;
 
-	for_each_arg(entry, i) {
+	for_each_arg(i) {
 		enum argtype argtype;
 
 		argtype = get_argtype(entry, i);

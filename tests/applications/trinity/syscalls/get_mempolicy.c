@@ -10,10 +10,6 @@
 
 #include "sanitise.h"
 
-static unsigned long get_mempolicy_flags[] = {
-	MPOL_F_NODE, MPOL_F_ADDR, MPOL_F_MEMS_ALLOWED,
-};
-
 struct syscallentry syscall_get_mempolicy = {
 	.name = "get_mempolicy",
 	.num_args = 5,
@@ -29,6 +25,9 @@ struct syscallentry syscall_get_mempolicy = {
 	.arg4type = ARG_ADDRESS,
 	.arg5name = "flags",
 	.arg5type = ARG_LIST,
-	.arg5list = ARGLIST(get_mempolicy_flags),
+	.arg5list = {
+		.num = 3,
+		.values = { MPOL_F_NODE, MPOL_F_ADDR, MPOL_F_MEMS_ALLOWED },
+	},
 	.rettype = RET_ZERO_SUCCESS,
 };

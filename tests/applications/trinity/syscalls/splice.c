@@ -12,9 +12,21 @@
 #include "trinity.h"
 #include "compat.h"
 
-static unsigned long splice_flags[] = {
-	SPLICE_F_MOVE, SPLICE_F_NONBLOCK, SPLICE_F_MORE, SPLICE_F_GIFT,
-};
+static void sanitise_splice(struct syscallrecord *rec)
+{
+	if (ONE_IN(3))
+		return;
+
+	if (RAND_BOOL()) {
+		rec->a1 = shm->pipe_fds[rand() % MAX_PIPE_FDS];
+		rec->a2 = 0;
+	}
+
+	if (RAND_BOOL()) {
+		rec->a3 = shm->pipe_fds[rand() % MAX_PIPE_FDS];
+		rec->a4 = 0;
+	}
+}
 
 struct syscallentry syscall_splice = {
 	.name = "splice",
@@ -31,6 +43,10 @@ struct syscallentry syscall_splice = {
 	.arg5type = ARG_LEN,
 	.arg6name = "flags",
 	.arg6type = ARG_LIST,
-	.arg6list = ARGLIST(splice_flags),
+	.arg6list = {
+		.num = 4,
+		.values = { SPLICE_F_MOVE, SPLICE_F_NONBLOCK, SPLICE_F_MORE, SPLICE_F_GIFT },
+	},
+	.sanitise = sanitise_splice,
 	.flags = NEED_ALARM,
 };

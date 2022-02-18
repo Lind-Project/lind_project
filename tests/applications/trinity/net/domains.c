@@ -65,22 +65,16 @@ static const struct domain domains[] = {
 
 static const struct domain *lookup_domain(const char *name)
 {
-	unsigned int i, len;
+	unsigned int i;
 
 	if (!name)
 		return NULL;
 
-	len = strlen(name);
-
-	if (strncmp(name, "PF_", 3) == 0) {
+	if (strncmp(name, "PF_", 3) == 0)
 		name += 3;
-		len-=3;
-	}
 
 	for (i = 0; i < ARRAY_SIZE(domains); i++) {
-		if (len != strlen(domains[i].name))
-			continue;
-		if (strncmp(name, domains[i].name, len) == 0)
+		if (strncmp(name, domains[i].name, strlen(domains[i].name)) == 0)
 			return &domains[i];
 	}
 

@@ -35,7 +35,7 @@ static unsigned long ** gen_ptrs_to_crap(unsigned int count)
 
 	for (i = 0; i < count; i++) {
 		ptr[i] = zmalloc(page_size);
-		generate_rand_bytes((unsigned char *) ptr[i], rnd() % page_size);
+		generate_rand_bytes((unsigned char *) ptr[i], rand() % page_size);
 	}
 
 	return (unsigned long **) ptr;
@@ -49,11 +49,11 @@ static void sanitise_execve(struct syscallrecord *rec)
 	fclose(stdin);
 
 	/* Fabricate argv */
-	argvcount = rnd() % 32;
+	argvcount = rand() % 32;
 	argv = gen_ptrs_to_crap(argvcount);
 
 	/* Fabricate envp */
-	envpcount = rnd() % 32;
+	envpcount = rand() % 32;
 	envp = gen_ptrs_to_crap(envpcount);
 
 	if (this_syscallname("execve") == FALSE) {
@@ -105,10 +105,15 @@ struct syscallentry syscall_execve = {
 	.post = post_execve,
 	.group = GROUP_VFS,
 	.flags = EXTRA_FORK,
-};
-
-static unsigned long execveat_flags[] = {
-	AT_EMPTY_PATH, AT_SYMLINK_NOFOLLOW,
+	.errnos = {
+		.num = 17,
+		.values = {
+			E2BIG, EACCES, EFAULT, EINVAL, EIO, EISDIR, ELIBBAD, ELOOP,
+			EMFILE, ENOENT, ENOEXEC, ENOMEM, ENOTDIR, EPERM, ETXTBSY,
+			/* currently undocumented in man page. */
+			ENAMETOOLONG, ENXIO,
+		},
+	},
 };
 
 struct syscallentry syscall_execveat = {
@@ -124,9 +129,21 @@ struct syscallentry syscall_execveat = {
 	.arg4type = ARG_ADDRESS,
 	.arg5name = "flags",
 	.arg5type = ARG_LIST,
-	.arg5list = ARGLIST(execveat_flags),
+	.arg5list = {
+		.num = 2,
+		.values = { AT_EMPTY_PATH, AT_SYMLINK_NOFOLLOW },
+	},
 	.sanitise = sanitise_execve,
 	.post = post_execveat,
 	.group = GROUP_VFS,
 	.flags = EXTRA_FORK,
+	.errnos = {
+		.num = 17,
+		.values = {
+			E2BIG, EACCES, EFAULT, EINVAL, EIO, EISDIR, ELIBBAD, ELOOP,
+			EMFILE, ENOENT, ENOEXEC, ENOMEM, ENOTDIR, EPERM, ETXTBSY,
+			/* currently undocumented in man page. */
+			ENAMETOOLONG, ENXIO,
+		},
+	},
 };

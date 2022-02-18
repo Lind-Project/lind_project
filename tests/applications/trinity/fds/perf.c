@@ -6,28 +6,14 @@
 #include <asm/unistd.h>
 
 #include "fd.h"
-#include "objects.h"
 #include "perf.h"
 #include "shm.h"
 #include "log.h"
 #include "sanitise.h"
 
-#define MAX_PERF_FDS 10
-
-static void perffd_destructor(struct object *obj)
-{
-	close(obj->perffd);
-}
-
 static int open_perf_fds(void)
 {
-	struct objhead *head;
 	unsigned int i = 0;
-	unsigned int perm_count = 0;
-	unsigned int inval_count = 0;
-
-	head = get_objhead(OBJ_GLOBAL, OBJ_FD_PERF);
-	head->destroy = &perffd_destructor;
 
 	while (i < MAX_PERF_FDS) {
 		struct syscallrecord *rec;
@@ -38,74 +24,34 @@ static int open_perf_fds(void)
 
 		fd = syscall(__NR_perf_event_open, rec->a1, rec->a2, rec->a3, rec->a4, rec->a5);
 		if (fd != -1) {
-			struct object *obj;
-
-			obj = alloc_object();
-			obj->perffd = fd;
-			add_object(obj, OBJ_GLOBAL, OBJ_FD_PERF);
-
-			output(2, "fd[%d] = perf\n", fd);
+			shm->perf_fds[i] = fd;
+			output(2, "fd[%d] = perf\n", shm->perf_fds[i]);
 			i++;
-
-			/* any time we succeed, reset the failure counts.
-			 * They're only there for the cases where we hit them repeatedly.
-			 */
-			inval_count = 0;
-			perm_count = 0;
 		} else {
-			switch (errno) {
-			case ENOSYS:
-				/* If ENOSYS, bail early rather than do MAX_PERF_FDS retries */
-				return FALSE;
+			/* If ENOSYS, bail early rather than do MAX_PERF_FDS retries */
+			if (errno == ENOSYS)
+				return TRUE;
 
-			case EINVAL:
-				/* If we get here we probably generated something invalid and
-				 * perf_event_open threw it out. Go around the loop again.
-				 * OR its LXCore throwing us in an endless loop.
-				 */
-				inval_count++;
-				break;
-
-			case EACCES:
-				perm_count++;
-				break;
-			}
+			/* If we get here we probably generated something invalid and
+			 * perf_event_open threw it out. Go around the loop again.
+			 */
 		}
-
-		if (perm_count > 1000) {
-			output(2, "Couldn't open enough perf events, got EPERM too much. Giving up.\n");
-			return FALSE;
-		}
-
-		if (inval_count > 10000) {
-			output(2, "couldn't open enough perf events, got EINVAL too much. Giving up.\n");
-			return FALSE;
-		}
-
-		if (shm->exit_reason != STILL_RUNNING)
-			return FALSE;
 	}
 
 	return TRUE;
 }
 
-int get_rand_perf_fd(void)
+static int get_rand_perf_fd(void)
 {
-	struct object *obj;
-
-	/* check if perf unavailable/disabled. */
-	if (objects_empty(OBJ_FD_PERF) == TRUE)
+	if (shm->perf_fds[0] == 0)	/* perf unavailable/disabled. */
 		return -1;
 
-	obj = get_random_object(OBJ_FD_PERF, OBJ_GLOBAL);
-	return obj->perffd;
+	return shm->perf_fds[rand() % MAX_PERF_FDS];
 }
 
-static const struct fd_provider perf_fd_provider = {
+const struct fd_provider perf_fd_provider = {
 	.name = "perf",
 	.enabled = TRUE,
 	.open = &open_perf_fds,
 	.get = &get_rand_perf_fd,
 };
-
-REG_FD_PROV(perf_fd_provider);

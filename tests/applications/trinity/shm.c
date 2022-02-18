@@ -38,6 +38,18 @@ void create_shm(void)
 	printf("shm:%p-%p (%u pages)\n", shm, shm + shm_size - 1, nr_shm_pages);
 }
 
+void shm_ro(void)
+{
+	if (shm->debug == TRUE)
+		mprotect(shm, shm_size, PROT_READ);
+}
+
+void shm_rw(void)
+{
+	if (shm->debug == TRUE)
+		mprotect(shm, shm_size, PROT_READ|PROT_WRITE);
+}
+
 void init_shm(void)
 {
 	unsigned int i;
@@ -48,11 +60,13 @@ void init_shm(void)
 	if (set_debug == TRUE)
 		shm->debug = TRUE;
 
-	shm->stats.op_count = 1;
+	shm->stats.total_syscalls_done = 1;
 
-	shm->seed = init_seed(seed);
-
-	/* Set seed in main process. */
+	if (user_set_seed == TRUE)
+		shm->seed = init_seed(seed);
+	else
+		shm->seed = new_seed();
+	/* Set seed in parent thread */
 	set_seed(NULL);
 
 	childptrslen = max_children * sizeof(struct childdata *);
@@ -69,7 +83,7 @@ void init_shm(void)
 	memset(shm->children, 0, childptrslen);
 
 	/* We allocate the childdata structs as shared mappings, because
-	 * the forking process needs to peek into each childs syscall records
+	 * the watchdog process needs to peek into each childs syscall records
 	 * to make sure they are making progress.
 	 */
 	for_each_child(i) {
@@ -79,10 +93,11 @@ void init_shm(void)
 		shm->children[i] = child;
 
 		memset(&child->syscall, 0, sizeof(struct syscallrecord));
+		memset(&child->previous, 0, sizeof(struct syscallrecord));
 
-		child->num = i;
+		child->pid = EMPTY_PIDSLOT;
 
-		init_child_logging(child);
+		child->logfile = NULL;
 	}
 	mprotect(shm->children, childptrslen, PROT_READ);
 }

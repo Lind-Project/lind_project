@@ -8,10 +8,6 @@
 
 #include "sanitise.h"
 
-static unsigned long kexec_load_flags[] = {
-	KEXEC_ON_CRASH, KEXEC_PRESERVE_CONTEXT,
-};
-
 struct syscallentry syscall_kexec_load = {
 	.name = "kexec_load",
 	.num_args = 4,
@@ -23,5 +19,8 @@ struct syscallentry syscall_kexec_load = {
 	.arg3type = ARG_ADDRESS,
 	.arg4name = "flags",
 	.arg4type = ARG_LIST,
-	.arg4list = ARGLIST(kexec_load_flags),
+	.arg4list = {
+		.num = 2,
+		.values = { KEXEC_ON_CRASH, KEXEC_PRESERVE_CONTEXT },
+	},
 };

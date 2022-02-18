@@ -13,7 +13,6 @@
 #include "shm.h"
 #include "arch.h"
 #include "compat.h"
-#include "objects.h"
 #include "random.h"
 #include "syscall.h"
 #include "tables.h"
@@ -23,6 +22,51 @@
 // need this to actually get MAP_UNINITIALIZED defined
 #define CONFIG_MMAP_ALLOW_UNINITIALIZED
 
+static long sizes[] = {
+	-1,	/* over-written with page_size below */
+	MB(1), MB(2), MB(4), MB(10),
+	GB(1),
+};
+
+static int init_mmap(void)
+{
+	FILE *fp;
+	char *buffer;
+	size_t n = 0;
+
+	if (sizes[0] != -1)
+		return 0;
+
+	sizes[0] = page_size;
+
+	fp = fopen("/proc/meminfo", "r");
+	if (!fp)
+		return -1;
+
+	buffer = malloc(4096);
+	if (!buffer) {
+		fclose(fp);
+		return -1;
+	}
+
+	while (getline(&buffer, &n, fp) >= 0) {
+		unsigned long long free;
+
+		if (sscanf(buffer, "MemFree:         %llu", &free) == 1) {
+			if ((free * 1024) < GB(8ULL)) {
+				printf("Free memory: %.2fGB\n", (double) free / 1024 / 1024);
+				printf("Low on memory, disabling mmaping of 1GB pages\n");
+				sizes[5] = page_size;
+				return 0;
+			}
+		}
+	}
+
+	free(buffer);
+	fclose(fp);
+	return 0;
+}
+
 static void do_anon(struct syscallrecord *rec)
 {
 	/* no fd if anonymous mapping. */
@@ -30,15 +74,9 @@ static void do_anon(struct syscallrecord *rec)
 	rec->a6 = 0;
 }
 
-unsigned long mmap_excl_flags[] = {
-	MAP_SHARED, MAP_PRIVATE,
-};
-
-unsigned long get_rand_mmap_flags(void)
+static void sanitise_mmap(struct syscallrecord *rec)
 {
-	unsigned long flags;
-
-	const unsigned long mmap_flags[] = {
+	unsigned long mmap_flags[] = {
 		MAP_FIXED, MAP_ANONYMOUS, MAP_GROWSDOWN, MAP_DENYWRITE,
 		MAP_EXECUTABLE, MAP_LOCKED, MAP_NORESERVE, MAP_POPULATE,
 		MAP_NONBLOCK, MAP_STACK, MAP_HUGETLB, MAP_UNINITIALIZED,
@@ -47,30 +85,16 @@ unsigned long get_rand_mmap_flags(void)
 #endif
 	};
 
-	flags = RAND_ARRAY(mmap_excl_flags);
-	if (RAND_BOOL())
-		flags |= set_rand_bitmask(ARRAY_SIZE(mmap_flags), mmap_flags);
-
-	return flags;
-}
-
-static void sanitise_mmap(struct syscallrecord *rec)
-{
 	/* Don't actually set a hint right now. */
 	rec->a1 = 0;
 
-	rec->a2 = RAND_ARRAY(mapping_sizes);
-
-	/* this over-rides the ARG_OP in the syscall struct */
-	rec->a4 = get_rand_mmap_flags();
+	// set additional flags
+	rec->a4 = set_rand_bitmask(ARRAY_SIZE(mmap_flags), mmap_flags);
 
 	if (rec->a4 & MAP_ANONYMOUS) {
+		rec->a2 = RAND_ARRAY(sizes);
 		do_anon(rec);
 	} else {
-		rec->a5 = get_random_fd();
-		if (rec->a5 == (unsigned long) -1)
-			rec->a5 = 0;
-
 		if (this_syscallname("mmap2") == TRUE) {
 			/* mmap2 counts in 4K units */
 			rec->a6 /= 4096;
@@ -78,32 +102,37 @@ static void sanitise_mmap(struct syscallrecord *rec)
 			/* page align non-anonymous mappings. */
 			rec->a6 &= PAGE_MASK;
 		}
+
+		rec->a2 = page_size;
 	}
 }
 
 static void post_mmap(struct syscallrecord *rec)
 {
 	char *p;
-	struct object *new;
+	struct list_head *list;
+	struct map *new;
 
 	p = (void *) rec->retval;
 	if (p == MAP_FAILED)
 		return;
 
-	new = alloc_object();
-	new->map.name = strdup("misc");
-	new->map.size = rec->a2;
-	new->map.prot = rec->a3;
+	new = zmalloc(sizeof(struct map));
+	new->name = strdup("misc");
+	new->size = rec->a2;
+	new->prot = rec->a3;
 //TODO: store fd if !anon
-	new->map.ptr = p;
-	new->map.type = CHILD_ANON;
+	new->ptr = p;
+	new->type = TRINITY_MAP_CHILD;
 
 	// Add this to a list for use by subsequent syscalls.
-	add_object(new, OBJ_LOCAL, OBJ_MMAP_ANON);
+	list = &this_child->mappings->list;
+	list_add_tail(&new->list, list);
+	this_child->num_mappings++;
 
 	/* Sometimes dirty the mapping. */
 	if (RAND_BOOL())
-		dirty_mapping(&new->map);
+		dirty_mapping(new);
 }
 
 static char * decode_mmap(struct syscallrecord *rec, unsigned int argnum)
@@ -137,10 +166,6 @@ static char * decode_mmap(struct syscallrecord *rec, unsigned int argnum)
 	return NULL;
 }
 
-static unsigned long mmap_prots[] = {
-	PROT_READ, PROT_WRITE, PROT_EXEC, PROT_SEM,
-};
-
 struct syscallentry syscall_mmap = {
 	.name = "mmap",
 	.num_args = 6,
@@ -154,10 +179,16 @@ struct syscallentry syscall_mmap = {
 	.arg2type = ARG_LEN,
 	.arg3name = "prot",
 	.arg3type = ARG_LIST,
-	.arg3list = ARGLIST(mmap_prots),
+	.arg3list = {
+		.num = 4,
+		.values = { PROT_READ, PROT_WRITE, PROT_EXEC, PROT_SEM },
+	},
 	.arg4name = "flags",
 	.arg4type = ARG_OP,
-	.arg4list = ARGLIST(mmap_excl_flags),
+	.arg4list = {
+		.num = 2,
+		.values = { MAP_SHARED, MAP_PRIVATE },
+	},
 	.arg5name = "fd",
 	.arg5type = ARG_FD,
 	.arg6name = "off",
@@ -165,6 +196,7 @@ struct syscallentry syscall_mmap = {
 
 	.group = GROUP_VM,
 	.flags = NEED_ALARM,
+	.init = init_mmap,
 };
 
 struct syscallentry syscall_mmap2 = {
@@ -180,10 +212,16 @@ struct syscallentry syscall_mmap2 = {
 	.arg2type = ARG_LEN,
 	.arg3name = "prot",
 	.arg3type = ARG_LIST,
-	.arg3list = ARGLIST(mmap_prots),
+	.arg3list = {
+		.num = 4,
+		.values = { PROT_READ, PROT_WRITE, PROT_EXEC, PROT_SEM },
+	},
 	.arg4name = "flags",
 	.arg4type = ARG_OP,
-	.arg4list = ARGLIST(mmap_excl_flags),
+	.arg4list = {
+		.num = 2,
+		.values = { MAP_SHARED, MAP_PRIVATE },
+	},
 	.arg5name = "fd",
 	.arg5type = ARG_FD,
 	.arg6name = "pgoff",
@@ -191,4 +229,5 @@ struct syscallentry syscall_mmap2 = {
 
 	.group = GROUP_VM,
 	.flags = NEED_ALARM,
+	.init = init_mmap,
 };

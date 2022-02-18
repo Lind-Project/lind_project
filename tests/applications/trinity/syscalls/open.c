@@ -11,10 +11,6 @@
 #include "utils.h"
 #include "compat.h"
 
-static unsigned long open_o_flags_base[] = {
-	O_RDONLY, O_WRONLY, O_RDWR, O_CREAT,
-};
-
 static const unsigned long o_flags[] = {
 	O_EXCL, O_NOCTTY, O_TRUNC, O_APPEND,
 	O_NONBLOCK, O_SYNC, O_ASYNC, O_DIRECTORY,
@@ -75,7 +71,10 @@ struct syscallentry syscall_open = {
 	.arg1type = ARG_PATHNAME,
 	.arg2name = "flags",
 	.arg2type = ARG_OP,
-	.arg2list = ARGLIST(open_o_flags_base),
+	.arg2list = {
+		.num = 4,
+		.values = { O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, },
+	},
 	.arg3name = "mode",
 	.arg3type = ARG_MODE_T,
 	.sanitise = sanitise_open,
@@ -93,7 +92,10 @@ struct syscallentry syscall_openat = {
 	.arg2type = ARG_PATHNAME,
 	.arg3name = "flags",
 	.arg3type = ARG_OP,
-	.arg3list = ARGLIST(open_o_flags_base),
+	.arg3list = {
+		.num = 4,
+		.values = { O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, },
+	},
 	.arg4name = "mode",
 	.arg4type = ARG_MODE_T,
 	.flags = NEED_ALARM,
@@ -114,7 +116,10 @@ struct syscallentry syscall_open_by_handle_at = {
 	.arg2type = ARG_ADDRESS,
 	.arg3name = "flags",
 	.arg3type = ARG_OP,
-	.arg3list = ARGLIST(open_o_flags_base),
+	.arg3list = {
+		.num = 4,
+		.values = { O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, },
+	},
 	.flags = NEED_ALARM,
 	.sanitise = sanitise_openat,	// For now we only sanitise .flags, which is also arg3
 };

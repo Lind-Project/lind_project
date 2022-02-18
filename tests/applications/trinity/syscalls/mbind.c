@@ -33,14 +33,6 @@ retry_maxnode:
 	}
 }
 
-static unsigned long mbind_modes[] = {
-	MPOL_DEFAULT, MPOL_BIND, MPOL_INTERLEAVE, MPOL_PREFERRED,
-	MPOL_F_STATIC_NODES, MPOL_F_RELATIVE_NODES,
-};
-
-static unsigned long mbind_flags[] = {
-	MPOL_MF_STRICT, MPOL_MF_MOVE, MPOL_MF_MOVE_ALL,
-};
 
 struct syscallentry syscall_mbind = {
 	.name = "mbind",
@@ -52,7 +44,11 @@ struct syscallentry syscall_mbind = {
 
 	.arg3name = "mode",
 	.arg3type = ARG_LIST,
-	.arg3list = ARGLIST(mbind_modes),
+	.arg3list = {
+		.num = 6,
+		.values = { MPOL_DEFAULT, MPOL_BIND, MPOL_INTERLEAVE, MPOL_PREFERRED,
+			MPOL_F_STATIC_NODES, MPOL_F_RELATIVE_NODES },
+	},
 
 	.arg4name = "nmask",
 	.arg4type = ARG_ADDRESS,
@@ -64,8 +60,10 @@ struct syscallentry syscall_mbind = {
 
 	.arg6name = "flags",
 	.arg6type = ARG_LIST,
-	.arg6list = ARGLIST(mbind_flags),
-
+	.arg6list = {
+		.num = 3,
+		.values = { MPOL_MF_STRICT, MPOL_MF_MOVE, MPOL_MF_MOVE_ALL, },
+	},
 	.sanitise = sanitise_mbind,
 	.group = GROUP_VM,
 };

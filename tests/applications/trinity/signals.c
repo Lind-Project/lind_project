@@ -2,13 +2,14 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "child.h"
 #include "trinity.h"	// __unused__
 #include "pids.h"
 #include "signals.h"
 #include "shm.h"
 
 jmp_buf ret_jump;
+
+int sigwas;
 
 static void ctrlc_handler(__unused__ int sig)
 {
@@ -17,28 +18,27 @@ static void ctrlc_handler(__unused__ int sig)
 
 static void sighandler(int sig)
 {
+	int childno;
+
+	sigwas = sig;
+
 	switch (sig) {
 	case SIGALRM:
+		childno = find_childno(getpid());
+		if (childno == CHILD_NOT_FOUND)
+			_exit(EXIT_SUCCESS);	/* Hell knows what happened, just bail. */
+
 		/* Re-arm the alarm. */
 		alarm(1);
-		(void)signal(sig, sighandler);
 
 		/* Jump back, maybe we'll make progress. */
-		siglongjmp(ret_jump, sig);
+		(void)signal(sig, sighandler);
+		siglongjmp(ret_jump, 1);
 		break;
 
 	default:
 		_exit(EXIT_SUCCESS);
 	}
-}
-
-static void sigxcpu_handler(__unused__ int sig)
-{
-	struct childdata *child = this_child();
-
-	child->xcpu_count++;
-
-	siglongjmp(ret_jump, 1);
 }
 
 void mask_signals_child(void)
@@ -57,11 +57,9 @@ void mask_signals_child(void)
 	/* we want default behaviour for child process signals */
 	(void)signal(SIGCHLD, SIG_DFL);
 
-	/* Count SIGXCPUs */
-	(void)signal(SIGXCPU, sigxcpu_handler);
-
 	/* ignore signals we don't care about */
 	(void)signal(SIGFPE, SIG_IGN);
+	(void)signal(SIGXCPU, SIG_IGN);
 	(void)signal(SIGTSTP, SIG_IGN);
 	(void)signal(SIGWINCH, SIG_IGN);
 	(void)signal(SIGIO, SIG_IGN);

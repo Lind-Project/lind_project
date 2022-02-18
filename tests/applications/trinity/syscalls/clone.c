@@ -8,27 +8,22 @@
 #include <linux/sched.h>
 #include "sanitise.h"
 
-#ifndef CLONE_NEWCGROUP
-#define CLONE_NEWCGROUP                0x02000000      /* New cgroup namespace */
-#endif
-
-static unsigned long clone_flags[] = {
-	CSIGNAL,
-	CLONE_VM, CLONE_FS, CLONE_FILES, CLONE_SIGHAND,
-	CLONE_PTRACE, CLONE_VFORK, CLONE_PARENT, CLONE_THREAD,
-	CLONE_NEWNS, CLONE_SYSVSEM, CLONE_SETTLS, CLONE_PARENT_SETTID,
-	CLONE_CHILD_CLEARTID, CLONE_DETACHED, CLONE_UNTRACED, CLONE_CHILD_SETTID,
-	CLONE_NEWCGROUP, CLONE_NEWUTS, CLONE_NEWIPC, CLONE_NEWUSER,
-	CLONE_NEWPID, CLONE_NEWNET, CLONE_IO,
-};
-
 struct syscallentry syscall_clone = {
 	.name = "clone",
 	.num_args = 5,
 	.flags = AVOID_SYSCALL,
 	.arg1name = "clone_flags",
 	.arg1type = ARG_LIST,
-	.arg1list = ARGLIST(clone_flags),
+	.arg1list = {
+		.num = 23,
+		.values = { CSIGNAL,
+			CLONE_VM, CLONE_FS, CLONE_FILES, CLONE_SIGHAND,
+			CLONE_PTRACE, CLONE_VFORK, CLONE_PARENT, CLONE_THREAD,
+			CLONE_NEWNS, CLONE_SYSVSEM, CLONE_SETTLS, CLONE_PARENT_SETTID,
+			CLONE_CHILD_CLEARTID, CLONE_DETACHED, CLONE_UNTRACED, CLONE_CHILD_SETTID,
+			CLONE_NEWUTS, CLONE_NEWIPC, CLONE_NEWUSER, CLONE_NEWPID,
+			CLONE_NEWNET, CLONE_IO },
+	},
 	.arg2name = "newsp",
 	.arg2type = ARG_ADDRESS,
 	.arg3name = "parent_tid",
@@ -55,7 +50,16 @@ struct syscallentry syscall_clone2 = {
 	.flags = AVOID_SYSCALL,
 	.arg1name = "flags",
 	.arg1type = ARG_LIST,
-	.arg1list = ARGLIST(clone_flags),
+	.arg1list = {
+		.num = 23,
+		.values = { CSIGNAL,
+			CLONE_VM, CLONE_FS, CLONE_FILES, CLONE_SIGHAND,
+			CLONE_PTRACE, CLONE_VFORK, CLONE_PARENT, CLONE_THREAD,
+			CLONE_NEWNS, CLONE_SYSVSEM, CLONE_SETTLS, CLONE_PARENT_SETTID,
+			CLONE_CHILD_CLEARTID, CLONE_DETACHED, CLONE_UNTRACED, CLONE_CHILD_SETTID,
+			CLONE_NEWUTS, CLONE_NEWIPC, CLONE_NEWUSER, CLONE_NEWPID,
+			CLONE_NEWNET, CLONE_IO },
+	},
 	.arg2name = "ustack_base",
 	.arg2type = ARG_ADDRESS,
 	.arg3name = "ustack_size",

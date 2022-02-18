@@ -18,7 +18,6 @@
 #include "list.h"
 #include "log.h"
 #include "maps.h"
-#include "params.h"
 #include "pids.h"
 #include "random.h"
 #include "shm.h"
@@ -26,73 +25,34 @@
 #include "syscall.h"
 #include "tables.h"
 #include "trinity.h"	// ARRAY_SIZE
-#include "uid.h"
 #include "utils.h"	// zmalloc
 
-enum childflags {
-	NONE,
-	ONESHOT,
-};
+struct childdata *this_child = NULL;
 
 struct child_funcs {
 	const char *name;
-	bool (*func)(struct childdata *child);
+	bool (*func)(void);
 	unsigned char likelyhood;
-	enum childtype type;
-	unsigned int flags;
 };
 
 static const struct child_funcs child_ops[] = {
-	{
-		.name = "rand_syscall",
-		.func = random_syscall,
-		.likelyhood = 100,
-		.type = CHILD_RAND_SYSCALL
-	},
-/*	{
-		.name = "read_all_files",
-		.func = read_all_files,
-		.likelyhood = 10,
-		.type = CHILD_READ_ALL_FILES
-	},
-	{
-		.name = "thrash_pid_files",
-		.func = thrash_pidfiles,
-		.likelyhood = 50,
-		.type = CHILD_THRASH_PID
-	},
-	{
-		.name = "truncate_testfile",
-		.func = truncate_testfile,
-		.likelyhood = 10,
-		.type = CHILD_TRUNCATE_TESTFILE
-	},
-*/
+	{ .name = "rand_syscalls", .func = child_random_syscalls, .likelyhood = 100 },
 };
 
-static const struct child_funcs root_child_ops[] = {
-	{
-		.name = "drop_privs",
-		.func = drop_privs,
-		.likelyhood = 90,
-		.type = CHILD_ROOT_DROP_PRIVS,
-		.flags = ONESHOT,
-	},
-};
 /*
- * Provide temporary immunity from the reaper
+ * Provide temporary immunity from the watchdog.
  * This is useful if we're going to do something that might take
- * longer than the time the reaper is prepared to wait, especially if
+ * longer than the time the watchdog is prepared to wait, especially if
  * we're doing something critical, like handling a lock, or dumping a log.
  */
-void set_dontkillme(struct childdata *child, bool state)
+void set_dontkillme(pid_t pid, bool state)
 {
-	if (child == NULL)	/* possible, we might be the mainpid */
-		return;
-	child->dontkillme = state;
+	int childno;
 
-	/* bump the progress indicator */
-	clock_gettime(CLOCK_MONOTONIC, &child->tp);
+	childno = find_childno(pid);
+	if (childno == CHILD_NOT_FOUND)		/* possible, we might be the watchdog for example */
+		return;
+	shm->children[childno]->dontkillme = state;
 }
 
 /*
@@ -197,29 +157,26 @@ static void oom_score_adj(int adj)
 /*
  * Wipe out any state left from a previous child running in this slot.
  */
-void clean_childdata(struct childdata *child)
+static void reinit_child(struct childdata *child)
 {
 	memset(&child->syscall, 0, sizeof(struct syscallrecord));
-	child->logdirty = FALSE;
+	memset(&child->previous, 0, sizeof(struct syscallrecord));
+
+	child->num_mappings = 0;
 	child->seed = 0;
 	child->kill_count = 0;
 	child->dontkillme = FALSE;
-	child->xcpu_count = 0;
-	child->op_nr = 0;
-	child->dropped_privs = FALSE;
-	clock_gettime(CLOCK_MONOTONIC, &child->tp);
 }
 
 static void bind_child_to_cpu(struct childdata *child)
 {
 	cpu_set_t set;
 	unsigned int cpudest;
-	pid_t pid = pids[child->num];
 
 	if (no_bind_to_cpu == TRUE)
 		return;
 
-	if (sched_getaffinity(pid, sizeof(set), &set) != 0)
+	if (sched_getaffinity(child->pid, sizeof(set), &set) != 0)
 		return;
 
 	if (child->num > num_online_cpus)
@@ -229,32 +186,41 @@ static void bind_child_to_cpu(struct childdata *child)
 
 	CPU_ZERO(&set);
 	CPU_SET(cpudest, &set);
-	sched_setaffinity(pid, sizeof(set), &set);
+	sched_setaffinity(child->pid, sizeof(set), &set);
 }
 
 /*
  * Called from the fork_children loop in the main process.
  */
-static void init_child(struct childdata *child, int childno)
+void init_child(struct childdata *child, int childno)
 {
 	pid_t pid = getpid();
 	char childname[17];
 
 	/* Wait for parent to set our childno */
-	while (pids[childno] != pid) {
+	while (child->pid != pid) {
+		int ret = 0;
+
 		/* Make sure parent is actually alive to wait for us. */
-		if (pid_alive(mainpid) == FALSE) {
+		ret = pid_alive(shm->mainpid);
+		if (ret != 0) {
 			panic(EXIT_SHM_CORRUPTION);
-			outputerr("BUG!: parent (%d) went away!\n", mainpid);
+			outputerr("BUG!: parent (%d) went away!\n", shm->mainpid);
 			sleep(20000);
 		}
 	}
 
-	set_seed(child);
+	this_child = child;
 
-	init_object_lists(OBJ_LOCAL);
+	child->num = childno;
 
-	init_child_mappings();
+	reinit_child(child);
+
+	init_child_logging(child);
+
+	set_seed(this_child);
+
+	init_child_mappings(child);
 
 	dirty_random_mapping();
 
@@ -279,19 +245,6 @@ static void init_child(struct childdata *child, int childno)
 	mask_signals_child();
 
 	disable_coredumps();
-/*
-	if (shm->unshare_perm_err == FALSE) {
-		if (RAND_BOOL()) {
-			int ret = unshare(CLONE_NEWUSER);
-			if (ret != 0)
-				output(0, "couldn't unshare: %s\n", strerror(errno));
-			if (ret == -EPERM)
-				shm->unshare_perm_err = TRUE;
-		}
-	}
-*/
-	if (orig_uid == 0)
-		child->dropped_privs = FALSE;
 }
 
 /*
@@ -303,7 +256,7 @@ static void check_parent_pid(void)
 	pid_t pid, ppid;
 
 	ppid = getppid();
-	if (ppid == mainpid)
+	if (ppid == shm->mainpid)
 		return;
 
 	pid = getpid();
@@ -327,11 +280,11 @@ static void check_parent_pid(void)
 		goto out;
 
 	output(0, "BUG!: CHILD (pid:%d) GOT REPARENTED! "
-		"main pid:%d. ppid=%d\n",
-		pid, mainpid, ppid);
+		"main pid:%d. ppid=%d Watchdog pid:%d\n",
+		pid, shm->mainpid, ppid, watchdog_pid);
 
-	if (pid_alive(mainpid) == FALSE)
-		output(0, "main pid %d is dead.\n", mainpid);
+	if (pid_alive(shm->mainpid) == -1)
+		output(0, "main pid %d is dead.\n", shm->mainpid);
 
 	panic(EXIT_REPARENT_PROBLEM);
 
@@ -357,8 +310,8 @@ static void periodic_work(void)
 		check_parent_pid();
 
 	/* Every 100 iterations. */
-//	if (!(periodic_counter % 100))
-//		dirty_random_mapping();
+	if (!(periodic_counter % 100))
+		dirty_random_mapping();
 
 	if (periodic_counter == 1000)
 		periodic_counter = 0;
@@ -370,21 +323,20 @@ static void periodic_work(void)
  *
  * FIXME: when we have different child ops, we're going to need to redo the progress detector.
  */
-static bool handle_sigreturn(int sigwas)
+static bool handle_sigreturn(void)
 {
-	struct childdata *child = this_child();
 	struct syscallrecord *rec;
 	static unsigned int count = 0;
 	static unsigned int last = 0;
 
-	rec = &child->syscall;
+	rec = &this_child->syscall;
 
 	/* If we held a lock before the signal happened, drop it. */
 	bust_lock(&rec->lock);
 
 	/* Check if we're blocked because we were stuck on an fd. */
 	lock(&rec->lock);
-	if (check_if_fd(child, rec) == TRUE) {
+	if (check_if_fd(this_child, rec) == TRUE) {
 		/* avoid doing it again from other threads. */
 		shm->fd_lifetime = 0;
 
@@ -392,26 +344,25 @@ static bool handle_sigreturn(int sigwas)
 	}
 	unlock(&rec->lock);
 
+	output(2, "<timed out>\n");     /* Flush out the previous syscall output. */
+
 	/* Check if we're making any progress at all. */
-	if (child->op_nr == last) {
+	if (rec->op_nr == last) {
 		count++;
 		//output(1, "no progress for %d tries.\n", count);
 	} else {
 		count = 0;
-		last = child->op_nr;
+		last = rec->op_nr;
 	}
 	if (count == 10) {
 		output(1, "no progress for 10 tries, exiting child.\n");
 		return FALSE;
 	}
 
-	if (child->kill_count > 0) {
+	if (this_child->kill_count > 0) {
 		output(1, "[%d] Missed a kill signal, exiting\n", getpid());
 		return FALSE;
 	}
-
-	if (sigwas == SIGHUP)
-		return FALSE;
 
 	if (sigwas != SIGALRM)
 		output(1, "[%d] Back from signal handler! (sig was %s)\n", getpid(), strsignal(sigwas));
@@ -419,106 +370,60 @@ static bool handle_sigreturn(int sigwas)
 	return TRUE;
 }
 
-
-static const struct child_funcs * set_new_op(struct childdata *child)
-{
-	const struct child_funcs *ops = child_ops;
-	size_t len = ARRAY_SIZE(child_ops);
-
-	if (orig_uid == 0) {
-		if (child->dropped_privs == FALSE) {
-			ops = root_child_ops;
-			len = ARRAY_SIZE(root_child_ops);
-		}
-	}
-
-	while (1) {
-		unsigned int i = rnd() % len;
-
-		if (rnd() % 100 <= ops[i].likelyhood) {
-			//output(0, "Chose %s.\n", ops[i].name);
-			child->type = ops[i].type;
-			return ops;
-		}
-	}
-}
-
 /*
  * This is the child main loop, entered after init_child has completed
  * from the fork_children() loop.
  * We also re-enter it from the signal handler code if something happened.
  */
-#define NEW_OP_COUNT 100000
-
-void child_process(struct childdata *child, int childno)
+void child_process(void)
 {
-	const struct child_funcs *ops;
-	bool (*op)(struct childdata *child);
-	unsigned int loops;
 	int ret;
-
-	init_child(child, childno);
 
 	ret = sigsetjmp(ret_jump, 1);
 	if (ret != 0) {
-		if (child->xcpu_count == 100) {
-			debugf("Child %d [%d] got 100 XCPUs. Exiting child.\n", child->num, pids[child->num]);
-			goto out;
-		}
-
-		if (handle_sigreturn(ret) == FALSE)
-			goto out;	// Exit the child, things are getting too weird.
+		if (handle_sigreturn() == FALSE)
+			return;	// Exit the child, things are getting too weird.
 	}
 
-	op = NULL;
-	ops = NULL;
-	loops = 0;
+	shm_rw();
 
 	while (shm->exit_reason == STILL_RUNNING) {
-		/* If the parent reseeded, we should reflect the latest seed too. */
-		if (shm->seed != child->seed) {
-			//output(0, "child %d reseeded to %x\n", child->num, child->seed);
-			set_seed(child);
-		}
+		unsigned int i;
 
 		periodic_work();
 
-		/* Every NEW_OP_COUNT potentially pick a new childop. */
-		if (loops == 0) {
-			ops = set_new_op(child);
-			op = ops->func;
-			loops = NEW_OP_COUNT;
+		/* If the parent reseeded, we should reflect the latest seed too. */
+		if (shm->seed != this_child->seed)
+			set_seed(this_child);
+
+		/* Choose operations for this iteration. */
+		i = rand() % ARRAY_SIZE(child_ops);
+
+		if (rand() % 100 <= child_ops[i].likelyhood) {
+			const char *lastop = NULL;
+
+			if (lastop != child_ops[i].name) {
+				//output(0, "Chose %s.\n", child_ops[i].name);
+				lastop = child_ops[i].name;
+			}
+
+			ret = child_ops[i].func();
+			if (ret == FAIL)
+				return;
 		}
-
-		/* timestamp, and do the childop */
-		clock_gettime(CLOCK_MONOTONIC, &child->tp);
-
-		ret = op(child);
-
-		child->op_nr++;
-
-		if (ret == FAIL)
-			goto out;
-
-		loops--;
-
-		if (ops->flags & ONESHOT)
-			loops = 0;
 	}
 
 	enable_coredumps();
 
 	/* If we're exiting because we tainted, wait here for it to be done. */
 	while (shm->postmortem_in_progress == TRUE) {
-		/* Make sure the main process is still around. */
-		if (pid_alive(mainpid) == FALSE)
-			goto out;
+		/* Make sure the main process & watchdog are still around. */
+		if (pid_alive(shm->mainpid) == -1)
+			return;
+
+		if (pid_alive(watchdog_pid) == -1)
+			return;
 
 		usleep(1);
 	}
-
-out:
-	shutdown_child_logging(child);
-
-	debugf("child %d %d exiting.\n", childno, getpid());
 }

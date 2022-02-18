@@ -4,10 +4,6 @@
 #include <sched.h>
 #include "sanitise.h"
 
-static unsigned long setns_types[] = {
-	0, CLONE_NEWIPC, CLONE_NEWNET, CLONE_NEWUTS,
-};
-
 struct syscallentry syscall_setns= {
 	.name = "setns",
 	.num_args = 2,
@@ -15,6 +11,9 @@ struct syscallentry syscall_setns= {
 	.arg1type = ARG_FD,
 	.arg2name = "nstype",
 	.arg2type = ARG_LIST,
-	.arg2list = ARGLIST(setns_types),
+	.arg2list = {
+		.num = 4,
+		.values = { 0, CLONE_NEWIPC, CLONE_NEWNET, CLONE_NEWUTS, },
+	},
 	.flags = NEED_ALARM,
 };

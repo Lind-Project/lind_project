@@ -23,7 +23,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -40,66 +39,43 @@ static int urandomfd;
  * to store what gets passed in from the command line -s argument */
 unsigned int seed = 0;
 
-static int do_getrandom(unsigned int *buf)
-{
-#ifdef SYS_getrandom
-	int ret;
-
-	ret = syscall(SYS_getrandom, buf, 4, 0);
-	if (ret > 0)
-		return TRUE;
-#endif
-	return FALSE;
-}
-
 static int fallbackseed(void)
 {
 	struct timeval t;
 	unsigned int r;
 
-	if (do_getrandom(&r) == TRUE)
-		return r;
-
-	// If we get this far, gtod is all we have left.
-	gettimeofday(&t, NULL);
-	r = t.tv_sec * t.tv_usec;
+	//printf("Fell back to gtod seed! errno:%s\n", strerror(errno));
+	r = rand();
+	if (!(RAND_BOOL())) {
+		gettimeofday(&t, NULL);
+		r |= t.tv_usec;
+	}
 	return r;
 }
 
 unsigned int new_seed(void)
 {
-	unsigned int r = 0;
+	unsigned int r, bits;
 
-	/* If we passed in an initial seed, all subsequent seeds have to
-	 * be based off of it. */
-	if (user_set_seed == TRUE) {
-		r = rnd();
-		goto out;
-	}
-
-	if (urandomfd == -1) {
-		r = fallbackseed();
-		goto out;
-	}
+	if (urandomfd == -1)
+		return fallbackseed();
 
 	if (read(urandomfd, &r, sizeof(r)) != sizeof(r))
-		r = fallbackseed();
+		return fallbackseed();
 
-out:
+	if (read(urandomfd, &bits, sizeof(bits)) != sizeof(bits))
+		return fallbackseed();
+
+	bits %= 31;
+	bits = max(bits, 8U);
+	r &= ((1 << bits) -1);
+
 	//printf("new seed:%u\n", r);
 	return r;
 }
 
 bool init_random(void)
 {
-	unsigned int r;
-
-	// If we have sys_getrandom, use that instead of urandom
-	if (do_getrandom(&r) == TRUE) {
-		urandomfd = -1;
-		return TRUE;
-	}
-
 	urandomfd = open("/dev/urandom", O_RDONLY);
 	if (urandomfd == -1) {
 		printf("urandom: %s\n", strerror(errno));
@@ -114,13 +90,8 @@ bool init_random(void)
 unsigned int init_seed(unsigned int seedparam)
 {
 	if (user_set_seed == TRUE)
-		output(0, "Using user passed random seed: %u.\n", seedparam);
+		output(0, "Using user passed random seed: %u\n", seedparam);
 	else {
-		if (urandomfd == -1)
-			output(0, "Using getrandom() for seeds.\n");
-		else
-			output(0, "Using /dev/urandom for seeds.\n");
-
 		seedparam = new_seed();
 
 		output(0, "Initial random seed: %u\n", seedparam);
@@ -141,9 +112,15 @@ unsigned int init_seed(unsigned int seedparam)
  */
 void set_seed(struct childdata *child)
 {
+	/* if no shm yet, we must be the init process. */
+	if (shm == NULL) {
+		srand(new_seed());
+		return;
+	}
+
 	/* if not in child context, we must be main. */
 	if (child == NULL) {
-//		printf("Setting main pid seed:%u\n", shm->seed);
+//		printf("Setting shm seed:%u\n", shm->seed);
 		srand(shm->seed);
 		return;
 	}
@@ -156,13 +133,19 @@ void set_seed(struct childdata *child)
  * Called when a new child starts, so we don't repeat runs across different pids.
  * We only reseed in the main pid, all the children are expected to periodically
  * check if the seed changed, and reseed accordingly.
+ *
+ * Caveat: Not used if we passed in our own seed with -s
  */
 void reseed(void)
 {
-	if (getpid() != mainpid) {
+	if (getpid() != shm->mainpid) {
 		outputerr("Reseeding should only happen from parent!\n");
 		exit(EXIT_FAILURE);
 	}
+
+	/* don't change the seed if we passed -s */
+	if (user_set_seed == TRUE)
+		return;
 
 	/* We are reseeding. */
 	shm->seed = new_seed();

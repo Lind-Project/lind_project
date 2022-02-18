@@ -90,6 +90,11 @@
  - ->decode_argN functions to print decoded flags etc.
  - decode maps.
 
+* Watchdog improvements
+  - in main loop, check watchdog is still alive
+  - RT watchdog task ?
+  - check if HI > total
+
 * filename related issues.
   - filename cache.
     Similar to the socketcache. Create on startup, then on loading, invalidate entries
@@ -157,9 +162,10 @@
 
 * audit which syscalls never succeed, and write sanitise routines for them
 
-* if a read() blocks, blacklist (close?) that fd/filename.
+* if a read() blocks and we get a kill from the watchdog, blacklist (close?) that fd/filename.
 
 * Various syscall improvements.
+  - Create futexes on startup and make syscalls/futex.c use them.
   - brk could be smarter about existing brk
   - Revisit fuzzing ptrace.
     - It's disabled currently because of situations like..
@@ -236,4 +242,6 @@
   - locking needs to be pthread aware
     put mutex in lock_t ?
   - logging for threads?
+    will need a pthread watchdog in same process group
   - send pthread_kill
+  - propagate progress up to main watchdog

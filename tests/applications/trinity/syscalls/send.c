@@ -16,36 +16,15 @@
 
 static void sanitise_send(struct syscallrecord *rec)
 {
-	struct socketinfo *si = (struct socketinfo *) rec->a1;
-	const struct netproto *proto;
 	void *ptr;
-	size_t size;
+	unsigned int size;
 
-	rec->a1 = fd_from_socketinfo(si);
+	rec->a1 = generic_fd_from_socketinfo((struct socketinfo *) rec->a1);
 
-	if (si == NULL)		// handle --disable-fds=sockets
-		goto skip_si;
-
-	proto = net_protocols[si->triplet.family].proto;
-	if (proto != NULL) {
-		if (proto->gen_packet != NULL) {
-			ptr = &rec->a2;
-			proto->gen_packet(&si->triplet, ptr, &rec->a3);
-//		printf("Sending to family:%d type:%d proto:%d\n",
-//			si->triplet.family, si->triplet.type, si->triplet.protocol);
-			return;
-		}
-	}
-
-skip_si:
-
-	/* The rest of this function is only used as a fallback, if the per-proto
-	 * send()'s aren't implemented.
-	 */
 	if (RAND_BOOL())
 		size = 1;
 	else
-		size = rnd() % page_size;
+		size = rand() % page_size;
 
 	ptr = malloc(size);
 	rec->a2 = (unsigned long) ptr;
@@ -54,6 +33,8 @@ skip_si:
 
 	rec->a3 = size;
 
+	// TODO: only use this as a fallback, and actually have
+	// some per-proto generators here.
 	generate_rand_bytes(ptr, size);
 }
 
@@ -61,15 +42,6 @@ static void post_send(struct syscallrecord *rec)
 {
 	freeptr(&rec->a2);
 }
-
-static unsigned long sendflags[] = {
-	MSG_OOB, MSG_PEEK, MSG_DONTROUTE, MSG_CTRUNC,
-	MSG_PROBE, MSG_TRUNC, MSG_DONTWAIT, MSG_EOR,
-	MSG_WAITALL, MSG_FIN, MSG_SYN, MSG_CONFIRM,
-	MSG_RST, MSG_ERRQUEUE, MSG_NOSIGNAL, MSG_MORE,
-	MSG_WAITFORONE, MSG_FASTOPEN, MSG_CMSG_CLOEXEC, MSG_CMSG_COMPAT,
-	MSG_BATCH,
-};
 
 struct syscallentry syscall_send = {
 	.name = "send",
@@ -80,7 +52,15 @@ struct syscallentry syscall_send = {
 	.arg3name = "len",
 	.arg4name = "flags",
         .arg4type = ARG_LIST,
-	.arg4list = ARGLIST(sendflags),
+	.arg4list = {
+		.num = 20,
+		.values = { MSG_OOB, MSG_PEEK, MSG_DONTROUTE, MSG_CTRUNC,
+			    MSG_PROBE, MSG_TRUNC, MSG_DONTWAIT, MSG_EOR,
+			    MSG_WAITALL, MSG_FIN, MSG_SYN, MSG_CONFIRM,
+			    MSG_RST, MSG_ERRQUEUE, MSG_NOSIGNAL, MSG_MORE,
+			    MSG_WAITFORONE, MSG_FASTOPEN, MSG_CMSG_CLOEXEC, MSG_CMSG_COMPAT,
+		},
+	},
 	.sanitise = sanitise_send,
 	.post = post_send,
 };
@@ -102,7 +82,14 @@ struct syscallentry syscall_sendto = {
 	.arg3type = ARG_LEN,
 	.arg4name = "flags",
 	.arg4type = ARG_LIST,
-	.arg4list = ARGLIST(sendflags),
+	.arg4list = {
+		.num = 20,
+		.values = { MSG_OOB, MSG_PEEK, MSG_DONTROUTE, MSG_CTRUNC,
+			    MSG_PROBE, MSG_TRUNC, MSG_DONTWAIT, MSG_EOR,
+			    MSG_WAITALL, MSG_FIN, MSG_SYN, MSG_CONFIRM,
+			    MSG_RST, MSG_ERRQUEUE, MSG_NOSIGNAL, MSG_MORE,
+			    MSG_WAITFORONE, MSG_FASTOPEN, MSG_CMSG_CLOEXEC, MSG_CMSG_COMPAT },
+	},
 	.arg5name = "addr",
 	.arg5type = ARG_SOCKADDR,
 	.arg6name = "addr_len",
@@ -117,42 +104,24 @@ struct syscallentry syscall_sendto = {
  */
 static void sanitise_sendmsg(struct syscallrecord *rec)
 {
-	struct socketinfo *si = (struct socketinfo *) rec->a1;
 	struct msghdr *msg;
 	struct sockaddr *sa = NULL;
-	socklen_t salen = 0;
+	socklen_t salen;
 
-	if (si == NULL)	// handle --disable-fds=sockets
-		goto skip_si;
+	rec->a1 = generic_fd_from_socketinfo((struct socketinfo *) rec->a1);
 
-	rec->a1 = fd_from_socketinfo((struct socketinfo *) rec->a1);
-
-	generate_sockaddr((struct sockaddr **) &sa, (socklen_t *) &salen, si->triplet.family);
-
-skip_si:
 	msg = zmalloc(sizeof(struct msghdr));
+
+	generate_sockaddr((struct sockaddr **) &sa, (socklen_t *) &salen, rand() % TRINITY_PF_MAX);
+
 	msg->msg_name = sa;
 	msg->msg_namelen = salen;
 
-	if (RAND_BOOL()) {
-		unsigned int num_entries;
-
-		num_entries = RAND_RANGE(1, 3);
-		msg->msg_iov = alloc_iovec(num_entries);
-		msg->msg_iovlen = num_entries;
-	}
-
-	if (RAND_BOOL()) {
-		msg->msg_controllen = rand32() % 20480;	// /proc/sys/net/core/optmem_max
-		msg->msg_control = get_address();
-	} else {
-		msg->msg_controllen = 0;
-	}
-
-	if (ONE_IN(100))
-		msg->msg_flags = rand32();
-	else
-		msg->msg_flags = 0;
+	msg->msg_iov = get_address();
+	msg->msg_iovlen = get_len();
+	msg->msg_control = get_address();
+	msg->msg_controllen = get_len();
+	msg->msg_flags = rand32();
 
 	rec->a2 = (unsigned long) msg;
 }
@@ -162,8 +131,6 @@ static void post_sendmsg(__unused__ struct syscallrecord *rec)
 	struct msghdr *msg = (struct msghdr *) rec->a2;
 
 	if (msg != NULL) {
-		if (msg->msg_iov != NULL)
-			free(msg->msg_iov);
 		free(msg->msg_name);	// free sockaddr
 		freeptr(&rec->a2);
 	}
@@ -177,7 +144,14 @@ struct syscallentry syscall_sendmsg = {
 	.arg2name = "msg",
 	.arg3name = "flags",
 	.arg3type = ARG_LIST,
-	.arg3list = ARGLIST(sendflags),
+	.arg3list = {
+		.num = 20,
+		.values = { MSG_OOB, MSG_PEEK, MSG_DONTROUTE, MSG_CTRUNC,
+			    MSG_TRUNC, MSG_DONTWAIT, MSG_EOR,
+			    MSG_WAITALL, MSG_FIN, MSG_SYN, MSG_CONFIRM,
+			    MSG_RST, MSG_ERRQUEUE, MSG_NOSIGNAL, MSG_MORE,
+			    MSG_WAITFORONE, MSG_CMSG_CLOEXEC, MSG_FASTOPEN, MSG_CMSG_COMPAT },
+	},
 	.sanitise = sanitise_sendmsg,
 	.post = post_sendmsg,
 	.flags = NEED_ALARM,
@@ -188,7 +162,7 @@ struct syscallentry syscall_sendmsg = {
  */
 static void sanitise_sendmmsg(struct syscallrecord *rec)
 {
-	rec->a1 = fd_from_socketinfo((struct socketinfo *) rec->a1);
+	rec->a1 = generic_fd_from_socketinfo((struct socketinfo *) rec->a1);
 }
 
 struct syscallentry syscall_sendmmsg = {
@@ -202,7 +176,14 @@ struct syscallentry syscall_sendmmsg = {
 	.arg3type = ARG_LEN,
 	.arg4name = "flags",
 	.arg4type = ARG_LIST,
-	.arg4list = ARGLIST(sendflags),
+	.arg4list = {
+		.num = 20,
+		.values = { MSG_OOB, MSG_PEEK, MSG_DONTROUTE, MSG_CTRUNC,
+			    MSG_PROBE, MSG_TRUNC, MSG_DONTWAIT, MSG_EOR,
+			    MSG_WAITALL, MSG_FIN, MSG_SYN, MSG_CONFIRM,
+			    MSG_RST, MSG_ERRQUEUE, MSG_NOSIGNAL, MSG_MORE,
+			    MSG_WAITFORONE, MSG_CMSG_CLOEXEC, MSG_FASTOPEN, MSG_CMSG_COMPAT },
+	},
 	.flags = NEED_ALARM,
 	.sanitise = sanitise_sendmmsg,
 };

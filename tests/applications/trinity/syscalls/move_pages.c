@@ -22,15 +22,16 @@
 #include "trinity.h"
 #include "utils.h"
 
+static unsigned int count;
+
 static void sanitise_move_pages(struct syscallrecord *rec)
 {
 	int *nodes;
 	unsigned long *page_alloc;
 	unsigned int i;
-	unsigned int count;
 
 	/* number of pages to move */
-	count = rnd() % (page_size / sizeof(void *));
+	count = rand() % (page_size / sizeof(void *));
 	count = max(1U, count);
 	rec->a2 = count;
 
@@ -66,10 +67,6 @@ static void post_move_pages(struct syscallrecord *rec)
 	freeptr(&rec->a5);
 }
 
-static unsigned long move_pages_flags[] = {
-	MPOL_MF_MOVE, MPOL_MF_MOVE_ALL,
-};
-
 struct syscallentry syscall_move_pages = {
 	.name = "move_pages",
 	.num_args = 6,
@@ -81,7 +78,10 @@ struct syscallentry syscall_move_pages = {
 	.arg5name = "status",
 	.arg6name = "flags",
 	.arg6type = ARG_LIST,
-	.arg6list = ARGLIST(move_pages_flags),
+	.arg6list = {
+		.num = 2,
+		.values = { MPOL_MF_MOVE, MPOL_MF_MOVE_ALL },
+	},
 	.group = GROUP_VM,
 	.sanitise = sanitise_move_pages,
 	.post = post_move_pages,

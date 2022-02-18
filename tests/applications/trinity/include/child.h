@@ -3,67 +3,43 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <types.h>
-#include "objects.h"
 #include "syscall.h"
-
-/* Childops */
-enum childtype {
-	CHILD_RAND_SYSCALL,
-	CHILD_READ_ALL_FILES,
-	CHILD_THRASH_PID,
-	CHILD_ROOT_DROP_PRIVS,
-	CHILD_TRUNCATE_TESTFILE,
-};
 
 struct childdata {
 	/* The actual syscall records each child uses. */
 	struct syscallrecord syscall;
+	struct syscallrecord previous;
 
 	/* log file related stuff */
 	FILE *logfile;
 	bool logdirty;
 
-	/* ONLY to be read by main. */
-	FILE *pidstatfile;
-
-	struct objhead objects[MAX_OBJECT_TYPES];
-
-	/* last time the child made progress. */
-	struct timespec tp;
-	unsigned long op_nr;
+	/* per-child mmaps */
+	struct map *mappings;
+	unsigned int num_mappings;
 
 	unsigned int seed;
 
-	unsigned int num;
+	pid_t pid;
 
-	unsigned char xcpu_count;
+	unsigned int num;
 
 	unsigned char kill_count;
 
-	enum childtype type;
-
-	bool dontkillme;	/* provide temporary protection from the reaper. */
-
-	bool dropped_privs;
+	bool dontkillme;	/* provide temporary protection from the watchdog. */
 };
 
+extern struct childdata *this_child;
 extern unsigned int max_children;
 
-struct childdata * this_child(void);
+void init_child(struct childdata *child, int childno);
+void init_child_mappings(struct childdata *child);
 
-void clean_childdata(struct childdata *child);
+void child_process(void);
 
-void init_child_mappings(void);
+void set_dontkillme(pid_t pid, bool state);
 
-void child_process(struct childdata *child, int childno);
+void reap_child(pid_t childpid);
 
-void set_dontkillme(struct childdata *child, bool state);
-
-void reap_child(struct childdata *child);
-
-/* Childops */
-bool random_syscall(struct childdata *child);
-bool read_all_files(struct childdata *child);
-bool thrash_pidfiles(struct childdata *child);
-bool drop_privs(struct childdata *child);
-bool truncate_testfile(struct childdata *child);
+bool child_random_syscalls(void);
+int child_read_all_files(void);

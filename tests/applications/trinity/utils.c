@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "debug.h"
 #include "log.h"
 #include "pids.h"
 #include "random.h"
@@ -24,7 +23,7 @@ void * alloc_shared(unsigned int size)
 		exit(EXIT_FAILURE);
 	}
 	/* poison, to force users to set it to something sensible. */
-	memset(ret, rnd(), size);
+	memset(ret, rand(), size);
 	return ret;
 }
 
@@ -76,17 +75,6 @@ void kill_pid(pid_t pid)
 {
 	int ret;
 	int childno;
-
-	if (pid == -1) {
-		show_backtrace();
-		syslogf("kill_pid tried to kill -1!\n");
-		return;
-	}
-	if (pid == 0) {
-		show_backtrace();
-		syslogf("tried to kill_pid 0!\n");
-		return;
-	}
 
 	childno = find_childno(pid);
 	if (childno != CHILD_NOT_FOUND) {

@@ -6,8 +6,6 @@
 #include <fcntl.h>
 #include <sys/uio.h>
 #include <stdlib.h>
-#include "pipes.h"
-#include "random.h"
 #include "sanitise.h"
 #include "shm.h"
 #include "syscall.h"
@@ -15,15 +13,10 @@
 
 static void sanitise_vmsplice(struct syscallrecord *rec)
 {
-	if ((rnd() % 10) > 0)
-		rec->a1 = get_rand_pipe_fd();
-
-	rec->a3 = rnd() % UIO_MAXIOV;
+	if ((rand() % 10) > 0)
+		rec->a1 = shm->pipe_fds[rand() % MAX_PIPE_FDS];
+	rec->a3 = rand() % UIO_MAXIOV;
 }
-
-static unsigned long vmsplice_flags[] = {
-	SPLICE_F_MOVE, SPLICE_F_NONBLOCK, SPLICE_F_MORE, SPLICE_F_GIFT,
-};
 
 struct syscallentry syscall_vmsplice = {
 	.name = "vmsplice",
@@ -37,7 +30,10 @@ struct syscallentry syscall_vmsplice = {
 	.arg3type = ARG_IOVECLEN,
 	.arg4name = "flags",
 	.arg4type = ARG_LIST,
-	.arg4list = ARGLIST(vmsplice_flags),
+	.arg4list = {
+		.num = 4,
+		.values = { SPLICE_F_MOVE, SPLICE_F_NONBLOCK, SPLICE_F_MORE, SPLICE_F_GIFT },
+	},
 	.group = GROUP_VM,
 	.flags = NEED_ALARM,
 };

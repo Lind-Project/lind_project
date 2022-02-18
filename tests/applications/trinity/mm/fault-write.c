@@ -9,80 +9,209 @@
 #include "sanitise.h"	// get_address
 #include "utils.h"
 
-static void mark_page_rw(struct map *map, void *page)
-{
-	mprotect(page, page_size, PROT_READ|PROT_WRITE);
-	map->prot = PROT_READ|PROT_WRITE;
-}
-
 static unsigned int nr_pages(struct map *map)
 {
 	return map->size / page_size;
 }
 
+static void fabricate_onepage_struct(char *page)
+{
+	unsigned int i;
+
+	for (i = 0; i < page_size; ) {
+		void **ptr;
+
+		ptr = (void*) &page[i];
+
+		/* 4 byte (32bit) 8 byte (64bit) alignment */
+		if (i & ~((__WORDSIZE / 8) - 1)) {
+			unsigned long val = 0;
+
+			i += sizeof(unsigned long);
+			if (i > page_size)
+				return;
+
+			switch (rand() % 4) {
+			case 0:	val = rand64();
+				break;
+			case 1:	val = (unsigned long) get_address();
+				break;
+			case 2:	val = (unsigned long) ptr;
+				break;
+			case 3:	val = get_len();
+				break;
+			}
+
+			*(unsigned long *)ptr = val;
+
+		} else {
+			/* int alignment */
+
+			i += sizeof(unsigned int);
+			if (i > page_size)
+				return;
+
+			*(unsigned int *)ptr = rand32();
+		}
+	}
+}
+
+static void generate_random_page(char *page)
+{
+	unsigned int i;
+	unsigned int p = 0;
+
+	switch (rand() % 8) {
+
+	case 0:
+		memset(page, 0, page_size);
+		return;
+
+	case 1:
+		memset(page, 0xff, page_size);
+		return;
+
+	case 2:
+		memset(page, RAND_BYTE(), page_size);
+		return;
+
+	case 3:
+		for (i = 0; i < page_size; )
+			page[i++] = (unsigned char)rand();
+		return;
+
+	case 4:
+		for (i = 0; i < page_size; )
+			page[i++] = (unsigned char)RAND_BOOL();
+		return;
+
+	/* return a page that looks kinda like a struct */
+	case 5:	fabricate_onepage_struct(page);
+		return;
+
+	/* page full of format strings. */
+	case 6:
+		for (i = 0; i < page_size; i += 2) {
+			page[i] = '%';
+			switch (RAND_BOOL()) {
+			case 0:	page[i + 1] = 'd';
+				break;
+			case 1:	page[i + 1] = 's';
+				break;
+			}
+		}
+		page_size = getpagesize();	// Hack for clang 3.3 false positive.
+		page[rand() % page_size] = 0;
+		return;
+
+	/* ascii representation of a random number */
+	case 7:
+		switch (rand() % 3) {
+		case 0:
+			switch (rand() % 3) {
+			case 0:	p = sprintf(page, "%s%lu",
+					RAND_BOOL() ? "-" : "",
+					(unsigned long) rand64());
+				break;
+			case 1:	p = sprintf(page, "%s%ld",
+					RAND_BOOL() ? "-" : "",
+					(unsigned long) rand64());
+				break;
+			case 2:	p = sprintf(page, "%lx", (unsigned long) rand64());
+				break;
+			}
+			break;
+
+		case 1:
+			switch (rand() % 3) {
+			case 0:	p = sprintf(page, "%s%u",
+					RAND_BOOL() ? "-" : "",
+					(unsigned int) rand32());
+				break;
+			case 1:	p = sprintf(page, "%s%d",
+					RAND_BOOL() ? "-" : "",
+					(int) rand32());
+				break;
+			case 2:	p = sprintf(page, "%x", (int) rand32());
+				break;
+			}
+			break;
+
+		case 2:
+			switch (rand() % 3) {
+			case 0:	p = sprintf(page, "%s%u",
+					RAND_BOOL() ? "-" : "",
+					(unsigned char) rand());
+				break;
+			case 1:	p = sprintf(page, "%s%d",
+					RAND_BOOL() ? "-" : "",
+					(char) rand());
+				break;
+			case 2:	p = sprintf(page, "%x", (char) rand());
+				break;
+			}
+			break;
+
+		}
+
+		page[p] = 0;
+		break;
+	}
+}
+
+
 static void dirty_one_page(struct map *map)
 {
 	char *p = map->ptr;
-	unsigned long offset = (rnd() % map->size) & PAGE_MASK;
 
-	mark_page_rw(map, p + offset);
-	p[offset] = rnd();
+	p[rand() % (map->size - 1)] = rand();
 }
 
 static void dirty_whole_mapping(struct map *map)
 {
+	char *p = map->ptr;
 	unsigned int i, nr;
 
 	nr = nr_pages(map);
 
-	for (i = 0; i < nr; i++) {
-		char *p = map->ptr + (i * page_size);
-		mark_page_rw(map, p);
-		*p = rnd();
-	}
+	for (i = 0; i < nr; i++)
+		p[i * page_size] = rand();
 }
 
 static void dirty_every_other_page(struct map *map)
 {
+	char *p = map->ptr;
 	unsigned int i, nr, first;
 
 	nr = nr_pages(map);
 
 	first = RAND_BOOL();
 
-	for (i = first; i < nr; i+=2) {
-		char *p = map->ptr + (i * page_size);
-		mark_page_rw(map, p);
-		*p = rnd();
-	}
+	for (i = first; i < nr; i+=2)
+		p[i * page_size] = rand();
 }
 
 static void dirty_mapping_reverse(struct map *map)
 {
+	char *p = map->ptr;
 	unsigned int i, nr;
 
 	nr = nr_pages(map) - 1;
 
-	for (i = nr; i > 0; i--) {
-		char *p = map->ptr + (i * page_size);
-		mark_page_rw(map, p);
-		*p = rnd();
-	}
+	for (i = nr; i > 0; i--)
+		p[i * page_size] = rand();
 }
 
 /* dirty a random set of map->size pages. (some may be faulted >once) */
 static void dirty_random_pages(struct map *map)
 {
+	char *p = map->ptr;
 	unsigned int i, nr;
 
 	nr = nr_pages(map);
 
-	for (i = 0; i < nr; i++) {
-		off_t offset = (rnd() % nr) * page_size;
-		char *p = map->ptr + offset;
-		mark_page_rw(map, p);
-		*p = rnd();
-	}
+	for (i = 0; i < nr; i++)
+		p[(rand() % nr) * page_size] = rand();
 }
 
 /*
@@ -91,7 +220,6 @@ static void dirty_first_page(struct map *map)
 {
 	char *p = map->ptr;
 
-	mark_page_rw(map, map->ptr);
 	generate_random_page(p);
 }
 
@@ -100,10 +228,9 @@ static void dirty_first_page(struct map *map)
  * a strlen and go off the end. */
 static void dirty_last_page(struct map *map)
 {
-	char *p = map->ptr + map->size - page_size;
+	char *p = map->ptr;
 
-	mark_page_rw(map, p);
-	memset((void *) p, 'A', page_size);
+	memset((void *) p + (map->size - page_size), 'A', page_size);
 }
 
 static const struct faultfn write_faultfns_single[] = {
@@ -122,12 +249,15 @@ static const struct faultfn write_faultfns[] = {
 void random_map_writefn(struct map *map)
 {
 	if (map->size == page_size) {
-		write_faultfns_single[rnd() % ARRAY_SIZE(write_faultfns_single)].func(map);
+		mprotect(map->ptr, page_size, PROT_READ|PROT_WRITE);
+		write_faultfns_single[rand() % ARRAY_SIZE(write_faultfns_single)].func(map);
 	} else {
 		if (RAND_BOOL()) {
-			write_faultfns[rnd() % ARRAY_SIZE(write_faultfns)].func(map);
+			mprotect(map->ptr, map->size, PROT_READ|PROT_WRITE);
+			write_faultfns[rand() % ARRAY_SIZE(write_faultfns)].func(map);
 		} else {
-			write_faultfns_single[rnd() % ARRAY_SIZE(write_faultfns_single)].func(map);
+			mprotect(map->ptr, page_size, PROT_READ|PROT_WRITE);
+			write_faultfns_single[rand() % ARRAY_SIZE(write_faultfns_single)].func(map);
 		}
 	}
 }

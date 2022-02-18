@@ -5,10 +5,6 @@
 #include "sanitise.h"
 #include "compat.h"
 
-static unsigned long umount_flags[] = {
-	MNT_FORCE, MNT_DETACH, MNT_EXPIRE, UMOUNT_NOFOLLOW,
-};
-
 struct syscallentry syscall_umount = {
 	.name = "umount",
 	.num_args = 2,
@@ -16,6 +12,9 @@ struct syscallentry syscall_umount = {
 	.arg1type = ARG_PATHNAME,
 	.arg2name = "flags",
 	.arg2type = ARG_LIST,
-	.arg2list = ARGLIST(umount_flags),
+	.arg2list = {
+		.num = 4,
+		.values = { MNT_FORCE, MNT_DETACH, MNT_EXPIRE, UMOUNT_NOFOLLOW },
+	},
 	.group = GROUP_VFS,
 };

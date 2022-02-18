@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include "arch.h"
 #include "maps.h"
-#include "random.h"
 #include "sanitise.h"
 
 #define SYSLOG_ACTION_CLOSE          0
@@ -31,30 +30,31 @@ static void sanitise_syslog(struct syscallrecord *rec)
 	}
 
 	rec->a2 = (unsigned long) map->ptr;
-	rec->a3 = rnd() % map->size;
+	rec->a3 = rand() % map->size;
 	rec->a3 &= PAGE_MASK;
 }
-
-static unsigned long syslog_types[] = {
-	SYSLOG_ACTION_CLOSE,
-	SYSLOG_ACTION_OPEN,
-	SYSLOG_ACTION_READ,
-	SYSLOG_ACTION_READ_CLEAR,
-	SYSLOG_ACTION_READ_ALL,
-	SYSLOG_ACTION_CLEAR,
-	SYSLOG_ACTION_CONSOLE_OFF,
-	SYSLOG_ACTION_CONSOLE_ON,
-	SYSLOG_ACTION_CONSOLE_LEVEL,
-	SYSLOG_ACTION_SIZE_UNREAD,
-	SYSLOG_ACTION_SIZE_BUFFER,
-};
 
 struct syscallentry syscall_syslog = {
 	.name = "syslog",
 	.num_args = 3,
 	.arg1name = "type",
 	.arg1type = ARG_LIST,
-	.arg1list = ARGLIST(syslog_types),
+	.arg1list = {
+		.num = 11,
+		.values = {
+			SYSLOG_ACTION_CLOSE,
+			SYSLOG_ACTION_OPEN,
+			SYSLOG_ACTION_READ,
+			SYSLOG_ACTION_READ_CLEAR,
+			SYSLOG_ACTION_READ_ALL,
+			SYSLOG_ACTION_CLEAR,
+			SYSLOG_ACTION_CONSOLE_OFF,
+			SYSLOG_ACTION_CONSOLE_ON,
+			SYSLOG_ACTION_CONSOLE_LEVEL,
+			SYSLOG_ACTION_SIZE_UNREAD,
+			SYSLOG_ACTION_SIZE_BUFFER,
+		},
+	},
 	.arg2name = "buf",
 	.arg2type = ARG_MMAP,
 	.arg3name = "len",

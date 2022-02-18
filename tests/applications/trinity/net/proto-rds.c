@@ -7,10 +7,15 @@
 #endif
 
 #include "compat.h"
-#include "random.h"
 #include "utils.h"	// RAND_ARRAY
 
-static void rds_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
+void rds_rand_socket(struct socket_triplet *st)
+{
+	st->protocol = 0;
+	st->type = SOCK_SEQPACKET;
+}
+
+void rds_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 {
 	struct sockaddr_in *rds;
 
@@ -18,7 +23,7 @@ static void rds_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 
 	rds->sin_family = AF_INET;
 	rds->sin_addr.s_addr = random_ipv4_address();
-	rds->sin_port = rnd() % 65535;
+	rds->sin_port = rand() % 65535;
 
 	*addr = (struct sockaddr *) rds;
 	*addrlen = sizeof(struct sockaddr_in);
@@ -31,25 +36,11 @@ static const unsigned int rds_opts[] = {
 	RDS_RECVERR, RDS_CONG_MONITOR, RDS_GET_MR_FOR_DEST,
 };
 
-#define SOL_RDS 276
-
-static void rds_setsockopt(struct sockopt *so, __unused__ struct socket_triplet *triplet)
+void rds_setsockopt(struct sockopt *so)
 {
-	so->level = SOL_RDS;
 	so->optname = RAND_ARRAY(rds_opts);
 }
 
-static struct socket_triplet rds_triplet[] = {
-	{ .family = PF_RDS, .protocol = 0, .type = SOCK_SEQPACKET },
-};
-
-const struct netproto proto_rds = {
-	.name = "rds",
-	.setsockopt = rds_setsockopt,
-	.gen_sockaddr = rds_gen_sockaddr,
-	.valid_triplets = rds_triplet,
-	.nr_triplets = ARRAY_SIZE(rds_triplet),
-};
 #else
 /* stub if we are built on something without RDS headers */
 void rds_setsockopt(struct sockopt *so)

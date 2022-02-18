@@ -12,7 +12,6 @@
 #include "syscall.h"
 #include "params.h"
 #include "log.h"
-#include "random.h"
 #include "shm.h"
 #include "tables.h"
 
@@ -62,7 +61,7 @@ void enable_random_syscalls_uniarch(void)
 	struct syscallentry *entry;
 
 retry:
-	call = rnd() % max_nr_syscalls;
+	call = rand() % max_nr_syscalls;
 	entry = syscalls[call].entry;
 
 	if (validate_specific_syscall_silent(syscalls, call) == FALSE)
@@ -100,11 +99,7 @@ void mark_all_syscalls_active_uniarch(void)
 	unsigned int i;
 
 	for_each_syscall(i) {
-		struct syscallentry *entry = syscalls[i].entry;
-		if (entry == NULL)
-			continue;
-
-		entry->flags |= ACTIVE;
+		syscalls[i].entry->flags |= ACTIVE;
 		activate_syscall(i);
 	}
 }
@@ -114,10 +109,9 @@ void init_syscalls_uniarch(void)
 	unsigned int i;
 
 	for_each_syscall(i) {
-		struct syscallentry *entry = syscalls[i].entry;
-		if (entry == NULL)
-			continue;
+		struct syscallentry *entry;
 
+		entry = syscalls[i].entry;
 		if (entry->flags & ACTIVE)
 			if (entry->init)
 				entry->init();
@@ -126,14 +120,11 @@ void init_syscalls_uniarch(void)
 
 void deactivate_disabled_syscalls_uniarch(void)
 {
+	struct syscallentry *entry;
 	unsigned int i;
 
 	for_each_syscall(i) {
-		struct syscallentry *entry = syscalls[i].entry;
-
-		if (entry == NULL)
-			continue;
-
+		entry = syscalls[i].entry;
 		if (entry->flags & TO_BE_DEACTIVATED) {
 			entry->flags &= ~(ACTIVE|TO_BE_DEACTIVATED);
 			deactivate_syscall_uniarch(i);
@@ -150,11 +141,9 @@ void dump_syscall_tables_uniarch(void)
 	outputstd("syscalls: %d\n", max_nr_syscalls);
 
 	for_each_syscall(i) {
-		struct syscallentry *entry = syscalls[i].entry;
+		struct syscallentry *entry;
 
-		if (entry == NULL)
-			continue;
-
+		entry = syscalls[i].entry;
 		outputstd("entrypoint %d %s : ", entry->number, entry->name);
 		show_state(entry->flags & ACTIVE);
 		if (entry->flags & AVOID_SYSCALL)
@@ -168,10 +157,9 @@ void display_enabled_syscalls_uniarch(void)
         unsigned int i;
 
 	for_each_syscall(i) {
-		struct syscallentry *entry = syscalls[i].entry;
+		struct syscallentry *entry;
 
-		if (entry == NULL)
-			continue;
+		entry = syscalls[i].entry;
 
 		if (entry->flags & ACTIVE)
 			output(0, "syscall %d:%s enabled.\n", i, entry->name);

@@ -12,7 +12,7 @@
 #ifdef USE_CAIF
 #include <linux/caif/caif_socket.h>
 
-static void caif_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
+void caif_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 {
 	struct sockaddr_caif *caif;
 	unsigned int i;
@@ -20,54 +20,40 @@ static void caif_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 	caif = zmalloc(sizeof(struct sockaddr_caif));
 
 	caif->family = PF_CAIF;
-	caif->u.at.type = rnd();
+	caif->u.at.type = rand();
 	for (i = 0; i < 16; i++)
-		caif->u.util.service[i] = rnd();
-	caif->u.dgm.connection_id = rnd();
-	caif->u.dgm.nsapi = rnd();
-	caif->u.rfm.connection_id = rnd();
+		caif->u.util.service[i] = rand();
+	caif->u.dgm.connection_id = rand();
+	caif->u.dgm.nsapi = rand();
+	caif->u.rfm.connection_id = rand();
 	for (i = 0; i < 16; i++)
-		caif->u.rfm.volume[i] = rnd();
-	caif->u.dbg.type = rnd();
-	caif->u.dbg.service = rnd();
+		caif->u.rfm.volume[i] = rand();
+	caif->u.dbg.type = rand();
+	caif->u.dbg.service = rand();
 	*addr = (struct sockaddr *) caif;
 	*addrlen = sizeof(struct sockaddr_caif);
+}
+
+void caif_rand_socket(struct socket_triplet *st)
+{
+	st->protocol = rand() % _CAIFPROTO_MAX;
+	if (RAND_BOOL())
+		st->type = SOCK_SEQPACKET;
+	else
+		st->type = SOCK_STREAM;
 }
 
 static const unsigned int caif_opts[] = {
 	CAIFSO_LINK_SELECT, CAIFSO_REQ_PARAM
 };
 
-#define SOL_CAIF 278
-
-static void caif_setsockopt(struct sockopt *so, __unused__ struct socket_triplet *triplet)
+void caif_setsockopt(struct sockopt *so)
 {
-	so->level = SOL_CAIF;
-
 	so->optname = RAND_ARRAY(caif_opts);
 }
-
-static struct socket_triplet caif_triplet[] = {
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_AT, .type = SOCK_SEQPACKET },
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_DATAGRAM, .type = SOCK_SEQPACKET },
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_DATAGRAM_LOOP, .type = SOCK_SEQPACKET },
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_UTIL, .type = SOCK_SEQPACKET },
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_RFM, .type = SOCK_SEQPACKET },
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_DEBUG, .type = SOCK_SEQPACKET },
-
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_AT, .type = SOCK_STREAM },
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_DATAGRAM, .type = SOCK_STREAM },
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_DATAGRAM_LOOP, .type = SOCK_STREAM },
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_UTIL, .type = SOCK_STREAM },
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_RFM, .type = SOCK_STREAM },
-	{ .family = PF_CAIF, .protocol = CAIFPROTO_DEBUG, .type = SOCK_STREAM },
-};
-
-const struct netproto proto_caif = {
-	.name = "caif",
-	.setsockopt = caif_setsockopt,
-	.gen_sockaddr = caif_gen_sockaddr,
-	.valid_triplets = caif_triplet,
-	.nr_triplets = ARRAY_SIZE(caif_triplet),
-};
+#else
+/* stub if we are built on something without CAIF headers */
+void caif_setsockopt(struct sockopt *so)
+{
+}
 #endif

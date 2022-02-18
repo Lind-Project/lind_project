@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "bpf.h"
 #include "debug.h"
 #include "log.h"
 #include "net.h"
@@ -69,30 +68,27 @@ static const char *bpf_class_vars_name[] = {
 #define	BPF_W		0x00
 #define	BPF_H		0x08
 #define	BPF_B		0x10
-#define	BPF_DW		0x18	/* eBPF only, double word */
 
 static const uint16_t bpf_size_vars[] = {
-	BPF_W, BPF_H, BPF_B, BPF_DW,
+	BPF_W, BPF_H, BPF_B,
 };
 
 static const char *bpf_size_vars_name[] = {
 	[BPF_W] = "w",
 	[BPF_H] = "h",
 	[BPF_B] = "b",
-	[BPF_DW] = "dw",
 };
 
 #define BPF_MODE(code)	((code) & 0xe0)
-#define	BPF_IMM		0x00
+#define	BPF_IMM 	0x00
 #define	BPF_ABS		0x20
 #define	BPF_IND		0x40
 #define	BPF_MEM		0x60
-#define	BPF_LEN		0x80	/* classic BPF only, reserved in eBPF */
-#define	BPF_MSH		0xa0	/* classic BPF only, reserved in eBPF */
-#define	BPF_XADD	0xc0	/* eBPF only, exclusive add */
+#define	BPF_LEN		0x80
+#define	BPF_MSH		0xa0
 
 static const uint16_t bpf_mode_vars[] = {
-	BPF_IMM, BPF_ABS, BPF_IND, BPF_MEM, BPF_LEN, BPF_MSH, BPF_XADD,
+	BPF_IMM, BPF_ABS, BPF_IND, BPF_MEM, BPF_LEN, BPF_MSH,
 };
 
 static const char *bpf_mode_vars_name[] = {
@@ -102,7 +98,6 @@ static const char *bpf_mode_vars_name[] = {
 	[BPF_MEM] = "mem",
 	[BPF_LEN] = "len",
 	[BPF_MSH] = "msh",
-	[BPF_XADD] = "xadd",
 };
 
 #define BPF_OP(code)	((code) & 0xf0)
@@ -115,15 +110,12 @@ static const char *bpf_mode_vars_name[] = {
 #define	BPF_LSH		0x60
 #define	BPF_RSH		0x70
 #define	BPF_NEG		0x80
-#define	BPF_MOD		0x90
+#define BPF_MOD		0x90
 #define	BPF_XOR		0xa0
-#define	BPF_MOV		0xb0	/* eBPF only: mov reg to reg */
-#define	BPF_ARSH	0xc0	/* eBPF only: sign extending shift right */
-#define	BPF_END		0xd0	/* eBPF only: endianness conversion */
 
 static const uint16_t bpf_alu_op_vars[] = {
 	BPF_ADD, BPF_SUB, BPF_MUL, BPF_DIV, BPF_OR, BPF_AND, BPF_LSH, BPF_RSH,
-	BPF_NEG, BPF_MOD, BPF_XOR, BPF_MOV, BPF_ARSH, BPF_END,
+	BPF_NEG, BPF_MOD, BPF_XOR,
 };
 
 static const char *bpf_alu_op_vars_name[] = {
@@ -138,9 +130,6 @@ static const char *bpf_alu_op_vars_name[] = {
 	[BPF_NEG] = "neg",
 	[BPF_MOD] = "mod",
 	[BPF_XOR] = "xor",
-	[BPF_MOV] = "mov",
-	[BPF_ARSH] = "arsh",
-	[BPF_END] = "end"
 };
 
 #define	BPF_JA		0x00
@@ -148,15 +137,9 @@ static const char *bpf_alu_op_vars_name[] = {
 #define	BPF_JGT		0x20
 #define	BPF_JGE		0x30
 #define	BPF_JSET	0x40
-#define	BPF_JNE		0x50  /* eBPF only: jump != */
-#define	BPF_JSGT	0x60  /* eBPF only: signed '>' */
-#define	BPF_JSGE	0x70  /* eBPF only: signed '>=' */
-#define	BPF_CALL	0x80  /* eBPF only: function call */
-#define	BPF_EXIT	0x90  /* eBPF only: function return */
 
 static const uint16_t bpf_jmp_op_vars[] = {
 	BPF_JA, BPF_JEQ, BPF_JGT, BPF_JGE, BPF_JSET,
-	BPF_JNE, BPF_JSGT, BPF_JSGE, BPF_CALL, BPF_EXIT,
 };
 
 static const char *bpf_jmp_op_vars_name[] = {
@@ -165,11 +148,6 @@ static const char *bpf_jmp_op_vars_name[] = {
 	[BPF_JGT]  = "jgt",
 	[BPF_JGE]  = "jge",
 	[BPF_JSET] = "jset",
-	[BPF_JNE]  = "jne",
-	[BPF_JSGT] = "jsgt",
-	[BPF_JSGE] = "jsge",
-	[BPF_CALL] = "call",
-	[BPF_EXIT] = "exit",
 };
 
 #define BPF_SRC(code)	((code) & 0x08)
@@ -269,8 +247,8 @@ static const uint32_t bpf_seccomp_jmp_arch_vars[] = {
 # define TRUE_REG_SYSCALL	REG_RAX
 # define TRUE_ARCH		AUDIT_ARCH_X86_64
 #else
-# define TRUE_REG_SYSCALL	((uint32_t) rnd()) /* TODO later */
-# define TRUE_ARCH		((uint32_t) rnd()) /* TODO later */
+# define TRUE_REG_SYSCALL	((uint32_t) rand()) /* TODO later */
+# define TRUE_ARCH		((uint32_t) rand()) /* TODO later */
 #endif
 
 struct seccomp_data {
@@ -281,7 +259,7 @@ struct seccomp_data {
 };
 
 #define bpf_rand(type) \
-	(bpf_##type##_vars[rnd() % ARRAY_SIZE(bpf_##type##_vars)])
+	(bpf_##type##_vars[rand() % ARRAY_SIZE(bpf_##type##_vars)])
 
 static const char * const op_table[] = {
 #define OP(_op, _name)  [_op] = _name
@@ -656,7 +634,7 @@ static uint16_t gen_bpf_code_more_crazy(bool last_instr)
 
 	/* Also give it a chance to fuzz some crap into it */
 	if (ONE_IN(1000))
-		ret |= (uint16_t) rnd();
+		ret |= (uint16_t) rand();
 
 	return ret;
 }
@@ -724,7 +702,7 @@ static int gen_seccomp_bpf_code(struct sock_filter *curr)
 		used = 2;
 		memcpy(curr, allow_syscall, sizeof(allow_syscall));
 		/* We assume here that max_nr_syscalls was computed before */
-		curr[0].k = rnd() % max_nr_syscalls;
+		curr[0].k = rand() % max_nr_syscalls;
 		break;
 	case STATE_GEN_KILL_PROCESS:
 		used = 1;
@@ -736,20 +714,20 @@ static int gen_seccomp_bpf_code(struct sock_filter *curr)
 	default:
 	case STATE_GEN_RANDOM_CRAP:
 		used = 1;
-		curr->code = (uint16_t) rnd();
-		curr->jt = (uint8_t) rnd();
-		curr->jf = (uint8_t) rnd();
+		curr->code = (uint16_t) rand();
+		curr->jt = (uint8_t) rand();
+		curr->jf = (uint8_t) rand();
 		curr->k = rand32();
 		break;
 	}
 
 	/* Also give it a tiny chance to fuzz some crap into it */
 	if (ONE_IN(10000))
-		curr[0].code |= (uint16_t) rnd();
+		curr[0].code |= (uint16_t) rand();
 	if (ONE_IN(10000))
-		curr[1].code |= (uint16_t) rnd();
+		curr[1].code |= (uint16_t) rand();
 	if (ONE_IN(10000))
-		curr[2].code |= (uint16_t) rnd();
+		curr[2].code |= (uint16_t) rand();
 
 	return used;
 }
@@ -758,7 +736,7 @@ static int seccomp_choose(const float probs[__STATE_GEN_MAX])
 {
 	int i;
 	float sum = .001f;
-	float thr = (float) rnd() / (float) RAND_MAX;
+	float thr = (float) rand() / (float) RAND_MAX;
 
 	for (i = 0; i < __STATE_GEN_MAX; ++i) {
 		sum += probs[i];
@@ -779,10 +757,10 @@ void bpf_gen_seccomp(unsigned long **addr, unsigned long *addrlen)
 	if (addrlen != NULL && bpf == NULL)
 		bpf = zmalloc(sizeof(struct sock_fprog));
 
-	bpf->len = avail = rnd() % 50;
+	bpf->len = avail = rand() % 50;
 	/* Give it from time to time a chance to load big filters as well. */
 	if (ONE_IN(1000))
-		bpf->len = avail = rnd() % BPF_MAXINSNS;
+		bpf->len = avail = rand() % BPF_MAXINSNS;
 	if (bpf->len == 0)
 		bpf->len = avail = 50;
 
@@ -816,12 +794,12 @@ void bpf_gen_filter(unsigned long **addr, unsigned long *addrlen)
 	if (addrlen != NULL && bpf == NULL)
 		bpf = zmalloc(sizeof(struct sock_fprog));
 
-	bpf->len = rnd() % 10;
+	bpf->len = rand() % 10;
 	/* Give it from time to time a chance to load big filters as well. */
 	if (ONE_IN(100))
-		bpf->len = rnd() % 100;
+		bpf->len = rand() % 100;
 	if (ONE_IN(1000))
-		bpf->len = rnd() % BPF_MAXINSNS;
+		bpf->len = rand() % BPF_MAXINSNS;
 	if (bpf->len == 0)
 		bpf->len = 50;
 
@@ -835,24 +813,18 @@ void bpf_gen_filter(unsigned long **addr, unsigned long *addrlen)
 
 		/* Fill out jump offsets if jmp instruction */
 		if (BPF_CLASS(bpf->filter[i].code) == BPF_JMP) {
-			bpf->filter[i].jt = (uint8_t) rnd() % bpf->len;
-			bpf->filter[i].jf = (uint8_t) rnd() % bpf->len;
+			bpf->filter[i].jt = (uint8_t) rand() % bpf->len;
+			bpf->filter[i].jf = (uint8_t) rand() % bpf->len;
 		}
 
 		/* Also give it a chance if not BPF_JMP */
 		if (ONE_IN(100))
-			bpf->filter[i].jt |= (uint8_t) rnd();
+			bpf->filter[i].jt |= (uint8_t) rand();
 		if (ONE_IN(100))
-			bpf->filter[i].jf |= (uint8_t) rnd();
+			bpf->filter[i].jf |= (uint8_t) rand();
 
 		/* Not always fill out k */
-		switch (rnd() % 3) {
-		case 0:	bpf->filter[i].k = (uint32_t) rand32();
-			break;
-		case 1:	bpf->filter[i].k = (uint32_t) get_rand_bpf_fd();
-			break;
-		case 2:	break;
-		}
+		bpf->filter[i].k = ((ONE_IN(10)) ? 0 : (uint32_t) rand());
 
 		/* Also try to jump into BPF extensions by chance */
 		if (BPF_CLASS(bpf->filter[i].code) == BPF_LD ||
@@ -861,7 +833,7 @@ void bpf_gen_filter(unsigned long **addr, unsigned long *addrlen)
 			    bpf->filter[i].k < (uint32_t) SKF_AD_OFF) {
 				if (ONE_IN(10)) {
 					bpf->filter[i].k = (uint32_t) (SKF_AD_OFF +
-							   rnd() % SKF_AD_MAX);
+							   rand() % SKF_AD_MAX);
 				}
 			}
 		}
@@ -875,7 +847,7 @@ void bpf_gen_filter(unsigned long **addr, unsigned long *addrlen)
 		     BPF_MODE(bpf->filter[i].code) == BPF_MEM) ||
 		    (BPF_CLASS(bpf->filter[i].code) == BPF_LDX &&
 		     BPF_MODE(bpf->filter[i].code) == BPF_MEM))
-			bpf->filter[i].k = (uint32_t) (rnd() % 16);
+			bpf->filter[i].k = (uint32_t) (rand() % 16);
 	}
 
 	*addr = (void *) bpf;

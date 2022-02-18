@@ -9,7 +9,6 @@
 #include "fd.h"
 #include "log.h"
 #include "memfd.h"
-#include "objects.h"
 #include "random.h"
 #include "sanitise.h"
 #include "shm.h"
@@ -25,41 +24,21 @@ static int memfd_create(__unused__ const char *uname, __unused__ unsigned int fl
 #endif
 }
 
-static void memfd_destructor(struct object *obj)
-{
-	close(obj->memfd);
-}
-
 static int open_memfd_fds(void)
 {
-	struct objhead *head;
 	unsigned int i;
-	unsigned int flags[] = {
-		0,
-		MFD_CLOEXEC,
-		MFD_CLOEXEC | MFD_ALLOW_SEALING,
-		MFD_ALLOW_SEALING,
-	};
+	unsigned int count = 0;
 
-	head = get_objhead(OBJ_GLOBAL, OBJ_FD_MEMFD);
-	head->destroy = &memfd_destructor;
+	shm->memfd_fds[0] = memfd_create("memfd1", 0);
+	shm->memfd_fds[1] = memfd_create("memfd2", MFD_CLOEXEC);
+	shm->memfd_fds[2] = memfd_create("memfd3", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+	shm->memfd_fds[3] = memfd_create("memfd4", MFD_ALLOW_SEALING);
 
-	for (i = 0; i < ARRAY_SIZE(flags); i++) {
-		struct object *obj;
-		char namestr[] = "memfdN";
-		int fd;
-
-		sprintf(namestr, "memfd%u", i + 1);
-
-		fd = memfd_create(namestr, flags[i]);
-		if (fd < 0)
-			continue;
-
-		obj = alloc_object();
-		obj->memfd = fd;
-		add_object(obj, OBJ_GLOBAL, OBJ_FD_MEMFD);
-
-		output(2, "fd[%d] = memfd\n", fd);
+	for (i = 0; i < MAX_MEMFD_FDS; i++) {
+		if (shm->memfd_fds[i] > 0) {
+			output(2, "fd[%d] = memfd\n", shm->memfd_fds[i]);
+			count++;
+		}
 	}
 
 	//FIXME: right now, returning FALSE means "abort everything", not
@@ -70,21 +49,12 @@ static int open_memfd_fds(void)
 
 static int get_rand_memfd_fd(void)
 {
-	struct object *obj;
-
-	/* check if eventfd unavailable/disabled. */
-	if (objects_empty(OBJ_FD_MEMFD) == TRUE)
-		return -1;
-
-	obj = get_random_object(OBJ_FD_MEMFD, OBJ_GLOBAL);
-	return obj->memfd;
+	return shm->memfd_fds[rand() % MAX_MEMFD_FDS];
 }
 
-static const struct fd_provider memfd_fd_provider = {
+const struct fd_provider memfd_fd_provider = {
 	.name = "memfd",
 	.enabled = TRUE,
 	.open = &open_memfd_fds,
 	.get = &get_rand_memfd_fd,
 };
-
-REG_FD_PROV(memfd_fd_provider);

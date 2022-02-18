@@ -11,14 +11,12 @@
 #include <linux/ipv6.h>	// needed for ipv6_opt_hdr
 #include <linux/if_arp.h>
 #include <linux/if_packet.h>
-#include <linux/netfilter_ipv6/ip6_tables.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include "arch.h"
 #include "net.h"
 #include "random.h"
 #include "utils.h"	// ARRAY_SIZE
-#include "uid.h"
 #include "compat.h"
 
 struct addrtext {
@@ -28,12 +26,6 @@ struct addrtext {
 static void gen_random_ipv6_address(struct in6_addr *v6)
 {
 	const char *p;
-
-	/* 90% of the time, just do localhost */
-	if (!(ONE_IN(10))) {
-		inet_pton(AF_INET6, "::1", v6);
-		return;
-	}
 
 	if (RAND_BOOL()) {
 		/* v4 in v6 somehow. */
@@ -56,6 +48,7 @@ static void gen_random_ipv6_address(struct in6_addr *v6)
 		/* actual v6 addresses. */
 
 		const struct addrtext v6_addresses[] = {
+			{ "::1" },		/* ::1/128 loopback */
 			{ "::" },		/* ::/128 unspecified */
 			{ "fe80::" },		/* fe80::/10 link-local */
 			{ "fc00::" },		/* fc00::/7  unique local address (ULA) */
@@ -68,21 +61,37 @@ static void gen_random_ipv6_address(struct in6_addr *v6)
 	}
 }
 
-static void ipv6_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
+void ipv6_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 {
 	struct sockaddr_in6 *ipv6;
+	struct in6_addr serv_addr;
 
 	ipv6 = zmalloc(sizeof(struct sockaddr_in6));
 
 	ipv6->sin6_family = PF_INET6;
 
 	gen_random_ipv6_address(&ipv6->sin6_addr);
-	ipv6->sin6_port = htons(rnd() % 65535);
-	ipv6->sin6_flowinfo = rnd();
-	ipv6->sin6_scope_id = rnd();
+	ipv6->sin6_port = htons(rand() % 65535);
+
+	/* Client side if we supplied server_addr */
+	if (inet_pton(PF_INET6, server_addr, &serv_addr) == 1)
+		ipv6->sin6_addr = serv_addr;
+	/* Server side if we supplied port without addr, so listen on in6addr_any */
+	else if (server_port != 0)
+		ipv6->sin6_addr = in6addr_any;
+
+	/* Fuzz from port to (port + 100) if supplied */
+	if (server_port != 0)
+		ipv6->sin6_port = htons(server_port + rand() % 100);
 
 	*addr = (struct sockaddr *) ipv6;
 	*addrlen = sizeof(struct sockaddr_in6);
+}
+
+void inet6_rand_socket(struct socket_triplet *st)
+{
+	// Use the same socket generator as ipv4
+	inet_rand_socket(st);
 }
 
 static const struct sock_option inet6_opts[] = {
@@ -146,17 +155,13 @@ static const struct sock_option inet6_opts[] = {
 	{ .name = IPV6_ORIGDSTADDR, },
 	{ .name = IPV6_TRANSPARENT, },
 	{ .name = IPV6_UNICAST_IF, },
-	{ .name = IP6T_SO_SET_REPLACE, },
-	{ .name = IP6T_SO_SET_ADD_COUNTERS, },
 };
 
-static void inet6_setsockopt(struct sockopt *so, __unused__ struct socket_triplet *triplet)
+void inet6_setsockopt(struct sockopt *so)
 {
 	unsigned char val;
 
-	so->level = SOL_IPV6;
-
-	val = rnd() % ARRAY_SIZE(inet6_opts);
+	val = rand() % ARRAY_SIZE(inet6_opts);
 	so->optname = inet6_opts[val].name;
 	so->optlen = sockoptlen(inet6_opts[val].len);
 
@@ -166,60 +171,20 @@ static void inet6_setsockopt(struct sockopt *so, __unused__ struct socket_triple
 	case IPV6_RTHDR:
 	case IPV6_DSTOPTS:
 		so->optlen = sizeof(struct ipv6_opt_hdr);
-		so->optlen += rnd() % ((8 * 255) - so->optlen);
+		so->optlen += rand() % ((8 * 255) - so->optlen);
 		so->optlen &= ~0x7;
 		break;
 	case IPV6_2292PKTOPTIONS:
 		if (RAND_BOOL())
 			so->optlen = 0;	// update
 		else
-			so->optlen = rnd() % 64*1024;
+			so->optlen = rand() % 64*1024;
 		break;
 	case IPV6_IPSEC_POLICY:
 	case IPV6_XFRM_POLICY:
-		so->optlen = rnd() % page_size;
+		so->optlen = rand() % page_size;
 		break;
 
 	}
 }
-
-static struct socket_triplet ipv6_triplets[] = {
-	{ .family = PF_INET6, .protocol = IPPROTO_IP, .type = SOCK_DGRAM },
-	{ .family = PF_INET6, .protocol = IPPROTO_IP, .type = SOCK_SEQPACKET },
-	{ .family = PF_INET6, .protocol = IPPROTO_IP, .type = SOCK_STREAM },
-
-	{ .family = PF_INET6, .protocol = IPPROTO_TCP, .type = SOCK_STREAM },
-
-	{ .family = PF_INET6, .protocol = IPPROTO_UDP, .type = SOCK_DGRAM },
-
-	{ .family = PF_INET6, .protocol = IPPROTO_DCCP, .type = SOCK_DCCP },
-
-	{ .family = PF_INET6, .protocol = IPPROTO_SCTP, .type = SOCK_SEQPACKET },
-
-	{ .family = PF_INET6, .protocol = IPPROTO_UDPLITE, .type = SOCK_DGRAM},
-};
-
-static struct socket_triplet ipv6_privileged_triplets[] = {
-	{ .family = PF_INET6, .protocol = 0, .type = SOCK_RAW },
-	{ .family = PF_INET6, .protocol = 1, .type = SOCK_RAW },
-	{ .family = PF_INET6, .protocol = 2, .type = SOCK_RAW },
-	{ .family = PF_INET6, .protocol = 3, .type = SOCK_RAW },
-	{ .family = PF_INET6, .protocol = 4, .type = SOCK_RAW },
-	{ .family = PF_INET6, .protocol = 5, .type = SOCK_RAW },
-	{ .family = PF_INET6, .protocol = 6, .type = SOCK_RAW },
-	{ .family = PF_INET6, .protocol = 7, .type = SOCK_RAW },
-	{ .family = PF_INET6, .protocol = 8, .type = SOCK_RAW },
-	{ .family = PF_INET6, .protocol = 9, .type = SOCK_RAW },
-	//TBD: Is it worth doing all 256 of these ?
-};
-
-const struct netproto proto_inet6 = {
-	.name = "inet6",
-	.setsockopt = inet6_setsockopt,
-	.gen_sockaddr = ipv6_gen_sockaddr,
-	.valid_triplets = ipv6_triplets,
-	.nr_triplets = ARRAY_SIZE(ipv6_triplets),
-	.valid_privileged_triplets = ipv6_privileged_triplets,
-	.nr_privileged_triplets = ARRAY_SIZE(ipv6_privileged_triplets),
-};
 #endif

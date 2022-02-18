@@ -8,7 +8,7 @@
 #include "random.h"
 #include "utils.h"
 
-static void ipx_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
+void ipx_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 {
 	struct sockaddr_ipx *ipx;
 	unsigned int i;
@@ -16,30 +16,23 @@ static void ipx_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 	ipx = zmalloc(sizeof(struct sockaddr_ipx));
 
 	ipx->sipx_family = PF_IPX;
-	ipx->sipx_port = rnd();
-	ipx->sipx_network = rnd();
+	ipx->sipx_port = rand();
+	ipx->sipx_network = rand();
 	for (i = 0; i < 6; i++)
-		ipx->sipx_node[i] = rnd();
-	ipx->sipx_type = rnd();
+		ipx->sipx_node[i] = rand();
+	ipx->sipx_type = rand();
 	ipx->sipx_zero = RAND_BOOL();
 	*addr = (struct sockaddr *) ipx;
 	*addrlen = sizeof(struct sockaddr_ipx);
 }
 
-static void ipx_setsockopt(struct sockopt *so, __unused__ struct socket_triplet *triplet)
+void ipx_rand_socket(struct socket_triplet *st)
 {
-	so->level = SOL_IPX;
-	so->optname = IPX_TYPE;
+	st->protocol = rand() % PROTO_MAX;
+	st->type = SOCK_DGRAM;
 }
 
-static struct socket_triplet ipx_triplet[] = {
-	{ .family = PF_IPX, .protocol = 0, .type = SOCK_DGRAM },
-};
-
-const struct netproto proto_ipx = {
-	.name = "ipx",
-	.setsockopt = ipx_setsockopt,
-	.gen_sockaddr = ipx_gen_sockaddr,
-	.valid_triplets = ipx_triplet,
-	.nr_triplets = ARRAY_SIZE(ipx_triplet),
-};
+void ipx_setsockopt(struct sockopt *so)
+{
+	so->optname = IPX_TYPE;
+}

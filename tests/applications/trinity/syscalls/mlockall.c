@@ -8,39 +8,30 @@
 #include "syscall.h"
 #include "trinity.h"
 
-#ifndef MCL_CURRENT
 #define MCL_CURRENT     1
-#endif
-#ifndef MCL_FUTURE
 #define MCL_FUTURE      2
-#endif
-#ifndef MCL_ONFAULT
-#define MCL_ONFAULT	4
-#endif
 
 static void sanitise_mlockall(struct syscallrecord *rec)
 {
 	if (rec->a1 != 0)
 		return;
 
-	/*
-	 * There are two invalid bit patterns for MCL flags, 0, and MCL_ONFAULT
-	 * alone.  All other combinations should be valid.
-	 */
-	while (rec->a1 == 0 || rec->a1 == MCL_ONFAULT)
-		rec->a1 = (RAND_BYTE() & 0x07);
+	if (RAND_BOOL())
+		rec->a1 = MCL_CURRENT;
+	else
+		rec->a1 = MCL_FUTURE;
 }
 
-static unsigned long mlockall_flags[] = {
-	MCL_CURRENT, MCL_FUTURE, MCL_ONFAULT,
-};
 
 struct syscallentry syscall_mlockall = {
 	.name = "mlockall",
 	.num_args = 1,
 	.arg1name = "flags",
 	.arg1type = ARG_LIST,
-	.arg1list = ARGLIST(mlockall_flags),
+	.arg1list = {
+		.num = 2,
+		.values = { MCL_CURRENT, MCL_FUTURE },
+	},
 	.group = GROUP_VM,
 	.sanitise = sanitise_mlockall,
 };

@@ -124,16 +124,6 @@ static void sanitise_fcntl(struct syscallrecord *rec)
 
 }
 
-static unsigned long fcntl_flags[] = {
-	F_DUPFD, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, F_GETFL, F_SETFL, F_GETLK, F_SETLK,
-	F_SETLKW, F_GETOWN, F_SETOWN, F_GETOWN_EX, F_SETOWN_EX, F_GETSIG, F_SETSIG, F_GETLEASE,
-	F_SETLEASE, F_NOTIFY, F_SETPIPE_SZ, F_GETPIPE_SZ, F_GETOWNER_UIDS,
-#ifdef HAVE_LK64
-	F_GETLK64, F_SETLK64, F_SETLKW64,
-#endif
-	F_OFD_GETLK, F_OFD_SETLK, F_OFD_SETLKW,
-};
-
 struct syscallentry syscall_fcntl = {
 	.name = "fcntl",
 	.num_args = 3,
@@ -141,7 +131,21 @@ struct syscallentry syscall_fcntl = {
 	.arg1type = ARG_FD,
 	.arg2name = "cmd",
 	.arg2type = ARG_OP,
-	.arg2list = ARGLIST(fcntl_flags),
+	.arg2list = {
+#ifndef HAVE_LK64
+		.num = 23,
+#else
+		.num = 27,
+#endif
+		.values = { F_DUPFD, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, F_GETFL, F_SETFL, F_GETLK, F_SETLK,
+		  F_SETLKW, F_GETOWN, F_SETOWN, F_GETOWN_EX, F_SETOWN_EX, F_GETSIG, F_SETSIG, F_GETLEASE,
+		  F_SETLEASE, F_NOTIFY, F_SETPIPE_SZ, F_GETPIPE_SZ, F_GETOWNER_UIDS,
+#ifdef HAVE_LK64
+		  F_GETLK64, F_SETLK64, F_SETLKW64,
+#endif
+		  F_OFD_GETLK, F_OFD_SETLK, F_OFD_SETLKW,
+		},
+	},
 	.arg3name = "arg",
 	.rettype = RET_FD,	//FIXME: Needs to mutate somehow depending on 'cmd'
 	.flags = NEED_ALARM,

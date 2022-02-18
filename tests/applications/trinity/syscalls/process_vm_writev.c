@@ -5,10 +5,6 @@
  */
 #include "sanitise.h"
 
-static unsigned long process_vm_writev_flags[] = {
-	0,	// currently no flags defined, mbz
-};
-
 struct syscallentry syscall_process_vm_writev = {
 	.name = "process_vm_writev",
 	.num_args = 6,
@@ -24,5 +20,8 @@ struct syscallentry syscall_process_vm_writev = {
 	.arg5type = ARG_IOVECLEN,
 	.arg6name = "flags",
 	.arg6type = ARG_LIST,
-	.arg6list = ARGLIST(process_vm_writev_flags),
+	.arg6list = {
+		.num = 1,
+		.values = { 0 },
+	},
 };

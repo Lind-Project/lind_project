@@ -11,7 +11,7 @@
 #include "utils.h"	// RAND_ARRAY
 #include "compat.h"
 
-static void irda_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
+void irda_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 {
 	struct sockaddr_irda *irda;
 	unsigned int i;
@@ -19,12 +19,35 @@ static void irda_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 	irda = zmalloc(sizeof(struct sockaddr_irda));
 
 	irda->sir_family = PF_IRDA;
-	irda->sir_lsap_sel = rnd();
-	irda->sir_addr = rnd();
+	irda->sir_lsap_sel = rand();
+	irda->sir_addr = rand();
 	for (i = 0; i < 25; i++)
-		irda->sir_name[i] = rnd();
+		irda->sir_name[i] = rand();
 	*addr = (struct sockaddr *) irda;
 	*addrlen = sizeof(struct sockaddr_irda);
+}
+
+void irda_rand_socket(struct socket_triplet *st)
+{
+	switch (rand() % 3) {
+
+	case 0: st->type = SOCK_STREAM;
+		st->protocol = rand() % PROTO_MAX;
+		break;
+
+	case 1: st->type = SOCK_SEQPACKET;
+		st->protocol = rand() % PROTO_MAX;
+		break;
+
+	case 2: st->type = SOCK_DGRAM;
+		if (RAND_BOOL())
+			st->protocol = IRDAPROTO_ULTRA;
+		else
+			st->protocol = IRDAPROTO_UNITDATA;
+		break;
+
+	default:break;
+	}
 }
 
 static const unsigned int irda_opts[] = {
@@ -33,23 +56,7 @@ static const unsigned int irda_opts[] = {
 	IRLMP_IAS_DEL, IRLMP_HINT_MASK_SET, IRLMP_WAITDEVICE
 };
 
-static void irda_setsockopt(struct sockopt *so, __unused__ struct socket_triplet *triplet)
+void irda_setsockopt(struct sockopt *so)
 {
-	so->level = SOL_IRDA;
 	so->optname = RAND_ARRAY(irda_opts);
 }
-
-static struct socket_triplet irda_triplets[] = {
-	{ .family = PF_IRDA, .protocol = IRDAPROTO_UNITDATA, .type = SOCK_DGRAM },
-	{ .family = PF_IRDA, .protocol = IRDAPROTO_ULTRA, .type = SOCK_DGRAM },
-	{ .family = PF_IRDA, .protocol = 0, .type = SOCK_SEQPACKET },
-	{ .family = PF_IRDA, .protocol = 0, .type = SOCK_STREAM },
-};
-
-const struct netproto proto_irda = {
-	.name = "irda",
-	.setsockopt = irda_setsockopt,
-	.gen_sockaddr = irda_gen_sockaddr,
-	.valid_triplets = irda_triplets,
-	.nr_triplets = ARRAY_SIZE(irda_triplets),
-};

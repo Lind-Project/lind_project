@@ -7,78 +7,47 @@
 #include <unistd.h>
 #include <sys/timerfd.h>
 
+#include "timerfd.h"
 #include "fd.h"
 #include "files.h"
 #include "log.h"
-#include "objects.h"
 #include "random.h"
 #include "sanitise.h"
 #include "shm.h"
 #include "compat.h"
 
-static void timerfd_destructor(struct object *obj)
-{
-	close(obj->timerfd);
-}
-
-static int __open_timerfd_fds(int clockid)
-{
-	struct objhead *head;
-	unsigned int i;
-	unsigned int flags[] = {
-		0,
-		TFD_NONBLOCK,
-		TFD_CLOEXEC,
-		TFD_NONBLOCK | TFD_CLOEXEC,
-	};
-
-	head = get_objhead(OBJ_GLOBAL, OBJ_FD_TIMERFD);
-	head->destroy = &timerfd_destructor;
-
-	for (i = 0; i < ARRAY_SIZE(flags); i++) {
-		struct object *obj;
-		int fd;
-
-		fd = timerfd_create(clockid, flags[i]);
-		if (fd == -1)
-			if (errno == ENOSYS)
-				return FALSE;
-
-		obj = alloc_object();
-		obj->timerfd = fd;
-		add_object(obj, OBJ_GLOBAL, OBJ_FD_TIMERFD);
-		output(2, "fd[%d] = timerfd\n", fd);
-	}
-	return TRUE;
-}
-
 static int open_timerfd_fds(void)
 {
-	int ret;
-	ret = __open_timerfd_fds(CLOCK_REALTIME);
-	if (ret != FALSE)
-		ret = __open_timerfd_fds(CLOCK_MONOTONIC);
+	unsigned int i;
 
-	return ret;
+	shm->timerfd_fds[0] = timerfd_create(CLOCK_REALTIME, 0);
+	if (shm->timerfd_fds[0] == -1)
+		if (errno == ENOSYS)
+			return FALSE;
+
+	shm->timerfd_fds[1] = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
+	shm->timerfd_fds[2] = timerfd_create(CLOCK_REALTIME, TFD_CLOEXEC);
+	shm->timerfd_fds[3] = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK | TFD_CLOEXEC);
+
+	shm->timerfd_fds[4] = timerfd_create(CLOCK_MONOTONIC, 0);
+	shm->timerfd_fds[5] = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+	shm->timerfd_fds[6] = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
+	shm->timerfd_fds[7] = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+
+	for (i = 0; i < MAX_TIMERFD_FDS; i++)
+		output(2, "fd[%d] = timerfd\n", shm->timerfd_fds[i]);
+
+	return TRUE;
 }
 
 static int get_rand_timerfd_fd(void)
 {
-	struct object *obj;
-
-	/* check if timerfd unavailable/disabled. */
-	if (objects_empty(OBJ_FD_TIMERFD) == TRUE)
-		return -1;
-
-	obj = get_random_object(OBJ_FD_TIMERFD, OBJ_GLOBAL);
-	return obj->timerfd;
+	return shm->timerfd_fds[rand() % MAX_TIMERFD_FDS];
 }
 
-static const struct fd_provider timerfd_fd_provider = {
+const struct fd_provider timerfd_fd_provider = {
 	.name = "timerfd",
 	.enabled = TRUE,
 	.open = &open_timerfd_fds,
 	.get = &get_rand_timerfd_fd,
 };
-
-REG_FD_PROV(timerfd_fd_provider);

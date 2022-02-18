@@ -7,74 +7,60 @@
 #include <unistd.h>
 #include <sys/inotify.h>
 
+#include "inotify.h"
 #include "fd.h"
 #include "log.h"
-#include "objects.h"
 #include "random.h"
 #include "sanitise.h"
 #include "shm.h"
 
-#define MAX_INOTIFY_FDS 5
-
-static void inotify_destructor(struct object *obj)
+static int create_inotify(unsigned int i, int flags)
 {
-	close(obj->inotifyfd);
+	int fd;
+
+	fd = inotify_init1(flags);
+	if (fd != -1) {
+		output(2, "fd[%d] = inotify(%d)\n", fd, flags);
+		shm->inotify_fds[i] = fd;
+		return TRUE;
+	} else {
+		output(0, "create_inotify fail: %s\n", strerror(errno));
+		return FALSE;
+	}
 }
 
 static int open_inotify_fds(void)
 {
-	struct objhead *head;
-	struct object *obj;
-	unsigned int i;
-	int fd;
-	int flags[] = {
-		0,
-		IN_NONBLOCK,
-		IN_CLOEXEC,
-		IN_NONBLOCK | IN_CLOEXEC,
-	};
+	int ret;
 
-	head = get_objhead(OBJ_GLOBAL, OBJ_FD_INOTIFY);
-	head->destroy = &inotify_destructor;
-
-	fd = inotify_init();
-	if (fd < 0)
+	shm->inotify_fds[0] = inotify_init();
+	ret = create_inotify(1, 0);
+	if (ret == FALSE)
 		return FALSE;
 
-	obj = alloc_object();
-	obj->inotifyfd = fd;
-	add_object(obj, OBJ_GLOBAL, OBJ_FD_INOTIFY);
+	ret = create_inotify(2, IN_NONBLOCK);
+	if (ret == FALSE)
+		return FALSE;
 
-	for (i = 0; i < ARRAY_SIZE(flags); i++) {
-		fd = inotify_init1(flags[i]);
-		if (fd < 0)
-			return FALSE;
+	ret = create_inotify(3, IN_CLOEXEC);
+	if (ret == FALSE)
+		return FALSE;
 
-		obj = alloc_object();
-		obj->inotifyfd = fd;
-		add_object(obj, OBJ_GLOBAL, OBJ_FD_INOTIFY);
-	}
+	ret = create_inotify(4, IN_NONBLOCK | IN_CLOEXEC);
+	if (ret == FALSE)
+		return FALSE;
 
 	return TRUE;
 }
 
 static int get_rand_inotify_fd(void)
 {
-	struct object *obj;
-
-	/* check if inotifyfd unavailable/disabled. */
-	if (objects_empty(OBJ_FD_INOTIFY) == TRUE)
-		return -1;
-
-	obj = get_random_object(OBJ_FD_INOTIFY, OBJ_GLOBAL);
-	return obj->inotifyfd;
+	return shm->inotify_fds[rand() % MAX_INOTIFY_FDS];
 }
 
-static const struct fd_provider inotify_fd_provider = {
+const struct fd_provider inotify_fd_provider = {
 	.name = "inotify",
 	.enabled = TRUE,
 	.open = &open_inotify_fds,
 	.get = &get_rand_inotify_fd,
 };
-
-REG_FD_PROV(inotify_fd_provider);

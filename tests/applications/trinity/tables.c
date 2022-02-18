@@ -26,9 +26,6 @@ int search_syscall_table(const struct syscalltable *table, unsigned int nr_sysca
 
 	/* search by name */
 	for (i = 0; i < nr_syscalls; i++) {
-		if (table[i].entry == NULL)
-			continue;
-
 		if (strcmp(arg, table[i].entry->name) == 0) {
 			//debugf("Found %s at %u\n", table[i].entry->name, i);
 			return i;
@@ -46,8 +43,6 @@ void validate_specific_syscall(const struct syscalltable *table, int call)
 		return;
 
 	entry = table[call].entry;
-	if (entry == NULL)
-		return;
 
 	if (entry->flags & AVOID_SYSCALL)
 		output(0, "%s is marked as AVOID. Skipping\n", entry->name);
@@ -64,8 +59,6 @@ int validate_specific_syscall_silent(const struct syscalltable *table, int call)
 		return FALSE;
 
 	entry = table[call].entry;
-	if (entry == NULL)
-		return FALSE;
 
 	if (entry->flags & AVOID_SYSCALL)
 		return FALSE;
@@ -218,8 +211,6 @@ static void check_syscall(struct syscallentry *entry)
 {
 	/* check that we have a name set. */
 #define CHECK(NUMARGS, ARGNUM, ARGTYPE, ARGNAME)		\
-	if (entry == NULL)					\
-		return;						\
 	if (entry->num_args > 0) {				\
 		if (entry->num_args > NUMARGS) {		\
 			if (entry->ARGNAME == NULL)  {		\
@@ -240,8 +231,6 @@ static void check_syscall(struct syscallentry *entry)
 	/* note: not enabled by default, because we haven't annotated everything yet. */
 #undef CHECK
 #define CHECK(NUMARGS, ARGNUM, ARGTYPE, ARGNAME)		\
-	if (entry == NULL)					\
-		return;						\
 	if (entry->num_args > 0) {				\
 		if (entry->num_args > NUMARGS) {		\
 			if (entry->ARGTYPE == ARG_UNDEFINED) {	\
@@ -382,103 +371,6 @@ void dump_syscall_tables(void)
 		dump_syscall_tables_uniarch();
 }
 
-static void show_unannotated_biarch(void)
-{
-	struct syscallentry *entry;
-	unsigned int i, j;
-	unsigned int count = 0;
-
-	for_each_32bit_syscall(i) {
-		entry = syscalls_32bit[i].entry;
-		if (entry == NULL)
-			continue;
-
-		count = 0;
-
-		for (j = 1; j <= entry->num_args; j++) {
-			if (j == 1) {
-				if (entry->arg1type == ARG_UNDEFINED)
-					count++;
-			}
-			if (j == 2) {
-				if (entry->arg2type == ARG_UNDEFINED)
-					count++;
-			}
-			if (j == 3) {
-				if (entry->arg3type == ARG_UNDEFINED)
-					count++;
-			}
-			if (j == 4) {
-				if (entry->arg4type == ARG_UNDEFINED)
-					count++;
-			}
-			if (j == 5) {
-				if (entry->arg5type == ARG_UNDEFINED)
-					count++;
-			}
-			if (j == 6) {
-				if (entry->arg6type == ARG_UNDEFINED)
-					count++;
-			}
-		}
-		if (count != 0)
-			printf("%s has %u unannotated arguments\n", entry->name, count);
-	}
-
-	printf("\n");
-
-	for_each_64bit_syscall(i) {
-		entry = syscalls_64bit[i].entry;
-		if (entry == NULL)
-			continue;
-
-		count = 0;
-
-		for (j = 1; j <= entry->num_args; j++) {
-			if (search_syscall_table(syscalls_32bit, max_nr_32bit_syscalls, entry->name) == -1) {
-				if (j == 1) {
-					if (entry->arg1type == ARG_UNDEFINED)
-						count++;
-				}
-				if (j == 2) {
-					if (entry->arg2type == ARG_UNDEFINED)
-						count++;
-				}
-				if (j == 3) {
-					if (entry->arg3type == ARG_UNDEFINED)
-						count++;
-				}
-				if (j == 4) {
-					if (entry->arg4type == ARG_UNDEFINED)
-						count++;
-				}
-				if (j == 5) {
-					if (entry->arg5type == ARG_UNDEFINED)
-						count++;
-				}
-				if (j == 6) {
-					if (entry->arg6type == ARG_UNDEFINED)
-						count++;
-				}
-			}
-		}
-		if (count != 0)
-			printf("%s has %u unannotated arguments\n", entry->name, count);
-	}
-}
-
-static void show_unannotated_uniarch(void)
-{
-}
-
-void show_unannotated_args(void)
-{
-	if (biarch == TRUE)
-		show_unannotated_biarch();
-	else
-		show_unannotated_uniarch();
-}
-
 /*
  * This changes the pointers in the table 'from' to be copies in
  * shared mmaps across all children.  We do this so that a child can
@@ -486,24 +378,18 @@ void show_unannotated_args(void)
  */
 static struct syscalltable * copy_syscall_table(struct syscalltable *from, unsigned int nr)
 {
-	unsigned int n, m;
+	unsigned int n;
 	struct syscallentry *copy;
 
 	copy = alloc_shared(nr * sizeof(struct syscallentry));
 	if (copy == NULL)
 		exit(EXIT_FAILURE);
 
-	for (n = 0, m = 0; n < nr; n++) {
-		struct syscallentry *entry = from[n].entry;
-
-		if (entry == NULL)
-			continue;
-
-		memcpy(copy + m , entry, sizeof(struct syscallentry));
-		copy[m].number = n;
-		copy[m].active_number = 0;
-		from[n].entry = &copy[m];
-		m++;
+	for (n = 0; n < nr; n++) {
+		memcpy(copy + n , from[n].entry, sizeof(struct syscallentry));
+		copy[n].number = n;
+		copy[n].active_number = 0;
+		from[n].entry = &copy[n];
 	}
 	return from;
 }
@@ -565,7 +451,7 @@ void display_enabled_syscalls(void)
 		display_enabled_syscalls_uniarch();
 }
 
-static void enable_random_syscalls(void)
+void enable_random_syscalls(void)
 {
 	unsigned int i;
 
@@ -683,8 +569,7 @@ struct syscallentry * get_syscall_entry(unsigned int callno, bool do32)
  */
 bool this_syscallname(const char *thisname)
 {
-	struct childdata *child = this_child();
-	unsigned int call = child->syscall.nr;
+	unsigned int call = this_child->syscall.nr;
 	struct syscallentry *syscall_entry = syscalls[call].entry;
 
 	return strcmp(thisname, syscall_entry->name);

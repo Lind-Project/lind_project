@@ -9,29 +9,22 @@
 #include "utils.h"
 #include "compat.h"
 
-static void can_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
+void can_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 {
 	struct sockaddr_can *can;
 
 	can = zmalloc(sizeof(struct sockaddr_can));
 
 	can->can_family = AF_CAN;
-	can->can_ifindex = rnd();
-	can->can_addr.tp.rx_id = rnd();
-	can->can_addr.tp.tx_id = rnd();
+	can->can_ifindex = rand();
+	can->can_addr.tp.rx_id = rand();
+	can->can_addr.tp.tx_id = rand();
 	*addr = (struct sockaddr *) can;
 	*addrlen = sizeof(struct sockaddr_can);
 }
 
-static struct socket_triplet can_triplets[] = {
-	{ .family = PF_CAN, .protocol = CAN_RAW, .type = SOCK_RAW },
-	{ .family = PF_CAN, .protocol = CAN_BCM, .type = SOCK_DGRAM },
-	// protos 3-7 seem unimplemented.
-};
-
-const struct netproto proto_can = {
-	.name = "can",
-	.gen_sockaddr = can_gen_sockaddr,
-	.valid_triplets = can_triplets,
-	.nr_triplets = ARRAY_SIZE(can_triplets),
-};
+void can_rand_socket(struct socket_triplet *st)
+{
+	st->protocol = rand() % 7;  // CAN_NPROTO
+	st->type = rand() % TYPE_MAX;
+}

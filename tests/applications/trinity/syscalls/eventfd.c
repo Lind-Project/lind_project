@@ -6,22 +6,7 @@
  *
  * eventfd() calls eventfd2() with a zero'd flags arg.
  */
-#include "objects.h"
 #include "sanitise.h"
-#include "utils.h"
-
-static void post_eventfd_create(struct syscallrecord *rec)
-{
-	struct object *new;
-	int fd = rec->retval;
-
-	if (fd == -1)
-		return;
-
-	new = alloc_object();
-	new->eventfd = fd;
-	add_object(new, OBJ_LOCAL, OBJ_FD_EVENTFD);
-}
 
 struct syscallentry syscall_eventfd = {
 	.name = "eventfd",
@@ -29,7 +14,6 @@ struct syscallentry syscall_eventfd = {
 	.arg1name = "count",
 	.arg1type = ARG_LEN,
 	.rettype = RET_FD,
-	.post = post_eventfd_create,
 };
 
 /*
@@ -42,10 +26,6 @@ struct syscallentry syscall_eventfd = {
 #include "sanitise.h"
 #include "compat.h"
 
-static unsigned long eventfd2_flags[] = {
-	EFD_CLOEXEC, EFD_NONBLOCK, EFD_SEMAPHORE,
-};
-
 struct syscallentry syscall_eventfd2 = {
 	.name = "eventfd2",
 	.num_args = 2,
@@ -53,7 +33,9 @@ struct syscallentry syscall_eventfd2 = {
 	.arg1type = ARG_LEN,
 	.arg2name = "flags",
 	.arg2type = ARG_LIST,
-	.arg2list = ARGLIST(eventfd2_flags),
+	.arg2list = {
+		.num = 3,
+		.values = { EFD_CLOEXEC, EFD_NONBLOCK, EFD_SEMAPHORE },
+	},
 	.rettype = RET_FD,
-	.post = post_eventfd_create,
 };

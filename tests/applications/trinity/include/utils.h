@@ -31,10 +31,6 @@ void * __zmalloc(size_t size, const char *func);
 # define offsetof(type, member)	((size_t) &((type *) 0)->member)
 #endif
 
-#define container_of(ptr, type, member) ({                      \
-	const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-	(type *)( (char *)__mptr - offsetof(type,member) );})
-
 /*
  * swap - swap value of @a and @b
  */
@@ -60,8 +56,6 @@ void freeptr(unsigned long *p);
 #define unreachable() do { } while (1)
 
 #define RAND_ELEMENT(_array, _element) \
-	_array[rnd() % ARRAY_SIZE(_array)]._element
+	_array[rand() % ARRAY_SIZE(_array)]._element
 
-#define RAND_ARRAY(_array) _array[rnd() % ARRAY_SIZE(_array)]
-
-#define IS_ALIGNED(x, a)	(((x) & ((typeof(x))(a) - 1)) == 0)
+#define RAND_ARRAY(_array) _array[rand() % ARRAY_SIZE(_array)]

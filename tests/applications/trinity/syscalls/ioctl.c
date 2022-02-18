@@ -12,6 +12,36 @@
 #include "syscall.h"
 #include "trinity.h"
 
+static void ioctl_mangle_cmd(struct syscallrecord *rec)
+{
+	unsigned int i;
+
+	/* mangle the cmd by ORing up to 4 random bits */
+	for (i=0; i < (unsigned int)(rand() % 4); i++)
+		rec->a2 |= 1L << (rand() % 32);
+
+	/* mangle the cmd by ANDing up to 4 random bits */
+	for (i=0; i < (unsigned int)(rand() % 4); i++)
+		rec->a2 &= 1L << (rand() % 32);
+}
+
+static void ioctl_mangle_arg(struct syscallrecord *rec)
+{
+	/* the argument could mean anything, because ioctl sucks like that. */
+	if (RAND_BOOL())
+		rec->a3 = rand32();
+	else
+		rec->a3 = (unsigned long) get_non_null_address();
+}
+
+static void generic_sanitise_ioctl(struct syscallrecord *rec)
+{
+	if (ONE_IN(50))
+		ioctl_mangle_cmd(rec);
+
+	ioctl_mangle_arg(rec);
+}
+
 static void sanitise_ioctl(struct syscallrecord *rec)
 {
 	const struct ioctl_group *grp;
@@ -21,22 +51,15 @@ static void sanitise_ioctl(struct syscallrecord *rec)
 	else
 		grp = find_ioctl_group(rec->a1);
 
-	if (grp)
+	if (grp) {
+		ioctl_mangle_arg(rec);
+
 		grp->sanitise(grp, rec);
-	else {
-		/* if we don't know about this ioctl, the argument could mean anything,
-		 * because ioctl sucks like that. Make some shit up.
-		 */
-		switch (rnd() % 3) {
-		case 0:	rec->a3 = rand32();
-			break;
-		case 1:	rec->a3 = (unsigned long) get_non_null_address();
-			break;
-		case 2:	grp = get_random_ioctl_group();
-			grp->sanitise(grp, rec);
-			break;
-		}
-	}
+
+		if (ONE_IN(100))
+			ioctl_mangle_cmd(rec);
+	} else
+		generic_sanitise_ioctl(rec);
 }
 
 struct syscallentry syscall_ioctl = {

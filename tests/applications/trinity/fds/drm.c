@@ -4,12 +4,13 @@
 #include "fd.h"
 #include "log.h"
 #include "memfd.h"
-#include "objects.h"
 #include "random.h"
 #include "sanitise.h"
 #include "shm.h"
 #include "compat.h"
 #include "trinity.h"
+
+static unsigned fd_count;
 
 #ifdef USE_DRM
 
@@ -24,11 +25,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <drm/drm.h>
-
-static void drmfd_destructor(struct object *obj)
-{
-	close(obj->drmfd);
-}
 
 static int create_dumb(__unused__ int fd)
 {
@@ -60,29 +56,13 @@ static int create_dumb(__unused__ int fd)
 #endif
 }
 
-static void add_drm_obj(int fd)
-{
-	struct object *obj;
-
-	obj = alloc_object();
-	obj->drmfd = fd;
-	add_object(obj, OBJ_GLOBAL, OBJ_FD_DRM);
-
-	output(2, "fd[%d] = drm\n", fd);
-}
-
-static struct fd_provider drm_fd_provider;
-
 static int open_drm_fds(void)
 {
-	struct objhead *head;
+	unsigned int i;
 	int fd, dfd;
 	DIR *dir;
 	struct dirent *entry;
 	char buf[128];
-
-	head = get_objhead(OBJ_GLOBAL, OBJ_FD_DRM);
-	head->destroy = &drmfd_destructor;
 
 	dir = opendir("/dev/dri/");
 	if (!dir)
@@ -102,23 +82,35 @@ static int open_drm_fds(void)
 		buf[sizeof(buf)-1] = '\0';
 
 		fd = open(buf, O_RDWR);
-		if (fd < 0)
+		if (fd < 0) {
 			continue;
+		}
+		shm->drm_fds[fd_count++] = fd;
 
-		add_drm_obj(fd);
+		if (fd_count >= MAX_DRM_FDS)
+			break;
 
 		dfd = create_dumb(fd);
-		if (dfd < 0)
+		if (dfd < 0) {
 			continue;
+		}
+		shm->drm_fds[fd_count++] = dfd;
 
-		add_drm_obj(dfd);
+		if (fd_count >= MAX_DRM_FDS)
+			break;
 	}
 
 	if (dir)
 		closedir(dir);
 
+	for (i = 0; i < MAX_DRM_FDS; i++) {
+		if (shm->drm_fds[i] > 0) {
+			output(2, "fd[%d] = drm\n", shm->drm_fds[i]);
+		}
+	}
+
 done:
-	if (objects_empty(OBJ_FD_DRM) == TRUE)
+	if (fd_count == 0)
 		drm_fd_provider.enabled = FALSE;
 
 	return TRUE;
@@ -132,21 +124,17 @@ static int open_drm_fds(void) { return TRUE; }
 
 static int get_rand_drm_fd(void)
 {
-	struct object *obj;
-
-	/* check if drm unavailable/disabled. */
-	if (objects_empty(OBJ_FD_DRM) == TRUE)
+	// We should not be called when fd_count is zero, but avoid div-by-zero
+	// just in case.
+	if (fd_count > 0)
+		return shm->drm_fds[rand() % fd_count];
+	else
 		return -1;
-
-	obj = get_random_object(OBJ_FD_DRM, OBJ_GLOBAL);
-	return obj->drmfd;
 }
 
-static struct fd_provider drm_fd_provider = {
+struct fd_provider drm_fd_provider = {
 	.name = "drm",
 	.enabled = TRUE,
 	.open = &open_drm_fds,
 	.get = &get_rand_drm_fd,
 };
-
-REG_FD_PROV(drm_fd_provider);

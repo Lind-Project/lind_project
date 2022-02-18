@@ -18,16 +18,11 @@
 #include "random.h"
 #include "signals.h"
 #include "shm.h"
-#include "sysv-shm.h"
-#include "futex.h"
-#include "stats.h"
 #include "tables.h"
 #include "taint.h"
 #include "trinity.h"
 #include "uid.h"
 #include "version.h"
-
-pid_t mainpid;
 
 char *progname = NULL;
 
@@ -98,24 +93,33 @@ static int set_exit_code(enum exit_reasons reason)
 int main(int argc, char* argv[])
 {
 	int ret = EXIT_SUCCESS;
+	int childstatus;
+	pid_t pid;
 	const char taskname[13]="trinity-main";
 
 	outputstd("Trinity " VERSION "  Dave Jones <davej@codemonkey.org.uk>\n");
 
 	progname = argv[0];
 
-	mainpid = getpid();
+	initpid = getpid();
 
 	page_size = getpagesize();
 	num_online_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-	max_children = num_online_cpus * 4;	/* possibly overridden in params. */
+	max_children = num_online_cpus;	/* possibly overridden in params. */
 
 	if (init_random() == FALSE)
 		exit(EXIT_FAILURE);
 
+	set_seed(0);
+
 	select_syscall_tables();
 
 	create_shm();
+
+	/* We do this before the parse_args because --fds will need to
+	 * operate on it when implemented.
+	 */
+	setup_fd_providers();
 
 	parse_args(argc, argv);
 
@@ -141,57 +145,76 @@ int main(int argc, char* argv[])
 		goto out;
 	}
 
+	init_syscalls();
+
 	if (show_ioctl_list == TRUE) {
 		dump_ioctls();
 		goto out;
 	}
-
-	if (show_unannotated == TRUE) {
-		show_unannotated_args();
-		goto out;
-	}
-
-	init_syscalls();
 
 	do_uid0_check();
 
 	if (do_specific_domain == TRUE)
 		find_specific_domain(specific_domain_optarg);
 
-	pids_init();
-
-	init_object_lists(OBJ_GLOBAL);
-
 	setup_initial_mappings();
 
 	parse_devices();
 
-	/* FIXME: Some better object construction method needed. */
-	create_futexes();
-	create_sysv_shms();
-
+	pids_init();
 
 	setup_main_signals();
 
-	no_bind_to_cpu = RAND_BOOL();
+	/* check if we ctrl'c or something went wrong during init. */
+	if (shm->exit_reason != STILL_RUNNING)
+		goto cleanup_fds;
 
-	prctl(PR_SET_NAME, (unsigned long) &taskname);
+	init_watchdog();
 
-	if (open_fds() == FALSE) {
-		if (shm->exit_reason != STILL_RUNNING)
-			panic(EXIT_FD_INIT_FAILURE);	// FIXME: Later, push this down to multiple EXIT's.
+	/* do an extra fork so that the watchdog and the children don't share a common parent */
+	fflush(stdout);
+	pid = fork();
+	if (pid == 0) {
+		shm->mainpid = getpid();
 
-		_exit(EXIT_FAILURE);
+		setup_main_signals();
+
+		no_bind_to_cpu = RAND_BOOL();
+
+		output(0, "Main thread is alive.\n");
+		prctl(PR_SET_NAME, (unsigned long) &taskname);
+		set_seed(0);
+
+		if (open_fds() == FALSE) {
+			if (shm->exit_reason != STILL_RUNNING)
+				panic(EXIT_FD_INIT_FAILURE);	// FIXME: Later, push this down to multiple EXIT's.
+
+			exit_main_fail();
+		}
+
+		if (dropprivs == TRUE)	//FIXME: Push down into child processes later.
+			drop_privs();
+
+		main_loop();
+
+		shm->mainpid = 0;
+		_exit(EXIT_SUCCESS);
 	}
 
-	main_loop();
+	/* wait for main loop process to exit. */
+	(void)waitpid(pid, &childstatus, 0);
 
-	destroy_global_objects();
+	/* wait for watchdog to exit. */
+	waitpid(watchdog_pid, &childstatus, 0);
 
 	output(0, "Ran %ld syscalls. Successes: %ld  Failures: %ld\n",
-		shm->stats.op_count - 1, shm->stats.successes, shm->stats.failures);
-	if (show_stats == TRUE)
-		dump_stats();
+		shm->stats.total_syscalls_done - 1, shm->stats.successes, shm->stats.failures);
+
+cleanup_fds:
+
+	close_sockets();
+
+	destroy_initial_mappings();
 
 	shutdown_logging();
 

@@ -1,14 +1,12 @@
 #pragma once
 
-#include "types.h"
 #include "list.h"
-#include "object-types.h"
 
-#define INITIAL_ANON 1
-#define CHILD_ANON 2
-#define MMAPED_FILE 3
+#define TRINITY_MAP_INITIAL 1
+#define TRINITY_MAP_CHILD 2
 
 struct map {
+	struct list_head list;
 	void *ptr;
 	char *name;
 	unsigned long size;
@@ -19,13 +17,8 @@ struct map {
 extern unsigned int num_initial_mappings;
 extern struct map *initial_mappings;
 
-#define NR_MAPPING_SIZES 6
-extern unsigned long mapping_sizes[NR_MAPPING_SIZES];
-
-struct object;
-void map_destructor(struct object *obj);
-
 void setup_initial_mappings(void);
+void destroy_initial_mappings(void);
 
 struct map * get_map(void);
 
@@ -40,7 +33,3 @@ struct faultfn {
 
 void random_map_readfn(struct map *map);
 void random_map_writefn(struct map *map);
-
-unsigned long get_rand_mmap_flags(void);
-
-void mmap_fd(int fd, const char *name, size_t len, int prot, bool global, enum objecttype type);

@@ -6,11 +6,6 @@
 #include "sanitise.h"
 #include "compat.h"
 
-static unsigned long kcmp_types[] = {
-	KCMP_FILE, KCMP_VM, KCMP_FILES, KCMP_FS,
-	KCMP_SIGHAND, KCMP_IO, KCMP_SYSVSEM,
-};
-
 struct syscallentry syscall_kcmp = {
 	.name = "kcmp",
 	.num_args = 5,
@@ -20,7 +15,10 @@ struct syscallentry syscall_kcmp = {
 	.arg2type = ARG_PID,
 	.arg3name = "type",
 	.arg3type = ARG_OP,
-	.arg3list = ARGLIST(kcmp_types),
+	.arg3list = {
+		.num = KCMP_TYPES,
+		.values = { KCMP_FILE, KCMP_VM, KCMP_FILES, KCMP_FS, KCMP_SIGHAND, KCMP_IO, KCMP_SYSVSEM },
+	},
 	.arg4name = "idx1",
 	.arg5name = "idx2",
 };

@@ -8,7 +8,7 @@
 #include "random.h"
 #include "utils.h"
 
-static void unix_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
+void unix_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 {
 	struct sockaddr_un *unixsock;
 	unsigned int len;
@@ -16,21 +16,23 @@ static void unix_gen_sockaddr(struct sockaddr **addr, socklen_t *addrlen)
 	unixsock = zmalloc(sizeof(struct sockaddr_un));
 
 	unixsock->sun_family = PF_UNIX;
-	len = rnd() % 20;
+	len = rand() % 20;
 	generate_rand_bytes((unsigned char *)unixsock->sun_path, len);
 	*addr = (struct sockaddr *) unixsock;
 	*addrlen = sizeof(struct sockaddr_un);
 }
 
-static struct socket_triplet unix_triplet[] = {
-	{ .family = PF_LOCAL, .protocol = 0, .type = SOCK_DGRAM },
-	{ .family = PF_LOCAL, .protocol = 0, .type = SOCK_SEQPACKET },
-	{ .family = PF_LOCAL, .protocol = 0, .type = SOCK_STREAM },
-};
+void unix_rand_socket(struct socket_triplet *st)
+{
+	st->protocol = PF_UNIX;
 
-const struct netproto proto_unix = {
-	.name = "unix",
-	.gen_sockaddr = unix_gen_sockaddr,
-	.valid_triplets = unix_triplet,
-	.nr_triplets = ARRAY_SIZE(unix_triplet),
-};
+	switch (rand() % 3) {
+	case 0: st->type = SOCK_STREAM;
+		break;
+	case 1: st->type = SOCK_DGRAM;
+		break;
+	case 2: st->type = SOCK_SEQPACKET;
+		break;
+	default:break;
+	}
+}

@@ -10,15 +10,11 @@
 #include "shm.h"
 #include "syscall.h"
 #include "trinity.h"
-#include "compat.h"
 
 static void sanitise_read(struct syscallrecord *rec)
 {
 	rec->a2 = (unsigned long) get_non_null_address();
-	if (RAND_BOOL())
-		rec->a3 = rnd() % page_size;
-	else
-		rec->a3 = page_size;
+	rec->a3 = rand() % page_size;
 }
 
 struct syscallentry syscall_read = {
@@ -57,7 +53,7 @@ struct syscallentry syscall_readv = {
 
 static void sanitise_pread64(struct syscallrecord *rec)
 {
-	rec->a3 = rnd() % page_size;
+	rec->a3 = rand() % page_size;
 
 retry_pos:
 	if ((int) rec->a4 < 0) {
@@ -96,31 +92,5 @@ struct syscallentry syscall_preadv = {
 	.arg3type = ARG_IOVECLEN,
 	.arg4name = "pos_l",
 	.arg5name = "pos_h",
-	.flags = NEED_ALARM,
-};
-
-/*
- * SYSCALL_DEFINE5(preadv2, unsigned long, fd, const struct iovec __user *, vec,
-	 unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
-	 int, flags)
- */
-static unsigned long preadv2_flags[] = {
-	RWF_HIPRI, RWF_DSYNC, RWF_SYNC,
-};
-
-struct syscallentry syscall_preadv2 = {
-	.name = "preadv2",
-	.num_args = 6,
-	.arg1name = "fd",
-	.arg1type = ARG_FD,
-	.arg2name = "vec",
-	.arg2type = ARG_IOVEC,
-	.arg3name = "vlen",
-	.arg3type = ARG_IOVECLEN,
-	.arg4name = "pos_l",
-	.arg5name = "pos_h",
-	.arg6name = "flags",
-	.arg6type = ARG_LIST,
-	.arg6list = ARGLIST(preadv2_flags),
 	.flags = NEED_ALARM,
 };
