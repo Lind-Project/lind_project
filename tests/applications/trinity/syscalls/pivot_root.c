@@ -1,14 +1,15 @@
 /*
  * SYSCALL_DEFINE2(pivot_root, const char __user *, new_root, const char __user *, put_old)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_pivot_root = {
+struct syscall syscall_pivot_root = {
 	.name = "pivot_root",
 	.num_args = 2,
+	.flags = CAPABILITY_CHECK,
 	.arg1name = "new_root",
 	.arg1type = ARG_ADDRESS,
 	.arg2name = "put_old",
 	.arg2type = ARG_ADDRESS,
-	.group = GROUP_VFS,
 };

@@ -5,9 +5,11 @@
  */
 
 #include <linux/xattr.h>
+
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_lsetxattr = {
+struct syscall syscall_lsetxattr = {
 	.name = "lsetxattr",
 	.num_args = 5,
 	.arg1name = "pathname",
@@ -24,5 +26,4 @@ struct syscallentry syscall_lsetxattr = {
 		.num = 2,
 		.values = { XATTR_CREATE, XATTR_REPLACE },
 	},
-	.group = GROUP_VFS,
 };

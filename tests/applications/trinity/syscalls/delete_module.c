@@ -4,11 +4,13 @@
  * On success, zero is returned.
  * On error, -1 is returned and errno is set appropriately.
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_delete_module = {
+struct syscall syscall_delete_module = {
 	.name = "delete_module",
 	.num_args = 2,
+	.flags = CAPABILITY_CHECK,
 	.arg1name = "name_user",
 	.arg1type = ARG_ADDRESS,
 	.arg2name = "flags",

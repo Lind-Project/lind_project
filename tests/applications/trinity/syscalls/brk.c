@@ -4,9 +4,10 @@
  * On success: Returns the new program break
  * On failure: Returns current program break
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_brk = {
+struct syscall syscall_brk = {
 	.name = "brk",
 	.num_args = 1,
 	.arg1name = "brk",

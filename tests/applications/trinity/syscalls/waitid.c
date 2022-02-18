@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE5(waitid, int, which, pid_t, upid, struct siginfo __user *,
 	infop, int, options, struct rusage __user *, ru)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_waitid = {
+struct syscall syscall_waitid = {
 	.name = "waitid",
 	.num_args = 5,
 	.arg1name = "which",

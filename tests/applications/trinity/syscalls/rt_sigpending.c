@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(rt_sigpending, sigset_t __user *, set, size_t, sigsetsize)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_rt_sigpending = {
+struct syscall syscall_rt_sigpending = {
 	.name = "rt_sigpending",
 	.num_args = 2,
 	.arg1name = "set",

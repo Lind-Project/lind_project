@@ -4,9 +4,11 @@
 
 #include <sys/time.h>
 #include <sys/resource.h>
+
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_getpriority = {
+struct syscall syscall_getpriority = {
 	.name = "getpriority",
 	.num_args = 2,
 	.arg1name = "which",

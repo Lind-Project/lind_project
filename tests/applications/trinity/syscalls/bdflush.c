@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(bdflush, int, func, long, data)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_bdflush = {
+struct syscall syscall_bdflush = {
 	.name = "bdflush",
 	.num_args = 2,
 	.arg1name = "func",

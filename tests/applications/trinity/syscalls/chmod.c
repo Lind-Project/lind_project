@@ -4,14 +4,14 @@
  * On success, zero is returned.
  * On error, -1 is returned, and errno is set appropriately.
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_chmod = {
+struct syscall syscall_chmod = {
 	.name = "chmod",
 	.num_args = 2,
 	.arg1name = "filename",
 	.arg1type = ARG_PATHNAME,
 	.arg2name = "mode",
-	.arg2type = ARG_MODE_T,
 	.rettype = RET_ZERO_SUCCESS,
 };

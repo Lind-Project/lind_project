@@ -5,9 +5,10 @@
 	struct io_event __user *, events,
 	struct timespec __user *, timeout)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_io_getevents = {
+struct syscall syscall_io_getevents = {
 	.name = "io_getevents",
 	.num_args = 5,
 	.arg1name = "ctx_id",

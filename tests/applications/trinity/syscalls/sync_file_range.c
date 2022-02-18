@@ -4,25 +4,26 @@
  */
 #include <linux/fs.h>
 #include <fcntl.h>
-#include <string.h>
 #include <stdlib.h>
-#include "arch.h"
-#include "random.h"
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
-#include "tables.h"
-#include "trinity.h"
 
-static void sanitise_sync_file_range(struct syscallrecord *rec)
+#include "trinity.h"
+#include "sanitise.h"
+#include "arch.h"
+#include "shm.h"
+
+struct syscall syscall_sync_file_range;
+
+static void sanitise_sync_file_range(int childno)
 {
+	unsigned int call = shm->syscallno[childno];
+	struct syscall *syscall_entry = syscalls[call].entry;
 	long endbyte;
 	loff_t nbytes;
 	loff_t off;
 
 retry:
-	off = rand64() & 0x0fffffffffffffffUL;
-	nbytes = rand64() & 0x0fffffffffffffffUL;
+	off = rand() & 0xfffffff;
+	nbytes = rand() & 0xfffffff;
 	endbyte = off + nbytes;
 	if (endbyte < off)
 		goto retry;
@@ -30,16 +31,16 @@ retry:
 	if (off >= (0x100000000LL << PAGE_SHIFT))
 		goto retry;
 
-	if (this_syscallname("sync_file_range2") == FALSE) {
-		rec->a2 = off;
-		rec->a3 = nbytes;
+	if (syscall_entry == &syscall_sync_file_range) {
+		shm->a2[childno] = off;
+		shm->a3[childno] = nbytes;
 	} else {
-		rec->a3 = off;
-		rec->a4 = nbytes;
+		shm->a3[childno] = off;
+		shm->a4[childno] = nbytes;
 	}
 }
 
-struct syscallentry syscall_sync_file_range = {
+struct syscall syscall_sync_file_range = {
 	.name = "sync_file_range",
 	.num_args = 4,
 	.sanitise = sanitise_sync_file_range,
@@ -55,14 +56,13 @@ struct syscallentry syscall_sync_file_range = {
 		.values = { SYNC_FILE_RANGE_WAIT_BEFORE, SYNC_FILE_RANGE_WRITE, SYNC_FILE_RANGE_WAIT_AFTER },
         },
 	.flags = NEED_ALARM,
-	.group = GROUP_VFS,
 };
 
 /*
  * ARM & PowerPC have different argument order.
  * See edd5cd4a9424f22b0fa08bef5e299d41befd5622 in kernel tree.
  */
-struct syscallentry syscall_sync_file_range2 = {
+struct syscall syscall_sync_file_range2 = {
 	.name = "sync_file_range2",
 	.num_args = 4,
 	.sanitise = sanitise_sync_file_range,
@@ -78,5 +78,4 @@ struct syscallentry syscall_sync_file_range2 = {
 	.arg4name = "nbytes",
 	.arg4type = ARG_LEN,
 	.flags = NEED_ALARM,
-	.group = GROUP_VFS,
 };

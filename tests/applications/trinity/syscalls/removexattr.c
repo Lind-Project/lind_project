@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(removexattr, const char __user *, pathname, const char __user *, name)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_removexattr = {
+struct syscall syscall_removexattr = {
 	.name = "removexattr",
 	.num_args = 2,
 	.arg1name = "pathname",

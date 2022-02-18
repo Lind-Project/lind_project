@@ -5,49 +5,49 @@
  */
 
 #include <linux/mempolicy.h>
-#include "arch.h"
-#include "maps.h"
-#include "random.h"
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
+
+#include "../arch.h"
 
 #define MPOL_F_STATIC_NODES     (1 << 15)
 #define MPOL_F_RELATIVE_NODES   (1 << 14)
 
-static void sanitise_mbind(struct syscallrecord *rec)
+#include "trinity.h"
+#include "sanitise.h"
+#include "shm.h"
+
+static void sanitise_mbind(int childno)
 {
 	unsigned long maxnode;
 
-	(void) common_set_mmap_ptr_len();
+	shm->a2[childno] &= PAGE_MASK;
 
 retry_maxnode:
-	rec->a5 &= ~((page_size * 8) - 1);
+	shm->a5[childno] &= ~((page_size * 8) - 1);
 
-	maxnode = rec->a5;
+	maxnode = shm->a5[childno];
 
-	if (maxnode < 2 || maxnode > (page_size * 8)) {
-		rec->a5 = rand32();
+	if (maxnode < 2 || (maxnode) > (page_size * 8)) {
+		shm->a5[childno] = get_interesting_32bit_value();
 		goto retry_maxnode;
 	}
 }
 
 
-struct syscallentry syscall_mbind = {
+
+struct syscall syscall_mbind = {
 	.name = "mbind",
 	.num_args = 6,
 	.arg1name = "start",
-	.arg1type = ARG_MMAP,
+	.arg1type = ARG_ADDRESS,
 
 	.arg2name = "len",
+	.arg2type = ARG_LEN,
 
 	.arg3name = "mode",
 	.arg3type = ARG_LIST,
 	.arg3list = {
-		.num = 6,
-		.values = { MPOL_DEFAULT, MPOL_BIND, MPOL_INTERLEAVE, MPOL_PREFERRED,
-			MPOL_F_STATIC_NODES, MPOL_F_RELATIVE_NODES },
+		.num = 4,
+		.values = { MPOL_DEFAULT, MPOL_BIND, MPOL_INTERLEAVE, MPOL_PREFERRED },
 	},
 
 	.arg4name = "nmask",
@@ -61,8 +61,8 @@ struct syscallentry syscall_mbind = {
 	.arg6name = "flags",
 	.arg6type = ARG_LIST,
 	.arg6list = {
-		.num = 3,
-		.values = { MPOL_MF_STRICT, MPOL_MF_MOVE, MPOL_MF_MOVE_ALL, },
+		.num = 2,
+		.values = { MPOL_F_STATIC_NODES, MPOL_F_RELATIVE_NODES },
 	},
 	.sanitise = sanitise_mbind,
 	.group = GROUP_VM,

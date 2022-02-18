@@ -4,34 +4,32 @@
 /*
  * asmlinkage int sys_modify_ldt(int func, void __user *ptr, unsigned long bytecount)
  */
+#include "trinity.h"
+#include "sanitise.h"
+#include "shm.h"
 #include <stdlib.h>
 #include <sys/types.h>
 #define __ASSEMBLY__ 1
 #include <asm/ldt.h>
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
-#include "utils.h"
 
 #define ALLOCSIZE LDT_ENTRIES * LDT_ENTRY_SIZE
 
-static void sanitise_modify_ldt(struct syscallrecord *rec)
+static void sanitise_modify_ldt(int childno)
 {
-	//struct user_desc *desc;
 	void *ldt;
+	//struct user_desc *desc;
 
-	switch (rec->a1) {
+	switch (shm->a1[childno]) {
 	case 0:
 		/* read the ldt into the memory pointed to by ptr.
 		   The number of bytes read is the smaller of bytecount and the actual size of the ldt. */
-		ldt = zmalloc(ALLOCSIZE);
-		rec->a2 = (unsigned long) ldt;
-		rec->a3 = ALLOCSIZE;
+		ldt = malloc(ALLOCSIZE);
+		if (ldt == NULL)
+			return;
+		shm->a3[childno] = ALLOCSIZE;
 		break;
 
 	case 1:
-		rec->a2 = 0L;
 		/* modify one ldt entry.
 		 * ptr points to a user_desc structure
 		 * bytecount must equal the size of this structure. */
@@ -49,17 +47,13 @@ static void sanitise_modify_ldt(struct syscallrecord *rec)
 	*/
 		break;
 	default:
-		rec->a2 = 0L;
 		break;
 	}
+
+	//FIXME: We leak 'ldt' here. Need to deallocate post-syscall.
 }
 
-static void post_modify_ldt(__unused__ struct syscallrecord *rec)
-{
-	freeptr(&rec->a2);
-}
-
-struct syscallentry syscall_modify_ldt = {
+struct syscall syscall_modify_ldt = {
 	.name = "modify_ldt",
 	.num_args = 3,
 	.arg1name = "func",
@@ -71,6 +65,5 @@ struct syscallentry syscall_modify_ldt = {
 	.arg2name = "ptr",
 	.arg3name = "bytecount",
 	.sanitise = sanitise_modify_ldt,
-	.post = post_modify_ldt,
 };
 #endif

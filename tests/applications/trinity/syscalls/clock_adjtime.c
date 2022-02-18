@@ -3,9 +3,10 @@
  *		struct timex __user *, utx)
  */
 
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_clock_adjtime = {
+struct syscall syscall_clock_adjtime = {
 	.name = "clock_adjtime",
 	.num_args = 2,
 	.arg1name = "which_clock",

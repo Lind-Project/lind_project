@@ -1,14 +1,16 @@
 /*
  * SYSCALL_DEFINE3(finit_module, int, fd, const char __user *, uargs, int, flags)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
 #define MODULE_INIT_IGNORE_MODVERSIONS  1
 #define MODULE_INIT_IGNORE_VERMAGIC     2
 
-struct syscallentry syscall_finit_module = {
+struct syscall syscall_finit_module = {
 	.name = "finit_module",
 	.num_args = 3,
+	.flags = CAPABILITY_CHECK,
 	.arg1name = "fd",
 	.arg1type = ARG_FD,
 	.arg2name = "uargs",

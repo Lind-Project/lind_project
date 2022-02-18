@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE(readahead)(int fd, loff_t offset, size_t count)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_readahead = {
+struct syscall syscall_readahead = {
 	.name = "readahead",
 	.num_args = 3,
 	.arg1name = "fd",
@@ -12,5 +13,4 @@ struct syscallentry syscall_readahead = {
 	.arg3name = "count",
 	.arg3type = ARG_LEN,
 	.flags = NEED_ALARM,
-	.group = GROUP_VFS,
 };

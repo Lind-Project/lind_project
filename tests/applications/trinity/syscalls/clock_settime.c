@@ -3,9 +3,10 @@
  *
  * return 0 for success, or -1 for failure (in which case errno is set appropriately).
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_clock_settime = {
+struct syscall syscall_clock_settime = {
 	.name = "clock_settime",
 	.num_args = 2,
 	.arg1name = "which_clock",

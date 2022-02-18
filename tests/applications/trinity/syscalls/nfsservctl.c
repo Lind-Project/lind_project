@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE3(nfsservctl, int, cmd, struct nfsctl_arg __user *, arg, void __user *, res
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_nfsservctl = {
+struct syscall syscall_nfsservctl = {
 	.name = "nfsservctl",
 	.num_args = 3,
 	.arg1name = "cmd",

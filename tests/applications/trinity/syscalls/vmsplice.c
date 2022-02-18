@@ -6,19 +6,19 @@
 #include <fcntl.h>
 #include <sys/uio.h>
 #include <stdlib.h>
+
+#include "trinity.h"
 #include "sanitise.h"
 #include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
 
-static void sanitise_vmsplice(struct syscallrecord *rec)
+static void sanitise_vmsplice(int childno)
 {
 	if ((rand() % 10) > 0)
-		rec->a1 = shm->pipe_fds[rand() % MAX_PIPE_FDS];
-	rec->a3 = rand() % UIO_MAXIOV;
+		shm->a1[childno] = shm->pipe_fds[rand() % MAX_PIPE_FDS];
+	shm->a3[childno] = rand() % UIO_MAXIOV;
 }
 
-struct syscallentry syscall_vmsplice = {
+struct syscall syscall_vmsplice = {
 	.name = "vmsplice",
 	.num_args = 4,
 	.sanitise = sanitise_vmsplice,

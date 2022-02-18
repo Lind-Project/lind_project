@@ -1,37 +1,26 @@
 /*
  * SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
  */
-#include "maps.h"
-#include "random.h"
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
 
 #define MS_ASYNC        1               /* Sync memory asynchronously.  */
 #define MS_SYNC         4               /* Synchronous memory sync.  */
 #define MS_INVALIDATE   2               /* Invalidate the caches.  */
 
-static void sanitise_msync(struct syscallrecord *rec)
-{
-       (void) common_set_mmap_ptr_len();
+#include "trinity.h"
+#include "sanitise.h"
 
-	if (RAND_BOOL())
-		rec->a3 |= MS_INVALIDATE;
-}
-
-struct syscallentry syscall_msync = {
+struct syscall syscall_msync = {
 	.name = "msync",
 	.num_args = 3,
 	.arg1name = "start",
-	.arg1type = ARG_MMAP,
+	.arg1type = ARG_ADDRESS,
 	.arg2name = "len",
+	.arg2type = ARG_LEN,
 	.arg3name = "flags",
-	.arg3type = ARG_OP,
+	.arg3type = ARG_LIST,
 	.arg3list = {
-		.num = 2,
-		.values = { MS_ASYNC, MS_SYNC },
+		.num = 3,
+		.values = { MS_ASYNC, MS_INVALIDATE, MS_SYNC },
 	},
 	.group = GROUP_VM,
-	.sanitise = sanitise_msync,
 };

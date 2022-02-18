@@ -3,9 +3,10 @@
                 unsigned long, offset_low, loff_t __user *, result,
                 unsigned int, origin)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_llseek = {
+struct syscall syscall_llseek = {
 	.name = "llseek",
 	.num_args = 5,
 	.arg1name = "fd",
@@ -14,5 +15,4 @@ struct syscallentry syscall_llseek = {
 	.arg3name = "offset_low",
 	.arg4name = "result",
 	.arg5name = "origin",
-	.group = GROUP_VFS,
 };

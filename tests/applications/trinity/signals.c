@@ -1,37 +1,22 @@
 #include <stdlib.h>
 #include <signal.h>
-#include <unistd.h>
 
-#include "trinity.h"	// __unused__
-#include "pids.h"
-#include "signals.h"
 #include "shm.h"
 
 jmp_buf ret_jump;
 
-int sigwas;
-
 static void ctrlc_handler(__unused__ int sig)
 {
-	panic(EXIT_SIGINT);
+	shm->exit_reason = EXIT_SIGINT;
 }
 
 static void sighandler(int sig)
 {
-	int childno;
-
-	sigwas = sig;
-
 	switch (sig) {
 	case SIGALRM:
-		childno = find_childno(getpid());
-		if (childno == CHILD_NOT_FOUND)
-			_exit(EXIT_SUCCESS);	/* Hell knows what happened, just bail. */
+		/* if we blocked in read() or similar, we want to avoid doing it again. */
+		shm->fd_lifetime = 0;
 
-		/* Re-arm the alarm. */
-		alarm(1);
-
-		/* Jump back, maybe we'll make progress. */
 		(void)signal(sig, sighandler);
 		siglongjmp(ret_jump, 1);
 		break;
@@ -70,10 +55,8 @@ void mask_signals_child(void)
 		(void)signal(i, SIG_IGN);
 
 	/* If we are in debug mode, we want segfaults and core dumps */
-	if (shm->debug == TRUE) {
-		(void)signal(SIGABRT, SIG_DFL);
+	if (debug == TRUE)
 		(void)signal(SIGSEGV, SIG_DFL);
-	}
 
 	/* trap ctrl-c */
 	(void)signal(SIGINT, ctrlc_handler);
@@ -85,8 +68,6 @@ void setup_main_signals(void)
 	/* we want default behaviour for child process signals */
 	(void)signal(SIGFPE, SIG_DFL);
 	(void)signal(SIGCHLD, SIG_DFL);
-	(void)signal(SIGABRT, SIG_DFL);
-	(void)signal(SIGSEGV, SIG_DFL);
 
 	(void)signal(SIGINT, ctrlc_handler);
 }

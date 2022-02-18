@@ -3,9 +3,10 @@
 	const struct mq_attr __user *, u_mqstat,
 	struct mq_attr __user *, u_omqstat)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_mq_getsetattr = {
+struct syscall syscall_mq_getsetattr = {
 	.name = "mq_getsetattr",
 	.num_args = 3,
 	.arg1name = "mqdes",

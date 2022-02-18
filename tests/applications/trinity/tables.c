@@ -9,15 +9,21 @@
 
 #include "arch.h"
 #include "arch-syscalls.h"
-#include "log.h"
-#include "params.h"
 #include "syscall.h"
-#include "shm.h"
-#include "tables.h"
-#include "utils.h"	// ARRAY_SIZE
+#include "trinity.h"
+
+const struct syscalltable *syscalls;
+const struct syscalltable *syscalls_32bit;
+const struct syscalltable *syscalls_64bit;
 
 unsigned long syscalls_todo = 0;
 
+unsigned int max_nr_syscalls;
+unsigned int max_nr_32bit_syscalls;
+unsigned int max_nr_64bit_syscalls;
+
+bool use_32bit = FALSE;
+bool use_64bit = FALSE;
 bool biarch = FALSE;
 
 int search_syscall_table(const struct syscalltable *table, unsigned int nr_syscalls, const char *arg)
@@ -27,7 +33,7 @@ int search_syscall_table(const struct syscalltable *table, unsigned int nr_sysca
 	/* search by name */
 	for (i = 0; i < nr_syscalls; i++) {
 		if (strcmp(arg, table[i].entry->name) == 0) {
-			//debugf("Found %s at %u\n", table[i].entry->name, i);
+			//printf("Found %s at %u\n", table[i].entry->name, i);
 			return i;
 		}
 	}
@@ -35,186 +41,103 @@ int search_syscall_table(const struct syscalltable *table, unsigned int nr_sysca
 	return -1;
 }
 
-void validate_specific_syscall(const struct syscalltable *table, int call)
+int validate_specific_syscall(const struct syscalltable *table, int call)
 {
-	struct syscallentry *entry;
+	if (call != -1) {
+		if (table[call].entry->flags & AVOID_SYSCALL) {
+			printf("%s is marked as AVOID. Skipping\n", table[call].entry->name);
+			return FALSE;
+		}
 
-	if (call == -1)
-		return;
-
-	entry = table[call].entry;
-
-	if (entry->flags & AVOID_SYSCALL)
-		output(0, "%s is marked as AVOID. Skipping\n", entry->name);
-
-	if (entry->flags & NI_SYSCALL)
-		output(0, "%s is NI_SYSCALL. Skipping\n", entry->name);
-}
-
-int validate_specific_syscall_silent(const struct syscalltable *table, int call)
-{
-	struct syscallentry *entry;
-
-	if (call == -1)
-		return FALSE;
-
-	entry = table[call].entry;
-
-	if (entry->flags & AVOID_SYSCALL)
-		return FALSE;
-
-	if (entry->flags & NI_SYSCALL)
-		return FALSE;
-
+		if (table[call].entry->flags & NI_SYSCALL) {
+			printf("%s is NI_SYSCALL. Skipping\n", table[call].entry->name);
+			return FALSE;
+		}
+		if (table[call].entry->num_args == 0) {
+			printf("%s has no arguments. Skipping\n", table[call].entry->name);
+			return FALSE;
+		}
+	}
 	return TRUE;
-}
-
-void activate_syscall_in_table(unsigned int calln, unsigned int *nr_active, const struct syscalltable *table, int *active_syscall)
-{
-	struct syscallentry *entry = table[calln].entry;
-
-	//Check if the call is activated already, and activate it only if needed
-	if (entry->active_number == 0) {
-		//Sanity check
-		if ((*nr_active + 1) > MAX_NR_SYSCALL) {
-			output(0, "[tables] MAX_NR_SYSCALL needs to be increased. More syscalls than active table can fit.\n");
-			exit(EXIT_FAILURE);
-		}
-
-		//save the call no
-		active_syscall[*nr_active] = calln + 1;
-		(*nr_active) += 1;
-		entry->active_number = *nr_active;
-	}
-}
-
-void deactivate_syscall_in_table(unsigned int calln, unsigned int *nr_active, const struct syscalltable *table, int *active_syscall)
-{
-	struct syscallentry *entry;
-
-	entry = table[calln].entry;
-
-	//Check if the call is activated already, and deactivate it only if needed
-	if ((entry->active_number != 0) && (*nr_active > 0)) {
-		unsigned int i;
-
-		for (i = entry->active_number - 1; i < *nr_active - 1; i++) {
-			active_syscall[i] = active_syscall[i + 1];
-			table[active_syscall[i] - 1].entry->active_number = i + 1;
-		}
-		//The last step is to erase the last item.
-		active_syscall[*nr_active - 1] = 0;
-		(*nr_active) -= 1;
-		entry->active_number = 0;
-	}
-}
-
-void deactivate_syscall(unsigned int call, bool do32bit)
-{
-	if (biarch == FALSE) {
-		deactivate_syscall_uniarch(call);
-	} else {
-		if (do32bit == TRUE)
-			deactivate_syscall32(call);
-		else
-			deactivate_syscall64(call);
-	}
-}
-
-void count_syscalls_enabled(void)
-{
-	if (biarch == TRUE) {
-		char str32[40];
-		char str64[40];
-		unsigned int nr;
-
-		memset(str32, 0, sizeof(str32));
-		memset(str64, 0, sizeof(str64));
-
-		/* first the 32bit syscalls */
-		if (shm->nr_active_32bit_syscalls != 0) {
-			char *p = str32;
-
-			p += sprintf(p, "%d enabled", shm->nr_active_32bit_syscalls);
-
-			nr = max_nr_32bit_syscalls - shm->nr_active_32bit_syscalls;
-			if (nr != 0)
-				p += sprintf(p, ", %u disabled", nr);
-		} else {
-			sprintf(str32, "all disabled.");
-		}
-
-		/* now the 64bit syscalls. */
-		if (shm->nr_active_64bit_syscalls != 0) {
-			char *p = str64;
-
-			p += sprintf(p, "%d enabled", shm->nr_active_64bit_syscalls);
-
-			nr = max_nr_64bit_syscalls - shm->nr_active_64bit_syscalls;
-			if (nr != 0)
-				p += sprintf(p, ", %u disabled", nr);
-		} else {
-			sprintf(str64, "all disabled");
-		}
-
-		output(0, "32-bit syscalls: %s.  64-bit syscalls: %s.\n",
-			str32, str64);
-
-	} else {
-		output(0, "Enabled %d syscalls. Disabled %d syscalls.\n",
-			shm->nr_active_syscalls, max_nr_syscalls - shm->nr_active_syscalls);
-	}
-}
-
-void init_syscalls(void)
-{
-	if (biarch == TRUE)
-		init_syscalls_biarch();
-	else
-		init_syscalls_uniarch();
 }
 
 bool no_syscalls_enabled(void)
 {
-	unsigned int total;
+	unsigned int i;
 
-	if (biarch == TRUE)
-		total = shm->nr_active_32bit_syscalls + shm->nr_active_64bit_syscalls;
-	else
-		total = shm->nr_active_syscalls;
+	if (biarch == TRUE) {
+		for_each_64bit_syscall(i) {
+			if (syscalls_64bit[i].entry->flags & ACTIVE)
+				return FALSE;
+		}
+		for_each_32bit_syscall(i) {
+			if (syscalls_32bit[i].entry->flags & ACTIVE)
+				return FALSE;
+		}
+		return TRUE;;
+	}
 
-	if (total == 0)
-		return TRUE;
-	else
-		return FALSE;
+	/* non-biarch */
+	for_each_syscall(i) {
+		if (syscalls[i].entry->flags & ACTIVE)
+			return FALSE;
+	}
+	return TRUE;
+}
+
+int validate_syscall_table_64(void)
+{
+	unsigned int i;
+
+	for_each_64bit_syscall(i) {
+		if (syscalls_64bit[i].entry->flags & ACTIVE) {
+			use_64bit = TRUE;
+			break;
+		}
+	}
+	return use_64bit;
+}
+
+int validate_syscall_table_32(void)
+{
+	unsigned int i;
+
+	for_each_32bit_syscall(i) {
+		if (syscalls_32bit[i].entry->flags & ACTIVE) {
+			use_32bit = TRUE;
+			break;
+		}
+	}
+	return use_32bit;
 }
 
 /* Make sure there's at least one syscall enabled. */
 int validate_syscall_tables(void)
 {
-	if (biarch == TRUE) {
-		unsigned int ret;
+	unsigned int i, ret;
 
+	if (biarch == TRUE) {
 		ret = validate_syscall_table_32();
 		ret |= validate_syscall_table_64();
 		return ret;
 	}
 
 	/* non-biarch case*/
-	if (shm->nr_active_syscalls == 0)
-		return FALSE;
-	else
-		return TRUE;
+	for_each_syscall(i) {
+		if (syscalls[i].entry->flags & ACTIVE)
+			return TRUE;
+	}
+	return FALSE;
 }
 
-static void check_syscall(struct syscallentry *entry)
+static void check_syscall(struct syscall *entry)
 {
 	/* check that we have a name set. */
 #define CHECK(NUMARGS, ARGNUM, ARGTYPE, ARGNAME)		\
 	if (entry->num_args > 0) {				\
 		if (entry->num_args > NUMARGS) {		\
 			if (entry->ARGNAME == NULL)  {		\
-				outputerr("arg %d of %s has no name\n", ARGNUM, entry->name);      \
+				printf("arg %d of %s has no name\n", ARGNUM, entry->name);      \
 				exit(EXIT_FAILURE);		\
 			}					\
 		}						\
@@ -234,7 +157,7 @@ static void check_syscall(struct syscallentry *entry)
 	if (entry->num_args > 0) {				\
 		if (entry->num_args > NUMARGS) {		\
 			if (entry->ARGTYPE == ARG_UNDEFINED) {	\
-				outputerr("%s has an undefined argument type for arg1 (%s)!\n", entry->name, entry->ARGNAME);	\
+				printf("%s has an undefined argument type for arg1 (%s)!\n", entry->name, entry->ARGNAME);	\
 			}					\
 		}						\
 	}							\
@@ -270,60 +193,66 @@ void sanity_check_tables(void)
 
 void mark_all_syscalls_active(void)
 {
-	outputstd("Marking all syscalls as enabled.\n");
+	unsigned int i;
 
-	if (biarch == TRUE)
-		mark_all_syscalls_active_biarch();
-	else
-		mark_all_syscalls_active_uniarch();
-}
-
-void check_user_specified_arch(const char *arg, char **arg_name, bool *only_64bit, bool *only_32bit)
-{
-	//Check if the arch is specified
-	char *arg_arch = strstr(arg,",");
-
-	if (arg_arch  != NULL) {
-		unsigned long size = 0;
-
-		size = (unsigned long)arg_arch - (unsigned long)arg;
-		*arg_name = malloc(size + 1);
-		if (*arg_name == NULL)
-			exit(EXIT_FAILURE);
-		(*arg_name)[size] = 0;
-		memcpy(*arg_name, arg, size);
-
-		//identify architecture
-		if ((only_64bit != NULL) && (only_32bit != NULL)) {
-			if ((strcmp(arg_arch + 1, "64") == 0)) {
-				*only_64bit = TRUE;
-				*only_32bit = FALSE;
-			} else if ((strcmp(arg_arch + 1,"32") == 0)) {
-				*only_64bit = FALSE;
-				*only_32bit = TRUE;
-			} else {
-				outputerr("Unknown bit width (%s). Choose 32, or 64.\n", arg);
-				exit(EXIT_FAILURE);
-			}
-		}
+	if (biarch == TRUE) {
+		for_each_32bit_syscall(i)
+			syscalls_32bit[i].entry->flags |= ACTIVE;
+		for_each_64bit_syscall(i)
+			syscalls_64bit[i].entry->flags |= ACTIVE;
 	} else {
-		*arg_name = (char*)arg;//castaway const.
+		for_each_syscall(i)
+			syscalls[i].entry->flags |= ACTIVE;
 	}
 }
 
-void clear_check_user_specified_arch(const char *arg, char **arg_name)
+static void toggle_syscall_biarch(char *arg, unsigned char state)
 {
-	//Release memory only if we have allocated it
-	if (((char *)arg) != *arg_name) {
-		free(*arg_name);
-		*arg_name = NULL;
+	int specific_syscall32 = 0;
+	int specific_syscall64 = 0;
+	int ret;
+
+	specific_syscall64 = search_syscall_table(syscalls_64bit, max_nr_64bit_syscalls, arg);
+
+	/* If we found a 64bit syscall, validate it. */
+	if (specific_syscall64 != -1) {
+		ret = validate_specific_syscall(syscalls_64bit, specific_syscall64);
+		if (ret == FALSE)
+			exit(EXIT_FAILURE);
+		if (state == TRUE) {
+			printf("[%d] Marking 64-bit syscall %d (%s) as enabled\n", getpid(), specific_syscall64, arg);
+			syscalls_64bit[specific_syscall64].entry->flags |= ACTIVE;
+		} else {
+			printf("[%d] Marking 64-bit syscall %d (%s) as disabled\n", getpid(), specific_syscall64, arg);
+			syscalls_64bit[specific_syscall64].entry->flags &= ~ACTIVE;
+		}
+	}
+
+	/* Search for and validate 32bit */
+	specific_syscall32 = search_syscall_table(syscalls_32bit, max_nr_32bit_syscalls, arg);
+	if (specific_syscall32 != -1) {
+		ret = validate_specific_syscall(syscalls_32bit, specific_syscall32);
+		if (ret == FALSE)
+			exit(EXIT_FAILURE);
+		if (state == TRUE) {
+			printf("[%d] Marking 32-bit syscall %d (%s) as enabled\n", getpid(), specific_syscall32, arg);
+			syscalls_32bit[specific_syscall32].entry->flags |= ACTIVE;
+		} else {
+			printf("[%d] Marking 32-bit syscall %d (%s) as disabled\n", getpid(), specific_syscall32, arg);
+			syscalls_32bit[specific_syscall32].entry->flags &= ~ACTIVE;
+		}
+	}
+
+	if ((specific_syscall64 == -1) && (specific_syscall32 == -1)) {
+		printf("No idea what syscall (%s) is.\n", arg);
+		exit(EXIT_FAILURE);
 	}
 }
 
-void toggle_syscall(const char *arg, bool state)
+void toggle_syscall(char *arg, unsigned char state)
 {
 	int specific_syscall = 0;
-	char * arg_name = NULL;
+	int ret;
 
 	if (biarch == TRUE) {
 		toggle_syscall_biarch(arg, state);
@@ -331,44 +260,66 @@ void toggle_syscall(const char *arg, bool state)
 	}
 
 	/* non-biarch case. */
-	check_user_specified_arch(arg, &arg_name, NULL, NULL); //We do not care about arch here, just to get rid of arg flags.
-
-	specific_syscall = search_syscall_table(syscalls, max_nr_syscalls, arg_name);
-	if (specific_syscall == -1) {
-		outputerr("No idea what syscall (%s) is.\n", arg);
-		goto out;
+	specific_syscall = search_syscall_table(syscalls, max_nr_syscalls, arg);
+	if (specific_syscall != -1) {
+		ret = validate_specific_syscall(syscalls, specific_syscall);
+		if (ret == FALSE)
+			exit(EXIT_FAILURE);
+		if (state == TRUE) {
+			printf("[%d] Marking syscall %d (%s) as enabled\n", getpid(), specific_syscall, arg);
+			syscalls[specific_syscall].entry->flags |= ACTIVE;
+		} else {
+			printf("[%d] Marking syscall %d (%s) as disabled\n", getpid(), specific_syscall, arg);
+			syscalls[specific_syscall].entry->flags &= ~ACTIVE;
+		}
 	}
 
-	toggle_syscall_n(specific_syscall, state, arg, arg_name);
-
-out:
-	clear_check_user_specified_arch(arg, &arg_name);
+	if (specific_syscall == -1) {
+		printf("No idea what syscall (%s) is.\n", arg);
+		exit(EXIT_FAILURE);
+	}
 }
 
-void deactivate_disabled_syscalls(void)
-{
-	output(0, "Disabling syscalls marked as disabled by command line options\n");
-
-	if (biarch == TRUE)
-		deactivate_disabled_syscalls_biarch();
-	else
-		deactivate_disabled_syscalls_uniarch();
-}
-
-void show_state(unsigned int state)
+static void show_state(unsigned int state)
 {
 	if (state)
-		outputstd("Enabled");
+		printf("Enabled");
 	else
-		outputstd("Disabled");
+		printf("Disabled");
 }
 
 void dump_syscall_tables(void)
 {
-	if (biarch == TRUE)
-		dump_syscall_tables_biarch();
-	else
-		dump_syscall_tables_uniarch();
+	unsigned int i;
+
+	if (biarch == TRUE) {
+		printf("32-bit syscalls: %d\n", max_nr_32bit_syscalls);
+		printf("64-bit syscalls: %d\n", max_nr_64bit_syscalls);
+
+		for_each_32bit_syscall(i) {
+			printf("32-bit entrypoint %d %s : ", syscalls_32bit[i].entry->number, syscalls_32bit[i].entry->name);
+			show_state(syscalls_32bit[i].entry->flags & ACTIVE);
+			if (syscalls_32bit[i].entry->flags & AVOID_SYSCALL)
+				printf(" AVOID");
+			printf("\n");
+		}
+		for_each_64bit_syscall(i) {
+			printf("64-bit entrypoint %d %s : ", syscalls_64bit[i].entry->number, syscalls_64bit[i].entry->name);
+			show_state(syscalls_64bit[i].entry->flags & ACTIVE);
+			if (syscalls_64bit[i].entry->flags & AVOID_SYSCALL)
+				printf(" AVOID");
+			printf("\n");
+		}
+	} else {
+		printf("syscalls: %d\n", max_nr_syscalls);
+		for_each_syscall(i) {
+			printf("%s : ", syscalls[i].entry->name);
+			show_state(syscalls[i].entry->flags & ACTIVE);
+			if (syscalls[i].entry->flags & AVOID_SYSCALL)
+				printf(" AVOID");
+			printf("\n");
+		}
+	}
 }
 
 /*
@@ -379,198 +330,144 @@ void dump_syscall_tables(void)
 static struct syscalltable * copy_syscall_table(struct syscalltable *from, unsigned int nr)
 {
 	unsigned int n;
-	struct syscallentry *copy;
+	struct syscall *copy;
 
-	copy = alloc_shared(nr * sizeof(struct syscallentry));
-	if (copy == NULL)
-		exit(EXIT_FAILURE);
-
+	/* FIXME: Use fewer shared maps.
+	 * It's pretty sad that we use a whole page just for a copy of that struct when we
+	 * could fit dozens of them in a page.  This would cut down our /proc/$$/maps a *lot*
+	 */
 	for (n = 0; n < nr; n++) {
-		memcpy(copy + n , from[n].entry, sizeof(struct syscallentry));
-		copy[n].number = n;
-		copy[n].active_number = 0;
-		from[n].entry = &copy[n];
+		copy = alloc_shared(sizeof(struct syscall));
+		if (copy == NULL)
+			exit(EXIT_FAILURE);
+		memcpy(copy, from[n].entry, sizeof(struct syscall));
+		copy->number = n;
+		from[n].entry = copy;
 	}
 	return from;
 }
 
-void select_syscall_tables(void)
+void setup_syscall_tables(void)
 {
-#ifdef ARCH_IS_BIARCH
-	syscalls_64bit = copy_syscall_table(SYSCALLS64, ARRAY_SIZE(SYSCALLS64));
-	syscalls_32bit = copy_syscall_table(SYSCALLS32, ARRAY_SIZE(SYSCALLS32));
+#if defined(__x86_64__)
+	syscalls_64bit = copy_syscall_table(syscalls_x86_64, ARRAY_SIZE(syscalls_x86_64));
+	syscalls_32bit = copy_syscall_table(syscalls_i386, ARRAY_SIZE(syscalls_i386));
 
-	max_nr_64bit_syscalls = ARRAY_SIZE(SYSCALLS64);
-	max_nr_32bit_syscalls = ARRAY_SIZE(SYSCALLS32);
+	max_nr_64bit_syscalls = ARRAY_SIZE(syscalls_x86_64);
+	max_nr_32bit_syscalls = ARRAY_SIZE(syscalls_i386);
 	biarch = TRUE;
+#elif defined(__i386__)
+	syscalls = copy_syscall_table(syscalls_i386, ARRAY_SIZE(syscalls_i386));
+	max_nr_syscalls = ARRAY_SIZE(syscalls_i386);
+#elif defined(__powerpc__)
+	syscalls = copy_syscall_table(syscalls_ppc, ARRAY_SIZE(syscalls_ppc));
+	max_nr_syscalls = ARRAY_SIZE(syscalls_ppc);
+#elif defined(__ia64__)
+	syscalls = copy_syscall_table(syscalls_ia64, ARRAY_SIZE(syscalls_ia64));
+	max_nr_syscalls = ARRAY_SIZE(syscalls_ia64);
+#elif defined(__sparc__)
+	syscalls = copy_syscall_table(syscalls_sparc, ARRAY_SIZE(syscalls_sparc));
+	max_nr_syscalls = ARRAY_SIZE(syscalls_sparc);
+#elif defined(__arm__)
+	syscalls = copy_syscall_table(syscalls_arm, ARRAY_SIZE(syscalls_arm));
+	max_nr_syscalls = ARRAY_SIZE(syscalls_arm);
+#elif defined(__mips__)
+	syscalls = copy_syscall_table(syscalls_mips, ARRAY_SIZE(syscalls_mips));
+	max_nr_syscalls = ARRAY_SIZE(syscalls_mips);
+#elif defined(__sh__)
+	syscalls = copy_syscall_table(syscalls_sh, ARRAY_SIZE(syscalls_sh));
+	max_nr_syscalls = ARRAY_SIZE(syscalls_sh);
 #else
-	syscalls = copy_syscall_table(SYSCALLS, ARRAY_SIZE(SYSCALLS));
-	max_nr_syscalls = ARRAY_SIZE(SYSCALLS);
+#error Unknown architecture.
 #endif
+
 }
+
 
 int setup_syscall_group(unsigned int group)
 {
-	if (biarch == TRUE)
-		return setup_syscall_group_biarch(group);
-	else
-		return setup_syscall_group_uniarch(group);
-}
+	struct syscalltable *newsyscalls;
+	struct syscalltable *newsyscalls32;
+	struct syscalltable *newsyscalls64;
 
-const char * print_syscall_name(unsigned int callno, bool is32bit)
-{
-	const struct syscalltable *table;
-	unsigned int max;
-
-	if (biarch == FALSE) {
-		max = max_nr_syscalls;
-		table = syscalls;
-	} else {
-		if (is32bit == FALSE) {
-			max = max_nr_64bit_syscalls;
-			table = syscalls_64bit;
-		} else {
-			max = max_nr_32bit_syscalls;
-			table = syscalls_32bit;
-		}
-	}
-
-	if (callno >= max) {
-		outputstd("Bogus syscall number in %s (%u)\n", __func__, callno);
-		return "invalid-syscall";
-	}
-
-	return table[callno].entry->name;
-}
-
-void display_enabled_syscalls(void)
-{
-	if (biarch == TRUE)
-		display_enabled_syscalls_biarch();
-	else
-		display_enabled_syscalls_uniarch();
-}
-
-void enable_random_syscalls(void)
-{
 	unsigned int i;
-
-	if (random_selection_num == 0) {
-		outputerr("-r 0 syscalls ? what?\n");
-		exit(EXIT_FAILURE);
-	}
+	int count = 0, j = 0;
 
 	if (biarch == TRUE) {
-		if ((random_selection_num > max_nr_64bit_syscalls) && do_64_arch) {
-			outputerr("-r val %d out of range (1-%d)\n", random_selection_num, max_nr_64bit_syscalls);
-			exit(EXIT_FAILURE);
+		for_each_32bit_syscall(i) {
+			if (syscalls_32bit[i].entry->group == group)
+				count++;
 		}
-	} else {
-		if (random_selection_num > max_nr_syscalls) {
-			outputerr("-r val %d out of range (1-%d)\n", random_selection_num, max_nr_syscalls);
-			exit(EXIT_FAILURE);
-		}
-	}
 
-	outputerr("Enabling %d random syscalls\n", random_selection_num);
-
-	for (i = 0; i < random_selection_num; i++) {
-		if (biarch == TRUE)
-			enable_random_syscalls_biarch();
-		else
-			enable_random_syscalls_uniarch();
-	}
-}
-
-/* By default, all syscall entries will be disabled.
- * If we didn't pass -c, -x, -r, or -g then mark all syscalls active.
- */
-static void decide_if_active(void)
-{
-	if (do_specific_syscall == TRUE)
-		return;
-	if (do_exclude_syscall == TRUE)
-		return;
-	if (random_selection == TRUE)
-		return;
-	if (desired_group != GROUP_NONE)
-		return;
-
-	mark_all_syscalls_active();
-}
-
-/* This is run *after* we've parsed params */
-int munge_tables(void)
-{
-	decide_if_active();
-
-	if (desired_group != GROUP_NONE) {
-		unsigned int ret;
-
-		ret = setup_syscall_group(desired_group);
-		if (ret == FALSE)
+		newsyscalls32 = malloc(count * sizeof(struct syscalltable));
+		if (newsyscalls32 == NULL)
 			return FALSE;
-	}
 
-	if (random_selection == TRUE)
-		enable_random_syscalls();
+		for_each_32bit_syscall(i) {
+			if (syscalls_32bit[i].entry->group == group)
+				newsyscalls32[j++].entry = syscalls_32bit[i].entry;
+		}
 
-	/* If we saw a '-x', set all syscalls to enabled, then selectively disable.
-	 * Unless:
-	 * - we've started enabling them already (with -r)
-	 * - or if we specified a group -g
-	 * - we've also specified syscalls with -c
-	 */
-	if (do_exclude_syscall == TRUE) {
-		if ((random_selection == FALSE) && (desired_group == GROUP_NONE) && (do_specific_syscall == FALSE))
-			mark_all_syscalls_active();
-		deactivate_disabled_syscalls();
-	}
+		max_nr_32bit_syscalls = count;
+		syscalls_32bit = newsyscalls32;
 
-	sanity_check_tables();
+		printf("Found %d 32-bit syscalls in group\n", max_nr_32bit_syscalls);
 
-	count_syscalls_enabled();
+		/* now the 64 bit table*/
+		count = 0, j = 0;
 
-	if (verbose == TRUE)
-		display_enabled_syscalls();
+		for_each_64bit_syscall(i) {
+			if (syscalls_64bit[i].entry->group == group)
+				count++;
+		}
 
-	if (validate_syscall_tables() == FALSE) {
-		outputstd("No syscalls were enabled!\n");
-		outputstd("Use 32bit:%d 64bit:%d\n", use_32bit, use_64bit);
-		return FALSE;
+		newsyscalls64 = malloc(count * sizeof(struct syscalltable));
+		if (newsyscalls64 == NULL)
+			return FALSE;
+
+		for_each_64bit_syscall(i) {
+			if (syscalls_64bit[i].entry->group == group)
+				newsyscalls64[j++].entry = syscalls_64bit[i].entry;
+		}
+
+		max_nr_64bit_syscalls = count;
+		syscalls_64bit = newsyscalls64;
+		printf("Found %d 64-bit syscalls in group\n", max_nr_32bit_syscalls);
+
+	} else {
+		/* non-biarch case. */
+
+		for_each_syscall(i) {
+			if (syscalls[i].entry->group == group)
+				count++;
+		}
+
+		newsyscalls = malloc(count * sizeof(struct syscalltable));
+		if (newsyscalls == NULL)
+			exit(EXIT_FAILURE);
+
+		for_each_syscall(i) {
+			if (syscalls[i].entry->group == group)
+				newsyscalls[j++].entry = syscalls[i].entry;
+		}
+
+		max_nr_syscalls = count;
+		syscalls = newsyscalls;
+
+		printf("Found %d syscalls in group\n", max_nr_syscalls);
 	}
 
 	return TRUE;
 }
 
-/*
- * return a ptr to a syscall table entry, allowing calling code to be
- * ignorant about things like biarch.
- *
- * Takes the actual syscall number from the syscallrecord struct as an arg.
- */
-struct syscallentry * get_syscall_entry(unsigned int callno, bool do32)
+const char * print_syscall_name(unsigned int callno, bool bitsize)
 {
-	unsigned int offset = callno - SYSCALL_OFFSET;
-	if (biarch == FALSE)
-		return syscalls[offset].entry;
+	const struct syscalltable *table;
 
-	/* biarch case */
-	if (do32 == TRUE)
-		return syscalls_32bit[offset].entry;
+	if (bitsize == FALSE)
+		table = syscalls_64bit;
 	else
-		return syscalls_64bit[offset].entry;
-}
+		table = syscalls_32bit;
 
-/*
- * Check the name of the syscall we're in the ->sanitise of.
- * This is useful for syscalls where we have a common ->sanitise
- * for multiple syscallentry's. (mmap/mmap2, sync_file_range/sync_file_range2)
- */
-bool this_syscallname(const char *thisname)
-{
-	unsigned int call = this_child->syscall.nr;
-	struct syscallentry *syscall_entry = syscalls[call].entry;
-
-	return strcmp(thisname, syscall_entry->name);
+	return table[callno].entry->name;
 }

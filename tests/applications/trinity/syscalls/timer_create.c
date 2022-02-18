@@ -3,9 +3,10 @@
 	struct sigevent __user *, timer_event_spec,
 	timer_t __user *, created_timer_id)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_timer_create = {
+struct syscall syscall_timer_create = {
 	.name = "timer_create",
 	.num_args = 3,
 	.arg1name = "which_clock",

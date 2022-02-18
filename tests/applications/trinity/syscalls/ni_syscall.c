@@ -1,8 +1,9 @@
 /*
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_ni_syscall = {
+struct syscall syscall_ni_syscall = {
 	.name = "ni_syscall (generic)",
 	.num_args = 0,
 	.flags = NI_SYSCALL,

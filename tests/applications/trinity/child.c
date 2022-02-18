@@ -13,115 +13,62 @@
 #include <sys/resource.h>
 #include <sys/prctl.h>
 
-#include "arch.h"
-#include "child.h"
-#include "list.h"
-#include "log.h"
-#include "maps.h"
-#include "pids.h"
-#include "random.h"
-#include "shm.h"
-#include "signals.h"
+#include "trinity.h"
 #include "syscall.h"
-#include "tables.h"
-#include "trinity.h"	// ARRAY_SIZE
-#include "utils.h"	// zmalloc
+#include "shm.h"
 
-struct childdata *this_child = NULL;
+static struct rlimit oldrlimit;
 
-struct child_funcs {
-	const char *name;
-	bool (*func)(void);
-	unsigned char likelyhood;
-};
-
-static const struct child_funcs child_ops[] = {
-	{ .name = "rand_syscalls", .func = child_random_syscalls, .likelyhood = 100 },
-};
-
-/*
- * Provide temporary immunity from the watchdog.
- * This is useful if we're going to do something that might take
- * longer than the time the watchdog is prepared to wait, especially if
- * we're doing something critical, like handling a lock, or dumping a log.
- */
-void set_dontkillme(pid_t pid, bool state)
-{
-	int childno;
-
-	childno = find_childno(pid);
-	if (childno == CHILD_NOT_FOUND)		/* possible, we might be the watchdog for example */
-		return;
-	shm->children[childno]->dontkillme = state;
-}
-
-/*
- * For the child processes, we don't want core dumps (unless we're running with -D)
- * This is because it's not uncommon for us to get segfaults etc when we're doing
- * syscalls with garbage for arguments.
- */
 static void disable_coredumps(void)
 {
-	struct rlimit limit = { .rlim_cur = 0, .rlim_max = 0 };
+	struct rlimit limit;
 
-	if (shm->debug == TRUE) {
-		(void)signal(SIGABRT, SIG_DFL);
+	if (debug == TRUE) {
 		(void)signal(SIGSEGV, SIG_DFL);
 		return;
 	}
 
+	getrlimit(RLIMIT_CORE, &oldrlimit);
+
+	limit.rlim_cur = 0;
+	limit.rlim_max = oldrlimit.rlim_max;
 	if (setrlimit(RLIMIT_CORE, &limit) != 0)
 		perror( "setrlimit(RLIMIT_CORE)" );
-
-	prctl(PR_SET_DUMPABLE, FALSE);
 }
 
-/*
- * We reenable core dumps when we're about to exit a child.
- * TODO: Maybe narrow the disable/enable pair to just around do_syscall ?
- */
-static void enable_coredumps(void)
+static void reenable_coredumps(void)
 {
-	struct rlimit limit = {
-		.rlim_cur = RLIM_INFINITY,
-		.rlim_max = RLIM_INFINITY
-	};
-
-	if (shm->debug == TRUE)
+	if (debug == TRUE)
 		return;
 
 	prctl(PR_SET_DUMPABLE, TRUE);
 
-	(void) setrlimit(RLIMIT_CORE, &limit);
+	if (setrlimit(RLIMIT_CORE, &oldrlimit) != 0) {
+		printf("Error restoring rlimits to cur:%d max:%d (%s)\n",
+			(unsigned int) oldrlimit.rlim_cur,
+			(unsigned int) oldrlimit.rlim_max,
+			strerror(errno));
+	}
 }
-
-/*
- * Enable the kernels fault-injection code for our child process.
- * (Assumes you've set everything else up by hand).
- */
 static void set_make_it_fail(void)
 {
 	int fd;
 	const char *buf = "1";
 
-	/* If we failed last time, it's probably because we don't
-	 * have fault-injection enabled, so don't bother trying in future.
-	 */
-	if (shm->dont_make_it_fail == TRUE)
+	/* If we failed last time, don't bother trying in future. */
+	if (shm->do_make_it_fail == TRUE)
 		return;
 
 	fd = open("/proc/self/make-it-fail", O_WRONLY);
-	if (fd == -1) {
-		shm->dont_make_it_fail = TRUE;
+	if (fd == -1)
 		return;
-	}
 
 	if (write(fd, buf, 1) == -1) {
 		if (errno != EPERM)
-			outputerr("writing to /proc/self/make-it-fail failed! (%s)\n", strerror(errno));
-		shm->dont_make_it_fail = TRUE;
+			printf("writing to /proc/self/make-it-fail failed! (%s)\n", strerror(errno));
+		else
+			shm->do_make_it_fail = TRUE;
 	}
-
 	close(fd);
 }
 
@@ -137,293 +84,144 @@ static void use_fpu(void)
 	asm volatile("":"+m" (x));
 }
 
-/*
- * Tweak the oom_score_adj setting for our child so that there's a higher
- * chance that the oom-killer kills our processes rather than something
- * more important.
- */
-static void oom_score_adj(int adj)
+void init_child(void)
 {
-	FILE *fp;
+	int i;
 
-	fp = fopen("/proc/self/oom_score_adj", "w");
-	if (!fp)
-		return;
-
-	fprintf(fp, "%d", adj);
-	fclose(fp);
-}
-
-/*
- * Wipe out any state left from a previous child running in this slot.
- */
-static void reinit_child(struct childdata *child)
-{
-	memset(&child->syscall, 0, sizeof(struct syscallrecord));
-	memset(&child->previous, 0, sizeof(struct syscallrecord));
-
-	child->num_mappings = 0;
-	child->seed = 0;
-	child->kill_count = 0;
-	child->dontkillme = FALSE;
-}
-
-static void bind_child_to_cpu(struct childdata *child)
-{
-	cpu_set_t set;
-	unsigned int cpudest;
-
-	if (no_bind_to_cpu == TRUE)
-		return;
-
-	if (sched_getaffinity(child->pid, sizeof(set), &set) != 0)
-		return;
-
-	if (child->num > num_online_cpus)
-		cpudest = child->num % num_online_cpus;
-	else
-		cpudest = child->num;
-
-	CPU_ZERO(&set);
-	CPU_SET(cpudest, &set);
-	sched_setaffinity(child->pid, sizeof(set), &set);
-}
-
-/*
- * Called from the fork_children loop in the main process.
- */
-void init_child(struct childdata *child, int childno)
-{
-	pid_t pid = getpid();
-	char childname[17];
-
-	/* Wait for parent to set our childno */
-	while (child->pid != pid) {
-		int ret = 0;
-
-		/* Make sure parent is actually alive to wait for us. */
-		ret = pid_alive(shm->mainpid);
-		if (ret != 0) {
-			panic(EXIT_SHM_CORRUPTION);
-			outputerr("BUG!: parent (%d) went away!\n", shm->mainpid);
-			sleep(20000);
-		}
-	}
-
-	this_child = child;
-
-	child->num = childno;
-
-	reinit_child(child);
-
-	init_child_logging(child);
-
-	set_seed(this_child);
-
-	init_child_mappings(child);
-
-	dirty_random_mapping();
-
-	if (RAND_BOOL())
-		bind_child_to_cpu(child);
-
-	memset(childname, 0, sizeof(childname));
-	sprintf(childname, "trinity-c%d", childno);
-	prctl(PR_SET_NAME, (unsigned long) &childname);
-
-	oom_score_adj(500);
-
-	/* Wait for all the children to start up. */
-	while (shm->ready == FALSE)
-		sleep(1);
+	i = find_pid_slot(getpid());
+	shm->child_syscall_count[i] = 0;
 
 	set_make_it_fail();
-
-	if (RAND_BOOL())
+	if (rand() % 100 < 50)
 		use_fpu();
+}
 
-	mask_signals_child();
+int child_process(void)
+{
+	cpu_set_t set;
+	pid_t pid = getpid();
+	int ret;
+	unsigned int syscallnr;
+	unsigned int childno = find_pid_slot(pid);
+	unsigned int i;
 
 	disable_coredumps();
-}
 
-/*
- * Sanity check to make sure that the main process is still around
- * to wait for us.
- */
-static void check_parent_pid(void)
-{
-	pid_t pid, ppid;
-
-	ppid = getppid();
-	if (ppid == shm->mainpid)
-		return;
-
-	pid = getpid();
-
-	/* TODO: it'd be neat to do stuff inside pidns's, but right now
-	 * we shit ourselves when we exit and get reparented to pid 1
-	 */
-	if (pid == ppid) {
-		debugf("pid became ppid! exiting child.\n");
-		_exit(EXIT_FAILURE);
+	if (sched_getaffinity(pid, sizeof(set), &set) == 0) {
+		CPU_ZERO(&set);
+		CPU_SET(childno, &set);
+		sched_setaffinity(getpid(), sizeof(set), &set);
 	}
 
-	if (ppid < 2) {
-		debugf("ppid == %d. pidns? exiting child.\n", ppid);
-		_exit(EXIT_FAILURE);;
-	}
+	init_child();
 
-	lock(&shm->buglock);
+	sigsetjmp(ret_jump, 1);
 
-	if (shm->exit_reason == EXIT_REPARENT_PROBLEM)
-		goto out;
-
-	output(0, "BUG!: CHILD (pid:%d) GOT REPARENTED! "
-		"main pid:%d. ppid=%d Watchdog pid:%d\n",
-		pid, shm->mainpid, ppid, watchdog_pid);
-
-	if (pid_alive(shm->mainpid) == -1)
-		output(0, "main pid %d is dead.\n", shm->mainpid);
-
-	panic(EXIT_REPARENT_PROBLEM);
-
-out:
-	unlock(&shm->buglock);
-	_exit(EXIT_FAILURE);
-}
-
-/*
- * Here we call various functions that perform checks/changes that
- * we don't want to happen on every iteration of the child loop.
- */
-static void periodic_work(void)
-{
-	static unsigned int periodic_counter = 0;
-
-	periodic_counter++;
-	if (periodic_counter < 10)
-		return;
-
-	/* Every ten iterations. */
-	if (!(periodic_counter % 10))
-		check_parent_pid();
-
-	/* Every 100 iterations. */
-	if (!(periodic_counter % 100))
-		dirty_random_mapping();
-
-	if (periodic_counter == 1000)
-		periodic_counter = 0;
-}
-
-/*
- * We jump here on return from a signal. We do all the stuff here that we
- * otherwise couldn't do in a signal handler.
- *
- * FIXME: when we have different child ops, we're going to need to redo the progress detector.
- */
-static bool handle_sigreturn(void)
-{
-	struct syscallrecord *rec;
-	static unsigned int count = 0;
-	static unsigned int last = 0;
-
-	rec = &this_child->syscall;
-
-	/* If we held a lock before the signal happened, drop it. */
-	bust_lock(&rec->lock);
-
-	/* Check if we're blocked because we were stuck on an fd. */
-	lock(&rec->lock);
-	if (check_if_fd(this_child, rec) == TRUE) {
-		/* avoid doing it again from other threads. */
-		shm->fd_lifetime = 0;
-
-		/* TODO: Somehow mark the fd in the parent not to be used again too. */
-	}
-	unlock(&rec->lock);
-
-	output(2, "<timed out>\n");     /* Flush out the previous syscall output. */
-
-	/* Check if we're making any progress at all. */
-	if (rec->op_nr == last) {
-		count++;
-		//output(1, "no progress for %d tries.\n", count);
-	} else {
-		count = 0;
-		last = rec->op_nr;
-	}
-	if (count == 10) {
-		output(1, "no progress for 10 tries, exiting child.\n");
-		return FALSE;
-	}
-
-	if (this_child->kill_count > 0) {
-		output(1, "[%d] Missed a kill signal, exiting\n", getpid());
-		return FALSE;
-	}
-
-	if (sigwas != SIGALRM)
-		output(1, "[%d] Back from signal handler! (sig was %s)\n", getpid(), strsignal(sigwas));
-
-	return TRUE;
-}
-
-/*
- * This is the child main loop, entered after init_child has completed
- * from the fork_children() loop.
- * We also re-enter it from the signal handler code if something happened.
- */
-void child_process(void)
-{
-	int ret;
-
-	ret = sigsetjmp(ret_jump, 1);
-	if (ret != 0) {
-		if (handle_sigreturn() == FALSE)
-			return;	// Exit the child, things are getting too weird.
-	}
-
-	shm_rw();
+	ret = 0;
 
 	while (shm->exit_reason == STILL_RUNNING) {
-		unsigned int i;
 
-		periodic_work();
+		if (getppid() != shm->parentpid) {
+			//FIXME: Add locking so only one child does this output.
+			output(0, BUGTXT "CHILD (pid:%d) GOT REPARENTED! "
+				"parent pid:%d. Watchdog pid:%d\n",
+				getpid(),
+				shm->parentpid, shm->watchdog_pid);
+			output(0, BUGTXT "Last syscalls:\n");
+
+			for (i = 0; i < MAX_NR_CHILDREN; i++) {
+				// Skip over 'boring' entries.
+				if ((shm->pids[i] == -1) &&
+				    (shm->previous_syscallno[i] == 0) &&
+				    (shm->child_syscall_count[i] == 0))
+					continue;
+
+				output(0, "[%d]  pid:%d call:%s callno:%d\n",
+					i, shm->pids[i],
+					print_syscall_name(shm->previous_syscallno[i], shm->do32bit[i]),	// FIXME: need previous do32bit
+					shm->child_syscall_count[i]);
+			}
+			shm->exit_reason = EXIT_REPARENT_PROBLEM;
+			exit(EXIT_FAILURE);
+			//TODO: Emergency logging.
+		}
+
+		while (shm->regenerating == TRUE)
+			sleep(1);
 
 		/* If the parent reseeded, we should reflect the latest seed too. */
-		if (shm->seed != this_child->seed)
-			set_seed(this_child);
+		if (shm->seed != shm->seeds[childno])
+			set_seed(childno);
 
-		/* Choose operations for this iteration. */
-		i = rand() % ARRAY_SIZE(child_ops);
+		if (biarch == TRUE) {
 
-		if (rand() % 100 <= child_ops[i].likelyhood) {
-			const char *lastop = NULL;
-
-			if (lastop != child_ops[i].name) {
-				//output(0, "Chose %s.\n", child_ops[i].name);
-				lastop = child_ops[i].name;
+			if ((use_64bit == TRUE) && (use_32bit == TRUE)) {
+				/*
+				 * 10% possibility of a 32bit syscall
+				 */
+				shm->do32bit[childno] = FALSE;
+//				if (rand() % 100 < 10)
+//					shm->do32bit[childno] = TRUE;
 			}
 
-			ret = child_ops[i].func();
-			if (ret == FAIL)
-				return;
+			if (validate_syscall_table_32() == FALSE)
+				use_32bit = FALSE;
+
+			if (validate_syscall_table_64() == FALSE)
+				use_64bit = FALSE;
+
+			if (shm->do32bit[childno] == FALSE) {
+				syscalls = syscalls_64bit;
+				max_nr_syscalls = max_nr_64bit_syscalls;
+			} else {
+				syscalls = syscalls_32bit;
+				max_nr_syscalls = max_nr_32bit_syscalls;
+			}
 		}
+
+		if (no_syscalls_enabled() == TRUE) {
+			output(0, "[%d] No more syscalls enabled. Exiting\n", getpid());
+			shm->exit_reason = EXIT_NO_SYSCALLS_ENABLED;
+		}
+
+retry:
+		if (shm->exit_reason != STILL_RUNNING)
+			goto out;
+
+		syscallnr = rand() % max_nr_syscalls;
+
+		if (syscalls[syscallnr].entry->num_args == 0)
+			goto retry;
+
+		if (!(syscalls[syscallnr].entry->flags & ACTIVE))
+			goto retry;
+
+		if (syscalls[syscallnr].entry->flags & AVOID_SYSCALL)
+			goto retry;
+
+		if (syscalls[syscallnr].entry->flags & NI_SYSCALL)
+			goto retry;
+
+		/* if we get here, syscallnr is finally valid */
+
+		shm->syscallno[childno] = syscallnr;
+
+		if (syscalls_todo) {
+			if (shm->total_syscalls_done >= syscalls_todo) {
+				output(0, "[%d] shm->total_syscalls_done (%d) >= syscalls_todo (%d)\n", getpid(), shm->total_syscalls_done,syscalls_todo);
+				shm->exit_reason = EXIT_REACHED_COUNT;
+			}
+
+			if (shm->total_syscalls_done == syscalls_todo)
+				printf("[%d] Reached maximum syscall count %ld\n", pid, shm->total_syscalls_done);
+		}
+
+		ret = mkcall(childno);
 	}
 
-	enable_coredumps();
 
-	/* If we're exiting because we tainted, wait here for it to be done. */
-	while (shm->postmortem_in_progress == TRUE) {
-		/* Make sure the main process & watchdog are still around. */
-		if (pid_alive(shm->mainpid) == -1)
-			return;
+out:
+	reenable_coredumps();
 
-		if (pid_alive(watchdog_pid) == -1)
-			return;
-
-		usleep(1);
-	}
+	return ret;
 }

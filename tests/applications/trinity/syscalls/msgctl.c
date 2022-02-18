@@ -4,9 +4,11 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_msgctl = {
+struct syscall syscall_msgctl = {
 	.name = "msgctl",
 	.num_args = 3,
 	.arg1name = "msqid",

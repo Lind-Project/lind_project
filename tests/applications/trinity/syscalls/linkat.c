@@ -3,33 +3,22 @@
 	 int, newdfd, const char __user *, newname, int, flags)
  */
 #include <fcntl.h>
-#include <stdlib.h>
-#include "random.h"
-#include "shm.h"
-#include "sanitise.h"
-#include "syscall.h"
+
 #include "trinity.h"
+#include "sanitise.h"
 #include "compat.h"
 
-static void sanitise_linkat(struct syscallrecord *rec)
-{
-	/* .. If oldpath is relative and olddirfd is the special value AT_FDCWD, then oldpath is
-	 * interpreted relative to the current working directory of the calling process  */
-	if (ONE_IN(100))
-		rec->a1 = AT_FDCWD;
-}
-
-struct syscallentry syscall_linkat = {
+struct syscall syscall_linkat = {
 	.name = "linkat",
 	.num_args = 5,
 	.arg1name = "olddfd",
 	.arg1type = ARG_FD,
 	.arg2name = "oldname",
-	.arg2type = ARG_PATHNAME,
+	.arg2type = ARG_ADDRESS,
 	.arg3name = "newdfd",
 	.arg3type = ARG_FD,
 	.arg4name = "newname",
-	.arg4type = ARG_PATHNAME,
+	.arg4type = ARG_ADDRESS,
 	.arg5name = "flags",
 	.arg5type = ARG_LIST,
 	.arg5list = {
@@ -37,6 +26,4 @@ struct syscallentry syscall_linkat = {
 		.values = { AT_SYMLINK_FOLLOW , AT_EMPTY_PATH },
 	},
 	.flags = NEED_ALARM,
-	.group = GROUP_VFS,
-	.sanitise = sanitise_linkat,
 };

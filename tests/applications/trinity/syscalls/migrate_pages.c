@@ -3,9 +3,10 @@
 	 const unsigned long __user *, old_nodes,
 	 const unsigned long __user *, new_nodes)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_migrate_pages = {
+struct syscall syscall_migrate_pages = {
 	.name = "migrate_pages",
 	.num_args = 4,
 	.arg1name = "pid",

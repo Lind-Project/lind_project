@@ -6,12 +6,12 @@
  */
 
 #if defined(__i386__) || defined (__x86_64__)
-
+#include "trinity.h"
 #include "sanitise.h"
 #include <asm/prctl.h>
 #include <sys/prctl.h>
 
-struct syscallentry syscall_arch_prctl = {
+struct syscall syscall_arch_prctl = {
 	.name = "arch_prctl",
 	.flags = AVOID_SYSCALL,
 	.num_args = 2,

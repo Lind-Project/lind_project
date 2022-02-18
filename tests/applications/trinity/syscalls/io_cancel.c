@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
 	 struct io_event __user *, result)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_io_cancel = {
+struct syscall syscall_io_cancel = {
 	.name = "io_cancel",
 	.num_args = 3,
 	.arg1name = "ctx_id",

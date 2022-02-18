@@ -5,482 +5,224 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <syslog.h>
 #include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/ptrace.h>
 
-#include "child.h"
-#include "debug.h"
-#include "files.h"
-#include "locks.h"
-#include "log.h"
-#include "random.h"
-#include "params.h"	// quiet_level
-#include "pids.h"
-#include "post-mortem.h"
+#include "trinity.h"
 #include "shm.h"
+#include "files.h"
 #include "syscall.h"
-#include "tables.h"
-#include "taint.h"
-#include "trinity.h" //check_taint
-#include "utils.h"
 
-pid_t watchdog_pid;
+static void watchdog(void);
 
-static unsigned long hiscore = 0;
+void init_watchdog(void)
+{
+	static const struct timespec ts = { .tv_nsec = 100000000 }; /* 100ms */
+	pid_t pid;
 
-/*
- * Make sure various entries in the shm look sensible.
- * We use this to make sure that random syscalls haven't corrupted it.
- *
- * also check the pids for sanity.
- */
-static int shm_is_corrupt(void)
+	fflush(stdout);
+	pid = fork();
+
+	if (pid == 0)
+		watchdog();     // Never returns.
+
+	while (shm->watchdog_pid == 0)
+		nanosleep(&ts, NULL);
+
+	output(0, "[%d] Started watchdog process, PID is %d\n", getpid(), shm->watchdog_pid);
+}
+
+static int check_shm_sanity(void)
 {
 	unsigned int i;
+	pid_t pid;
 
-	if (shm->stats.total_syscalls_done < shm->stats.previous_op_count) {
-		output(0, "Execcount went backwards! (old:%ld new:%ld):\n",
-			shm->stats.previous_op_count, shm->stats.total_syscalls_done);
-		panic(EXIT_SHM_CORRUPTION);
-		return TRUE;
-	}
-	shm->stats.previous_op_count = shm->stats.total_syscalls_done;
+	if (shm->running_childs == 0)
+		return SHM_OK;
 
-	for_each_child(i) {
-		struct childdata *child;
-		pid_t pid;
-
-		child = shm->children[i];
-		pid = child->pid;
+	for_each_pidslot(i) {
+		pid = shm->pids[i];
 		if (pid == EMPTY_PIDSLOT)
 			continue;
 
 		if (pid_is_valid(pid) == FALSE) {
-			static bool once = FALSE;
-
-			if (once != FALSE)
-				return TRUE;
-
-			output(0, "Sanity check failed! Found pid %u at pidslot %u!\n", pid, i);
-
-			dump_childnos();
-
-			if (shm->exit_reason == STILL_RUNNING)
-				panic(EXIT_PID_OUT_OF_RANGE);
-			dump_childdata(child);
-			once = TRUE;
-			return TRUE;
+			shm->exit_reason = EXIT_PID_OUT_OF_RANGE;
+			return SHM_CORRUPT;
 		}
 	}
 
-	return FALSE;
+	// FIXME: The '500000' is magic, and should be dynamically calculated.
+	// On startup, we should figure out how many getpid()'s per second we can do,
+	// and use that.
+	if (shm->total_syscalls_done - shm->previous_count > 500000) {
+		output(0, "[watchdog] Execcount increased dramatically! (old:%ld new:%ld):\n",
+			shm->previous_count, shm->total_syscalls_done);
+		shm->exit_reason = EXIT_SHM_CORRUPTION;
+	}
+	shm->previous_count = shm->total_syscalls_done;
+
+	return SHM_OK;
 }
 
-/* Make sure there's no dead kids lying around.
- * We need to do this in case the oom killer has been killing them,
- * otherwise we end up stuck with no child processes.
- */
-static void reap_dead_kids(void)
+static unsigned int reap_dead_kids()
 {
 	unsigned int i;
+	unsigned int alive = 0;
 	unsigned int reaped = 0;
 
-	for_each_child(i) {
-		struct childdata *child;
+	for_each_pidslot(i) {
 		pid_t pid;
 		int ret;
 
-		child = shm->children[i];
-		pid = child->pid;
+		pid = shm->pids[i];
 		if (pid == EMPTY_PIDSLOT)
-			continue;
-
-		/* if we find corruption, just skip over it. */
-		if (pid_is_valid(pid) == FALSE)
 			continue;
 
 		ret = kill(pid, 0);
 		/* If it disappeared, reap it. */
 		if (ret == -1) {
 			if (errno == ESRCH) {
-				output(0, "pid %u has disappeared. Reaping.\n", pid);
+				output(0, "[watchdog] pid %d has disappeared (oom-killed maybe?). Reaping.\n", pid);
 				reap_child(pid);
 				reaped++;
 			} else {
-				output(0, "problem checking on pid %u (%d:%s)\n", pid, errno, strerror(errno));
+				output(0, "[watchdog] problem running getpgid on pid %d (%d:%s)\n", pid, errno, strerror(errno));
 			}
+		} else {
+			alive++;
 		}
 
 		if (shm->running_childs == 0)
-			return;
+			return 0;
 	}
 
 	if (reaped != 0)
-		output(0, "Reaped %d dead children\n", reaped);
+		output(0, "[watchdog] Reaped %d dead children\n", reaped);
+
+	return alive;
 }
 
-static void kill_all_kids(void)
+
+static void check_children(void)
 {
-	unsigned int i;
-
-	shm->spawn_no_more = TRUE;
-
-	reap_dead_kids();
-
-	/* Wait for all the children to exit. */
-	while (shm->running_childs > 0) {
-
-		int children_seen = 0;
-
-		/* Ok, some kids are still alive. 'help' them along with a SIGKILL */
-		for_each_child(i) {
-			pid_t pid;
-			int ret;
-
-			pid = shm->children[i]->pid;
-			if (pid == EMPTY_PIDSLOT)
-				continue;
-
-			/* if we find corruption, just skip over it. */
-			if (pid_is_valid(pid) == FALSE)
-				continue;
-
-			children_seen++;
-
-			ret = kill(pid, SIGKILL);
-			/* check we don't have anything stale in the pidlist */
-			if (ret == -1) {
-				if (errno == ESRCH)
-					reap_child(pid);
-			}
-		}
-
-		if (children_seen == 0)
-			shm->running_childs = 0;
-
-		/* Check that no dead children hold locks. */
-		check_all_locks();
-
-		/* wait a second to give kids a chance to exit. */
-		sleep(1);
-	}
-
-	/* Just to be sure, clear out the pid slots. */
-	for_each_child(i)
-		shm->children[i]->pid = EMPTY_PIDSLOT;
-}
-
-static bool __check_main(void)
-{
-	int ret;
-
-	if (shm->mainpid == 0)
-		return FALSE;
-
-	ret = kill(shm->mainpid, 0);
-	if (ret == -1) {
-		/* Are we already exiting ? */
-		if (shm->exit_reason != STILL_RUNNING)
-			return FALSE;
-
-		/* No. Check what happened. */
-		if (errno == ESRCH) {
-			output(0, "main pid %u has disappeared.\n", shm->mainpid);
-			panic(EXIT_MAIN_DISAPPEARED);
-			shm->mainpid = 0;
-		} else {
-			output(0, "problem checking on pid %u (%d:%s)\n", shm->mainpid, errno, strerror(errno));
-		}
-		return FALSE;
-	}
-	return TRUE;
-}
-
-static int check_main_alive(void)
-{
-	int ret;
-
-	/* If we're in the process of exiting, wait, and return without checking. */
-	if (shm->exit_reason != STILL_RUNNING) {
-		while (shm->mainpid != 0) {
-			/* make sure main is still alive, to wait for kids. */
-			ret = __check_main();
-			if (ret == TRUE) {
-				sleep(1);
-				kill_all_kids();
-			} else {
-				shm->mainpid = 0;
-			}
-		}
-		return FALSE;
-	}
-
-	ret = __check_main();
-	return ret;
-}
-
-/* if the first arg was an fd, find out which one it was.
- * Call with syscallrecord lock held. */
-unsigned int check_if_fd(struct childdata *child, struct syscallrecord *rec)
-{
-	struct syscallentry *entry;
-	unsigned int fd;
-
-	fd = rec->a1;
-
-	entry = get_syscall_entry(rec->nr, rec->do32bit);
-	if (entry->arg1type != ARG_FD)
-		return FALSE;
-
-	/* if it's out of range, it's not going to be valid. */
-	if (fd > 1024)
-		return FALSE;
-
-	if (logging == LOGGING_FILES) {
-		if (child->logfile == NULL)
-			return FALSE;
-
-		if (fd <= (unsigned int) fileno(child->logfile))
-			return FALSE;
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-static void stuck_syscall_info(struct childdata *child)
-{
-	struct syscallrecord *rec;
-	unsigned int callno;
-	char fdstr[20];
-	bool do32;
-
-	if (shm->debug == FALSE)
-		return;
-
-	memset(fdstr, 0, sizeof(fdstr));
-
-	rec = &child->syscall;
-
-	lock(&rec->lock);
-
-	do32 = rec->do32bit;
-	callno = rec->nr;
-
-	/* we can only be 'stuck' if we're still doing the syscall. */
-	if (rec->state == BEFORE) {
-		if (check_if_fd(child, rec) == TRUE)
-			sprintf(fdstr, "(fd = %d)", (unsigned int) rec->a1);
-	}
-
-	unlock(&rec->lock);
-
-	output(0, "child %d (pid %u) Stuck in syscall %d:%s%s%s.\n",
-		child->num, child->pid, callno,
-		print_syscall_name(callno, do32),
-		do32 ? " (32bit)" : "",
-		fdstr);
-}
-
-/*
- * Check that a child is making forward progress by comparing the timestamps it
- * recorded before making its last syscall.
- * If no progress is being made, send SIGKILLs to it.
- */
-static bool is_child_making_progress(struct childdata *child)
-{
-	struct syscallrecord *rec;
 	struct timeval tv;
-	time_t diff, old, now;
+	time_t diff;
+	time_t old, now;
 	pid_t pid;
-
-	pid = child->pid;
-
-	if (pid == EMPTY_PIDSLOT)
-		return TRUE;
-
-	rec = &child->syscall;
-
-	old = rec->tv.tv_sec;
-
-	/* haven't done anything yet. */
-	if (old == 0)
-		return TRUE;
+	unsigned int i;
 
 	gettimeofday(&tv, NULL);
 	now = tv.tv_sec;
 
-	if (old > now)
-		diff = old - now;
-	else
+	for_each_pidslot(i) {
+		pid = shm->pids[i];
+
+		if (pid == EMPTY_PIDSLOT)
+			continue;
+
+		old = shm->tv[i].tv_sec;
+
+		if (old == 0)
+			continue;
+
+		/* if we wrapped, just reset it, we'll pick it up next time around. */
+		if (old > (now + 3)) {
+			printf("[watchdog] child %d wrapped! old=%ld now=%ld\n", i, old, now);
+			shm->tv[i].tv_sec = now;
+			continue;
+		}
+
 		diff = now - old;
 
-	/* hopefully the common case. */
-	if (diff < 30)
-		return TRUE;
-
-	/* After 30 seconds of no progress, send a kill signal. */
-	if (diff == 30) {
-		stuck_syscall_info(child);
-		debugf("child %d (pid %u) hasn't made progress in 30 seconds! Sending SIGKILL\n",
-				child->num, pid);
-		child->kill_count++;
-		kill_pid(pid);
-	}
-
-	/* if we're still around after 40s, repeatedly send SIGKILLs every second. */
-	if (diff < 40)
-		return FALSE;
-
-	debugf("sending another SIGKILL to child %d (pid %u). [kill count:%d] [diff:%d]\n",
-		child->num, pid, child->kill_count, diff);
-	child->kill_count++;
-	kill_pid(pid);
-
-	return FALSE;
-}
-
-/*
- * If we call this, all children are stalled. Randomly kill a few.
- */
-static void stall_genocide(void)
-{
-	unsigned int killed = 0;
-	unsigned int i;
-
-	//TODO: We should temporarily stop forking new children too.
-
-	for_each_child(i) {
-		struct childdata *child = shm->children[i];
-
-		if (RAND_BOOL()) {
-			int ret;
-
-			ret = kill(child->pid, SIGKILL);
-			if (ret == 0)
-				killed++;
+		/* if we're way off, we're comparing garbage. Reset it. */
+		if (diff > 1000) {
+			output(0, "[watchdog] huge delta! pid slot %d [%d]: old:%ld now:%ld diff:%d.  Setting to now.\n", i, pid, old, now, diff);
+			shm->tv[i].tv_sec = now;
+			continue;
 		}
-		if (killed == (max_children / 4))
+//		if (diff > 3)
+//			printf("[watchdog] pid slot %d [%d]: old:%ld now:%ld diff= %d\n", i, pid, old, now, diff);
+
+		/* After 30 seconds of no progress, send a kill signal. */
+		if (diff == 30) {
+			output(0, "[watchdog] pid %d hasn't made progress in 30 seconds! (last:%ld now:%ld diff:%d). "
+				"Stuck in syscall %d:%s%s. Sending SIGKILL.\n",
+				pid, old, now, diff,
+				shm->syscallno[i],
+				print_syscall_name(shm->syscallno[i], shm->do32bit[i]),
+				shm->do32bit[i] ? " (32bit)" : "");
+			kill(pid, SIGKILL);
 			break;
+		}
+
+		/* If it's still around after 60 seconds, we have bigger problems.
+		 * Find out what's going on. */
+
+		if (diff > 60) {
+			output(0, "[watchdog] pid %d hasn't made progress in 60 seconds! (last:%ld now:%ld diff:%d)\n",
+				pid, old, now, diff);
+			shm->tv[i].tv_sec = now;
+		}
 	}
 }
 
 static void watchdog(void)
 {
 	static const char watchdogname[17]="trinity-watchdog";
-	static unsigned long lastcount = 0;
-	bool watchdog_exit = FALSE;
+	static unsigned long lastcount;
 
-	while (shm->ready == FALSE) {
-		unsigned int counter = 0;
-
-		if (shm->mainpid != 0) {
-			if (check_main_alive() == FALSE)
-				return;
-		}
-
-		while (shm->mainpid == 0) {
-
-			if (check_main_alive() == FALSE)
-				counter++;
-
-			if (counter == 1000) {
-				output(0, "Can't find main at %d\n", shm->mainpid);
-				return;
-			}
-
-			if (shm->exit_reason != STILL_RUNNING)
-				return;
-
-			sleep(1);
-		}
-	}
-
-	output(0, "Watchdog is alive. (pid:%d)\n", watchdog_pid);
+	shm->watchdog_pid = getpid();
+	printf("[%d] Watchdog is alive\n", shm->watchdog_pid);
 
 	prctl(PR_SET_NAME, (unsigned long) &watchdogname);
 	(void)signal(SIGSEGV, SIG_DFL);
 
-	while (watchdog_exit == FALSE) {
+	while (shm->exit_reason == STILL_RUNNING) {
 
-		int ret = 0;
-		unsigned int i;
-		unsigned int stall_count = 0;
+		if (shm->regenerating == FALSE) {
 
-		if (shm_is_corrupt() == TRUE)
-			goto corrupt;
+			if (check_shm_sanity() == SHM_CORRUPT)
+				goto corrupt;
 
-		if (check_main_alive() == FALSE)
-			goto main_dead;
+			reap_dead_kids();
 
-		reap_dead_kids();
+			check_children();
 
-		check_all_locks();
+			if (syscalls_todo && (shm->total_syscalls_done >= syscalls_todo)) {
+				output(0, "[watchdog] Reached limit %d. Telling children to exit.\n", syscalls_todo);
+				shm->exit_reason = EXIT_REACHED_COUNT;
+			}
 
-		if (syscalls_todo && (shm->stats.total_syscalls_done >= syscalls_todo)) {
-			output(0, "Reached limit %d. Telling children to exit.\n", syscalls_todo);
-			panic(EXIT_REACHED_COUNT);
-		}
+			// Periodic log syncing. FIXME: This is kinda ugly, and mostly unnecessary.
+			if (shm->total_syscalls_done % 1000 == 0)
+				synclogs();
 
-		for_each_child(i) {
-			struct childdata *child = shm->children[i];
-			struct syscallrecord *rec = &child->syscall;
-
-			if (is_child_making_progress(child) == FALSE)
-				stall_count++;
-
-			if (rec->op_nr > hiscore)
-				hiscore = rec->op_nr;
-		}
-
-		if (stall_count == shm->running_childs)
-			stall_genocide();
-
-		if (shm->stats.total_syscalls_done > 1) {
-			if (shm->stats.total_syscalls_done - lastcount > 10000) {
-				char stalltxt[]=" STALLED:XXXX";
-
-				if (stall_count > 0)
-					sprintf(stalltxt, " STALLED:%u", stall_count);
-				output(0, "%ld iterations. [F:%ld S:%ld HI:%ld%s]\n",
-					shm->stats.total_syscalls_done,
-					shm->stats.failures, shm->stats.successes,
-					hiscore,
-					stall_count ? stalltxt : "");
-				lastcount = shm->stats.total_syscalls_done;
+			if ((quiet_level > 1) && (shm->total_syscalls_done > 1)) {
+				if (shm->total_syscalls_done != lastcount)
+					printf("[watchdog] %ld iterations. [F:%ld S:%ld]\n",
+						shm->total_syscalls_done, shm->failures, shm->successes);
+				lastcount = shm->total_syscalls_done;
 			}
 		}
 
-		/* Only check taint if the mask allows it */
-		if (kernel_taint_mask != 0) {
-			ret = check_tainted();
-			if (((ret & kernel_taint_mask) & (~kernel_taint_initial)) != 0)
-				tainted_postmortem(ret);
+		/* Only check taint if it was zero on startup */
+		if (ignore_tainted == FALSE) {
+			if (check_tainted() != 0) {
+				output(0, "[watchdog] kernel became tainted! Last seed was %u\n", shm->seed);
+				shm->exit_reason = EXIT_KERNEL_TAINTED;
+			}
 		}
 
-main_dead:
-		/* Are we done ? */
-		if (shm->exit_reason != STILL_RUNNING) {
-			/* Give children a chance to exit. */
-			sleep(1);
-
-			/* Are there still children running ? */
-			if (pidmap_empty() == TRUE)
-				watchdog_exit = TRUE;
-			else {
-				static unsigned int last = 0;
-
-				if (last != shm->running_childs) {
-					last = shm->running_childs;
-
-					output(0, "exit_reason=%d, but %d children still running.\n",
-						shm->exit_reason, shm->running_childs);
-				}
-				kill_all_kids();
+		if (shm->need_reseed == FALSE) {
+			shm->reseed_counter++;
+			/* If we haven't reseeded in five minutes, trigger one. */
+			if (shm->reseed_counter == 300) {
+				output(0, "[watchdog] Triggering periodic reseed.\n");
+				shm->need_reseed = TRUE;
+				shm->reseed_counter = 0;
 			}
 		}
 
@@ -488,28 +230,46 @@ main_dead:
 	}
 
 corrupt:
-	kill_all_kids();
-}
+	/* We don't want to ever exit before main is waiting for us. */
+	while (shm->regenerating == TRUE)
+		sleep(1);
 
-void init_watchdog(void)
-{
-	pid_t pid;
+	/* Wait for all the children to exit. */
+	while (shm->running_childs > 0) {
+		unsigned int i;
+		unsigned int alive;
 
-	fflush(stdout);
-	pid = fork();
+		/* Make sure there's no dead kids lying around.
+		 * We need to do this in case the oom killer has been killing them,
+		 * otherwise we end up stuck here with no child processes.
+		 */
+		alive = reap_dead_kids();
+		if (alive == 0)
+			goto out;
 
-	if (pid == 0) {
-		__unused__ int ret = nice(-20);
+		/* Ok, some kids are still alive. 'help' them along with a SIGKILL */
+		for_each_pidslot(i) {
+			pid_t pid;
 
-		watchdog_pid = getpid();
+			pid = shm->pids[i];
+			if (pid == EMPTY_PIDSLOT)
+				continue;
 
-		watchdog();
-		output(0, "[%d] Watchdog exiting because %s.\n",
-			watchdog_pid, decode_exit());
-		_exit(EXIT_SUCCESS);
+			kill(pid, SIGKILL);
+		}
 
-	} else {
-		watchdog_pid = pid;
-		output(0, "Started watchdog process, PID is %d\n", watchdog_pid);
+		/* wait a second to give kids a chance to exit. */
+		sleep(1);
+
+		if (check_shm_sanity()) {
+			// FIXME: If we get here, we over-wrote the real exit_reason.
+			// We should have saved that, and handled appropriately.
+			goto out;
+		}
 	}
+
+out:
+	output(0, "[%d] Watchdog exiting\n", getpid());
+
+	_exit(EXIT_SUCCESS);
 }

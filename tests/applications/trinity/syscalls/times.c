@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE1(times, struct tms __user *, tbuf)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_times = {
+struct syscall syscall_times = {
 	.name = "times",
 	.num_args = 1,
 	.arg1name = "tbuf",

@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(signal, int, sig, __sighandler_t, handler)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_signal = {
+struct syscall syscall_signal = {
 	.name = "signal",
 	.num_args = 2,
 	.arg1name = "sig",

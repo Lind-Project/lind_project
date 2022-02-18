@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(listen, int, fd, int, backlog)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_listen = {
+struct syscall syscall_listen = {
 	.name = "listen",
 	.num_args = 2,
 	.arg1name = "fd",

@@ -2,23 +2,23 @@
  * SYSCALL_DEFINE2(mlock, unsigned long, start, size_t, len)
  */
 #include <stdlib.h>
-#include "maps.h"
+#include "trinity.h"
 #include "shm.h"
 #include "sanitise.h"
-#include "syscall.h"
-#include "trinity.h"
 
-static void sanitise_mlock(__unused__ struct syscallrecord *rec)
+static void sanitise_mlock(int childno)
 {
-	(void) common_set_mmap_ptr_len();
+	if (shm->a2[childno] == 0)
+		shm->a2[childno] = 1;	// must be non-null.
 }
 
-struct syscallentry syscall_mlock = {
+struct syscall syscall_mlock = {
 	.name = "mlock",
 	.num_args = 2,
 	.arg1name = "addr",
-	.arg1type = ARG_MMAP,
+	.arg1type = ARG_ADDRESS,
 	.arg2name = "len",
+	.arg2type = ARG_LEN,
 	.group = GROUP_VM,
 	.sanitise = sanitise_mlock,
 };

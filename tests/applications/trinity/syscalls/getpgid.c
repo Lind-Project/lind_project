@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE1(getpgid, pid_t, pid)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_getpgid = {
+struct syscall syscall_getpgid = {
 	.name = "getpgid",
 	.num_args = 1,
 	.arg1name = "pid",

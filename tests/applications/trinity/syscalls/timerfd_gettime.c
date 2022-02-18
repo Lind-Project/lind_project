@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(timerfd_gettime, int, ufd, struct itimerspec __user *, otmr)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_timerfd_gettime = {
+struct syscall syscall_timerfd_gettime = {
 	.name = "timerfd_gettime",
 	.num_args = 2,
 	.arg1name = "ufd",

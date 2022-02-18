@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE4(rt_tgsigqueueinfo, pid_t, tgid, pid_t, pid, int, sig,
 	 siginfo_t __user *, uinfo)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_rt_tgsigqueueinfo = {
+struct syscall syscall_rt_tgsigqueueinfo = {
 	.name = "rt_tgsigqueueinfo",
 	.num_args = 4,
 	.arg1name = "tgid",

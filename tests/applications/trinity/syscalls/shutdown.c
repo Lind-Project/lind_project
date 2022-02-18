@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE2(shutdown, int, fd, int, how)
  */
 #include <sys/socket.h>
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_shutdown = {
+struct syscall syscall_shutdown = {
 	.name = "shutdown",
 	.num_args = 2,
 	.arg1name = "fd",

@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE1(set_tid_address, int __user *, tidptr)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_set_tid_address = {
+struct syscall syscall_set_tid_address = {
 	.name = "set_tid_address",
 	.num_args = 1,
 	.arg1name = "tidptr",

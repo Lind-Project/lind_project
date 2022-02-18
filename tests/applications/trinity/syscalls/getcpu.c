@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE3(getcpu, unsigned __user *, cpup, unsigned __user *, nodep,
                  struct getcpu_cache __user *, unused)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_getcpu = {
+struct syscall syscall_getcpu = {
 	.name = "getcpu",
 	.num_args = 3,
 	.arg1name = "cpup",

@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE4(semtimedop, int, semid, struct sembuf __user *, tsops,
 	 unsigned, nsops, const struct timespec __user *, timeout)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_semtimedop = {
+struct syscall syscall_semtimedop = {
 	.name = "semtimedop",
 	.num_args = 4,
 	.arg1name = "semid",

@@ -1,23 +1,27 @@
 /*
  * SYSCALL_DEFINE4(tee, int, fdin, int, fdout, size_t, len, unsigned int, flags)
  */
-#include <fcntl.h>
+# define SPLICE_F_MOVE          1       /* Move pages instead of copying.  */
+# define SPLICE_F_NONBLOCK      2       /* Don't block on the pipe splicing
+                                           (but we may still block on the fd
+                                           we splice from/to).  */
+# define SPLICE_F_MORE          4       /* Expect more data.  */
+# define SPLICE_F_GIFT          8       /* Pages passed in are a gift.  */
+
 #include <stdlib.h>
+#include "trinity.h"
 #include "sanitise.h"
 #include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
-#include "compat.h"
 
-static void sanitise_tee(struct syscallrecord *rec)
+void sanitise_tee(int childno)
 {
 	if ((rand() % 10) > 0) {
-		rec->a1 = shm->pipe_fds[rand() % MAX_PIPE_FDS];
-		rec->a2 = shm->pipe_fds[rand() % MAX_PIPE_FDS];
+		shm->a1[childno] = shm->pipe_fds[rand() % MAX_PIPE_FDS];
+		shm->a2[childno] = shm->pipe_fds[rand() % MAX_PIPE_FDS];
 	}
 }
 
-struct syscallentry syscall_tee = {
+struct syscall syscall_tee = {
 	.name = "tee",
 	.num_args = 4,
 	.arg1name = "fdin",

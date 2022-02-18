@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE3(shmat, int, shmid, char __user *, shmaddr, int, shmflg)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_shmat = {
+struct syscall syscall_shmat = {
 	.name = "shmat",
 	.num_args = 3,
 	.arg1name = "shmid",

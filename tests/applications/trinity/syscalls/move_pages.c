@@ -8,74 +8,64 @@
 #define MPOL_MF_MOVE    (1<<1)  /* Move pages owned by this process to conform to mapping */
 #define MPOL_MF_MOVE_ALL (1<<2) /* Move every page to conform to mapping */
 
-#include <malloc.h>
-#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include "arch.h"
-#include "maps.h"
-#include "random.h"
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
+
 #include "trinity.h"
-#include "utils.h"
+#include "sanitise.h"
+#include "arch.h"
+#include "shm.h"
 
-static unsigned int count;
+//FIXME: This leaks memory.
+// A ->post function should free up the allocations.
 
-static void sanitise_move_pages(struct syscallrecord *rec)
+static void sanitise_move_pages(int childno)
 {
-	int *nodes;
+	unsigned int *nodes;
 	unsigned long *page_alloc;
 	unsigned int i;
+	unsigned int count;
 
-	/* number of pages to move */
+	// Needs CAP_SYS_NICE to move pages in another process
+	if (getuid() != 0) {
+		shm->a1[childno] = 0;
+		shm->a6[childno] &= ~MPOL_MF_MOVE_ALL;
+	}
+
+	page_alloc = malloc(page_size);
+	if (page_alloc == NULL)
+		return;
+
 	count = rand() % (page_size / sizeof(void *));
-	count = max(1U, count);
-	rec->a2 = count;
-
-	/* setup array of ptrs to pages to move */
-	page_alloc = (unsigned long *) zmalloc(page_size);
+	shm->a2[childno] = count;
 
 	for (i = 0; i < count; i++) {
-		struct map *map;
-
-		map = get_map();
-		page_alloc[i] = (unsigned long) map->ptr;
+		page_alloc[i] = (unsigned long) malloc(page_size);
+		if (!page_alloc[i])
+			return;					// FIXME: MEMORY LEAK
+		page_alloc[i] &= PAGE_MASK;
 	}
-	rec->a3 = (unsigned long) page_alloc;
 
-	/* nodes = array of ints specifying desired location for each page */
-	nodes = calloc(count, sizeof(int));
+	shm->a3[childno] = (unsigned long) page_alloc;
+
+	nodes = malloc(count * sizeof(int));
 	for (i = 0; i < count; i++)
-		nodes[i] = (int) RAND_BOOL();
-	rec->a4 = (unsigned long) nodes;
+		nodes[i] = (int) rand() % 2;
+	shm->a4[childno] = (unsigned long) nodes;
 
-	/* status = array of ints returning status of each page.*/
-	rec->a5 = (unsigned long) calloc(count, sizeof(int));
-
-	/* Needs CAP_SYS_NICE */
-	if (getuid() != 0)
-		rec->a6 &= ~MPOL_MF_MOVE_ALL;
+	shm->a5[childno] = (unsigned long) malloc(count * sizeof(int));
 }
 
-static void post_move_pages(struct syscallrecord *rec)
-{
-	freeptr(&rec->a3);
-	freeptr(&rec->a4);
-	freeptr(&rec->a5);
-}
-
-struct syscallentry syscall_move_pages = {
+struct syscall syscall_move_pages = {
 	.name = "move_pages",
 	.num_args = 6,
 	.arg1name = "pid",
-	.arg1type = ARG_PID,
 	.arg2name = "nr_pages",
 	.arg3name = "pages",
 	.arg4name = "nodes",
 	.arg5name = "status",
+	.arg5type = ARG_ADDRESS,
 	.arg6name = "flags",
 	.arg6type = ARG_LIST,
 	.arg6list = {
@@ -84,5 +74,4 @@ struct syscallentry syscall_move_pages = {
 	},
 	.group = GROUP_VM,
 	.sanitise = sanitise_move_pages,
-	.post = post_move_pages,
 };

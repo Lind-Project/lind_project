@@ -3,9 +3,10 @@
 	struct robust_list_head __user * __user *, head_ptr,
 	size_t __user *, len_ptr)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_get_robust_list = {
+struct syscall syscall_get_robust_list = {
 	.name = "get_robust_list",
 	.num_args = 3,
 	.arg1name = "pid",

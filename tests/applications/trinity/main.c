@@ -4,195 +4,155 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/prctl.h>
-#include <sys/ptrace.h>
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
+#include <sys/ptrace.h>
 
-#include "child.h"
-#include "debug.h"
-#include "log.h"
-#include "pids.h"
-#include "random.h"
-#include "shm.h"
-#include "syscall.h"
 #include "trinity.h"
+#include "shm.h"
+#include "files.h"
+#include "syscall.h"
 
-/* exit() wrapper to clear the pid before exiting, so the
- * watchdog doesn't spin forever on a dead pid.
- */
-void exit_main_fail(void)
+static void regenerate(void)
 {
-	if (getpid() != shm->mainpid) {
-		show_backtrace();
-		BUG("wtf, exit_main_fail called from non main pid!\n");
-	}
+	shm->regenerating = TRUE;
 
-	shm->mainpid = 0;
-	exit(EXIT_FAILURE);
+	sleep(1);	/* give children time to finish with fds. */
+
+	shm->regenerate = 0;
+
+	output(0, "[%d] Regenerating random pages, fd's etc.\n", getpid());
+
+	regenerate_fds();
+
+	destroy_maps();
+	setup_maps();
+
+	regenerate_random_page();
+
+	shm->regenerating = FALSE;
 }
 
-/* Generate children*/
+bool ignore_tainted;
+
+int check_tainted(void)
+{
+	int fd;
+	int ret;
+	char buffer[4];
+
+	fd = open("/proc/sys/kernel/tainted", O_RDONLY);
+	if (!fd)
+		return -1;
+	ret = read(fd, buffer, 3);
+	close(fd);
+	ret = atoi(buffer);
+
+	return ret;
+}
+
+#define debugf if (debug == TRUE) printf
+
 static void fork_children(void)
 {
-	while (shm->running_childs < max_children) {
-		int childno;
+	int pidslot;
+	static char childname[17];
+
+	/* Generate children*/
+
+	while (shm->running_childs < shm->max_children) {
 		int pid = 0;
 
-		if (shm->spawn_no_more == TRUE)
-			return;
-
-		/* a new child means a new seed, or the new child
-		 * will do the same syscalls as the one in the child it's replacing.
-		 * (special case startup, or we reseed unnecessarily)
-		 */
-		if (shm->ready == TRUE)
-			reseed();
-
 		/* Find a space for it in the pid map */
-		childno = find_childno(EMPTY_PIDSLOT);
-		if (childno == CHILD_NOT_FOUND) {
-			outputerr("## Pid map was full!\n");
-			dump_childnos();
-			exit_main_fail();
+		pidslot = find_pid_slot(EMPTY_PIDSLOT);
+		if (pidslot == PIDSLOT_NOT_FOUND) {
+			printf("[%d] ## Pid map was full!\n", getpid());
+			dump_pid_slots();
+			exit(EXIT_FAILURE);
 		}
 
+		(void)alarm(0);
 		fflush(stdout);
 		pid = fork();
-
-		if (pid == 0) {
+		if (pid != 0)
+			shm->pids[pidslot] = pid;
+		else {
 			/* Child process. */
+			int ret = 0;
 
-			struct childdata *child = shm->children[childno];
+			mask_signals_child();
 
-			init_child(child, childno);
+			memset(childname, 0, sizeof(childname));
+			sprintf(childname, "trinity-child%d", pidslot);
+			prctl(PR_SET_NAME, (unsigned long) &childname);
 
-			child_process();
-
-			debugf("child %d %d exiting.\n", childno, getpid());
-			shutdown_child_logging(this_child);
-			reap_child(child->pid);
-			_exit(EXIT_SUCCESS);
-		} else {
-			if (pid == -1) {
-				/* We failed, wait for a child to exit before retrying. */
-				if (shm->running_childs > 0)
-					return;
-
-				output(0, "couldn't create child! (%s)\n", strerror(errno));
-				panic(EXIT_FORK_FAILURE);
-				exit_main_fail();
+			/* Wait for parent to set our pidslot */
+			while (shm->pids[pidslot] != getpid()) {
+				/* Make sure parent is actually alive to wait for us. */
+				ret = pid_alive(shm->parentpid);
+				if (ret != 0) {
+					shm->exit_reason = EXIT_SHM_CORRUPTION;
+					printf("[%d] " BUGTXT "parent (%d) went away!\n", getpid(), shm->parentpid);
+					sleep(20000);
+				}
 			}
+
+			set_seed(pidslot);
+
+			ret = child_process();
+
+			output(0, "child %d exitting\n", getpid());
+
+			_exit(ret);
 		}
-
-		shm->children[childno]->pid = pid;
 		shm->running_childs++;
-
-		debugf("Created child %d (pid:%d) [total:%d/%d]\n",
-			childno, pid, shm->running_childs, max_children);
+		debugf("[%d] Created child %d in pidslot %d [total:%d/%d]\n",
+			getpid(), shm->pids[pidslot], pidslot,
+			shm->running_childs, shm->max_children);
 
 		if (shm->exit_reason != STILL_RUNNING)
 			return;
 
 	}
-	shm->ready = TRUE;
-
-	debugf("created enough children\n");
+	debugf("[%d] created enough children\n", getpid());
 }
 
-/*
- * reap_child: Remove all references to a running child.
- *
- * This can get called from three possible places.
- * 1. A child calls this itself just before it exits to clear out
- *    its child struct in the shm.
- * 2. From the watchdog if it finds reference to a pid that no longer exists.
- * 3. From the main pid if it gets a SIGBUS or SIGSTOP from the child.
- *
- * The reaper lock protects against these happening at the same time.
- */
 void reap_child(pid_t childpid)
 {
-	struct childdata *child;
 	int i;
 
-	lock(&shm->reaper_lock);
+	while (shm->reaper_lock == LOCKED);
+
+	shm->reaper_lock = LOCKED;
 
 	if (childpid == shm->last_reaped) {
-		debugf("already reaped %d!\n", childpid);
+		debugf("[%d] already reaped %d!\n", getpid(), childpid);
 		goto out;
 	}
 
-	i = find_childno(childpid);
-	if (i == CHILD_NOT_FOUND)
+	i = find_pid_slot(childpid);
+	if (i == PIDSLOT_NOT_FOUND)
 		goto out;
 
-	debugf("Removing pid %d from pidmap.\n", childpid);
-	child = shm->children[i];
-	child->pid = EMPTY_PIDSLOT;
-	child->syscall.tv.tv_sec = 0;
+	debugf("[%d] Removing pid %d from pidmap.\n", getpid(), childpid);
+	shm->pids[i] = EMPTY_PIDSLOT;
 	shm->running_childs--;
+	shm->tv[i].tv_sec = 0;
 	shm->last_reaped = childpid;
 
 out:
-	unlock(&shm->reaper_lock);
+	shm->reaper_lock = UNLOCKED;
 }
-
-static void handle_childsig(int childpid, int childstatus, int stop)
-{
-	int __sig;
-
-	if (stop == TRUE)
-		__sig = WSTOPSIG(childstatus);
-	else
-		__sig = WTERMSIG(childstatus);
-
-	switch (__sig) {
-	case SIGSTOP:
-		if (stop != TRUE)
-			return;
-		debugf("Sending PTRACE_DETACH (and then KILL)\n");
-		ptrace(PTRACE_DETACH, childpid, NULL, NULL);
-		kill(childpid, SIGKILL);
-		reap_child(childpid);
-		return;
-
-	case SIGALRM:
-		debugf("got a alarm signal from pid %d\n", childpid);
-		break;
-	case SIGFPE:
-	case SIGSEGV:
-	case SIGKILL:
-	case SIGPIPE:
-	case SIGABRT:
-	case SIGBUS:
-		if (stop == TRUE)
-			debugf("Child %d was stopped by %s\n", childpid, strsignal(WSTOPSIG(childstatus)));
-		else
-			debugf("got a signal from pid %d (%s)\n", childpid, strsignal(WTERMSIG(childstatus)));
-		reap_child(childpid);
-		return;
-
-	default:
-		if (__sig >= SIGRTMIN) {
-			debugf("Child %d got RT signal (%d). Ignoring.\n", childpid, __sig);
-			return;
-		}
-
-		if (stop == TRUE)
-			debugf("Child %d was stopped by unhandled signal (%s).\n", childpid, strsignal(WSTOPSIG(childstatus)));
-		else
-			debugf("** Child got an unhandled signal (%d)\n", WTERMSIG(childstatus));
-		return;
-	}
-}
-
 
 static void handle_child(pid_t childpid, int childstatus)
 {
+	unsigned int i;
+	int slot;
+
 	switch (childpid) {
 	case 0:
-		//debugf("Nothing changed. children:%d\n", shm->running_childs);
+		//debugf("[%d] Nothing changed. children:%d\n", getpid(), shm->running_childs);
 		break;
 
 	case -1:
@@ -200,53 +160,85 @@ static void handle_child(pid_t childpid, int childstatus)
 			return;
 
 		if (errno == ECHILD) {
-			unsigned int i;
-			bool seen = FALSE;
-
-			debugf("All children exited!\n");
-
-			for_each_child(i) {
-				struct childdata *child;
-
-				child = shm->children[i];
-
-				if (child->pid != EMPTY_PIDSLOT) {
-					if (pid_alive(child->pid) == -1) {
-						debugf("Removing %d from pidmap\n", child->pid);
-						child->pid = EMPTY_PIDSLOT;
+			debugf("[%d] All children exited!\n", getpid());
+			for_each_pidslot(i) {
+				if (shm->pids[i] != EMPTY_PIDSLOT) {
+					if (pid_alive(shm->pids[i]) == -1) {
+						debugf("[%d] Removing %d from pidmap\n", getpid(), shm->pids[i]);
+						shm->pids[i] = EMPTY_PIDSLOT;
 						shm->running_childs--;
 					} else {
-						debugf("%d looks still alive! ignoring.\n", child->pid);
+						debugf("[%d] %d looks still alive! ignoring.\n", getpid(), shm->pids[i]);
 					}
-					seen = TRUE;
 				}
 			}
-			if (seen == FALSE)
-				shm->running_childs = 0;
 			break;
 		}
 		output(0, "error! (%s)\n", strerror(errno));
 		break;
 
 	default:
-		debugf("Something happened to pid %d\n", childpid);
+		debugf("[%d] Something happened to pid %d\n", getpid(), childpid);
 
 		if (WIFEXITED(childstatus)) {
 
-			int childno;
-
-			childno = find_childno(childpid);
-			if (childno != CHILD_NOT_FOUND) {
-				debugf("Child %d exited after %ld operations.\n",
-					childpid, shm->children[childno]->syscall.op_nr);
+			slot = find_pid_slot(childpid);
+			if (slot == PIDSLOT_NOT_FOUND) {
+				printf("[%d] ## Couldn't find pid slot for %d\n", getpid(), childpid);
+				shm->exit_reason = EXIT_LOST_PID_SLOT;
+				dump_pid_slots();
+			} else {
+				debugf("[%d] Child %d exited after %ld syscalls.\n", getpid(), childpid, shm->child_syscall_count[slot]);
 				reap_child(childpid);
 			}
 			break;
 
 		} else if (WIFSIGNALED(childstatus)) {
-			handle_childsig(childpid, childstatus, FALSE);
+
+			switch (WTERMSIG(childstatus)) {
+			case SIGALRM:
+				debugf("[%d] got a alarm signal from pid %d\n", getpid(), childpid);
+				break;
+			case SIGFPE:
+			case SIGSEGV:
+			case SIGKILL:
+			case SIGPIPE:
+			case SIGABRT:
+				debugf("[%d] got a signal from pid %d (%s)\n", getpid(), childpid, strsignal(WTERMSIG(childstatus)));
+				reap_child(childpid);
+				break;
+			default:
+				debugf("[%d] ** Child got an unhandled signal (%d)\n", getpid(), WTERMSIG(childstatus));
+				break;
+			}
+			break;
+
 		} else if (WIFSTOPPED(childstatus)) {
-			handle_childsig(childpid, childstatus, TRUE);
+
+			switch (WSTOPSIG(childstatus)) {
+			case SIGALRM:
+				debugf("[%d] got an alarm signal from pid %d\n", getpid(), childpid);
+				break;
+			case SIGSTOP:
+				debugf("[%d] Sending PTRACE_DETACH (and then KILL)\n", getpid());
+				ptrace(PTRACE_DETACH, childpid, NULL, NULL);
+				kill(childpid, SIGKILL);
+				reap_child(childpid);
+				break;
+			case SIGFPE:
+			case SIGSEGV:
+			case SIGKILL:
+			case SIGPIPE:
+			case SIGABRT:
+				debugf("[%d] Child %d was stopped by %s\n", getpid(), childpid, strsignal(WTERMSIG(childstatus)));
+				reap_child(childpid);
+				break;
+			default:
+				debugf("[%d] Child %d was stopped by unhandled signal (%s).\n", getpid(), childpid, strsignal(WSTOPSIG(childstatus)));
+				break;
+			}
+			break;
+
 		} else if (WIFCONTINUED(childstatus)) {
 			break;
 		} else {
@@ -274,15 +266,15 @@ static void handle_children(void)
 	 * We do this instead of just waitpid(-1) again so that there's no way
 	 * for any one child to starve the others of attention.
 	 */
-	for_each_child(i) {
+	for_each_pidslot(i) {
 
-		pid = shm->children[i]->pid;
+		pid = shm->pids[i];
 
 		if (pid == EMPTY_PIDSLOT)
 			continue;
 
-		if (pid_is_valid(pid) == FALSE)	/* If we find something invalid, we just ignore */
-			continue;		/* it and leave it to the watchdog to clean up. */
+		if (pid_is_valid(pid) == FALSE)
+			return;
 
 		pid = waitpid(pid, &childstatus, WUNTRACED | WCONTINUED | WNOHANG);
 		if (pid != 0)
@@ -290,60 +282,75 @@ static void handle_children(void)
 	}
 }
 
-static const char *reasons[NUM_EXIT_REASONS] = {
-	"Still running.",
-	"No more syscalls enabled.",
-	"Completed maximum number of operations.",
-	"No file descriptors open.",
-	"Lost track of a child.",
+static const char *reasons[] = {
+	"Still running",
+	"No more syscalls enabled",
+	"Reached maximum syscall count",
+	"No file descriptors open",
+	"Lost track of a pid slot",
 	"shm corruption - Found a pid out of range.",
 	"ctrl-c",
-	"kernel became tainted.",
+	"kernel became tainted",
 	"SHM was corrupted!",
 	"Child reparenting problem",
-	"No files in file list.",
-	"Main process disappeared.",
-	"UID changed.",
-	"Something happened during fd init.",
-	"fork() failure",
-	"some kind of locking catastrophe",
-	"error while opening logfiles",
 };
 
-const char * decode_exit(void)
+static const char * decode_exit(unsigned int reason)
 {
-	return reasons[shm->exit_reason];
+	return reasons[reason];
 }
 
-void main_loop(void)
+static void main_loop(void)
 {
 	while (shm->exit_reason == STILL_RUNNING) {
-		if (shm->running_childs < max_children)
+		if (shm->running_childs < shm->max_children) {
+			reseed();
 			fork_children();
+		}
+
+		if (shm->regenerate >= REGENERATION_POINT)
+			regenerate();
+
+		if (shm->need_reseed == TRUE)
+			reseed();
 
 		handle_children();
 	}
-
-	/* if the pid map is corrupt, we can't trust that we'll
-	 * ever successfully finish pidmap_empty, so skip it */
-	if ((shm->exit_reason == EXIT_LOST_CHILD) ||
-	    (shm->exit_reason == EXIT_SHM_CORRUPTION))
-		goto dont_wait;
-
-	/* Wait until all children have exited. */
-	while (pidmap_empty() == FALSE)
-		handle_children();
-
-dont_wait:
-	output(0, "Bailing main loop because %s.\n", decode_exit());
 }
 
-/*
- * Something potentially bad happened. Alert all processes by setting appropriate shm vars.
- * (not always 'bad', reaching max count for eg is one example).
- */
-void panic(int reason)
+
+void do_main_loop(void)
 {
-	shm->spawn_no_more = TRUE;
-	shm->exit_reason = reason;
+	const char taskname[13]="trinity-main";
+	int childstatus;
+	pid_t pid;
+
+
+	/* do an extra fork so that the watchdog and the children don't share a common parent */
+	fflush(stdout);
+	pid = fork();
+	if (pid == 0) {
+		setup_main_signals();
+
+		shm->parentpid = getpid();
+		output(0, "[%d] Main thread is alive.\n", getpid());
+		prctl(PR_SET_NAME, (unsigned long) &taskname);
+		set_seed(0);
+
+		setup_fds();
+
+		main_loop();
+
+		/* Wait until all children have exited. */
+		while (pidmap_empty() == FALSE)
+			handle_children();
+
+		printf("[%d] Bailing main loop. Exit reason: %s\n", getpid(), decode_exit(shm->exit_reason));
+		_exit(EXIT_SUCCESS);
+	}
+
+	/* wait for main loop process to exit. */
+	pid = waitpid(pid, &childstatus, 0);
+
+	shm->parentpid = getpid();
 }

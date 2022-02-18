@@ -1,92 +1,62 @@
-VERSION="1.6"
+VERSION=1.1
 
 INSTALL_PREFIX ?= $(DESTDIR)
 INSTALL_PREFIX ?= $(HOME)
-NR_CPUS := $(shell grep ^processor /proc/cpuinfo | /usr/bin/wc -l)
 
-CC=x86_64-nacl-gcc
-CXX=x86_64-nacl-g++
-LD=x86_64-nacl-ld
-CFLAGS=-g -fno-pie
-CXXFLAGS=-g -fno-pie -std=gnu++99
-LDFLAGS=-g -fno-pie
-
-CFLAGS += -Wall -W -g -O2 -I. -Iinclude/ -I/usr/include -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -D__linux__
+CFLAGS = -Wall -W -g -O2 -I. -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE
+#CFLAGS += $(shell if $(CC) -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-m32"; fi)
 CFLAGS += -Wdeclaration-after-statement
 CFLAGS += -Wformat=2
 CFLAGS += -Winit-self
+CFLAGS += -Wlogical-op
 CFLAGS += -Wnested-externs
 CFLAGS += -Wpacked
 CFLAGS += -Wshadow
+CFLAGS += -Wstrict-aliasing=3
+CFLAGS += -Wswitch-default
 CFLAGS += -Wswitch-enum
 CFLAGS += -Wundef
 CFLAGS += -Wwrite-strings
-CFLAGS += -Wno-format-nonliteral
-CFLAGS += -Wstrict-prototypes -Wmissing-prototypes
-CFLAGS += -Wlogical-op
-CFLAGS += -Wstrict-aliasing=3
-CFLAGS += -Wlogical-op
-CFLAGS += -Wstrict-aliasing=3
 
-# needed for show_backtrace() to work correctly.
-LDFLAGS += -rdynamic
-
-V	= @
-Q	= $(V:1=)
+# Only enabled during development.
+#CFLAGS += -Werror
 
 all: trinity
 
-version:
-	@scripts/gen-versionh.sh
-
 test:
-	@if [ ! -f config.h ]; then  echo "[1;31mRun configure.sh first.[0m" ; exit; fi
+	@if [ ! -f config.h ]; then  echo Run configure.sh first.; exit; fi
 
 
 MACHINE		= $(shell $(CC) -dumpmachine)
-SYSCALLS_ARCH	= $(shell case "$(MACHINE)" in \
+SYSCALLS_ARCH	= $(patsubst %.c,%.o,$(shell case "$(MACHINE)" in \
 		  (sh*) echo syscalls/sh/*.c ;; \
-		  (ia64*) echo syscalls/ia64/*.c ;; \
-		  (ppc*|powerpc*) echo syscalls/ppc/*.c ;; \
-		  (sparc*) echo syscalls/sparc/*.c ;; \
-		  esac)
+		  esac))
 
 HEADERS		= $(patsubst %.h,%.h,$(wildcard *.h)) $(patsubst %.h,%.h,$(wildcard syscalls/*.h)) $(patsubst %.h,%.h,$(wildcard ioctls/*.h))
 
 SRCS		= $(wildcard *.c) \
-		  $(wildcard children/*.c) \
-		  $(wildcard fds/*.c) \
-		  $(wildcard ioctls/*.c) \
-		  $(wildcard mm/*.c) \
-		  $(wildcard net/*.c) \
-		  $(wildcard rand/*.c) \
 		  $(wildcard syscalls/*.c) \
-		  $(SYSCALLS_ARCH)
+		  $(SYSCALLS_ARCH) \
+		  $(wildcard ioctls/*.c)
 
-OBJS		= $(sort $(patsubst %.c,%.o,$(wildcard *.c))) \
-		  $(sort $(patsubst %.c,%.o,$(wildcard children/*.c))) \
-		  $(sort $(patsubst %.c,%.o,$(wildcard fds/*.c))) \
-		  $(sort $(patsubst %.c,%.o,$(wildcard ioctls/*.c))) \
-		  $(sort $(patsubst %.c,%.o,$(wildcard mm/*.c))) \
-		  $(sort $(patsubst %.c,%.o,$(wildcard net/*.c))) \
-		  $(sort $(patsubst %.c,%.o,$(wildcard rand/*.c))) \
-		  $(sort $(patsubst %.c,%.o,$(wildcard syscalls/*.c))) \
-		  $(sort $(patsubst %.c,%.o,$(SYSCALLS_ARCH)))
+OBJS		= $(patsubst %.c,%.o,$(wildcard *.c)) \
+		  $(patsubst %.c,%.o,$(wildcard syscalls/*.c)) \
+		  $(SYSCALLS_ARCH) \
+		  $(patsubst %.c,%.o,$(wildcard ioctls/*.c))
 
 DEPDIR= .deps
 
 -include $(SRCS:%.c=$(DEPDIR)/%.d)
 
-trinity: version test $(OBJS) $(HEADERS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o trinity $(OBJS)
+trinity: test $(OBJS) $(HEADERS)
+	$(CC) $(CFLAGS) -o trinity $(OBJS)
 	@mkdir -p tmp
 
-df = $(DEPDIR)/$(*D)/$(*F)
+df = $(DEPDIR)/$(*F)
 
 %.o : %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
-	@mkdir -p $(DEPDIR)/$(*D)
-	@$(CC) -MM $(CFLAGS) $*.c > $(df).d
+	@gcc -MM $(CFLAGS) $*.c > $(df).d
 	@mv -f $(df).d $(df).d.tmp
 	@sed -e 's|.*:|$*.o:|' <$(df).d.tmp > $(df).d
 	@sed -e 's/.*://' -e 's/\\$$//' < $(df).d.tmp | fmt -1 | \
@@ -94,33 +64,29 @@ df = $(DEPDIR)/$(*D)/$(*F)
 	@rm -f $(df).d.tmp
 
 clean:
-	@rm -f $(OBJS)
+	@rm -f *.o syscalls/*.o syscalls/ia64/*.o syscalls/powerpc/*.o ioctls/*.o
 	@rm -f core.*
 	@rm -f trinity
 	@rm -f tags
-	@rm -rf $(DEPDIR)/*
-	@rm -rf trinity-coverity.tar.xz cov-int
-	@rm -f include/version.h
+	@rm -f $(DEPDIR)/*.d
 
-tag:
-	@git tag -a v$(VERSION) -m "$(VERSION) release."
+devel:
+	@perl -p -i -e 's/^#CFLAGS \+\= -Werror/CFLAGS += -Werror/' Makefile
+	git commit Makefile -m "Enable -Werror"
+
+release:
+	@perl -p -i -e 's/^CFLAGS \+\= -Werror/#CFLAGS += -Werror/' Makefile
+	git commit Makefile -m "Disable -Werror"
 
 tarball:
-	@git archive --format=tar --prefix=trinity-$(VERSION)/ HEAD > trinity-$(VERSION).tar
-	@xz -9 trinity-$(VERSION).tar
+	git repack -a -d
+	git prune-packed
+	git archive --format=tar.gz --prefix=trinity-$(VERSION)/ HEAD > trinity-$(VERSION).tgz
 
-install: trinity
+install:
 	install -d -m 755 $(INSTALL_PREFIX)/bin
 	install trinity $(INSTALL_PREFIX)/bin
 
-tags:	$(SRCS)
+tags:
 	@ctags -R --exclude=tmp
-
-scan:
-	@scan-build --use-analyzer=/usr/bin/clang make -j $(NR_CPUS)
-
-coverity:
-	@rm -rf cov-int trinity-coverity.tar.xz
-	@cov-build --dir cov-int make -j $(NR_CPUS)
-	@tar cJvf trinity-coverity.tar.xz cov-int
 

@@ -3,9 +3,10 @@
 	 siginfo_t __user *, uinfo, const struct timespec __user *, uts,
 	 size_t, sigsetsize)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_rt_sigtimedwait = {
+struct syscall syscall_rt_sigtimedwait = {
 	.name = "rt_sigtimedwait",
 	.num_args = 4,
 	.arg1name = "uthese",

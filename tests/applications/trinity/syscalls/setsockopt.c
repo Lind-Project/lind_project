@@ -2,316 +2,335 @@
  * SYSCALL_DEFINE5(setsockopt, int, fd, int, level, int, optname, char __user *, optval, int, optlen)
  */
 
-#include <errno.h>
-#include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <linux/types.h>
-#include <linux/tipc.h>
-#include <netinet/udp.h>
-#include <netipx/ipx.h>
-#include <netax25/ax25.h>
-#include "config.h"
-#ifdef USE_APPLETALK
-#include <netatalk/at.h>
-#endif
-#ifdef USE_NETROM
-#include <netrom/netrom.h>
-#endif
-#ifdef USE_ROSE
-#include <netrose/rose.h>
-#endif
-#include "arch.h"
-#include "log.h"
-#include "maps.h"
-#include "net.h"
-#include "random.h"
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
 #include "trinity.h"
-#include "utils.h"
+#include "sanitise.h"
 #include "compat.h"
+#include "shm.h"
+#include "syscalls/setsockopt.h"
 
-struct ip_sso_funcptr {
-	unsigned int sol;
-	void (*func)(struct sockopt *so);
-};
-
-static const struct ip_sso_funcptr ip_ssoptrs[] = {
-	[IPPROTO_IP] = { .sol = SOL_IP, .func = &ip_setsockopt },
-	[IPPROTO_ICMP] = { .func = NULL },
-	[IPPROTO_IGMP] = { .func = NULL },
-	[IPPROTO_IPIP] = { .func = NULL },
-	[IPPROTO_TCP] = { .sol = SOL_TCP, .func = &tcp_setsockopt },
-	[IPPROTO_EGP] = { .func = NULL },
-	[IPPROTO_PUP] = { .func = NULL },
-	[IPPROTO_UDP] = { .sol = SOL_UDP, .func = &udp_setsockopt },
-	[IPPROTO_IDP] = { .func = NULL },
-	[IPPROTO_TP] = { .func = NULL },
-	[IPPROTO_DCCP] = { .sol = SOL_DCCP, .func = &dccp_setsockopt },
-#ifdef USE_IPV6
-	[IPPROTO_IPV6] = { .sol = SOL_ICMPV6, .func = &icmpv6_setsockopt },
-#endif
-	[IPPROTO_RSVP] = { .func = NULL },
-	[IPPROTO_GRE] = { .func = NULL },
-	[IPPROTO_ESP] = { .func = NULL },
-	[IPPROTO_AH] = { .func = NULL },
-	[IPPROTO_MTP] = { .func = NULL },
-	[IPPROTO_BEETPH] = { .func = NULL },
-	[IPPROTO_ENCAP] = { .func = NULL },
-	[IPPROTO_PIM] = { .func = NULL },
-	[IPPROTO_COMP] = { .func = NULL },
-	[IPPROTO_SCTP] = { .sol = SOL_SCTP, .func = &sctp_setsockopt },
-	[IPPROTO_UDPLITE] = { .sol = SOL_UDPLITE, .func = &udplite_setsockopt },
-	[IPPROTO_RAW] = { .sol = SOL_RAW, .func = &raw_setsockopt },
-	[IPPROTO_MPLS] = { .func = NULL },
-};
-
-struct sso_funcptr {
-	unsigned int family;
-	unsigned int sol;
-	void (*func)(struct sockopt *so);
-};
-
-static const struct sso_funcptr ssoptrs[] = {
-	{ .family = AF_UNIX, .func = NULL },
-	{ .family = AF_INET, .func = NULL },	// special cased below.
-	{ .family = AF_AX25, .sol = SOL_AX25, .func = &ax25_setsockopt },
-	{ .family = AF_IPX, .sol = SOL_IPX, .func = &ipx_setsockopt },
-#ifdef USE_APPLETALK
-	{ .family = AF_APPLETALK, .sol = SOL_ATALK, .func = NULL },
-#endif
-#ifdef USE_NETROM
-	{ .family = AF_NETROM, .sol = SOL_NETROM, .func = &netrom_setsockopt },
-#endif
-	{ .family = AF_BRIDGE, .func = NULL },
-	{ .family = AF_ATMPVC, .sol = SOL_ATM, .func = &atm_setsockopt },
-	{ .family = AF_X25, .sol = SOL_X25, .func = &x25_setsockopt },
-#ifdef USE_IPV6
-	{ .family = AF_INET6, .sol = SOL_IPV6, .func = &inet6_setsockopt },
-#endif
-#ifdef USE_ROSE
-	{ .family = AF_ROSE, .sol = SOL_ROSE, .func = &rose_setsockopt },
-#endif
-	{ .family = AF_DECnet, .sol = SOL_DECNET, .func = &decnet_setsockopt },
-	{ .family = AF_NETBEUI, .sol = SOL_NETBEUI, .func = NULL },
-	{ .family = AF_SECURITY, .func = NULL },
-	{ .family = AF_KEY, .func = NULL },
-	{ .family = AF_NETLINK, .sol = SOL_NETLINK, .func = &netlink_setsockopt },
-	{ .family = AF_PACKET, .sol = SOL_PACKET, .func = &packet_setsockopt },
-	{ .family = AF_ASH, .func = NULL },
-	{ .family = AF_ECONET, .func = NULL },
-	{ .family = AF_ATMSVC, SOL_ATM, .func = &atm_setsockopt },
-	{ .family = AF_RDS, .sol = SOL_RDS, .func = &rds_setsockopt },
-	{ .family = AF_SNA, .func = NULL },
-	{ .family = AF_IRDA, .sol = SOL_IRDA, .func = &irda_setsockopt },
-	{ .family = AF_PPPOX, .sol = SOL_PPPOL2TP, .func = &pppol2tp_setsockopt },
-	{ .family = AF_WANPIPE, .func = NULL },
-	{ .family = AF_LLC, .sol = SOL_LLC, .func = &llc_setsockopt },
-	{ .family = AF_IB, .func = NULL },
-	{ .family = AF_MPLS, .func = NULL },
-	{ .family = AF_CAN, .func = NULL },
-	{ .family = AF_TIPC, .sol = SOL_TIPC, .func = &tipc_setsockopt },
-	{ .family = AF_BLUETOOTH, .sol = SOL_BLUETOOTH, .func = &bluetooth_setsockopt },
-	{ .family = AF_IUCV, .sol = SOL_IUCV, .func = &iucv_setsockopt },
-	{ .family = AF_RXRPC, .sol = SOL_RXRPC, .func = &rxrpc_setsockopt },
-	{ .family = AF_ISDN, .func = NULL },
-	{ .family = AF_PHONET, .sol = SOL_PNPIPE, .func = NULL },
-	{ .family = AF_IEEE802154, .func = NULL },
-#ifdef USE_CAIF
-	{ .family = AF_CAIF, .sol = SOL_CAIF, .func = &caif_setsockopt },
-#endif
-	{ .family = AF_ALG, .sol = SOL_ALG, .func = NULL },
-	{ .family = AF_NFC, .sol = SOL_NFC, .func = NULL },
-	{ .family = AF_VSOCK, .func = NULL },
-};
-
-/*
- * If we have a .len set, use it.
- * If not, pick some random size.
- */
-unsigned int sockoptlen(unsigned int len)
+void sanitise_setsockopt(int childno)
 {
-	if (len != 0)
-		return len;
+	int level;
+	unsigned char val;
 
-	if (RAND_BOOL())
-		return sizeof(char);
-	else
-		return sizeof(int);
-}
+	shm->a4[childno] = (unsigned long) page_rand;
+	shm->a5[childno] = sizeof(int);	// at the minimum, we want an int (overridden below)
 
-/*
- * We do this if for eg, we've ended up being passed
- * an fd that isn't a socket (ie, triplet==NULL).
- * It can also happen if we land on an sso func that
- * isn't implemented for a particular family yet.
- */
-static void do_random_sso(struct sockopt *so)
-{
-	unsigned int i;
+	/* First we pick a level  */
 
-retry:
-	switch (rand() % 4) {
-	case 0:	/* do a random protocol, even if it doesn't match this socket. */
-		i = rand() % ARRAY_SIZE(ssoptrs);
-		if (ssoptrs[i].func != NULL) {
-			so->level = ssoptrs[i].sol;
-			ssoptrs[i].func(so);
-		} else {
-			goto retry;
+	switch (rand() % 33) {
+	case 0:	level = SOL_IP;	break;
+	case 1:	level = SOL_SOCKET; break;
+	case 2:	level = SOL_TCP; break;
+	case 3:	level = SOL_UDP; break;
+	case 4:	level = SOL_IPV6; break;
+	case 5:	level = SOL_ICMPV6; break;
+	case 6:	level = SOL_SCTP; break;
+	case 7:	level = SOL_UDPLITE; break;
+	case 8:	level = SOL_RAW; break;
+	case 9:	level = SOL_IPX; break;
+	case 10: level = SOL_AX25; break;
+	case 11: level = SOL_ATALK; break;
+	case 12: level = SOL_NETROM; break;
+	case 13: level = SOL_ROSE; break;
+	case 14: level = SOL_DECNET; break;
+	case 15: level = SOL_X25; break;
+	case 16: level = SOL_PACKET; break;
+	case 17: level = SOL_ATM; break;
+	case 18: level = SOL_AAL; break;
+	case 19: level = SOL_IRDA; break;
+	case 20: level = SOL_NETBEUI; break;
+	case 21: level = SOL_LLC; break;
+	case 22: level = SOL_DCCP; break;
+	case 23: level = SOL_NETLINK; break;
+	case 24: level = SOL_TIPC; break;
+	case 25: level = SOL_RXRPC; break;
+	case 26: level = SOL_PPPOL2TP; break;
+	case 27: level = SOL_BLUETOOTH; break;
+	case 28: level = SOL_PNPIPE; break;
+	case 29: level = SOL_RDS; break;
+	case 30: level = SOL_IUCV; break;
+	case 31: level = SOL_CAIF; break;
+	case 32: level = SOL_ALG; break;
+	default:
+		level = rand();
+		break;
+	}
+
+
+	/* Now, use that level to determine which options to set. */
+
+	switch (level) {
+	case SOL_IP:
+		val = rand() % NR_SOL_IP_OPTS;
+		shm->a3[childno] = ip_opts[val];
+		break;
+
+	case SOL_SOCKET:
+		val = rand() % NR_SOL_SOCKET_OPTS;
+		shm->a3[childno] = socket_opts[val];
+
+		/* Adjust length according to operation set. */
+		switch (shm->a3[childno]) {
+		case SO_LINGER:	shm->a5[childno] = sizeof(struct linger);
+			break;
+		case SO_RCVTIMEO:
+		case SO_SNDTIMEO:
+			shm->a5[childno] = sizeof(struct timeval);
+			break;
+		case SO_ATTACH_FILTER:
+			shm->a5[childno] = sizeof(struct sock_fprog);
+			break;
+		default:
+			break;
 		}
 		break;
 
-	case 1:	/* do a random IP protocol, even if it doesn't match this socket. */
-		i = rand() % ARRAY_SIZE(ip_ssoptrs);
-		if (ip_ssoptrs[i].func != NULL) {
-			so->level = ip_ssoptrs[i].sol;
-			ip_ssoptrs[i].func(so);
-		} else {
-			goto retry;
+	case SOL_TCP:
+		val = rand() % NR_SOL_TCP_OPTS;
+		shm->a3[childno] = tcp_opts[val];
+		break;
+
+	case SOL_UDP:
+		val = rand() % NR_SOL_UDP_OPTS;
+		shm->a3[childno] = udp_opts[val];
+
+		switch (shm->a3[childno]) {
+		case UDP_CORK:
+			break;
+		case UDP_ENCAP:
+			page_rand[0] = (rand() % 3) + 1;	// Encapsulation types.
+			break;
+		default:
+			break;
 		}
 		break;
 
-	case 2:	/* Last resort: Generic socket options. */
-		socket_setsockopt(so);
+	case SOL_IPV6:
+		val = rand() % NR_SOL_IPV6_OPTS;
+		shm->a3[childno] = ipv6_opts[val];
 		break;
 
-	case 3:	/* completely random operation. */
-		so->level = rand();
-		so->optname = RAND_BYTE();
+	case SOL_ICMPV6:
+		val = rand() % NR_SOL_ICMPV6_OPTS;
+		shm->a3[childno] = icmpv6_opts[val];
 		break;
-	}
-}
 
-static void call_sso_ptr(struct sockopt *so, struct socket_triplet *triplet)
-{
-	unsigned int i;
+	case SOL_SCTP:
+		val = rand() % NR_SOL_SCTP_OPTS;
+		shm->a3[childno] = sctp_opts[val];
+		break;
 
-	for (i = 0; i < ARRAY_SIZE(ssoptrs); i++) {
-		if (ssoptrs[i].family == triplet->family) {
-			if (ssoptrs[i].func != NULL) {
-				so->level = ssoptrs[i].sol;
-				ssoptrs[i].func(so);
-				return;
-			} else {	// unimplemented yet, or no sso for this family.
-				do_random_sso(so);
-				return;
-			}
+	case SOL_UDPLITE:
+		val = rand() % NR_SOL_UDPLITE_OPTS;
+		shm->a3[childno] = udplite_opts[val];
+
+		switch (shm->a3[childno]) {
+		case UDP_CORK:
+			break;
+		case UDP_ENCAP:
+			page_rand[0] = (rand() % 3) + 1;	// Encapsulation types.
+			break;
+		case UDPLITE_SEND_CSCOV:
+			break;
+		case UDPLITE_RECV_CSCOV:
+			break;
+		default:
+			break;
 		}
-	}
-}
 
-static void call_inet_sso_ptr(struct sockopt *so, struct socket_triplet *triplet)
-{
-	int proto = triplet->protocol;
+		break;
 
-	if (ip_ssoptrs[proto].func != NULL) {
-		so->level = ip_ssoptrs[proto].sol;
-		ip_ssoptrs[proto].func(so);
-		return;
-	} else {	// unimplemented yet, or no sso for this proto.
-		do_random_sso(so);
-		return;
-	}
-}
+	case SOL_RAW:
+		shm->a3[childno] = ICMP_FILTER;	// that's all (for now?)
+		break;
 
-/*
- * Call a proto specific setsockopt routine from the table above.
- *
- * Called from random setsockopt() syscalls, and also during socket
- * creation on startup from sso_socket()
- *
- */
-void do_setsockopt(struct sockopt *so, struct socket_triplet *triplet)
-{
-	so->optname = 0;
+	case SOL_IPX:
+		shm->a3[childno] = IPX_TYPE;
+		break;
 
-	/* get a page for the optval to live in.
-	 * TODO: push this down into the per-proto .func calls
-	 */
-	so->optval = (unsigned long) zmalloc(page_size);
+	case SOL_AX25:
+		val = rand() % NR_SOL_AX25_OPTS;
+		shm->a3[childno] = ax25_opts[val];
+		break;
 
-	/* At the minimum, we want len to be a char or int.
-	 * It gets (overridden below in the per-proto sso->func, so this
-	 * is just for the unannotated protocols.
-	 */
-	so->optlen = sockoptlen(0);
+	case SOL_ATALK:	/* sock_no_setsockopt */
+		break;
 
-	if (ONE_IN(100)) {
-		do_random_sso(so);
-	} else {
-		if (triplet != NULL) {
-			if (triplet->family == AF_INET) {
-				call_inet_sso_ptr(so, triplet);
-			} else {
-				call_sso_ptr(so, triplet);
-			}
-		} else {
-			// fd probably isn't a socket.
-			do_random_sso(so);
+	case SOL_NETROM:
+		val = rand() % NR_SOL_NETROM_OPTS;
+		shm->a3[childno] = netrom_opts[val];
+		break;
+
+	case SOL_ROSE:
+		val = rand() % NR_SOL_ROSE_OPTS;
+		shm->a3[childno] = rose_opts[val];
+		break;
+
+	case SOL_DECNET:
+		// TODO: set size correctly
+		val = rand() % NR_SOL_DECNET_OPTS;
+		shm->a3[childno] = decnet_opts[val];
+		break;
+
+	case SOL_X25:
+		page_rand[0] = rand() % 2;	/* Just a bool */
+		shm->a4[childno] = sizeof(int);
+		break;
+
+	case SOL_PACKET:
+		val = rand() % NR_SOL_PACKET_OPTS;
+		shm->a3[childno] = packet_opts[val];
+		break;
+
+	case SOL_ATM:
+		val = rand() % NR_SOL_ATM_OPTS;
+		shm->a3[childno] = atm_opts[val];
+		break;
+
+	case SOL_AAL:	/* no setsockopt */
+		break;
+
+	case SOL_IRDA:
+		val = rand() % NR_SOL_IRDA_OPTS;
+		shm->a3[childno] = irda_opts[val];
+		break;
+
+	case SOL_NETBEUI:	/* no setsockopt */
+		break;
+
+	case SOL_LLC:
+		val = rand() % NR_SOL_LLC_OPTS;
+		shm->a3[childno] = llc_opts[val];
+		break;
+
+	case SOL_DCCP:
+		val = rand() % NR_SOL_DCCP_OPTS;
+		shm->a3[childno] = dccp_opts[val];
+		break;
+
+	case SOL_NETLINK:
+		val = rand() % NR_SOL_NETLINK_OPTS;
+		shm->a3[childno] = netlink_opts[val];
+		break;
+
+	case SOL_TIPC:
+		shm->a4[childno] = sizeof(__u32);
+		val = rand() % NR_SOL_TIPC_OPTS;
+		shm->a3[childno] = tipc_opts[val];
+		break;
+
+	case SOL_RXRPC:
+		val = rand() % NR_SOL_RXRPC_OPTS;
+		shm->a3[childno] = rxrpc_opts[val];
+		break;
+
+	case SOL_PPPOL2TP:
+		shm->a4[childno] = sizeof(int);
+		val = rand() % NR_SOL_PPPOL2TP_OPTS;
+		shm->a3[childno] = pppol2tp_opts[val];
+		break;
+
+	case SOL_BLUETOOTH:
+		switch(rand() % 5) {
+		case 0: level = SOL_HCI; break;
+		case 1: level = SOL_L2CAP; break;
+		case 2: level = SOL_SCO; break;
+		case 3: level = SOL_RFCOMM; break;
+		case 4:	/* leave level unchanged */
+			;;
+		default:
+			break;
 		}
+
+		switch (level) {
+		case SOL_HCI:
+			val = rand() % NR_SOL_BLUETOOTH_HCI_OPTS;
+			shm->a3[childno] = bluetooth_hci_opts[val];
+			break;
+
+		case SOL_L2CAP:
+			val = rand() % NR_SOL_BLUETOOTH_L2CAP_OPTS;
+			shm->a3[childno] = bluetooth_l2cap_opts[val];
+			break;
+
+		case SOL_SCO:	/* no options currently */
+			break;
+
+		case SOL_RFCOMM:
+			val = rand() % NR_SOL_BLUETOOTH_RFCOMM_OPTS;
+			shm->a3[childno] = bluetooth_rfcomm_opts[val];
+			break;
+
+		case SOL_BLUETOOTH:
+			val = rand() % NR_SOL_BLUETOOTH_OPTS;
+			shm->a3[childno] = bluetooth_opts[val];
+			break;
+
+		default: break;
+		}
+		break;
+
+	case SOL_PNPIPE	/* no setsockopt */:
+		break;
+
+	case SOL_RDS:
+		val = rand() % NR_SOL_RDS_OPTS;
+		shm->a3[childno] = rds_opts[val];
+		break;
+
+	case SOL_IUCV:
+		val = rand() % NR_SOL_IUCV_OPTS;
+		shm->a3[childno] = iucv_opts[val];
+		shm->a4[childno] = sizeof(int);
+		break;
+
+	case SOL_CAIF:
+		val = rand() % NR_SOL_CAIF_OPTS;
+		shm->a3[childno] = caif_opts[val];
+		break;
+
+	case SOL_ALG:	/* no setsockopt */
+		break;
+
+
+	default:
+		shm->a3[childno] = (rand() % 0xff);	/* random operation. */
 	}
+
+	shm->a2[childno] = level;
+
 
 	/*
 	 * 10% of the time, mangle the options.
 	 * This should catch new options we don't know about, and also maybe some missing bounds checks.
 	 */
-	if (ONE_IN(10))
-		so->optname |= (1UL << (rand() % 32));
+	if ((rand() % 100) < 10)
+		shm->a3[childno] |= (1 << (rand() % 32));
+
 
 	/* optval should be nonzero to enable a boolean option, or zero if the option is to be disabled.
 	 * Let's disable it half the time.
 	 */
-	if (RAND_BOOL()) {
-		free((void *) so->optval);
-		so->optval = 0;
-	}
+	if (rand() % 2)
+		shm->a4[childno] = 0;
+
+	shm->a4[childno] = sizeof(int);
 }
 
-static void sanitise_setsockopt(struct syscallrecord *rec)
-{
-	struct sockopt so = { 0, 0, 0, 0 };
-	struct socketinfo *si;
-	struct socket_triplet *triplet = NULL;
-	int fd;
-
-	if (ONE_IN(1000)) {
-		fd = get_random_fd();
-	} else {
-		si = (struct socketinfo *) rec->a1;
-		fd = si->fd;
-		triplet = &si->triplet;
-	}
-
-	rec->a1 = fd;
-
-	do_setsockopt(&so, triplet);
-
-	/* copy the generated values to the shm. */
-	rec->a2 = so.level;
-	rec->a3 = so.optname;
-	rec->a4 = so.optval;
-	rec->a5 = so.optlen;
-}
-
-static void post_setsockopt(struct syscallrecord *rec)
-{
-	freeptr(&rec->a4);
-}
-
-struct syscallentry syscall_setsockopt = {
+struct syscall syscall_setsockopt = {
 	.name = "setsockopt",
 	.num_args = 5,
 	.arg1name = "fd",
-	.arg1type = ARG_SOCKETINFO,
+	.arg1type = ARG_FD,
 	.arg2name = "level",
 	.arg3name = "optname",
 	.arg4name = "optval",
+	.arg4type = ARG_ADDRESS,
 	.arg5name = "optlen",
 	.sanitise = sanitise_setsockopt,
-	.post = post_setsockopt,
 	.flags = NEED_ALARM,
 };

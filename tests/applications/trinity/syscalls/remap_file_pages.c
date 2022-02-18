@@ -2,62 +2,47 @@
  * SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
 	 unsigned long, prot, unsigned long, pgoff, unsigned long, flags)
  */
-#include <stdlib.h>
 #include <asm/mman.h>
-#include "arch.h"
-#include "maps.h"
-#include "random.h"
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
-#include "tables.h"
+
 #include "trinity.h"
+#include "sanitise.h"
+#include "arch.h"
+#include "shm.h"
 
-static void sanitise_remap_file_pages(struct syscallrecord *rec)
+static void sanitise_remap_file_pages(int childno)
 {
-	struct map *map;
-	size_t size, offset;
-	size_t start = 0;
 
-	map = common_set_mmap_ptr_len();
+	shm->a1[childno] &= PAGE_MASK;
+	shm->a2[childno] &= PAGE_MASK;
 
-	if (RAND_BOOL()) {
-		start = rand() % map->size;
-		start &= PAGE_MASK;
-		rec->a1 += start;
+
+retry_size:
+	if (shm->a1[childno] + shm->a2[childno] <= shm->a1[childno]) {
+		shm->a2[childno] = get_interesting_32bit_value() & PAGE_MASK;
+		goto retry_size;
 	}
 
-	/* We just want to remap a part of the mapping. */
-	if (RAND_BOOL())
-		size = page_size;
-	else {
-		size = rand() % map->size;
-
-		/* if we screwed with the start, we need to take it
-		 * into account so we don't go off the end.
-		 */
-		if (start != 0)
-			size -= start;
+retry_pgoff:
+	if (shm->a5[childno] + (shm->a2[childno] >> PAGE_SHIFT) < shm->a5[childno]) {
+		shm->a5[childno] = get_interesting_value();
+		goto retry_pgoff;
 	}
-	rec->a2 = size;
 
-	/* "The prot argument must be specified as 0" */
-	rec->a3 = 0;
-
-	/* Pick a random pgoff. */
-	if (RAND_BOOL())
-		offset = rand() & (size / page_size);
-	else
-		offset = 0;
-	rec->a4 = offset;
+retry_pgoff_bits:
+	if (shm->a5[childno] + (shm->a2[childno] >> PAGE_SHIFT) >= (1UL << PTE_FILE_MAX_BITS)) {
+		shm->a5[childno] = (shm->a5[childno] >> 1);
+		goto retry_pgoff_bits;
+	}
 }
 
-struct syscallentry syscall_remap_file_pages = {
+struct syscall syscall_remap_file_pages = {
 	.name = "remap_file_pages",
+	.sanitise = sanitise_remap_file_pages,
 	.num_args = 5,
 	.arg1name = "start",
-	.arg1type = ARG_MMAP,
+	.arg1type = ARG_ADDRESS,
 	.arg2name = "size",
+	.arg2type = ARG_LEN,
 	.arg3name = "prot",
 	.arg4name = "pgoff",
 	.arg5name = "flags",
@@ -67,5 +52,4 @@ struct syscallentry syscall_remap_file_pages = {
 		.values = { MAP_NONBLOCK },
 	},
 	.group = GROUP_VM,
-	.sanitise = sanitise_remap_file_pages,
 };

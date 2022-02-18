@@ -3,32 +3,35 @@
 	int, fd_out, loff_t __user *, off_out,
 	size_t, len, unsigned int, flags)
  */
-#include <fcntl.h>
+# define SPLICE_F_MOVE          1       /* Move pages instead of copying.  */
+# define SPLICE_F_NONBLOCK      2       /* Don't block on the pipe splicing
+                                           (but we may still block on the fd
+                                           we splice from/to).  */
+# define SPLICE_F_MORE          4       /* Expect more data.  */
+# define SPLICE_F_GIFT          8       /* Pages passed in are a gift.  */
+
 #include <stdlib.h>
-#include "random.h"
+#include "trinity.h"
 #include "sanitise.h"
 #include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
-#include "compat.h"
 
-static void sanitise_splice(struct syscallrecord *rec)
+void sanitise_splice(int childno)
 {
-	if (ONE_IN(3))
+	if ((rand() % 10) < 3)
 		return;
 
-	if (RAND_BOOL()) {
-		rec->a1 = shm->pipe_fds[rand() % MAX_PIPE_FDS];
-		rec->a2 = 0;
+	if (rand() % 2) {
+		shm->a1[childno] = shm->pipe_fds[rand() % MAX_PIPE_FDS];
+		shm->a2[childno] = 0;
 	}
 
-	if (RAND_BOOL()) {
-		rec->a3 = shm->pipe_fds[rand() % MAX_PIPE_FDS];
-		rec->a4 = 0;
+	if (rand() % 2) {
+		shm->a3[childno] = shm->pipe_fds[rand() % MAX_PIPE_FDS];
+		shm->a4[childno] = 0;
 	}
 }
 
-struct syscallentry syscall_splice = {
+struct syscall syscall_splice = {
 	.name = "splice",
 	.num_args = 6,
 	.arg1name = "fd_in",

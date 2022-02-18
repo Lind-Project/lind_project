@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE3(tgkill, pid_t, tgid, pid_t, pid, int, sig)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_tgkill = {
+struct syscall syscall_tgkill = {
 	.name = "tgkill",
 	.num_args = 3,
 	.arg1name = "tgid",

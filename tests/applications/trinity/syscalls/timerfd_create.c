@@ -1,11 +1,13 @@
 /*
  * SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
  */
-#include <time.h>
+
+#include <sys/timerfd.h>
+#include "trinity.h"
 #include "sanitise.h"
 #include "compat.h"
 
-struct syscallentry syscall_timerfd_create = {
+struct syscall syscall_timerfd_create = {
 	.name = "timerfd_create",
 	.num_args = 2,
 	.arg1name = "clockid",

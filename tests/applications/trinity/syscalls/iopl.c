@@ -1,9 +1,10 @@
 /*
    long sys_iopl(unsigned int level, struct pt_regs *regs)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_iopl = {
+struct syscall syscall_iopl = {
 	.name = "iopl",
 	.num_args = 2,
 	.arg1name = "level",

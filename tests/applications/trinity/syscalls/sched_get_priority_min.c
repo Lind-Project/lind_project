@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE1(sched_get_priority_min, int, policy)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_sched_get_priority_min = {
+struct syscall syscall_sched_get_priority_min = {
 	.name = "sched_get_priority_min",
 	.num_args = 1,
 	.arg1name = "policy",

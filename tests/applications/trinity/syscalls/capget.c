@@ -4,9 +4,10 @@
  * On success, zero is returned.
  * On error, -1 is returned, and errno is set appropriately.
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_capget = {
+struct syscall syscall_capget = {
 	.name = "capget",
 	.num_args = 2,
 	.arg1name = "header",

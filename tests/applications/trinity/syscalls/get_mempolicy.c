@@ -8,9 +8,10 @@
 #define MPOL_F_ADDR     (1<<1)  /* look up vma using address */
 #define MPOL_F_MEMS_ALLOWED (1<<2) /* return allowed memories */
 
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_get_mempolicy = {
+struct syscall syscall_get_mempolicy = {
 	.name = "get_mempolicy",
 	.num_args = 5,
 	.arg1name = "policy",

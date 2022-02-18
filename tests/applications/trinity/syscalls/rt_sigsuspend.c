@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(rt_sigsuspend, sigset_t __user *, unewset, size_t, sigsetsize)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_rt_sigsuspend = {
+struct syscall syscall_rt_sigsuspend = {
 	.name = "rt_sigsuspend",
 	.num_args = 2,
 	.arg1name = "unewset",

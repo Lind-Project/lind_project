@@ -1,16 +1,29 @@
 /*
  * SYSCALL_DEFINE2(getrlimit, unsigned int, resource, struct rlimit __user *, rlim)
  */
+#include "trinity.h"
+#include "sanitise.h"
+#include "shm.h"
+
 #include <stdlib.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include "sanitise.h"
-#include "shm.h"
+
 #include "compat.h"
 
-struct syscallentry syscall_getrlimit = {
+static void sanitise_getrlimit(int childno)
+{
+	if (rand() % 2 == 0)
+		return;
+
+	/* set "resource" some random value half the time. */
+	shm->a1[childno] = get_interesting_32bit_value();
+}
+
+struct syscall syscall_getrlimit = {
 	.name = "getrlimit",
 	.num_args = 2,
+	.sanitise = sanitise_getrlimit,
 	.arg1name = "resource",
 	.arg1type = ARG_OP,
 	.arg1list = {

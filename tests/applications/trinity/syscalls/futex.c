@@ -3,9 +3,17 @@
 	 struct timespec __user *, utime, u32 __user *, uaddr2, u32, val3)
  */
 #include <linux/futex.h>
+
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_futex = {
+/*
+ * TODO:
+ * FUTEX_FD returns ENOSYS as of 2.6.26. Somehow handle this.
+ * FUTEX_WAKE_OP also returns ENOSYS
+ */
+
+struct syscall syscall_futex = {
 	.name = "futex",
 	.num_args = 6,
 	.arg1name = "uaddr",
@@ -27,5 +35,5 @@ struct syscallentry syscall_futex = {
 	.arg5type = ARG_ADDRESS,
 	.arg6name = "val3",
 	.rettype = RET_FD,		// FIXME: Needs to mutate depending on 'op' value
-	.flags = NEED_ALARM | IGNORE_ENOSYS,
+	.flags = NEED_ALARM,
 };

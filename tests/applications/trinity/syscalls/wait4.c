@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE4(wait4, pid_t, upid, int __user *, stat_addr,
 	 int, options, struct rusage __user *, ru)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_wait4 = {
+struct syscall syscall_wait4 = {
 	.name = "wait4",
 	.num_args = 4,
 	.arg1name = "upid",

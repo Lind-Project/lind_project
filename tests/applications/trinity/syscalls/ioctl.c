@@ -4,71 +4,80 @@
 #include <stdlib.h>
 #include <linux/ioctl.h>
 #include <linux/major.h>
-#include "ioctls.h"
-#include "maps.h"
-#include "random.h"
+
+#include "trinity.h"
 #include "sanitise.h"
 #include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
 
-static void ioctl_mangle_cmd(struct syscallrecord *rec)
+struct ioctl {
+	const char *name;
+	unsigned int request;
+	void (*sanitise)(int childno);
+};
+
+const struct ioctl ioctllist[] = {
+#include "ioctls/scsi-generic.h"
+#include "ioctls/framebuffer.h"
+#include "ioctls/console.h"
+#include "ioctls/cdrom.h"
+#include "ioctls/scsi.h"
+#include "ioctls/tty.h"
+#include "ioctls/vt.h"
+#include "ioctls/socket.h"
+#include "ioctls/snd.h"
+#include "ioctls/mem.h"
+#include "ioctls/sisfb.h"
+};
+
+static void generic_sanitise_ioctl(int childno)
 {
 	unsigned int i;
 
-	/* mangle the cmd by ORing up to 4 random bits */
-	for (i=0; i < (unsigned int)(rand() % 4); i++)
-		rec->a2 |= 1L << (rand() % 32);
+	/* One time in 50, mangle cmd. */
+	if ((rand() % 50)==0) {
 
-	/* mangle the cmd by ANDing up to 4 random bits */
-	for (i=0; i < (unsigned int)(rand() % 4); i++)
-		rec->a2 &= 1L << (rand() % 32);
-}
+		/* mangle the cmd by ORing up to 4 random bits */
+		for (i=0; i < (unsigned int)(rand() % 4); i++)
+			shm->a2[childno] |= 1L << (rand() % 32);
 
-static void ioctl_mangle_arg(struct syscallrecord *rec)
-{
+		/* mangle the cmd by ANDing up to 4 random bits */
+		for (i=0; i < (unsigned int)(rand() % 4); i++)
+			shm->a2[childno] &= 1L << (rand() % 32);
+	}
+
 	/* the argument could mean anything, because ioctl sucks like that. */
-	if (RAND_BOOL())
-		rec->a3 = rand32();
-	else
-		rec->a3 = (unsigned long) get_non_null_address();
+	switch (rand() % 2) {
+	case 0:	shm->a3[childno] = get_interesting_32bit_value();
+		break;
+
+	case 1:	shm->a3[childno] = (unsigned long) page_rand;
+		fabricate_onepage_struct(page_rand);
+		break;
+	default: break;
+	}
 }
 
-static void generic_sanitise_ioctl(struct syscallrecord *rec)
+static void sanitise_ioctl(int childno)
 {
-	if (ONE_IN(50))
-		ioctl_mangle_cmd(rec);
+	int ioctlnr;
 
-	ioctl_mangle_arg(rec);
-}
+	ioctlnr = rand() % ARRAY_SIZE(ioctllist);
+	shm->a2[childno] = ioctllist[ioctlnr].request;
 
-static void sanitise_ioctl(struct syscallrecord *rec)
-{
-	const struct ioctl_group *grp;
-
-	if (ONE_IN(100))
-		grp = get_random_ioctl_group();
+	if (ioctllist[ioctlnr].sanitise)
+		ioctllist[ioctlnr].sanitise(childno);
 	else
-		grp = find_ioctl_group(rec->a1);
-
-	if (grp) {
-		ioctl_mangle_arg(rec);
-
-		grp->sanitise(grp, rec);
-
-		if (ONE_IN(100))
-			ioctl_mangle_cmd(rec);
-	} else
-		generic_sanitise_ioctl(rec);
+		generic_sanitise_ioctl(childno);
 }
 
-struct syscallentry syscall_ioctl = {
+struct syscall syscall_ioctl = {
 	.name = "ioctl",
 	.num_args = 3,
 	.arg1name = "fd",
 	.arg1type = ARG_FD,
 	.arg2name = "cmd",
 	.arg3name = "arg",
+	.arg3type = ARG_RANDPAGE,
 	.sanitise = sanitise_ioctl,
-	.flags = NEED_ALARM | IGNORE_ENOSYS,
+	.flags = NEED_ALARM,
 };

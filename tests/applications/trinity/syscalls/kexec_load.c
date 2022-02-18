@@ -6,11 +6,13 @@
 #define KEXEC_ON_CRASH          0x00000001
 #define KEXEC_PRESERVE_CONTEXT  0x00000002
 
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_kexec_load = {
+struct syscall syscall_kexec_load = {
 	.name = "kexec_load",
 	.num_args = 4,
+	.flags = CAPABILITY_CHECK,
 	.arg1name = "entry",
 	.arg1type = ARG_ADDRESS,
 	.arg2name = "nr_segments",

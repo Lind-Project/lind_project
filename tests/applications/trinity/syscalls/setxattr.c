@@ -5,9 +5,11 @@
  */
 
 #include <linux/xattr.h>
+
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_setxattr = {
+struct syscall syscall_setxattr = {
 	.name = "setxattr",
 	.num_args = 5,
 	.arg1name = "pathname",

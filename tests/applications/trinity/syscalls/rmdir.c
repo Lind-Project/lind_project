@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE1(rmdir, const char __user *, pathname)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_rmdir = {
+struct syscall syscall_rmdir = {
 	.name =  "rmdir",
 	.num_args = 1,
 	.arg1name = "pathname",

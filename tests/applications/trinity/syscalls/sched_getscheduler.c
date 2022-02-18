@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE1(sched_getscheduler, pid_t, pid)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_sched_getscheduler = {
+struct syscall syscall_sched_getscheduler = {
 	.name = "sched_getscheduler",
 	.num_args = 1,
 	.arg1name = "pid",

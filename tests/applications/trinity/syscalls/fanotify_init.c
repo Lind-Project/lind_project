@@ -10,9 +10,10 @@
 #define FAN_UNLIMITED_QUEUE	0x00000010
 #define FAN_UNLIMITED_MARKS	0x00000020
 
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_fanotify_init = {
+struct syscall syscall_fanotify_init = {
 	.name = "fanotify_init",
 	.num_args = 2,
 	.arg1name = "flags",
@@ -24,6 +25,6 @@ struct syscallentry syscall_fanotify_init = {
 		},
 	},
 	.arg2name = "event_f_flags",
+	.flags = CAPABILITY_CHECK,
 	.rettype = RET_FD,
-	.group = GROUP_VFS,
 };

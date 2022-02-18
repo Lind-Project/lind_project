@@ -3,17 +3,16 @@
 	sigset_t __user *, oset, size_t, sigsetsize)
  */
 #include <signal.h>
+#include "trinity.h"
 #include "sanitise.h"
 #include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
 
-static void sanitise_rt_sigprocmask(struct syscallrecord *rec)
+static void sanitise_rt_sigprocmask(int childno)
 {
-	rec->a4 = sizeof(sigset_t);
+	shm->a4[childno] = sizeof(sigset_t);
 }
 
-struct syscallentry syscall_rt_sigprocmask = {
+struct syscall syscall_rt_sigprocmask = {
 	.name = "rt_sigprocmask",
 	.num_args = 4,
 	.sanitise = sanitise_rt_sigprocmask,

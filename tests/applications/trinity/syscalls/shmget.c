@@ -5,20 +5,23 @@
 #include <stdlib.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
 
-static void post_shmget(struct syscallrecord *rec)
+#include "trinity.h"
+#include "sanitise.h"
+
+static void post_shmget(int syscallret)
 {
-	if (rec->retval == (unsigned long) -1L)
+	struct shmid_ds *shmid_ds;
+
+	if (syscallret == -1)
 		return;
 
-	shmctl(rec->retval, IPC_RMID, NULL);
+	shmid_ds = malloc(sizeof(struct shmid_ds));
+
+	shmctl(syscallret, IPC_RMID, shmid_ds);
 }
 
-struct syscallentry syscall_shmget = {
+struct syscall syscall_shmget = {
 	.name = "shmget",
 	.num_args = 3,
 	.arg1name = "key",

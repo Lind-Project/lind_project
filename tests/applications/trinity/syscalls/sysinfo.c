@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE1(sysinfo, struct sysinfo __user *, info)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_sysinfo = {
+struct syscall syscall_sysinfo = {
 	.name = "sysinfo",
 	.num_args = 1,
 	.arg1name = "info",

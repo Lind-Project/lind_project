@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(tkill, pid_t, pid, int, sig)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_tkill = {
+struct syscall syscall_tkill = {
 	.name = "tkill",
 	.num_args = 2,
 	.arg1name = "pid",

@@ -1,11 +1,13 @@
 /*
  * SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_sethostname = {
+struct syscall syscall_sethostname = {
 	.name = "sethostname",
 	.num_args = 2,
+	.flags = CAPABILITY_CHECK,
 	.arg1name = "name",
 	.arg1type = ARG_ADDRESS,
 	.arg2name = "len",

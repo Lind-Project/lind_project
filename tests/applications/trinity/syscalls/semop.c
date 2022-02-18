@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE3(semop, int, semid, struct sembuf __user *, tsops, unsigned, nsops)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_semop = {
+struct syscall syscall_semop = {
 	.name = "semop",
 	.num_args = 3,
 	.arg1name = "semid",

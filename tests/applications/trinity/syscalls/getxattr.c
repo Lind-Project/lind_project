@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE4(getxattr, const char __user *, pathname,
 	 const char __user *, name, void __user *, value, size_t, size)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_getxattr = {
+struct syscall syscall_getxattr = {
 	.name = "getxattr",
 	.num_args = 4,
 	.arg1name = "pathname",
@@ -15,5 +16,4 @@ struct syscallentry syscall_getxattr = {
 	.arg3type = ARG_ADDRESS,
 	.arg4name = "size",
 	.arg4type = ARG_LEN,
-	.group = GROUP_VFS,
 };

@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE1(mq_unlink, const char __user *, u_name)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_mq_unlink = {
+struct syscall syscall_mq_unlink = {
 	.name = "mq_unlink",
 	.num_args = 1,
 	.arg1name = "u_name",

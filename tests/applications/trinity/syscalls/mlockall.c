@@ -1,29 +1,28 @@
 /*
  * SYSCALL_DEFINE1(mlockall, int, flags)
  */
-#include <stdlib.h>
-#include "random.h"
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
 
 #define MCL_CURRENT     1
 #define MCL_FUTURE      2
 
-static void sanitise_mlockall(struct syscallrecord *rec)
+#include <stdlib.h>
+#include "trinity.h"
+#include "sanitise.h"
+#include "shm.h"
+
+static void sanitise_mlockall(int childno)
 {
-	if (rec->a1 != 0)
+	if (shm->a1[childno] != 0)
 		return;
 
-	if (RAND_BOOL())
-		rec->a1 = MCL_CURRENT;
+	if ((rand() % 2) == 0)
+		shm->a1[childno] = MCL_CURRENT;
 	else
-		rec->a1 = MCL_FUTURE;
+		shm->a1[childno] = MCL_FUTURE;
 }
 
 
-struct syscallentry syscall_mlockall = {
+struct syscall syscall_mlockall = {
 	.name = "mlockall",
 	.num_args = 1,
 	.arg1name = "flags",

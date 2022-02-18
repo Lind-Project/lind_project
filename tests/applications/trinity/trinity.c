@@ -1,143 +1,131 @@
-#include <stdlib.h>
-#include <malloc.h>
+#include <errno.h>
 #include <string.h>
-#include <sys/prctl.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <time.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <setjmp.h>
+#include <malloc.h>
+#include <asm/unistd.h>
+#include <sys/time.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/syscall.h>
+#include <sys/ipc.h>
+#include <sys/mman.h>
+#include <sys/socket.h>
 
 #include "arch.h"
-#include "config.h"	// for VERSION
-#include "fd.h"
-#include "files.h"
-#include "ioctls.h"
-#include "log.h"
-#include "maps.h"
-#include "pids.h"
-#include "params.h"
-#include "domains.h"
-#include "random.h"
-#include "signals.h"
-#include "shm.h"
-#include "tables.h"
-#include "taint.h"
 #include "trinity.h"
-#include "uid.h"
-#include "version.h"
+#include "files.h"
+#include "shm.h"
+#include "syscall.h"
+#include "config.h"	// for VERSION
 
 char *progname = NULL;
 
 unsigned int page_size;
-unsigned int num_online_cpus;
-bool no_bind_to_cpu;
-unsigned int max_children;
 
-/*
- * just in case we're not using the test.sh harness, we
- * change to the tmp dir if it exists.
- */
-static void change_tmp_dir(void)
+struct shm_s *shm;
+
+#define SHM_PROT_PAGES 30
+
+static int create_shm(void)
 {
-	struct stat sb;
-	const char tmpdir[]="tmp/";
-	int ret;
+	void *p;
+	unsigned int shm_pages;
 
-	/* Check if it exists, bail early if it doesn't */
-	ret = (lstat(tmpdir, &sb));
-	if (ret == -1)
-		return;
+	shm_pages = ((sizeof(struct shm_s) + page_size - 1) & ~(page_size - 1)) / page_size;
 
-	/* Just in case a previous run screwed the perms. */
-	ret = chmod(tmpdir, 0777);
-	if (ret == -1)
-		output(0, "Couldn't chmod %s to 0777.\n", tmpdir);
-
-	ret = chdir(tmpdir);
-	if (ret == -1)
-		output(0, "Couldn't change to %s\n", tmpdir);
-}
-
-static int set_exit_code(enum exit_reasons reason)
-{
-	int ret = EXIT_SUCCESS;
-
-	switch (reason) {
-	case EXIT_NO_SYSCALLS_ENABLED:
-	case EXIT_NO_FDS:
-	case EXIT_LOST_CHILD:
-	case EXIT_PID_OUT_OF_RANGE:
-	case EXIT_KERNEL_TAINTED:
-	case EXIT_SHM_CORRUPTION:
-	case EXIT_REPARENT_PROBLEM:
-	case EXIT_NO_FILES:
-	case EXIT_MAIN_DISAPPEARED:
-	case EXIT_UID_CHANGED:
-	case EXIT_LOCKING_CATASTROPHE:
-	case EXIT_FORK_FAILURE:
-	case EXIT_FD_INIT_FAILURE:
-	case EXIT_LOGFILE_OPEN_ERROR:
-		ret = EXIT_FAILURE;
-		break;
-
-	default:
-	/* the next are just to shut up -Werror=switch-enum
-	 * pragma's are just as ugly imo. */
-	case STILL_RUNNING:
-	case EXIT_REACHED_COUNT:
-	case EXIT_SIGINT:
-	case NUM_EXIT_REASONS:
-		break;
+	/* Waste some address space to set up some "protection" near the SHM location. */
+	p = alloc_shared((SHM_PROT_PAGES + shm_pages + SHM_PROT_PAGES) * page_size);
+	if (p == NULL) {
+		perror("mmap");
+		return -1;
 	}
-	return ret;
+
+	mprotect(p, SHM_PROT_PAGES * page_size, PROT_NONE);
+	mprotect(p + (SHM_PROT_PAGES + shm_pages) * page_size,
+			SHM_PROT_PAGES * page_size, PROT_NONE);
+
+	shm = p + SHM_PROT_PAGES * page_size;
+
+	memset(shm, 0, sizeof(struct shm_s));
+
+	shm->total_syscalls_done = 1;
+	shm->regenerate = 0;
+
+	if (user_specified_children != 0)
+		shm->max_children = user_specified_children;
+	else
+		shm->max_children = sysconf(_SC_NPROCESSORS_ONLN);
+
+	if (shm->max_children > MAX_NR_CHILDREN) {
+		printf("Increase MAX_NR_CHILDREN!\n");
+		exit(EXIT_FAILURE);
+	}
+	memset(shm->pids, EMPTY_PIDSLOT, sizeof(shm->pids));
+
+	shm->parentpid = getpid();
+
+	shm->seed = init_seed(seed);
+
+	return 0;
 }
+
 
 int main(int argc, char* argv[])
 {
 	int ret = EXIT_SUCCESS;
 	int childstatus;
-	pid_t pid;
-	const char taskname[13]="trinity-main";
+	unsigned int i;
 
-	outputstd("Trinity " VERSION "  Dave Jones <davej@codemonkey.org.uk>\n");
+	printf("Trinity v" __stringify(VERSION) "  Dave Jones <davej@redhat.com> 2012\n");
 
 	progname = argv[0];
 
-	initpid = getpid();
-
 	page_size = getpagesize();
-	num_online_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-	max_children = num_online_cpus;	/* possibly overridden in params. */
 
-	if (init_random() == FALSE)
-		exit(EXIT_FAILURE);
-
-	set_seed(0);
-
-	select_syscall_tables();
-
-	create_shm();
-
-	/* We do this before the parse_args because --fds will need to
-	 * operate on it when implemented.
-	 */
-	setup_fd_providers();
+	setup_syscall_tables();
 
 	parse_args(argc, argv);
 
-	init_uids();
+	/* If we didn't pass -c or -x, mark all syscalls active. */
+	if ((do_specific_syscall == FALSE) && (do_exclude_syscall == FALSE))
+		mark_all_syscalls_active();
 
-	change_tmp_dir();
+	if (getuid() == 0) {
+		if (dangerous == TRUE) {
+			printf("DANGER: RUNNING AS ROOT.\n");
+			printf("Unless you are running in a virtual machine, this could cause serious problems such as overwriting CMOS\n");
+			printf("or similar which could potentially make this machine unbootable without a firmware reset.\n\n");
+			printf("ctrl-c now unless you really know what you are doing.\n");
+			for (i = 10; i > 0; i--) {
+				printf("Continuing in %d seconds.\r", i);
+				(void)fflush(stdout);
+				sleep(1);
+			}
+		} else {
+			printf("Don't run as root (or pass --dangerous if you know what you are doing).\n");
+			exit(EXIT_FAILURE);
+		}
+	}
 
-	init_logging();
+	if (create_shm())
+		exit(EXIT_FAILURE);
 
-	init_shm();
+	/* Set seed in parent thread*/
+	set_seed(0);
 
-	kernel_taint_initial = check_tainted();
-	if (kernel_taint_initial != 0)
-		output(0, "Kernel was tainted on startup. Will ignore flags that are already set.\n");
-
-	if (munge_tables() == FALSE) {
-		ret = EXIT_FAILURE;
-		goto out;
+	if (desired_group != GROUP_NONE) {
+		ret = setup_syscall_group(desired_group);
+		if (ret == FALSE) {
+			ret = EXIT_FAILURE;
+			goto out;
+		}
 	}
 
 	if (show_syscall_list == TRUE) {
@@ -145,80 +133,75 @@ int main(int argc, char* argv[])
 		goto out;
 	}
 
-	init_syscalls();
-
-	if (show_ioctl_list == TRUE) {
-		dump_ioctls();
+	if (validate_syscall_tables() == FALSE) {
+		printf("No syscalls were enabled!\n");
+		printf("Use 32bit:%d 64bit:%d\n", use_32bit, use_64bit);
 		goto out;
 	}
 
-	do_uid0_check();
+	sanity_check_tables();
 
-	if (do_specific_domain == TRUE)
-		find_specific_domain(specific_domain_optarg);
+	if (logging == TRUE)
+		open_logfiles();
 
-	setup_initial_mappings();
 
-	parse_devices();
+	if (do_specific_syscall == FALSE) {
+		if (biarch == TRUE)
+			output(0, "Fuzzing %d 32-bit syscalls & %d 64-bit syscalls.\n",
+				max_nr_32bit_syscalls, max_nr_64bit_syscalls);
+		else
+			output(0, "Fuzzing %d syscalls.\n", max_nr_syscalls);
+	}
 
-	pids_init();
+	if (do_specific_proto == TRUE)
+		find_specific_proto(specific_proto_optarg);
+
+	init_buffers();
 
 	setup_main_signals();
 
-	/* check if we ctrl'c or something went wrong during init. */
+	if (check_tainted() != 0) {
+		output(0, "Kernel was tainted on startup. Will keep running if trinity causes an oops.\n");
+		ignore_tainted = TRUE;
+	}
+
+	/* just in case we're not using the test.sh harness. */
+	chmod("tmp/", 0755);
+	ret = chdir("tmp/");
+	if (!ret) {
+		/* nothing right now */
+	}
+
 	if (shm->exit_reason != STILL_RUNNING)
 		goto cleanup_fds;
 
 	init_watchdog();
 
-	/* do an extra fork so that the watchdog and the children don't share a common parent */
-	fflush(stdout);
-	pid = fork();
-	if (pid == 0) {
-		shm->mainpid = getpid();
+	do_main_loop();
 
-		setup_main_signals();
+	waitpid(shm->watchdog_pid, &childstatus, 0);
 
-		no_bind_to_cpu = RAND_BOOL();
+	printf("\nRan %ld syscalls. Successes: %ld  Failures: %ld\n",
+		shm->total_syscalls_done - 1, shm->successes, shm->failures);
 
-		output(0, "Main thread is alive.\n");
-		prctl(PR_SET_NAME, (unsigned long) &taskname);
-		set_seed(0);
-
-		if (open_fds() == FALSE) {
-			if (shm->exit_reason != STILL_RUNNING)
-				panic(EXIT_FD_INIT_FAILURE);	// FIXME: Later, push this down to multiple EXIT's.
-
-			exit_main_fail();
-		}
-
-		if (dropprivs == TRUE)	//FIXME: Push down into child processes later.
-			drop_privs();
-
-		main_loop();
-
-		shm->mainpid = 0;
-		_exit(EXIT_SUCCESS);
-	}
-
-	/* wait for main loop process to exit. */
-	(void)waitpid(pid, &childstatus, 0);
-
-	/* wait for watchdog to exit. */
-	waitpid(watchdog_pid, &childstatus, 0);
-
-	output(0, "Ran %ld syscalls. Successes: %ld  Failures: %ld\n",
-		shm->stats.total_syscalls_done - 1, shm->stats.successes, shm->stats.failures);
+	ret = EXIT_SUCCESS;
 
 cleanup_fds:
 
-	close_sockets();
+	for (i = 0; i < nr_sockets; i++) {
+		struct linger ling;
 
-	destroy_initial_mappings();
+		ling.l_onoff = FALSE;	/* linger active */
+		setsockopt(shm->socket_fds[i], SOL_SOCKET, SO_LINGER, &ling, sizeof(struct linger));
+		shutdown(shm->socket_fds[i], SHUT_RDWR);
+		close(shm->socket_fds[i]);
+	}
 
-	shutdown_logging();
+	destroy_maps();
 
-	ret = set_exit_code(shm->exit_reason);
+	if (logging == TRUE)
+		close_logfiles();
+
 out:
 
 	exit(ret);

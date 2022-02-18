@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_sched_setparam = {
+struct syscall syscall_sched_setparam = {
 	.name = "sched_setparam",
 	.num_args = 2,
 	.arg1name = "pid",

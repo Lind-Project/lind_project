@@ -3,14 +3,14 @@
  */
 #include <stdlib.h>
 #include <linux/ptrace.h>
-#include "arch.h"
+
+#include "trinity.h"
 #include "sanitise.h"
 #include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
 #include "compat.h"
 
-static void sanitise_ptrace(struct syscallrecord *rec)
+
+static void sanitise_ptrace(int childno)
 {
 	unsigned int i;
 
@@ -25,24 +25,23 @@ static void sanitise_ptrace(struct syscallrecord *rec)
 	 *  but broken is at least better than hanging.
 	 */
 	i  = rand() % shm->running_childs;
-	rec->a2 = shm->children[i]->pid;
+	shm->a2[childno] = shm->pids[i];
 }
 
 
-struct syscallentry syscall_ptrace = {
+struct syscall syscall_ptrace = {
 	.name = "ptrace",
 	.num_args = 4,
 	.arg1name = "request",
 	.arg1type = ARG_OP,
 	.arg1list = {
-		.num = 25,
+		.num = 23,
 		.values = { PTRACE_TRACEME, PTRACE_PEEKTEXT, PTRACE_PEEKDATA, PTRACE_PEEKUSR,
 				PTRACE_POKETEXT, PTRACE_POKEDATA, PTRACE_POKEUSR, PTRACE_GETREGS,
 				PTRACE_GETFPREGS, PTRACE_GETSIGINFO, PTRACE_SETREGS, PTRACE_SETFPREGS,
 				PTRACE_SETSIGINFO, PTRACE_SETOPTIONS, PTRACE_GETEVENTMSG, PTRACE_CONT,
 				PTRACE_SYSCALL, PTRACE_SINGLESTEP, PTRACE_SYSEMU, PTRACE_SYSEMU_SINGLESTEP,
-				PTRACE_KILL, PTRACE_ATTACH, PTRACE_DETACH, PTRACE_GETSIGMASK,
-				PTRACE_SETSIGMASK },
+				PTRACE_KILL, PTRACE_ATTACH, PTRACE_DETACH },
 	},
 	.arg2name = "pid",
 	.arg3name = "addr",

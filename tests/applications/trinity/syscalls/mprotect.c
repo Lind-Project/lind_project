@@ -2,37 +2,39 @@
  * sys_mprotect(unsigned long start, size_t len, unsigned long prot)
  */
 #include <asm/mman.h>
-#include "arch.h"
-#include "maps.h"
-#include "random.h"
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
+
 #include "trinity.h"
-#include "utils.h"
+#include "sanitise.h"
+#include "arch.h"
+#include "shm.h"
 
-static struct map* map;
-
-static void sanitise_mprotect(__unused__ struct syscallrecord *rec)
+static void sanitise_mprotect(int childno)
 {
-	map = common_set_mmap_ptr_len();
+	unsigned long end;
+
+	shm->a1[childno] &= PAGE_MASK;
+
+retry_end:
+	end = shm->a1[childno] + shm->a2[childno];
+	if (shm->a2[childno] == 0) {
+		shm->a2[childno] = get_reg();
+		goto retry_end;
+	}
+
+	/* End must be after start */
+	if (end <= shm->a1[childno]) {
+		shm->a2[childno] = get_reg();
+		goto retry_end;
+	}
 }
 
-/*
- * If we successfully did an mprotect, update our record of the mappings prot bits.
- */
-static void post_mprotect(struct syscallrecord *rec)
-{
-	if (rec->retval != 0)
-		map->prot = rec->a3;
-}
-
-struct syscallentry syscall_mprotect = {
+struct syscall syscall_mprotect = {
 	.name = "mprotect",
 	.num_args = 3,
 	.arg1name = "start",
-	.arg1type = ARG_MMAP,
+	.arg1type = ARG_ADDRESS,
 	.arg2name = "len",
+	.arg2type = ARG_LEN,
 	.arg3name = "prot",
 	.arg3type = ARG_LIST,
 	.arg3list = {
@@ -41,5 +43,6 @@ struct syscallentry syscall_mprotect = {
 	},
 	.sanitise = sanitise_mprotect,
 	.group = GROUP_VM,
-	.post = post_mprotect,
+
+	.flags = AVOID_SYSCALL,	// hopefully temporary.
 };

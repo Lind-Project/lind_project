@@ -1,12 +1,10 @@
 /*
  * SYSCALL_DEFINE5(msgrcv, int, msqid, struct msgbuf __user *, msgp, size_t, msgsz, long, msgtyp, int, msgflg)
  */
-#include <sys/types.h>
-#include <linux/msg.h>
-#include "compat.h"
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_msgrcv = {
+struct syscall syscall_msgrcv = {
 	.name = "msgrcv",
 	.num_args = 5,
 	.arg1name = "msqid",
@@ -16,10 +14,4 @@ struct syscallentry syscall_msgrcv = {
 	.arg3type = ARG_LEN,
 	.arg4name = "msgtyp",
 	.arg5name = "msgflg",
-	.arg5type = ARG_LIST,
-	.arg5list = {
-		.num = 4,
-		.values = { MSG_NOERROR, MSG_EXCEPT, MSG_COPY, IPC_NOWAIT },
-	},
-	.flags = IGNORE_ENOSYS,
 };

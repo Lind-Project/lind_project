@@ -3,9 +3,11 @@
  *                unsigned long, liovcnt, const struct iovec __user *, rvec,
  *                unsigned long, riovcnt, unsigned long, flags)
  */
+
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_process_vm_writev = {
+struct syscall syscall_process_vm_writev = {
 	.name = "process_vm_writev",
 	.num_args = 6,
 	.arg1name = "pid",

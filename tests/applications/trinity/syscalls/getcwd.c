@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_getcwd = {
+struct syscall syscall_getcwd = {
 	.name = "getcwd",
 	.num_args = 2,
 	.arg1name = "buf",
@@ -11,5 +12,4 @@ struct syscallentry syscall_getcwd = {
 	.arg2name = "size",
 	.arg2type = ARG_LEN,
 	.rettype = RET_PATH,
-	.group = GROUP_VFS,
 };

@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE3(old_readdir, unsigned int, fd,
                  struct old_linux_dirent __user *, dirent, unsigned int, count)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_oldreaddir = {
+struct syscall syscall_oldreaddir = {
 	.name = "old_readdir",
 	.num_args = 3,
 	.arg1name = "fd",

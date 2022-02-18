@@ -4,9 +4,11 @@
  */
 
 #include <linux/xattr.h>
+
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_fsetxattr = {
+struct syscall syscall_fsetxattr = {
 	.name = "fsetxattr",
 	.num_args = 5,
 	.arg1name = "fd",
@@ -25,5 +27,4 @@ struct syscallentry syscall_fsetxattr = {
 	},
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
-	.group = GROUP_VFS,
 };

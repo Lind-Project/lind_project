@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(utimes, char __user *, filename, struct timeval __user *, utimes)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_utimes = {
+struct syscall syscall_utimes = {
 	.name = "utimes",
 	.num_args = 2,
 	.arg1name = "filename",

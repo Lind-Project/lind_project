@@ -4,9 +4,10 @@
  * returns zero on success.
  * On error, -1 is returned, and errno is set appropriately.
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_close = {
+struct syscall syscall_close = {
 	.name = "close",
 	.num_args = 1,
 	.arg1name = "fd",

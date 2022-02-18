@@ -12,9 +12,10 @@
 
  /* On failure, adjtimex() returns -1 and sets errno. */
 
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_adjtimex = {
+struct syscall syscall_adjtimex = {
 	.name = "adjtimex",
 	.num_args = 1,
 	.arg1name = "txc_p",

@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE(semctl)(int semid, int semnum, int cmd, union semun arg)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_semctl = {
+struct syscall syscall_semctl = {
 	.name = "semctl",
 	.num_args = 4,
 	.arg1name = "semid",

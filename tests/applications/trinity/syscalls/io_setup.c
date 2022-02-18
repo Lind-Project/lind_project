@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE2(io_setup, unsigned, nr_events, aio_context_t __user *, ctxp)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_io_setup = {
+struct syscall syscall_io_setup = {
 	.name = "io_setup",
 	.num_args = 2,
 	.arg1name = "nr_events",

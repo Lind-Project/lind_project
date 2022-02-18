@@ -9,9 +9,11 @@
  */
 
 #include <time.h>
+
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_clock_nanosleep = {
+struct syscall syscall_clock_nanosleep = {
 	.name = "clock_nanosleep",
 	.num_args = 4,
 	.arg1name = "which_clock",

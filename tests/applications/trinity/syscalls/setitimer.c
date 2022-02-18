@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE3(setitimer, int, which, struct itimerval __user *, value, struct itimerval __user *, ovalue)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_setitimer = {
+struct syscall syscall_setitimer = {
 	.flags = AVOID_SYSCALL,		/* setitimer interferes with alarm() */
 	.name = "setitimer",
 	.num_args = 3,

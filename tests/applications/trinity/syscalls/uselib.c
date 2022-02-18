@@ -1,9 +1,10 @@
 /*
  * SYSCALL_DEFINE1(uselib, const char __user *, library)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_uselib = {
+struct syscall syscall_uselib = {
 	.name = "uselib",
 	.num_args = 1,
 	.arg1name = "library",

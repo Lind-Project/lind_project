@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
 	 struct iocb __user * __user *, iocbpp)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_io_submit = {
+struct syscall syscall_io_submit = {
 	.name = "io_submit",
 	.num_args = 3,
 	.arg1name = "ctx_id",

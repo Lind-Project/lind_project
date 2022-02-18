@@ -2,8 +2,6 @@
     sys_perfmonctl (int fd, int cmd, void __user *arg, int count)
  */
 
-#include <unistd.h>
-#include <asm/perfmon.h>
 
 #ifndef PFM_CREATE_EVTSETS
 #define PFM_CREATE_EVTSETS 0
@@ -36,6 +34,6 @@ struct syscall syscall_perfmonctl = {
 	},
 	.arg3name = "arg",
 	.arg3type = ARG_ADDRESS,
-	.arg4name = "count",
+	.arg3name = "count",
 };
 

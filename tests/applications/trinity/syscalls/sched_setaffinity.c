@@ -2,9 +2,10 @@
  * SYSCALL_DEFINE3(sched_setaffinity, pid_t, pid, unsigned int, len,
 	 unsigned long __user *, user_mask_ptr)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_sched_setaffinity = {
+struct syscall syscall_sched_setaffinity = {
 	.name = "sched_setaffinity",
 	.num_args = 3,
 	.arg1name = "pid",

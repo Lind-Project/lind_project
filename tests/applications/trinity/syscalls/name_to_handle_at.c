@@ -4,10 +4,11 @@
  *	int, flag)
  */
 #include <fcntl.h>
+#include "trinity.h"
 #include "sanitise.h"
 #include "compat.h"
 
-struct syscallentry syscall_name_to_handle_at = {
+struct syscall syscall_name_to_handle_at = {
 	.name = "name_to_handle_at",
 	.num_args = 5,
 	.arg1name = "fd",

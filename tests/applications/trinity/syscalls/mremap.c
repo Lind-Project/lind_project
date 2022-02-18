@@ -1,82 +1,55 @@
 /*
+ * SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
+	unsigned long, new_len, unsigned long, flags,
+	unsigned long, new_addr)
+ */
+
+#include <linux/mman.h>
+#include <stdlib.h>
+#include "trinity.h"
+#include "sanitise.h"
+#include "arch.h"
+#include "shm.h"
+
+/*
  * asmlinkage unsigned long sys_mremap(unsigned long addr,
  *   unsigned long old_len, unsigned long new_len,
  *   unsigned long flags, unsigned long new_addr)
+ *
+ * This syscall is a bit of a nightmare to fuzz as we -EINVAL all over the place.
+ * It might be more useful once we start passing around valid maps instead of just
+ * trying random addresses.
  */
 
-#include <stdlib.h>
-#include <sys/mman.h>
-#include "arch.h"
-#include "maps.h"
-#include "random.h"
-#include "sanitise.h"
-#include "shm.h"
-#include "syscall.h"
-#include "trinity.h"
-#include "utils.h"
-
-static struct map *map;
-
-static const unsigned long alignments[] = {
-	MB(1), MB(2), MB(4), MB(4),
-	MB(10), MB(100),
-	GB(1), GB(2), GB(4),
-};
-
-static void sanitise_mremap(struct syscallrecord *rec)
+static void sanitise_mremap(int childno)
 {
-	unsigned long newaddr = 0;
+	shm->a1[childno] &= PAGE_MASK;
 
-	map = common_set_mmap_ptr_len();
+	if (shm->a4[childno] & MREMAP_FIXED) {
+		// Can't be fixed, and maymove.
+		shm->a4[childno] &= ~MREMAP_MAYMOVE;
 
-	rec->a3 = map->size;		//TODO: Munge this.
-
-	if (rec->a4 & MREMAP_FIXED) {
-		unsigned long align = RAND_ARRAY(alignments);
-		unsigned int shift = (__WORDSIZE / 2) - 1;
-
-		newaddr = RAND_BYTE();
-		newaddr <<= shift;
-		newaddr |= align;
-		newaddr &= ~(align - 1);
+		shm->a3[childno] &= TASK_SIZE - shm->a3[childno];
 	}
-
-	rec->a5 = newaddr;
 }
 
-/*
- * If we successfully remapped a range, we need to update our record of it
- * so we don't re-use the old address.
- */
-static void post_mremap(struct syscallrecord *rec)
-{
-	void *ptr = (void *) rec->retval;
-
-	if (ptr == MAP_FAILED)
-		return;
-
-	map->ptr = ptr;
-
-	/* Sometimes dirty the mapping first. */
-	if (RAND_BOOL())
-		dirty_mapping(map);
-}
-
-struct syscallentry syscall_mremap = {
+struct syscall syscall_mremap = {
 	.name = "mremap",
 	.num_args = 5,
 	.sanitise = sanitise_mremap,
 	.arg1name = "addr",
-	.arg1type = ARG_MMAP,
+	.arg1type = ARG_NON_NULL_ADDRESS,
 	.arg2name = "old_len",
+	.arg2type = ARG_LEN,
 	.arg3name = "new_len",
+	.arg3type = ARG_LEN,
 	.arg4name = "flags",
-	.arg4type = ARG_LIST,
-	.arg4list = {
+        .arg4type = ARG_LIST,
+        .arg4list = {
 		.num = 2,
 		.values = { MREMAP_MAYMOVE, MREMAP_FIXED },
-	},
+        },
 	.arg5name = "new_addr",
+	.arg5type = ARG_ADDRESS,
 	.group = GROUP_VM,
-	.post = post_mremap,
 };

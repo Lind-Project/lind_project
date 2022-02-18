@@ -3,9 +3,10 @@
 	size_t, msg_len, unsigned int, msg_prio,
 	const struct timespec __user *, u_abs_timeout)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_mq_timedsend = {
+struct syscall syscall_mq_timedsend = {
 	.name = "mq_timedsend",
 	.num_args = 5,
 	.arg1name = "mqdes",

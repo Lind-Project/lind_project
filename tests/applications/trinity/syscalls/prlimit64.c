@@ -3,9 +3,10 @@
 	 const struct rlimit64 __user *, new_rlim,
 	 struct rlimit64 __user *, old_rlim)
  */
+#include "trinity.h"
 #include "sanitise.h"
 
-struct syscallentry syscall_prlimit64 = {
+struct syscall syscall_prlimit64 = {
 	.name = "prlimit64",
 	.num_args = 4,
 	.arg1name = "pid",
