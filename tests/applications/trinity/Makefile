@@ -8,7 +8,7 @@ CC=x86_64-nacl-gcc
 CXX=x86_64-nacl-g++
 LD=x86_64-nacl-ld
 CFLAGS=-g -fno-pie
-CXXFLAGS=-g -fno-pie
+CXXFLAGS=-g -fno-pie -std=gnu++99
 LDFLAGS=-g -fno-pie
 
 CFLAGS += -Wall -Wextra -g -O2 -I. -Iinclude/ -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -D__linux__
