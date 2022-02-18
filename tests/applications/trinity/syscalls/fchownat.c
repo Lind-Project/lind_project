@@ -5,7 +5,6 @@
  * On success, fchownat() returns 0.
  *  On error, -1 is returned and errno is set to indicate the error.
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_fchownat = {
@@ -20,4 +19,5 @@ struct syscall syscall_fchownat = {
 	.arg5name = "flag",
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

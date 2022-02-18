@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE3(flistxattr, int, fd, char __user *, list, size_t, size)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_flistxattr = {
@@ -15,4 +14,5 @@ struct syscall syscall_flistxattr = {
 	.arg3type = ARG_LEN,
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

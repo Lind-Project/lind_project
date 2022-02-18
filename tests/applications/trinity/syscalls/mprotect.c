@@ -2,10 +2,10 @@
  * sys_mprotect(unsigned long start, size_t len, unsigned long prot)
  */
 #include <asm/mman.h>
-
-#include "trinity.h"
-#include "sanitise.h"
+#include "trinity.h"	// page_size
 #include "arch.h"
+#include "random.h"
+#include "sanitise.h"
 #include "shm.h"
 
 static void sanitise_mprotect(int childno)
@@ -16,14 +16,15 @@ static void sanitise_mprotect(int childno)
 
 retry_end:
 	end = shm->a1[childno] + shm->a2[childno];
+	/* Length must not be zero. */
 	if (shm->a2[childno] == 0) {
-		shm->a2[childno] = get_reg();
+		shm->a2[childno] = rand64();
 		goto retry_end;
 	}
 
 	/* End must be after start */
 	if (end <= shm->a1[childno]) {
-		shm->a2[childno] = get_reg();
+		shm->a2[childno] = rand64();
 		goto retry_end;
 	}
 }

@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE3(unlinkat, int, dfd, const char __user *, pathname, int, flag)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_unlinkat = {
@@ -13,4 +12,5 @@ struct syscall syscall_unlinkat = {
 	.arg2type = ARG_PATHNAME,
 	.arg3name = "flag",
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

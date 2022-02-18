@@ -4,8 +4,6 @@
  *               int, flags)
  */
 #include <fcntl.h>
-
-#include "trinity.h"
 #include "sanitise.h"
 #include "compat.h"
 
@@ -19,14 +17,14 @@ struct syscall syscall_open_by_handle_at = {
 	.arg3name = "flags",
 	.arg3type = ARG_LIST,
 	.arg3list = {
-		.num = 19,
+		.num = 20,
 		.values = { O_RDONLY, O_WRONLY, O_RDWR,
 				O_CREAT, O_EXCL, O_NOCTTY,
 				O_TRUNC, O_APPEND, O_NONBLOCK,
 				O_SYNC, O_ASYNC,
 				O_DIRECTORY, O_NOFOLLOW, O_CLOEXEC,
 				O_DIRECT, O_NOATIME, O_PATH,
-				O_DSYNC, O_LARGEFILE },
+				O_DSYNC, O_LARGEFILE, O_TMPFILE },
 	},
 	.flags = NEED_ALARM,
 };

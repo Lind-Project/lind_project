@@ -4,7 +4,6 @@
  * On success, zero is returned.
  * On error, -1 is returned, and errno is set appropriately.
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_fchown = {
@@ -16,4 +15,5 @@ struct syscall syscall_fchown = {
 	.arg3name = "group",
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

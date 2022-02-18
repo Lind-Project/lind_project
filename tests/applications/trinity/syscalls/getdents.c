@@ -2,7 +2,6 @@
  * SYSCALL_DEFINE3(getdents, unsigned int, fd,
     struct linux_dirent __user *, dirent, unsigned int, count)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_getdents = {
@@ -16,4 +15,5 @@ struct syscall syscall_getdents = {
 	.arg3type = ARG_LEN,
 	.rettype = RET_NUM_BYTES,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

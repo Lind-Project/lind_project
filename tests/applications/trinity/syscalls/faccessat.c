@@ -4,7 +4,6 @@
  * On success, (all requested permissions granted) faccessat() returns 0.
  * On error, -1 is returned and errno is set to indicate the error.
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_faccessat = {
@@ -15,6 +14,8 @@ struct syscall syscall_faccessat = {
 	.arg2name = "filename",
 	.arg2type = ARG_PATHNAME,
 	.arg3name = "mode",
+	.arg3type = ARG_MODE_T,
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

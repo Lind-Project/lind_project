@@ -2,7 +2,6 @@
  * SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
 	 int, newdfd, const char __user *, newname)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_renameat = {
@@ -17,4 +16,5 @@ struct syscall syscall_renameat = {
 	.arg4name = "newname",
 	.arg4type = ARG_ADDRESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

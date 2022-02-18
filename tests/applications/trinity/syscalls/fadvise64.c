@@ -4,7 +4,6 @@
  * On success, zero is returned.
  * On error, an error number is returned.
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_fadvise64 = {
@@ -18,4 +17,5 @@ struct syscall syscall_fadvise64 = {
 	.arg4name = "advice",
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

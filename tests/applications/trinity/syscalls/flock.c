@@ -4,7 +4,6 @@
  * On success, zero is returned.
  * On error, -1 is returned, and errno is set appropriately.
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_flock = {
@@ -15,4 +14,5 @@ struct syscall syscall_flock = {
 	.arg2name = "cmd",
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

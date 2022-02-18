@@ -1,8 +1,17 @@
+/*
+ * Routines to get/set seeds.
+ */
 #include <syslog.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include "trinity.h"
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <limits.h>
 #include "shm.h"
+#include "params.h"	// 'user_set_seed'
+#include "pids.h"
+#include "log.h"
+#include "random.h"
 
 /* The actual seed lives in the shm. This variable is used
  * to store what gets passed in from the command line -s argument */
@@ -16,13 +25,22 @@ static void syslog_seed(int seedparam)
 	closelog();
 }
 
-static unsigned int new_seed(void)
+unsigned int new_seed(void)
 {
+	int fd;
 	struct timeval t;
 	unsigned int r;
 
-	gettimeofday(&t, 0);
-	r = rand() ^ (t.tv_sec * getpid()) ^ t.tv_usec;
+	if ((fd = open("/dev/urandom", O_RDONLY)) < 0 ||
+	    read(fd, &r, sizeof(r)) != sizeof(r)) {
+		r = rand();
+		if (!(rand_bool())) {
+			gettimeofday(&t, 0);
+			r |= t.tv_usec;
+		}
+	}
+	if (fd >= 0)
+		close(fd);
 	return r;
 }
 
@@ -36,7 +54,7 @@ unsigned int init_seed(unsigned int seedparam)
 	else {
 		seedparam = new_seed();
 
-		printf("Initial random seed from time of day: %u\n", seedparam);
+		printf("Initial random seed: %u\n", seedparam);
 	}
 
 	if (do_syslog == TRUE)
@@ -45,7 +63,6 @@ unsigned int init_seed(unsigned int seedparam)
 	return seedparam;
 }
 
-
 /* Mix in the pidslot so that all children get different randomness.
  * we can't use the actual pid or anything else 'random' because otherwise reproducing
  * seeds with -s would be much harder to replicate.
@@ -53,7 +70,6 @@ unsigned int init_seed(unsigned int seedparam)
 void set_seed(unsigned int pidslot)
 {
 	srand(shm->seed + (pidslot + 1));
-	srandom(shm->seed + (pidslot + 1));
 	shm->seeds[pidslot] = shm->seed;
 }
 
@@ -69,7 +85,7 @@ void reseed(void)
 	shm->need_reseed = FALSE;
 	shm->reseed_counter = 0;
 
-	if (getpid() != shm->parentpid) {
+	if (getpid() != mainpid) {
 		output(0, "Reseeding should only happen from parent!\n");
 		exit(EXIT_FAILURE);
 	}

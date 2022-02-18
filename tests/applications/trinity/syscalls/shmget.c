@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-
-#include "trinity.h"
 #include "sanitise.h"
 
 static void post_shmget(int syscallret)
@@ -19,6 +17,8 @@ static void post_shmget(int syscallret)
 	shmid_ds = malloc(sizeof(struct shmid_ds));
 
 	shmctl(syscallret, IPC_RMID, shmid_ds);
+
+	free(shmid_ds);
 }
 
 struct syscall syscall_shmget = {

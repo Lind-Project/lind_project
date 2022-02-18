@@ -4,7 +4,6 @@
  * On success, these system calls return zero.
  * On error, -1 is returned, and errno is set appropriately.
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_fsync = {
@@ -14,4 +13,5 @@ struct syscall syscall_fsync = {
 	.arg1type = ARG_FD,
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

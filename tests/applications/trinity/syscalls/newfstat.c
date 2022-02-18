@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_newfstat = {
@@ -12,4 +11,5 @@ struct syscall syscall_newfstat = {
 	.arg2name = "statbuf",
 	.arg2type = ARG_ADDRESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

@@ -11,8 +11,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-
-#include "trinity.h"
+#include "trinity.h"	// page_size
 #include "sanitise.h"
 #include "arch.h"
 #include "shm.h"
@@ -22,7 +21,7 @@
 
 static void sanitise_move_pages(int childno)
 {
-	unsigned int *nodes;
+	int *nodes;
 	unsigned long *page_alloc;
 	unsigned int i;
 	unsigned int count;
@@ -33,11 +32,13 @@ static void sanitise_move_pages(int childno)
 		shm->a6[childno] &= ~MPOL_MF_MOVE_ALL;
 	}
 
-	page_alloc = malloc(page_size);
+	page_alloc = (unsigned long *) malloc(page_size);
 	if (page_alloc == NULL)
 		return;
 
 	count = rand() % (page_size / sizeof(void *));
+	count = max(1, count);
+
 	shm->a2[childno] = count;
 
 	for (i = 0; i < count; i++) {

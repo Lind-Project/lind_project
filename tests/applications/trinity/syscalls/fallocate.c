@@ -3,7 +3,6 @@
  *
  * fallocate() returns zero on success, and -1 on failure.
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 #define FALLOC_FL_KEEP_SIZE	0x01
@@ -26,4 +25,5 @@ struct syscall syscall_fallocate = {
 	.arg4type = ARG_LEN,
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

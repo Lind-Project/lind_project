@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE3(listxattr, const char __user *, pathname, char __user *, list, size_t, size
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_listxattr = {
@@ -13,4 +12,5 @@ struct syscall syscall_listxattr = {
 	.arg2type = ARG_ADDRESS,
 	.arg3name = "size",
 	.arg3type = ARG_LEN,
+	.group = GROUP_VFS,
 };

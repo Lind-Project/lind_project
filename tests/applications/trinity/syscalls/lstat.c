@@ -2,7 +2,6 @@
  * SYSCALL_DEFINE2(lstat, const char __user *, filename,
                    struct __old_kernel_stat __user *, statbuf)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_lstat = {
@@ -12,4 +11,5 @@ struct syscall syscall_lstat = {
 	.arg1type = ARG_PATHNAME,
 	.arg2name = "statbuf",
 	.arg2type = ARG_ADDRESS,
+	.group = GROUP_VFS,
 };

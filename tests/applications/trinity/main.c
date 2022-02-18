@@ -10,12 +10,26 @@
 #include <sys/ptrace.h>
 
 #include "trinity.h"
+#include "child.h"
+#include "signals.h"
 #include "shm.h"
 #include "files.h"
+#include "random.h"
 #include "syscall.h"
+#include "pids.h"
+#include "log.h"
+#include "params.h"
+#include "maps.h"
 
 static void regenerate(void)
 {
+	if (no_files == TRUE)	/* We don't regenerate sockets */
+		return;
+
+	/* we're about to exit. */
+	if (shm->spawn_no_more)
+		return;
+
 	shm->regenerating = TRUE;
 
 	sleep(1);	/* give children time to finish with fds. */
@@ -29,7 +43,7 @@ static void regenerate(void)
 	destroy_maps();
 	setup_maps();
 
-	regenerate_random_page();
+	generate_random_page(page_rand);
 
 	shm->regenerating = FALSE;
 }
@@ -43,13 +57,31 @@ int check_tainted(void)
 	char buffer[4];
 
 	fd = open("/proc/sys/kernel/tainted", O_RDONLY);
-	if (!fd)
+	if (fd < 0)
 		return -1;
 	ret = read(fd, buffer, 3);
 	close(fd);
-	ret = atoi(buffer);
+
+	if (ret > 0)
+		ret = atoi(buffer);
+	else {
+		/* We should never fail, but if we do, assume untainted. */
+		ret = 0;
+	}
 
 	return ret;
+}
+
+static void oom_score_adj(int adj)
+{
+	FILE *fp;
+
+	fp = fopen("/proc/self/oom_score_adj", "w");
+	if (!fp)
+		return;
+
+	fprintf(fp, "%d", adj);
+	fclose(fp);
 }
 
 #define debugf if (debug == TRUE) printf
@@ -63,6 +95,16 @@ static void fork_children(void)
 
 	while (shm->running_childs < shm->max_children) {
 		int pid = 0;
+
+		if (shm->spawn_no_more == TRUE)
+			return;
+
+		/* a new child means a new seed, or the new child
+		 * will do the same syscalls as the one in the pidslot it's replacing.
+		 * (special case startup, or we reseed unnecessarily)
+		 */
+		if (shm->ready == TRUE)
+			reseed();
 
 		/* Find a space for it in the pid map */
 		pidslot = find_pid_slot(EMPTY_PIDSLOT);
@@ -87,22 +129,27 @@ static void fork_children(void)
 			sprintf(childname, "trinity-child%d", pidslot);
 			prctl(PR_SET_NAME, (unsigned long) &childname);
 
+			oom_score_adj(500);
+
 			/* Wait for parent to set our pidslot */
 			while (shm->pids[pidslot] != getpid()) {
 				/* Make sure parent is actually alive to wait for us. */
-				ret = pid_alive(shm->parentpid);
+				ret = pid_alive(mainpid);
 				if (ret != 0) {
 					shm->exit_reason = EXIT_SHM_CORRUPTION;
-					printf("[%d] " BUGTXT "parent (%d) went away!\n", getpid(), shm->parentpid);
+					printf("[%d] " BUGTXT "parent (%d) went away!\n", getpid(), mainpid);
 					sleep(20000);
 				}
 			}
 
-			set_seed(pidslot);
+			/* Wait for all the children to start up. */
+			while (shm->ready == FALSE);
 
-			ret = child_process();
+			init_child(pidslot);
 
-			output(0, "child %d exitting\n", getpid());
+			ret = child_process(pidslot);
+
+			output(1, "child %d exiting\n", getpid());
 
 			_exit(ret);
 		}
@@ -115,6 +162,8 @@ static void fork_children(void)
 			return;
 
 	}
+	shm->ready = TRUE;
+
 	debugf("[%d] created enough children\n", getpid());
 }
 
@@ -184,9 +233,12 @@ static void handle_child(pid_t childpid, int childstatus)
 
 			slot = find_pid_slot(childpid);
 			if (slot == PIDSLOT_NOT_FOUND) {
-				printf("[%d] ## Couldn't find pid slot for %d\n", getpid(), childpid);
-				shm->exit_reason = EXIT_LOST_PID_SLOT;
-				dump_pid_slots();
+				/* If we reaped it, it wouldn't show up, so check that. */
+				if (shm->last_reaped != childpid) {
+					printf("[%d] ## Couldn't find pid slot for %d\n", getpid(), childpid);
+					shm->exit_reason = EXIT_LOST_PID_SLOT;
+					dump_pid_slots();
+				}
 			} else {
 				debugf("[%d] Child %d exited after %ld syscalls.\n", getpid(), childpid, shm->child_syscall_count[slot]);
 				reap_child(childpid);
@@ -283,16 +335,18 @@ static void handle_children(void)
 }
 
 static const char *reasons[] = {
-	"Still running",
-	"No more syscalls enabled",
-	"Reached maximum syscall count",
-	"No file descriptors open",
-	"Lost track of a pid slot",
+	"Still running.",
+	"No more syscalls enabled.",
+	"Reached maximum syscall count.",
+	"No file descriptors open.",
+	"Lost track of a pid slot.",
 	"shm corruption - Found a pid out of range.",
 	"ctrl-c",
-	"kernel became tainted",
+	"kernel became tainted.",
 	"SHM was corrupted!",
 	"Child reparenting problem",
+	"No files in file list.",
+	"Main process disappeared.",
 };
 
 static const char * decode_exit(unsigned int reason)
@@ -303,16 +357,17 @@ static const char * decode_exit(unsigned int reason)
 static void main_loop(void)
 {
 	while (shm->exit_reason == STILL_RUNNING) {
-		if (shm->running_childs < shm->max_children) {
-			reseed();
-			fork_children();
+
+		if (shm->spawn_no_more == FALSE) {
+			if (shm->running_childs < shm->max_children)
+				fork_children();
+
+			if (shm->regenerate >= REGENERATION_POINT)
+				regenerate();
+
+			if (shm->need_reseed == TRUE)
+				reseed();
 		}
-
-		if (shm->regenerate >= REGENERATION_POINT)
-			regenerate();
-
-		if (shm->need_reseed == TRUE)
-			reseed();
 
 		handle_children();
 	}
@@ -325,19 +380,24 @@ void do_main_loop(void)
 	int childstatus;
 	pid_t pid;
 
-
 	/* do an extra fork so that the watchdog and the children don't share a common parent */
 	fflush(stdout);
 	pid = fork();
 	if (pid == 0) {
 		setup_main_signals();
 
-		shm->parentpid = getpid();
+		mainpid = getpid();
 		output(0, "[%d] Main thread is alive.\n", getpid());
 		prctl(PR_SET_NAME, (unsigned long) &taskname);
 		set_seed(0);
 
 		setup_fds();
+		if (no_files == FALSE) {
+			if (files_in_index == 0) {
+				shm->exit_reason = EXIT_NO_FILES;
+				_exit(EXIT_FAILURE);
+			}
+		}
 
 		main_loop();
 
@@ -352,5 +412,5 @@ void do_main_loop(void)
 	/* wait for main loop process to exit. */
 	pid = waitpid(pid, &childstatus, 0);
 
-	shm->parentpid = getpid();
+	mainpid = 0;
 }

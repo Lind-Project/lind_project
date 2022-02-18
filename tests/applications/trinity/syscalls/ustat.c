@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE2(ustat, unsigned, dev, struct ustat __user *, ubuf)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_ustat = {
@@ -10,4 +9,5 @@ struct syscall syscall_ustat = {
 	.arg1name = "dev",
 	.arg2name = "ubuf",
 	.arg2type = ARG_ADDRESS,
+	.group = GROUP_VFS,
 };

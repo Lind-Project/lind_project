@@ -1,7 +1,7 @@
 /*
  * SYSCALL_DEFINE(pwrite64)(unsigned int fd, const char __user *buf, size_t count, loff_t po>
  */
-#include "trinity.h"
+#include "random.h"
 #include "sanitise.h"
 #include "shm.h"
 
@@ -10,7 +10,7 @@ static void sanitise_pwrite64(int childno)
 
 retry_pos:
 	if ((int) shm->a4[childno] < 0) {
-		shm->a4[childno] = get_reg();
+		shm->a4[childno] = rand64();
 		goto retry_pos;
 	}
 }

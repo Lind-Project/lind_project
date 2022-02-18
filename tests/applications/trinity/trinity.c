@@ -21,13 +21,22 @@
 #include "arch.h"
 #include "trinity.h"
 #include "files.h"
+#include "log.h"
+#include "maps.h"
+#include "pids.h"
+#include "net.h"
+#include "params.h"
+#include "random.h"
+#include "signals.h"
 #include "shm.h"
 #include "syscall.h"
+#include "ioctls.h"
 #include "config.h"	// for VERSION
 
 char *progname = NULL;
 
 unsigned int page_size;
+unsigned int num_online_cpus;
 
 struct shm_s *shm;
 
@@ -58,6 +67,25 @@ static int create_shm(void)
 	shm->total_syscalls_done = 1;
 	shm->regenerate = 0;
 
+	memset(shm->pids, EMPTY_PIDSLOT, sizeof(shm->pids));
+
+	/* Overwritten later in setup_shm_postargs if user passed -s */
+	shm->seed = new_seed();
+
+	/* Set seed in parent thread */
+	set_seed(0);
+
+	return 0;
+}
+
+static void setup_shm_postargs(void)
+{
+	if (user_set_seed == TRUE) {
+		shm->seed = init_seed(seed);
+		/* Set seed in parent thread */
+		set_seed(0);
+	}
+
 	if (user_specified_children != 0)
 		shm->max_children = user_specified_children;
 	else
@@ -67,15 +95,57 @@ static int create_shm(void)
 		printf("Increase MAX_NR_CHILDREN!\n");
 		exit(EXIT_FAILURE);
 	}
-	memset(shm->pids, EMPTY_PIDSLOT, sizeof(shm->pids));
-
-	shm->parentpid = getpid();
-
-	shm->seed = init_seed(seed);
-
-	return 0;
 }
 
+/* This is run *after* we've parsed params */
+static int munge_tables(void)
+{
+	unsigned int ret;
+
+	/* By default, all syscall entries will be disabled.
+	 * If we didn't pass -c, -x or -r, mark all syscalls active.
+	 */
+	if ((do_specific_syscall == FALSE) && (do_exclude_syscall == FALSE) && (random_selection == FALSE))
+		mark_all_syscalls_active();
+
+	if (desired_group != GROUP_NONE) {
+		ret = setup_syscall_group(desired_group);
+		if (ret == FALSE)
+			return FALSE;
+	}
+
+	if (random_selection == TRUE)
+		enable_random_syscalls();
+
+	/* If we saw a '-x', set all syscalls to enabled, then selectively disable.
+	 * Unless we've started enabling them already (with -r)
+	 */
+	if (do_exclude_syscall == TRUE) {
+		if (random_selection == FALSE)
+			mark_all_syscalls_active();
+
+		deactivate_disabled_syscalls();
+	}
+
+	/* if we passed -n, make sure there's no VM/VFS syscalls enabled. */
+	if (no_files == TRUE)
+		disable_non_net_syscalls();
+
+	sanity_check_tables();
+
+	count_syscalls_enabled();
+
+	if (verbose == TRUE)
+		display_enabled_syscalls();
+
+	if (validate_syscall_tables() == FALSE) {
+		printf("No syscalls were enabled!\n");
+		printf("Use 32bit:%d 64bit:%d\n", use_32bit, use_64bit);
+		return FALSE;
+	}
+
+	return TRUE;
+}
 
 int main(int argc, char* argv[])
 {
@@ -83,19 +153,44 @@ int main(int argc, char* argv[])
 	int childstatus;
 	unsigned int i;
 
-	printf("Trinity v" __stringify(VERSION) "  Dave Jones <davej@redhat.com> 2012\n");
+	printf("Trinity v" __stringify(VERSION) "  Dave Jones <davej@redhat.com>\n");
 
 	progname = argv[0];
 
-	page_size = getpagesize();
+	initpid = getpid();
 
-	setup_syscall_tables();
+	page_size = getpagesize();
+	num_online_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+
+	select_syscall_tables();
+
+	if (create_shm())
+		exit(EXIT_FAILURE);
 
 	parse_args(argc, argv);
+	printf("Done parsing arguments.\n");
 
-	/* If we didn't pass -c or -x, mark all syscalls active. */
-	if ((do_specific_syscall == FALSE) && (do_exclude_syscall == FALSE))
-		mark_all_syscalls_active();
+	setup_shm_postargs();
+
+	if (logging == TRUE)
+		open_logfiles();
+
+	if (munge_tables() == FALSE) {
+		ret = EXIT_FAILURE;
+		goto out;
+	}
+
+	if (show_syscall_list == TRUE) {
+		dump_syscall_tables();
+		goto out;
+	}
+
+	init_syscalls();
+
+	if (show_ioctl_list == TRUE) {
+		dump_ioctls();
+		goto out;
+	}
 
 	if (getuid() == 0) {
 		if (dangerous == TRUE) {
@@ -114,49 +209,14 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (create_shm())
-		exit(EXIT_FAILURE);
-
-	/* Set seed in parent thread*/
-	set_seed(0);
-
-	if (desired_group != GROUP_NONE) {
-		ret = setup_syscall_group(desired_group);
-		if (ret == FALSE) {
-			ret = EXIT_FAILURE;
-			goto out;
-		}
-	}
-
-	if (show_syscall_list == TRUE) {
-		dump_syscall_tables();
-		goto out;
-	}
-
-	if (validate_syscall_tables() == FALSE) {
-		printf("No syscalls were enabled!\n");
-		printf("Use 32bit:%d 64bit:%d\n", use_32bit, use_64bit);
-		goto out;
-	}
-
-	sanity_check_tables();
-
-	if (logging == TRUE)
-		open_logfiles();
-
-
-	if (do_specific_syscall == FALSE) {
-		if (biarch == TRUE)
-			output(0, "Fuzzing %d 32-bit syscalls & %d 64-bit syscalls.\n",
-				max_nr_32bit_syscalls, max_nr_64bit_syscalls);
-		else
-			output(0, "Fuzzing %d syscalls.\n", max_nr_syscalls);
-	}
-
 	if (do_specific_proto == TRUE)
 		find_specific_proto(specific_proto_optarg);
 
 	init_buffers();
+
+	parse_devices();
+
+	pids_init();
 
 	setup_main_signals();
 
@@ -172,6 +232,7 @@ int main(int argc, char* argv[])
 		/* nothing right now */
 	}
 
+	/* check if we ctrl'c or something went wrong during init. */
 	if (shm->exit_reason != STILL_RUNNING)
 		goto cleanup_fds;
 
@@ -179,7 +240,8 @@ int main(int argc, char* argv[])
 
 	do_main_loop();
 
-	waitpid(shm->watchdog_pid, &childstatus, 0);
+	/* Shutting down. */
+	waitpid(watchdog_pid, &childstatus, 0);
 
 	printf("\nRan %ld syscalls. Successes: %ld  Failures: %ld\n",
 		shm->total_syscalls_done - 1, shm->successes, shm->failures);
@@ -189,11 +251,16 @@ int main(int argc, char* argv[])
 cleanup_fds:
 
 	for (i = 0; i < nr_sockets; i++) {
-		struct linger ling;
+		int r = 0;
+		struct linger ling = { .l_onoff = FALSE, };
 
 		ling.l_onoff = FALSE;	/* linger active */
-		setsockopt(shm->socket_fds[i], SOL_SOCKET, SO_LINGER, &ling, sizeof(struct linger));
-		shutdown(shm->socket_fds[i], SHUT_RDWR);
+		r = setsockopt(shm->socket_fds[i], SOL_SOCKET, SO_LINGER, &ling, sizeof(struct linger));
+		if (r)
+			perror("setsockopt");
+		r = shutdown(shm->socket_fds[i], SHUT_RDWR);
+		if (r)
+			perror("shutdown");
 		close(shm->socket_fds[i]);
 	}
 

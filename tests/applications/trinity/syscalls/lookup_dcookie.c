@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE(lookup_dcookie)(u64 cookie64, char __user * buf, size_t len)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_lookup_dcookie = {
@@ -13,4 +12,5 @@ struct syscall syscall_lookup_dcookie = {
 	.arg2type = ARG_ADDRESS,
 	.arg3name = "len",
 	.arg3type = ARG_LEN,
+	.group = GROUP_VFS,
 };

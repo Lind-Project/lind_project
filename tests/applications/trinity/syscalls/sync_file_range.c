@@ -4,11 +4,11 @@
  */
 #include <linux/fs.h>
 #include <fcntl.h>
+#include <string.h>
 #include <stdlib.h>
-
-#include "trinity.h"
-#include "sanitise.h"
 #include "arch.h"
+#include "random.h"
+#include "sanitise.h"
 #include "shm.h"
 
 struct syscall syscall_sync_file_range;
@@ -22,8 +22,8 @@ static void sanitise_sync_file_range(int childno)
 	loff_t off;
 
 retry:
-	off = rand() & 0xfffffff;
-	nbytes = rand() & 0xfffffff;
+	off = rand64() & 0x0fffffffffffffff;
+	nbytes = rand64() & 0x0fffffffffffffff;
 	endbyte = off + nbytes;
 	if (endbyte < off)
 		goto retry;
@@ -31,7 +31,7 @@ retry:
 	if (off >= (0x100000000LL << PAGE_SHIFT))
 		goto retry;
 
-	if (syscall_entry == &syscall_sync_file_range) {
+	if (strcmp("sync_file_range2", syscall_entry->name) == 0) {
 		shm->a2[childno] = off;
 		shm->a3[childno] = nbytes;
 	} else {
@@ -56,6 +56,7 @@ struct syscall syscall_sync_file_range = {
 		.values = { SYNC_FILE_RANGE_WAIT_BEFORE, SYNC_FILE_RANGE_WRITE, SYNC_FILE_RANGE_WAIT_AFTER },
         },
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };
 
 /*
@@ -78,4 +79,5 @@ struct syscall syscall_sync_file_range2 = {
 	.arg4name = "nbytes",
 	.arg4type = ARG_LEN,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

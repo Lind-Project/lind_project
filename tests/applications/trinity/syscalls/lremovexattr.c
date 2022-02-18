@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE2(lremovexattr, const char __user *, pathname, const char __user *, name)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_lremovexattr = {
@@ -11,4 +10,5 @@ struct syscall syscall_lremovexattr = {
 	.arg1type = ARG_PATHNAME,
 	.arg2name = "name",
 	.arg2type = ARG_ADDRESS,
+	.group = GROUP_VFS,
 };

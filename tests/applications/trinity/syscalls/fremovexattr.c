@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE2(fremovexattr, int, fd, const char __user *, name)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_fremovexattr = {
@@ -13,4 +12,5 @@ struct syscall syscall_fremovexattr = {
 	.arg2type = ARG_ADDRESS,
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

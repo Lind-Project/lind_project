@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE2(truncate, const char __user *, path, long, length)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_truncate = {
@@ -11,4 +10,5 @@ struct syscall syscall_truncate = {
 	.arg1type = ARG_PATHNAME,
 	.arg2name = "length",
 	.arg2type = ARG_LEN,
+	.group = GROUP_VFS,
 };

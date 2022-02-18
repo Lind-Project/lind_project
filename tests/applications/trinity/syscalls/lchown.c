@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE3(lchown, const char __user *, filename, uid_t, user, gid_t, group)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_lchown = {
@@ -11,4 +10,5 @@ struct syscall syscall_lchown = {
 	.arg1type = ARG_PATHNAME,
 	.arg2name = "user",
 	.arg3name = "group",
+	.group = GROUP_VFS,
 };

@@ -1,276 +1,92 @@
 /*
  * SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
  */
-
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <linux/in.h>
-#include <linux/caif/caif_socket.h>
-#include <linux/irda.h>
-#include <linux/dn.h>
-
-#include "trinity.h"
+#include "compat.h"
+#include "log.h"
+#include "net.h"
+#include "random.h"
 #include "sanitise.h"
 #include "shm.h"
-#include "compat.h"
+#include "config.h"
+#include "params.h"
+#include "trinity.h"
 
-#define NR_AX25_PROTOS 13
-static int ax25_protocols[NR_AX25_PROTOS] = {
-	0x01,	/* ROSE */
-	0x06,	/* Compressed TCP/IP packet   *//* Van Jacobsen (RFC 1144)    */
-	0x07,	/* Uncompressed TCP/IP packet *//* Van Jacobsen (RFC 1144)    */
-	0x08,	/* Segmentation fragment      */
-	0xc3,	/* TEXTNET datagram protocol  */
-	0xc4,	/* Link Quality Protocol      */
-	0xca,	/* Appletalk                  */
-	0xcb,	/* Appletalk ARP              */
-	0xcc,	/* ARPA Internet Protocol     */
-	0xcd,	/* ARPA Address Resolution    */
-	0xce,	/* FlexNet                    */
-	0xcf,	/* NET/ROM                    */
-	0xF0	/* No layer 3 protocol impl.  */
+struct socket_ptr {
+	unsigned int family;
+	void (*func)(struct socket_triplet *st);
+};
+static const struct socket_ptr socketptrs[] = {
+	{ .family = AF_APPLETALK, .func = &atalk_rand_socket },
+	{ .family = AF_AX25, .func = &ax25_rand_socket },
+#ifdef USE_CAIF
+	{ .family = AF_CAIF, .func = &caif_rand_socket },
+#endif
+	{ .family = AF_CAN, .func = &can_rand_socket },
+	{ .family = AF_DECnet, .func = &decnet_rand_socket },
+	{ .family = AF_INET, .func = &inet_rand_socket },
+	{ .family = AF_INET6, .func = &inet6_rand_socket },
+	{ .family = AF_IPX, .func = &ipx_rand_socket },
+	{ .family = AF_IRDA, .func = &irda_rand_socket },
+	{ .family = AF_LLC, .func = &llc_rand_socket },
+	{ .family = AF_NETLINK, .func = &netlink_rand_socket },
+	{ .family = AF_NFC, .func = &nfc_rand_socket },
+//TODO	{ .family = AF_IB, .func = &ib_rand_socket },
+	{ .family = AF_PACKET, .func = &packet_rand_socket },
+	{ .family = AF_PHONET, .func = &phonet_rand_socket },
+	{ .family = AF_RDS, .func = &rds_rand_socket },
+	{ .family = AF_TIPC, .func = &tipc_rand_socket },
+	{ .family = AF_UNIX, .func = &unix_rand_socket },
+	{ .family = AF_X25, .func = &x25_rand_socket },
 };
 
 /* note: also called from generate_sockets() & sanitise_socketcall() */
-void sanitise_socket(int childno)
+void gen_socket_args(struct socket_triplet *st)
 {
-        unsigned long family = rand() % PF_MAX;
-        unsigned long type= rand() % TYPE_MAX;
-        unsigned long protocol = rand() % PROTO_MAX;
+	if (do_specific_proto == TRUE)
+		st->family = specific_proto;
+	else
+		st->family = rand() % TRINITY_PF_MAX;
 
-	switch (family) {
-
-	case AF_APPLETALK:
-		switch (rand() % 2) {
-		case 0:	type = SOCK_DGRAM;
-			protocol = 0;
-			break;
-		case 1:	type = SOCK_RAW;
-			break;
-		default:break;
+	if (rand() % 100 > 0) {
+		unsigned int i;
+		for (i = 0; i < ARRAY_SIZE(socketptrs); i++) {
+			if (socketptrs[i].family == st->family)
+				socketptrs[i].func(st);
 		}
-		break;
 
-	case AF_AX25:
-		switch (rand() % 3) {
-		case 0:	type = SOCK_DGRAM;
-			protocol = 0;
-			break;
-		case 1:	type = SOCK_SEQPACKET;
-			protocol = ax25_protocols[rand() % NR_AX25_PROTOS];
-			break;
-		case 2:	type = SOCK_RAW;
-			break;
-		default:break;
-		}
-		break;
+	} else {
+		st->protocol = rand() % PROTO_MAX;
 
-	case AF_CAIF:
-		protocol = rand() % _CAIFPROTO_MAX;
-		switch (rand() % 2) {
-		case 0:	type = SOCK_SEQPACKET;
-			break;
-		case 1:	type = SOCK_STREAM;
-			break;
-		default:break;
-		}
-		break;
-
-	case AF_CAN:
-		protocol = rand() % 7;	// CAN_NPROTO
-		break;
-
-	case AF_DECnet:
-		if (rand() % 2) {
-			type = SOCK_SEQPACKET;
-			protocol = DNPROTO_NSP;
-		} else {
-			type = SOCK_STREAM;
-		}
-		break;
-
-	case AF_INET:
-		switch (rand() % 3) {
-		case 0:	type = SOCK_STREAM;	// TCP
-			if ((rand() % 2) == 0)
-				protocol = 0;
-			else
-				protocol = IPPROTO_TCP;
-			break;
-		case 1:	type = SOCK_DGRAM;	// UDP
-			if ((rand() % 2) == 0)
-				protocol = 0;
-			else
-				protocol = IPPROTO_UDP;
-			break;
-		case 2:	type = SOCK_RAW;
-			break;
-		default:break;
-		}
-		break;
-
-
-	case AF_INET6:
-		switch (rand() % 3) {
-		case 0:	type = SOCK_STREAM;	// TCP
-			protocol = 0;
-			break;
-		case 1:	type = SOCK_DGRAM;	// UDP
-			if ((rand() % 2) == 0)
-				protocol = 0;
-			else
-				protocol = IPPROTO_UDP;
-			break;
-		case 2:	type = SOCK_RAW;
-			break;
-		default:break;
-		}
-		break;
-
-	case AF_IPX:
-		type = SOCK_DGRAM;
-		break;
-
-	case AF_IRDA:
-		switch (rand() % 2) {
-		case 0:	type = SOCK_STREAM;
-			break;
-		case 1:	type = SOCK_SEQPACKET;
-			break;
-		case 2:	type = SOCK_DGRAM;
-			switch (rand() % 2) {
-			case 0: protocol = IRDAPROTO_ULTRA;
-				break;
-			case 1: protocol = IRDAPROTO_UNITDATA;
-				break;
-			default:break;
-			}
-			break;
-		default:break;
-		}
-		break;
-
-	case AF_LLC:
-		switch (rand() % 2) {
-		case 0:	type = SOCK_STREAM;
-			break;
-		case 1:	type = SOCK_DGRAM;
-		default:break;
-		}
-		break;
-
-	case AF_NETLINK:
-		switch (rand() % 2) {
-		case 0:	type = SOCK_RAW;
-			break;
-		case 1:	type = SOCK_DGRAM;
-		default:break;
-		}
-		protocol = rand() % 32;	// MAX_LINKS
-		break;
-
-	case AF_NFC:
-		switch (rand() % 2) {
-		case 0:	protocol = NFC_SOCKPROTO_LLCP;
-			switch (rand() % 2) {
-			case 0:	type = SOCK_DGRAM;
-				break;
-			case 1:	type = SOCK_STREAM;
-				break;
-			default: break;
-			}
-			break;
-
-		case 1:	protocol = NFC_SOCKPROTO_RAW;
-			type = SOCK_SEQPACKET;
-			break;
-		default:
-			BUG("impossible.");
-		}
-		break;
-
-	case AF_PACKET:
-		switch (rand() % 3) {
-		case 0:	type = SOCK_DGRAM;
-			break;
-		case 1:	type = SOCK_RAW;
-			break;
-		case 2:	type = SOCK_PACKET;
-			break;
-		default: break;
-		}
-		break;
-
-	case AF_PHONET:
-		protocol = 0;
-		switch (rand() % 2) {
-		case 0:	type = SOCK_DGRAM;
-			break;
-		case 1:	type = SOCK_SEQPACKET;
-			break;
-		default: break;
-		}
-		break;
-
-	case AF_RDS:
-		protocol = 0;
-		type = SOCK_SEQPACKET;
-		break;
-
-	case AF_TIPC:
-		protocol = 0;
-		switch (rand() % 3) {
-		case 0:	type = SOCK_STREAM;
-			break;
-		case 1:	type = SOCK_SEQPACKET;
-			break;
-		case 2:	type = SOCK_DGRAM;
-			break;
-		default: break;
-		}
-		break;
-
-	case AF_UNIX:
-		protocol = PF_UNIX;
-		switch (rand() % 3) {
-		case 0:	type = SOCK_STREAM;
-			break;
-		case 1:	type = SOCK_DGRAM;
-			break;
-		case 2:	type = SOCK_SEQPACKET;
-			break;
-		default:break;
-		}
-		break;
-
-	case AF_X25:
-		type = SOCK_SEQPACKET;
-		protocol = 0;
-		break;
-
-	default:
 		switch (rand() % 6) {
-		case 0:	type = SOCK_DGRAM;	break;
-		case 1:	type = SOCK_STREAM;	break;
-		case 2:	type = SOCK_SEQPACKET;	break;
-		case 3:	type = SOCK_RAW;	break;
-		case 4:	type = SOCK_RDM;	break;
-		case 5:	type = SOCK_PACKET;	break;
+		case 0:	st->type = SOCK_DGRAM;	break;
+		case 1:	st->type = SOCK_STREAM;	break;
+		case 2:	st->type = SOCK_SEQPACKET;	break;
+		case 3:	st->type = SOCK_RAW;	break;
+		case 4:	st->type = SOCK_RDM;	break;
+		case 5:	st->type = SOCK_PACKET;	break;
 		default: break;
 		}
-
-		break;
 	}
 
 	if ((rand() % 100) < 25)
-		type |= SOCK_CLOEXEC;
+		st->type |= SOCK_CLOEXEC;
 	if ((rand() % 100) < 25)
-		type |= SOCK_NONBLOCK;
+		st->type |= SOCK_NONBLOCK;
+}
 
-	shm->a1[childno] = family;
-	shm->a2[childno] = type;
-	shm->a3[childno] = protocol;
+
+static void sanitise_socket(int childno)
+{
+	struct socket_triplet st = { .family = 0, .type = 0, .protocol = 0 };
+
+	gen_socket_args(&st);
+
+	shm->a1[childno] = st.family;
+	shm->a2[childno] = st.type;
+	shm->a3[childno] = st.protocol;
 }
 
 struct syscall syscall_socket = {

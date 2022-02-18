@@ -1,21 +1,20 @@
 /*
  * SYSCALL_DEFINE1(mlockall, int, flags)
  */
+#include <stdlib.h>
+#include "sanitise.h"
+#include "random.h"
+#include "shm.h"
 
 #define MCL_CURRENT     1
 #define MCL_FUTURE      2
-
-#include <stdlib.h>
-#include "trinity.h"
-#include "sanitise.h"
-#include "shm.h"
 
 static void sanitise_mlockall(int childno)
 {
 	if (shm->a1[childno] != 0)
 		return;
 
-	if ((rand() % 2) == 0)
+	if (rand_bool())
 		shm->a1[childno] = MCL_CURRENT;
 	else
 		shm->a1[childno] = MCL_FUTURE;

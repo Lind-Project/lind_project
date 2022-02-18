@@ -1,8 +1,0 @@
-#define KERNEL_ADDR	0xffffffff80100f18L
-
-#define TASK_SIZE       (0x800000000000UL - 4096)
-
-#define PAGE_SHIFT 12
-
-#define PTE_FILE_MAX_BITS 32
-

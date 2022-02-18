@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, int, mode, unsigned, dev)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_mknodat = {
@@ -14,4 +13,5 @@ struct syscall syscall_mknodat = {
 	.arg3name = "mode",
 	.arg4name = "dev",
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

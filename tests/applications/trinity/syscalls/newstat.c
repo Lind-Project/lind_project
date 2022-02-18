@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE2(newstat, const char __user *, filename, struct stat __user *, statbuf)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_newstat = {
@@ -11,4 +10,5 @@ struct syscall syscall_newstat = {
 	.arg1type = ARG_PATHNAME,
 	.arg2name = "statbuf",
 	.arg2type = ARG_ADDRESS,
+	.group = GROUP_VFS,
 };

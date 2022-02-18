@@ -5,15 +5,14 @@
  */
 
 #include <linux/mempolicy.h>
-
-#include "../arch.h"
+#include "trinity.h"	// page_size
+#include "arch.h"
+#include "random.h"
+#include "sanitise.h"
+#include "shm.h"
 
 #define MPOL_F_STATIC_NODES     (1 << 15)
 #define MPOL_F_RELATIVE_NODES   (1 << 14)
-
-#include "trinity.h"
-#include "sanitise.h"
-#include "shm.h"
 
 static void sanitise_mbind(int childno)
 {
@@ -27,7 +26,7 @@ retry_maxnode:
 	maxnode = shm->a5[childno];
 
 	if (maxnode < 2 || (maxnode) > (page_size * 8)) {
-		shm->a5[childno] = get_interesting_32bit_value();
+		shm->a5[childno] = rand32();
 		goto retry_maxnode;
 	}
 }

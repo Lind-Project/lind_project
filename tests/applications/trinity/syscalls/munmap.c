@@ -1,11 +1,11 @@
 /*
  * SYSCALL_DEFINE2(munmap, unsigned long, addr, size_t, len)
  */
-#include "trinity.h"
+#include "arch.h"	// page_size
 #include "sanitise.h"
 #include "shm.h"
 
-void sanitise_munmap(int childno)
+static void sanitise_munmap(int childno)
 {
 	shm->a2[childno] = page_size;
 }

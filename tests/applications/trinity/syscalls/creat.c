@@ -4,7 +4,6 @@
  * returns the new file descriptor on success.
  * returns -1 if an error occurred (in which case, errno is set appropriately).
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_creat = {
@@ -13,5 +12,7 @@ struct syscall syscall_creat = {
 	.arg1name = "pathname",
 	.arg1type = ARG_PATHNAME,
 	.arg2name = "mode",
+	.arg2type = ARG_MODE_T,
 	.rettype = RET_FD,
+	.group = GROUP_VFS,
 };

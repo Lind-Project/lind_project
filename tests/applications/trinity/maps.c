@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <malloc.h>
 #include <stdio.h>
@@ -7,8 +8,10 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "trinity.h"
+#include "trinity.h"	// page_size
 #include "arch.h"
+#include "maps.h"
+#include "log.h"
 #include "shm.h"
 
 static unsigned int num_mappings = 0;
@@ -66,8 +69,8 @@ static void * alloc_zero_map(struct map *map, int prot, const char *name)
 		tmpmap = alloc_map();
 
 	fd = open("/dev/zero", O_RDWR);
-	if (!fd) {
-		printf("open /dev/zero failure\n");
+	if (fd < 0) {
+		printf("open /dev/zero failure. %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
@@ -91,7 +94,7 @@ static void * alloc_zero_map(struct map *map, int prot, const char *name)
 	 */
 	size *= 2;
 
-	tmpmap->ptr = mmap(NULL, size, prot, MAP_ANONYMOUS|MAP_SHARED, -1, 0);
+	tmpmap->ptr = mmap(NULL, size, prot, MAP_ANONYMOUS|MAP_SHARED, fd, 0);
 
 	if (tmpmap->ptr == MAP_FAILED) {
 		printf("mmap /dev/zero failure\n");
@@ -112,7 +115,8 @@ static void * alloc_zero_map(struct map *map, int prot, const char *name)
 	output(2, "mapping[%d]: (zeropage %s) %p (%lu bytes)\n",
 			num_mappings - 1, name, tmpmap->ptr, size);
 
-	close(fd);
+	if (fd >= 0)
+		close(fd);
 	return tmpmap;
 }
 
@@ -130,7 +134,6 @@ void setup_maps(void)
 	tmpmap = tmpmap->next;
 
 	tmpmap->next = alloc_zero_map(NULL, PROT_WRITE, "PROT_WRITE");
-	tmpmap = tmpmap->next;
 
 	output(2, "Added /dev/zero mappings.\n");
 	dump_maps();
@@ -198,6 +201,6 @@ void init_buffers(void)
 
 	setup_maps();
 
-	// regenerate_random_page may end up using maps, so has to be last.
-	regenerate_random_page();
+	// generate_random_page may end up using maps, so has to be last.
+	generate_random_page(page_rand);
 }

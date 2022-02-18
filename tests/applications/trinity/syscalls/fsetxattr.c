@@ -4,8 +4,6 @@
  */
 
 #include <linux/xattr.h>
-
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_fsetxattr = {
@@ -27,4 +25,5 @@ struct syscall syscall_fsetxattr = {
 	},
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

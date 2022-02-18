@@ -5,7 +5,6 @@
 #define IN_CLOEXEC 02000000
 #define IN_NONBLOCK 04000
 
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_inotify_init1 = {
@@ -17,4 +16,5 @@ struct syscall syscall_inotify_init1 = {
 		.num = 2,
 		.values = { IN_CLOEXEC , IN_NONBLOCK },
 	},
+	.group = GROUP_VFS,
 };

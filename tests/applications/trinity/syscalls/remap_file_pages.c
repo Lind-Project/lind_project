@@ -3,10 +3,10 @@
 	 unsigned long, prot, unsigned long, pgoff, unsigned long, flags)
  */
 #include <asm/mman.h>
-
-#include "trinity.h"
-#include "sanitise.h"
+#include "trinity.h"	// page_size
 #include "arch.h"
+#include "random.h"
+#include "sanitise.h"
 #include "shm.h"
 
 static void sanitise_remap_file_pages(int childno)
@@ -18,19 +18,19 @@ static void sanitise_remap_file_pages(int childno)
 
 retry_size:
 	if (shm->a1[childno] + shm->a2[childno] <= shm->a1[childno]) {
-		shm->a2[childno] = get_interesting_32bit_value() & PAGE_MASK;
+		shm->a2[childno] = rand32() & PAGE_MASK;
 		goto retry_size;
 	}
 
 retry_pgoff:
-	if (shm->a5[childno] + (shm->a2[childno] >> PAGE_SHIFT) < shm->a5[childno]) {
-		shm->a5[childno] = get_interesting_value();
+	if (shm->a4[childno] + (shm->a2[childno] >> PAGE_SHIFT) < shm->a4[childno]) {
+		shm->a4[childno] = rand64();
 		goto retry_pgoff;
 	}
 
 retry_pgoff_bits:
-	if (shm->a5[childno] + (shm->a2[childno] >> PAGE_SHIFT) >= (1UL << PTE_FILE_MAX_BITS)) {
-		shm->a5[childno] = (shm->a5[childno] >> 1);
+	if (shm->a4[childno] + (shm->a2[childno] >> PAGE_SHIFT) >= (1UL << PTE_FILE_MAX_BITS)) {
+		shm->a4[childno] = (shm->a4[childno] >> 1);
 		goto retry_pgoff_bits;
 	}
 }

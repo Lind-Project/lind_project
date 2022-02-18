@@ -4,7 +4,6 @@
  * On success, zero is returned.
  * On error, -1 is returned, and errno is set appropriately.
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_fchmod = {
@@ -13,6 +12,8 @@ struct syscall syscall_fchmod = {
 	.arg1name = "fd",
 	.arg1type = ARG_FD,
 	.arg2name = "mode",
+	.arg2type = ARG_MODE_T,
 	.rettype = RET_ZERO_SUCCESS,
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

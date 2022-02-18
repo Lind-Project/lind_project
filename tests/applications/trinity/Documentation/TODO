@@ -1,73 +1,96 @@
-* Clean up logging.
-  - prepend [watchdog] for watchdog messages
-  - Make -D use a separate debug log file
-  - audit printfs and change to output/debugf as necessary
-  - make debugf a proper varargs function.
+* Rewrite the fd code.
+  - kill off NR_FILE_FDS
+  - open some files in the child too after forking.
+    - this requires a child-local fd mapping table.
+      Maybe we can then reduce the size of the shared shm->file_fds
+  - When requesting an fd, occasionally generate a new one.
+  - Could we do the nftw walks in parallel ?
+    That would speed up startup a lot.
+  - support for multiple victim file parameters
+  - When picking a random path, instead of treating the pool of paths as one thing,
+    treat it as multiple (/dev, /sys, /proc). And then do a 1-in-3 chance
+    of getting one of those. Right now, because there are 5-6 digits worth of /proc & /sys,
+    they dominate over the /dev entries.
+  - more fd 'types' (epoll_create, eventfd, fanotify_init, futex)
 
-* decode fd number -> filename in output
-
-* watchdog improvements
-  - in main loop, check watchdog is still alive
-  - check shm->parent_pid still alive in watchdog
-  - bind watchdog process to a cpu.
-  - RT watchdog task ? (needs initial startup as root, and drop privs afterwards).
+* Reseeding improvements.
+  We reseed way too often right now.
+  - Only do the periodic reseed if N syscalls have passed since the last reseed.
 
 * Change regeneration code.
-  Instead of every n syscalls, make it happen after 15 minutes.
+  Instead of every n syscalls, make it happen after 15 minutes (but with a minimum of n syscalls)
 
-* ->decode_argN functions to print decoded flags etc.
+* Rewrite socket generation.
+  Organise into (sorted) per-protocol buckets of linked-lists..
+  - Search buckets for dupes before adding.
+  - add a function to lookup a socket from a specific proto for sendmsg etc.
+    (Still occasionally send sockets from random proto's)
 
-* Improve socket generation to not generate duplicates.
+* 'fragments'.
+  These are fragments of things that a real program would do.
+  For example   open->read->close,  open->mmap->access mem->close
+  The child_process function would randomly decide what a child is going
+  to do fragments, or random syscalls.
 
-* the COLOR_ARG macro in syscall.c:mkcall() has grown into a monster.
-  Look at turning it into a function or two.
+* Ability to mark some fragments as 'NEEDS_ROOT'.
+  At the same time, rework startup so that if we're root, when we fork
+  children, we decide whether or not to drop privs by looking at fragment->flags
+  After completing a root-only fragment, we either exit, or run other root-only fragments.
 
-* Revisit fuzzing ptrace.
-  - It's disabled currently because of situations like..
-  child a traces child b
-  child a segfaults
-  child b never proceeds, and doesn't get untraced.
-
-* Finish annotating syscall return types
-
-* First thing a child should do is allocate a buffer of random numbers
-  to be used as syscall numbers.
-
-* Based upon the first syscall the child is going to call, bias the subsequent
-  random syscalls to be calls that use the return type from syscall 1.
-  Ie, if syscall #1 is going to be a syscall that returns an fd, do a bunch
-  of syscalls that work on fd's.
-  This will give us a sort of auto-grouping of syscalls.
+* ioctl improvements
+  - needs filename globbing for some ioctls
 
 * Destroy structures we allocated during a syscalls ->sanitise in a ->post method.
   - On return from the syscall, we don't call the destructor immediately.
     We pick a small random number, and do N other syscalls before we do the destruction.
     This requires us to create a list of work to be done later, along with a pointer
     to any allocated data.
+  - some ancillary data needs to be destroyed immediately after the syscall
+    (it's pointless keeping around mangled pathnames for eg).
 
-* Rewrite the fd generation code.
-  - Don't generate so many fd's (faster startup)
-  - When requesting an fd, occasionally generate a new one.
+* Clean up logging.
+  - Make -D use a separate debug log file
+  - audit printfs and change to output/debugf as necessary
+  - make debugf a proper varargs function.
 
-* generate overlapping addresses/lengths.
+* Pretty-print improvements.
+ - decode fd number -> filename in output
+ - decode addresses when printing them out to print 'page_rand+4' instead of a hex address.
+ - ->decode_argN functions to print decoded flags etc.
+ - the COLOR_ARG macro in syscall.c:mkcall() has grown into a monster.
+   Look at turning it into a function or two.
 
-* There are a few syscalls with duplicate '64' variants.
-  They take the same arguments, and vary only in name.
-  Two possibilities.
-  1. what I did for fcntl[64] in 22b4b44ececaf59f9178f52788e3bcfe92535574
-  2. leave the dupes, just for the sake of getting the ->name right.
+* Watchdog improvements
+  - in main loop, check watchdog is still alive
+  - RT watchdog task ? (needs initial startup as root, and drop privs afterwards).
 
-* Store a field in the syscall definition on when it was added upstream.
-  This will allow for things like "just fuzz syscalls added since 2.6.32"
-  It won't be much use on kernels that have them backported, but that's
-  not a big deal. We could do a ENOSYS test.
+* filename related issues.
+  - filename cache.
+    Similar to the socketcache. Create on startup, then on loading, invalidate entries
+    that aren't present (/proc/pid etc).
+    This should improve reproducability in some cases. Right now, when a syscall
+    says "open the 5231st filename in the list", it differs across runs because we're
+    rebuilding the list, and the system state means stuff moves around.
+  - Add a way to add a filter to filelist.
+    ie, something like --filter-files=*[0-9]* to ignore all files with numbers in them.
+  - Dump filelist to a logfile. (Perhaps this ties in with the idea above to cache the filelist?)
+  - blacklist filenames for victim path & /proc/self/exe
+    - make sure we don't call unlink() or rmdir() on them
+  - Add a mode to sequentially go through the whole file list a few hundred files at a time
+     instead of picking from the list randomly.
+  - file list struct extensions
+    - use count
+
+maps.c improvements:
+- convert maps.c linked-list to list.h implementation
+- Sometimes generate overlapping addresses/lengths when we have ARG_ADDRESS/ARG_ADDRESS2 pairs
+- make sure ARG_ADDRESS only uses addresses from this list, and audit all other mmap/malloc uses
+  in sanitise routines.
 
 * Arch specific TODO
   x86-64: Build both a 64bit and a 32bit executable.
   *: Move arch specific syscalls into syscalls/arch/
   *: Move addresses in get_interesting_value() to per-arch headers.
-
-* --ignore-socketcache
 
 * Perform some checks on return from syscall
   - check padding between struct members is zeroed.
@@ -75,30 +98,17 @@
     on return whether any of them got clobbered.
   - Check for corruption patterns (LIST_DEBUG, SLAB_POISON)
 
-* Add a parameter to bias the randomness passed to length parameters.
-  Right now it's hardwired to return 16 bit 70% of the time.
-  (and 32bit in the 64bit path)
-
-* Add a parameter for the dir/file randomness bias
-
-* --oneshot
-  ./trinity --oneshot futex -1,0x40000000,1,2,3,4
-
-* Other arch support. S390? fully native PPC64? (PPC64 currently requires 32-bit glibc-kernheaders)
-
-* run tests in different namespaces, personalities.
+* run children in different namespaces, personalities.
 
 * Output errno distribution on exit
-
-* Track success/failure per-thread instead of globally
 
 * Store previous syscall results
 
 * -x & -C should build a syscall table & adjust max_nr_syscalls
 
 * allow for multiple -G's (after there is more than 'vm')
-
-* ARG_MODE_T
+  I might kill off -G. It might be better to just implement fragments 
+  that do various VM calls, or various network calls etc etc
 
 * use inotify to check if /proc/sys/kernel/tainted changes instead of polling.
   (does inotify work on procfs?)
@@ -107,14 +117,7 @@
 
 * Try passing a format string as a syscall argument.
 
-* sanitise_setsockopt needs further expansion to cope with things such as
-  those in do_ip_setsockopt
-
-* decode addresses when printing them out to print 'page_rand+4' instead of a hex address.
-
-* 'safe root' syscall mode.
-
-* if a read() blocks, blacklist (close?) that fd.
+* if a read() blocks and we get a kill from the watchdog, blacklist (close?) that fd/filename.
 
 * Pause on oops.
   Sometimes we might want to read trinity state when we trigger a bad event.
@@ -122,18 +125,35 @@
 * config file
   - specify an ip of a victim machine
   - exclude file list for (certain sysfs files for eg)
+  - parameter to bias the randomness passed to length parameters.
+    Right now it's hardwired to return 16 bit 70% of the time.
+    (and 32bit in the 64bit path)
+  - parameter for the dir/file randomness bias
 
-* rework ioctl
-  - pick known ioctl at random
-  - start with: DRM, Networking, ALSA,..
-  - lookup the correct /dev/node
+* Some of the syscalls marked AVOID are done so for good reason.
+  - Make the VM syscalls work on their own private mappings instead of page_rand
+    Right now, if mremap makes page_rand unreadable for some reason, we segfault.
 
-* generic linked list implementation
-  - convert file list usage
-  - memory allocation usage
+  - Revisit fuzzing ptrace.
+    - It's disabled currently because of situations like..
+    child a traces child b
+    child a segfaults
+    child b never proceeds, and doesn't get untraced.
 
-* file list struct extensions
-  - use count
+* When we fuzz execve, do an extra fork, sleep for 3 seconds, kill the execve'd pid, and then exit.
 
-* destructor lists
+* Further syscall annotation improvements
+  - There are a few syscalls with duplicate '64' variants.
+    They take the same arguments, and vary only in name.
+    Two possibilities.
+    1. what I did for fcntl[64] in 22b4b44ececaf59f9178f52788e3bcfe92535574
+    2. leave the dupes, just for the sake of getting the ->name right.
+
+  - Finish annotating syscall return types
+
+* When we've hit a bug once, it's really annoying to keep walking into that same bug.
+  Add some code to actively avoid calling certain syscalls with certain params based
+  on kernel version.
+  (Might be a lot of work, more than it's worth)
+  - also add an override to disable this code.
 

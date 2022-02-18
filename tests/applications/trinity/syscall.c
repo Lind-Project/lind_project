@@ -13,10 +13,16 @@
 #include <sys/wait.h>
 
 #include "arch.h"
-#include "trinity.h"
+#include "child.h"
+#include "random.h"
 #include "sanitise.h"
 #include "shm.h"
 #include "syscall.h"
+#include "pids.h"
+#include "log.h"
+#include "params.h"
+#include "maps.h"
+#include "trinity.h"
 
 #define __syscall_return(type, res) \
 	do { \
@@ -64,7 +70,7 @@ static unsigned long do_syscall(int childno, int *errno_saved)
 	int nr = shm->syscallno[childno];
 	unsigned int num_args = syscalls[nr].entry->num_args;
 	unsigned long a1, a2, a3, a4, a5, a6;
-	int ret = 0;
+	unsigned long ret = 0;
 	int pidslot;
 
 	a1 = shm->a1[childno];
@@ -99,12 +105,16 @@ static unsigned long do_syscall(int childno, int *errno_saved)
 	return ret;
 }
 
+/*
+ * Generate arguments, print them out, then call the syscall.
+ */
 long mkcall(int childno)
 {
 	unsigned long olda1, olda2, olda3, olda4, olda5, olda6;
 	unsigned int call = shm->syscallno[childno];
-
-	int ret = 0, errno_saved;
+	unsigned int call32, call64;
+	unsigned long ret = 0;
+	int errno_saved;
 	char string[512], *sptr;
 
 	shm->regenerate++;
@@ -116,12 +126,12 @@ long mkcall(int childno)
 	if (shm->do32bit[childno] == TRUE)
 		sptr += sprintf(sptr, "[32BIT] ");
 
-	olda1 = shm->a1[childno] = get_reg();
-	olda2 = shm->a2[childno] = get_reg();
-	olda3 = shm->a3[childno] = get_reg();
-	olda4 = shm->a4[childno] = get_reg();
-	olda5 = shm->a5[childno] = get_reg();
-	olda6 = shm->a6[childno] = get_reg();
+	olda1 = shm->a1[childno] = (unsigned long)rand64();
+	olda2 = shm->a2[childno] = (unsigned long)rand64();
+	olda3 = shm->a3[childno] = (unsigned long)rand64();
+	olda4 = shm->a4[childno] = (unsigned long)rand64();
+	olda5 = shm->a5[childno] = (unsigned long)rand64();
+	olda6 = shm->a6[childno] = (unsigned long)rand64();
 
 	if (call > max_nr_syscalls)
 		sptr += sprintf(sptr, "%u", call);
@@ -136,18 +146,21 @@ long mkcall(int childno)
  * I *really* loathe how this macro has grown. It should be a real function one day.
  */
 #define COLOR_ARG(ARGNUM, NAME, BIT, OLDREG, REG, TYPE)			\
+	if ((logging == FALSE) && (quiet_level < MAX_LOGLEVEL))		\
+		goto args_done;						\
+									\
 	if (syscalls[call].entry->num_args >= ARGNUM) {			\
 		if (!NAME)						\
 			goto args_done;					\
 		if (ARGNUM != 1) {					\
-			WHITE						\
+			CRESET						\
 			sptr += sprintf(sptr, ", ");			\
 		}							\
 		if (NAME)						\
 			sptr += sprintf(sptr, "%s=", NAME);		\
 									\
 		if (OLDREG == REG) {					\
-			WHITE						\
+			CRESET						\
 		} else {						\
 			CYAN						\
 		}							\
@@ -158,8 +171,12 @@ long mkcall(int childno)
 			break;						\
 		case ARG_PID:						\
 		case ARG_FD:						\
-			WHITE						\
+			CRESET						\
 			sptr += sprintf(sptr, "%ld", REG);		\
+			break;						\
+		case ARG_MODE_T:					\
+			CRESET						\
+			sptr += sprintf(sptr, "%o", (mode_t) REG);	\
 			break;						\
 		case ARG_UNDEFINED:					\
 		case ARG_LEN:						\
@@ -170,7 +187,7 @@ long mkcall(int childno)
 		case ARG_LIST:						\
 		case ARG_RANDPAGE:					\
 		case ARG_CPU:						\
-		case ARG_RANDOM_INT:					\
+		case ARG_RANDOM_LONG:					\
 		case ARG_IOVEC:						\
 		case ARG_IOVECLEN:					\
 		case ARG_SOCKADDR:					\
@@ -180,7 +197,7 @@ long mkcall(int childno)
 				sptr += sprintf(sptr, "0x%lx", REG);	\
 			else						\
 				sptr += sprintf(sptr, "%ld", REG);	\
-			WHITE						\
+			CRESET						\
 			break;						\
 		}							\
 		if (REG == (((unsigned long)page_zeros) & PAGE_MASK))	\
@@ -193,7 +210,7 @@ long mkcall(int childno)
 			sptr += sprintf(sptr, "[page_allocs]");		\
 	}
 
-	WHITE
+	CRESET
 	sptr += sprintf(sptr, "(");
 
 	COLOR_ARG(1, syscalls[call].entry->arg1name, 1<<5, olda1, shm->a1[childno], syscalls[call].entry->arg1type);
@@ -203,16 +220,15 @@ long mkcall(int childno)
 	COLOR_ARG(5, syscalls[call].entry->arg5name, 1<<1, olda5, shm->a5[childno], syscalls[call].entry->arg5type);
 	COLOR_ARG(6, syscalls[call].entry->arg6name, 1<<0, olda6, shm->a6[childno], syscalls[call].entry->arg6type);
 args_done:
-	WHITE
+	CRESET
 	sptr += sprintf(sptr, ") ");
 	*sptr = '\0';
 
 	output(2, "%s", string);
 
-	if (dopause == TRUE) {
+	/* If we're going to pause, might as well sync pre-syscall */
+	if (dopause == TRUE)
 		synclogs();
-		sleep(1);
-	}
 
 	if (((unsigned long)shm->a1 == (unsigned long) shm) ||
 	    ((unsigned long)shm->a2 == (unsigned long) shm) ||
@@ -233,28 +249,30 @@ args_done:
 
 	sptr = string;
 
-	if (ret < 0) {
+	if (IS_ERR(ret)) {
 		RED
-		sptr += sprintf(sptr, "= %d", ret);
-		if (errno_saved != 0)
-			sptr += sprintf(sptr, " (%s)", strerror(errno_saved));
-		WHITE
+		sptr += sprintf(sptr, "= %ld (%s)", ret, strerror(errno_saved));
+		CRESET
 		shm->failures++;
 	} else {
 		GREEN
-		sptr += sprintf(sptr, "= %d", ret);
-		WHITE
+		if ((unsigned long)ret > 10000)
+			sptr += sprintf(sptr, "= 0x%lx", ret);
+		else
+			sptr += sprintf(sptr, "= %ld", ret);
+		CRESET
 		shm->successes++;
 	}
-	sptr += sprintf(sptr, "\n");
 
 	*sptr = '\0';
 
-	output(2, "%s", string);
-	sptr = string;
+	output(2, "%s\n", string);
+
+	if (dopause == TRUE)
+		sleep(1);
 
 	/* If the syscall doesn't exist don't bother calling it next time. */
-	if ((ret == -1) && (errno_saved == ENOSYS)) {
+	if ((ret == -1UL) && (errno_saved == ENOSYS)) {
 
 		/* Futex is awesome, it ENOSYS's depending on arguments. Sigh. */
 		if (call == (unsigned int) search_syscall_table(syscalls, max_nr_syscalls, "futex"))
@@ -264,8 +282,21 @@ args_done:
 		if (call == (unsigned int) search_syscall_table(syscalls, max_nr_syscalls, "ioctl"))
 			goto skip_enosys;
 
+		/* sendfile() may ENOSYS depending on args. */
+		if (call == (unsigned int) search_syscall_table(syscalls, max_nr_syscalls, "sendfile"))
+			goto skip_enosys;
+
 		output(1, "%s (%d) returned ENOSYS, marking as inactive.\n", syscalls[call].entry->name, call);
-		syscalls[call].entry->flags &= ~ACTIVE;
+
+		if (biarch == FALSE) {
+			syscalls[call].entry->flags &= ~ACTIVE;
+		} else {
+			call32 = search_syscall_table(syscalls_32bit, max_nr_32bit_syscalls, syscalls[call].entry->name);
+			syscalls_32bit[call32].entry->flags &= ~ACTIVE;
+			call64 = search_syscall_table(syscalls_64bit, max_nr_64bit_syscalls, syscalls[call].entry->name);
+			syscalls_64bit[call64].entry->flags &= ~ACTIVE;
+			output(1, "Disabled syscalls 32bit:%d 64bit:%d\n", call32, call64);
+		}
 	}
 
 skip_enosys:

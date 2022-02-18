@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE2(rename, const char __user *, oldname, const char __user *, newname
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_rename = {
@@ -11,4 +10,5 @@ struct syscall syscall_rename = {
 	.arg1type = ARG_ADDRESS,
 	.arg2name = "newname",
 	.arg2type = ARG_ADDRESS,
+	.group = GROUP_VFS,
 };

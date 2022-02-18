@@ -1,7 +1,6 @@
 /*
  * SYSCALL_DEFINE2(inotify_rm_watch, int, fd, __s32, wd)
  */
-#include "trinity.h"
 #include "sanitise.h"
 
 struct syscall syscall_inotify_rm_watch = {
@@ -11,4 +10,5 @@ struct syscall syscall_inotify_rm_watch = {
 	.arg1type = ARG_FD,
 	.arg2name = "wd",
 	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
 };

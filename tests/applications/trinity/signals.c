@@ -1,6 +1,10 @@
 #include <stdlib.h>
 #include <signal.h>
+#include <unistd.h>
 
+#include "trinity.h"	// __unused__
+#include "params.h"	// debug
+#include "signals.h"
 #include "shm.h"
 
 jmp_buf ret_jump;

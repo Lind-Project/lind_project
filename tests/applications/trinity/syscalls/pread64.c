@@ -1,7 +1,7 @@
 /*
  * SYSCALL_DEFINE(pread64)(unsigned int fd, char __user *buf, size_t count, loff_t pos)
  */
-#include "trinity.h"
+#include "random.h"
 #include "sanitise.h"
 #include "shm.h"
 
@@ -10,7 +10,7 @@ static void sanitise_pread64(int childno)
 
 retry_pos:
 	if ((int) shm->a4[childno] < 0) {
-		shm->a4[childno] = get_reg();
+		shm->a4[childno] = rand64();
 		goto retry_pos;
 	}
 }
