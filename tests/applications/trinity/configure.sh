@@ -10,7 +10,7 @@ fi
 
 MISSING_DEFS=0
 
-CC=x86_64-nacl-gcc -std=gnu99
+CC=x86_64-nacl-gcc
 CXX=x86_64-nacl-g++
 LD=x86_64-nacl-ld
 
