@@ -4,24 +4,14 @@ INSTALL_PREFIX ?= $(DESTDIR)
 INSTALL_PREFIX ?= $(HOME)
 NR_CPUS := $(shell grep ^processor /proc/cpuinfo | /usr/bin/wc -l)
 
-ifeq ($(CC),"")
-CC := gcc
-endif
-CC := $(CROSS_COMPILE)$(CC)
-LD := $(CROSS_COMPILE)$(LD)
+CC=x86_64-nacl-gcc
+CXX=x86_64-nacl-g++
+LD=x86_64-nacl-ld
+CFLAGS=-g -fno-pie
+CXXFLAGS=-g -fno-pie -std=gnu++99
+LDFLAGS=-g -fno-pie
 
 CFLAGS += -Wall -W -g -O2 -I. -Iinclude/ -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -D__linux__
-
-# Only enabled during development, and on gcc 4.9+
-CPP_MAJOR := $(shell $(CPP) -dumpversion 2>&1 | cut -d'.' -f1)
-CPP_MINOR := $(shell $(CPP) -dumpversion 2>&1 | cut -d'.' -f2)
-DEVEL	:= $(shell grep VERSION Makefile | head -n1 | grep pre | wc -l)
-CFLAGS	+= $(shell if [ $(CPP_MAJOR) -eq 4 -a $(CPP_MINOR) -ge 9 -a $(DEVEL) -eq 1 ] ; then echo "-Werror"; else echo ""; fi)
-
-ifneq ($(SYSROOT),)
-CFLAGS += --sysroot=$(SYSROOT)
-endif
-#CFLAGS += $(shell if $(CC) -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-m32"; fi)
 CFLAGS += -Wdeclaration-after-statement
 CFLAGS += -Wformat=2
 CFLAGS += -Winit-self
@@ -33,24 +23,16 @@ CFLAGS += -Wundef
 CFLAGS += -Wwrite-strings
 CFLAGS += -Wno-format-nonliteral
 CFLAGS += -Wstrict-prototypes -Wmissing-prototypes
+CFLAGS += -Wlogical-op
+CFLAGS += -Wstrict-aliasing=3
+CFLAGS += -Wlogical-op
+CFLAGS += -Wstrict-aliasing=3
 
 # needed for show_backtrace() to work correctly.
 LDFLAGS += -rdynamic
 
-# gcc only.
-ifneq ($(shell $(CC) -v 2>&1 | grep -c "clang"), 1)
-CFLAGS += -Wlogical-op
-CFLAGS += -Wstrict-aliasing=3
-CFLAGS += $(shell if [ $(DEVEL) -eq 0 ]; then echo "-Wno-maybe-uninitialized"; else echo ""; fi)
-endif
-
-# Sometimes useful for debugging. more useful with clang than gcc.
-#CFLAGS += -fsanitize=address
-
 V	= @
 Q	= $(V:1=)
-QUIET_CC = $(Q:@=@echo    '  CC	'$@;)
-
 
 all: trinity
 
@@ -96,13 +78,13 @@ DEPDIR= .deps
 -include $(SRCS:%.c=$(DEPDIR)/%.d)
 
 trinity: version test $(OBJS) $(HEADERS)
-	$(QUIET_CC)$(CC) $(CFLAGS) $(LDFLAGS) -o trinity $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o trinity $(OBJS)
 	@mkdir -p tmp
 
 df = $(DEPDIR)/$(*D)/$(*F)
 
 %.o : %.c
-	$(QUIET_CC)$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $<
 	@mkdir -p $(DEPDIR)/$(*D)
 	@$(CC) -MM $(CFLAGS) $*.c > $(df).d
 	@mv -f $(df).d $(df).d.tmp
