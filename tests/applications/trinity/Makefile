@@ -3,11 +3,14 @@ VERSION=1.2
 INSTALL_PREFIX ?= $(DESTDIR)
 INSTALL_PREFIX ?= $(HOME)
 
-CC := $(CROSS_COMPILE)$(CC)
-LD := $(CROSS_COMPILE)$(LD)
+CC=x86_64-nacl-gcc
+CXX=x86_64-nacl-g++
+LD=x86_64-nacl-ld
+CFLAGS=-g -fno-pie
+CXXFLAGS=-g -fno-pie
+LDFLAGS=-g -fno-pie
 
 CFLAGS = -Wall -W -g -O2 -I. -Iinclude/ -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE
-#CFLAGS += $(shell if $(CC) -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-m32"; fi)
 CFLAGS += -Wdeclaration-after-statement
 CFLAGS += -Wformat=2
 CFLAGS += -Winit-self
@@ -22,13 +25,8 @@ CFLAGS += -Wundef
 CFLAGS += -Wwrite-strings
 CFLAGS += -Wstrict-prototypes -Wmissing-prototypes
 
-# Only enabled during development.
-#CFLAGS += -Werror
-
 V	= @
 Q	= $(V:1=)
-QUIET_CC = $(Q:@=@echo    '  CC	'$@;)
-
 
 all: trinity
 
@@ -61,13 +59,13 @@ DEPDIR= .deps
 -include $(SRCS:%.c=$(DEPDIR)/%.d)
 
 trinity: test $(OBJS) $(HEADERS)
-	$(QUIET_CC)$(CC) $(CFLAGS) -o trinity $(OBJS)
+	$(CC) $(CFLAGS) -o trinity $(OBJS)
 	@mkdir -p tmp
 
 df = $(DEPDIR)/$(*D)/$(*F)
 
 %.o : %.c
-	$(QUIET_CC)$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $<
 	@mkdir -p $(DEPDIR)/$(*D)
 	@gcc -MM $(CFLAGS) $*.c > $(df).d
 	@mv -f $(df).d $(df).d.tmp
