@@ -1,3 +1,4 @@
+#include <sys/types.h>
 #include <stdlib.h>
 #include <linux/netlink.h>
 #include "net.h"

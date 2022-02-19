@@ -1,6 +1,7 @@
 /*
  * SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
  */
+#include <sys/types.h>
 #include "sanitise.h"
 
 #define MS_ASYNC        1               /* Sync memory asynchronously.  */

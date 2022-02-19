@@ -1,3 +1,5 @@
+#include <sys/types.h>
+
 #include "config.h"
 
 #include <stdio.h>

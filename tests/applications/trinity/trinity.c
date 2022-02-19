@@ -46,29 +46,38 @@ static int create_shm(void)
 {
 	void *p;
 	unsigned int shm_pages;
-
+	printf("creating shm\n");
+	fflush(stdout);
 	shm_pages = ((sizeof(struct shm_s) + page_size - 1) & ~(page_size - 1)) / page_size;
-
+        
+	printf("pre alloc\n");
+	fflush(stdout);
 	/* Waste some address space to set up some "protection" near the SHM location. */
 	p = alloc_shared((SHM_PROT_PAGES + shm_pages + SHM_PROT_PAGES) * page_size);
 	if (p == NULL) {
 		perror("mmap");
 		return -1;
 	}
-
+	printf("post alloc, pre mprotect\n");
+	fflush(stdout);
 	mprotect(p, SHM_PROT_PAGES * page_size, PROT_NONE);
 	mprotect(p + (SHM_PROT_PAGES + shm_pages) * page_size,
 			SHM_PROT_PAGES * page_size, PROT_NONE);
 
+	printf("post mprotect\n");
+	fflush(stdout);
 	shm = p + SHM_PROT_PAGES * page_size;
-
+	printf("post shm calc\n");
+	fflush(stdout);
 	memset(shm, 0, sizeof(struct shm_s));
-
+	printf("post memset \n");
+	fflush(stdout);
 	shm->total_syscalls_done = 1;
 	shm->regenerate = 0;
 
 	memset(shm->pids, EMPTY_PIDSLOT, sizeof(shm->pids));
-
+	printf("post memset2\n");
+	fflush(stdout);
 	/* Overwritten later in setup_shm_postargs if user passed -s */
 	shm->seed = new_seed();
 
@@ -154,7 +163,7 @@ int main(int argc, char* argv[])
 	unsigned int i;
 
 	printf("Trinity v" __stringify(VERSION) "  Dave Jones <davej@redhat.com>\n");
-
+	fflush(stdout);
 	progname = argv[0];
 
 	initpid = getpid();

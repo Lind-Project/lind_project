@@ -1,6 +1,7 @@
 #ifndef _SANITISE_H
 #define _SANITISE_H 1
 
+#include <sys/types.h>
 #include "syscall.h"
 
 void sanitise_mmap(int childno);

@@ -1,4 +1,6 @@
+#include <sys/types.h>
 #include <stdlib.h>
+#include <asm-generic/socket.h>
 #include <linux/filter.h>
 #include "net.h"
 #include "maps.h"	// page_rand

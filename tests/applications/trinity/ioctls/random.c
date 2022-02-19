@@ -1,3 +1,5 @@
+#include <sys/types.h>
+
 #include <linux/random.h>
 
 #include "trinity.h"

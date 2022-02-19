@@ -3,6 +3,7 @@
 	 char __user *, type, unsigned long, flags, void __user *, data)
  */
 
+#include <sys/types.h>
 #include <linux/fs.h>
 #include "sanitise.h"
 #include "compat.h"

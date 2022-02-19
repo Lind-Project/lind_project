@@ -1,3 +1,5 @@
+#include <sys/types.h>
+
 #include <linux/ioctl.h>
 #include <mtd/mtd-abi.h>
 

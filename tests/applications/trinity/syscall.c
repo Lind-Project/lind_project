@@ -84,7 +84,6 @@ static unsigned long do_syscall(int childno, int *errno_saved)
 		(void)alarm(1);
 
 	errno = 0;
-
 	if (shm->do32bit[childno] == FALSE)
 		ret = syscall(nr, a1, a2, a3, a4, a5, a6);
 	else

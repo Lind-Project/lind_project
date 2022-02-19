@@ -1,3 +1,5 @@
+#include <sys/types.h>
+
 #include <linux/limits.h>
 #include <linux/auto_fs4.h>
 
@@ -237,8 +239,6 @@ static const struct ioctl autofs_ioctls[] = {
 	IOCTL(AUTOFS_IOC_SETTIMEOUT),
 	IOCTL(AUTOFS_IOC_EXPIRE),
 	IOCTL(AUTOFS_IOC_EXPIRE_MULTI),
-	IOCTL(AUTOFS_IOC_EXPIRE_INDIRECT),
-	IOCTL(AUTOFS_IOC_EXPIRE_DIRECT),
 	IOCTL(AUTOFS_IOC_PROTOSUBVER),
 	IOCTL(AUTOFS_IOC_ASKUMOUNT),
 

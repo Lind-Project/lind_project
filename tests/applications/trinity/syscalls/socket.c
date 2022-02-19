@@ -2,8 +2,9 @@
  * SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
  */
 #include <stdlib.h>
-#include <sys/types.h>
+
 #include <sys/socket.h>
+#include <sys/types.h>
 #include "compat.h"
 #include "log.h"
 #include "net.h"
@@ -19,25 +20,17 @@ struct socket_ptr {
 	void (*func)(struct socket_triplet *st);
 };
 static const struct socket_ptr socketptrs[] = {
-	{ .family = AF_APPLETALK, .func = &atalk_rand_socket },
-	{ .family = AF_AX25, .func = &ax25_rand_socket },
 #ifdef USE_CAIF
 	{ .family = AF_CAIF, .func = &caif_rand_socket },
 #endif
-	{ .family = AF_CAN, .func = &can_rand_socket },
 	{ .family = AF_DECnet, .func = &decnet_rand_socket },
 	{ .family = AF_INET, .func = &inet_rand_socket },
 	{ .family = AF_INET6, .func = &inet6_rand_socket },
 	{ .family = AF_IPX, .func = &ipx_rand_socket },
-	{ .family = AF_IRDA, .func = &irda_rand_socket },
-	{ .family = AF_LLC, .func = &llc_rand_socket },
 	{ .family = AF_NETLINK, .func = &netlink_rand_socket },
 	{ .family = AF_NFC, .func = &nfc_rand_socket },
 //TODO	{ .family = AF_IB, .func = &ib_rand_socket },
 	{ .family = AF_PACKET, .func = &packet_rand_socket },
-	{ .family = AF_PHONET, .func = &phonet_rand_socket },
-	{ .family = AF_RDS, .func = &rds_rand_socket },
-	{ .family = AF_TIPC, .func = &tipc_rand_socket },
 	{ .family = AF_UNIX, .func = &unix_rand_socket },
 	{ .family = AF_X25, .func = &x25_rand_socket },
 };

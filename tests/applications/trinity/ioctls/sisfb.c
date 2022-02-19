@@ -1,3 +1,4 @@
+#include <sys/types.h>
 #include <linux/ioctl.h>
 #include <video/sisfb.h>
 

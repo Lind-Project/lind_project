@@ -1,3 +1,5 @@
+#include <sys/types.h>
+
 #include <linux/watchdog.h>
 
 #include "trinity.h"

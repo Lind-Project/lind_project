@@ -1,3 +1,5 @@
+#include <sys/types.h>
+
 #include <linux/ioctl.h>
 #include <linux/uinput.h>
 

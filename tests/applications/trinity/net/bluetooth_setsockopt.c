@@ -1,3 +1,5 @@
+#include <sys/types.h>
+
 #include <stdlib.h>
 #include "net.h"
 #include "compat.h"

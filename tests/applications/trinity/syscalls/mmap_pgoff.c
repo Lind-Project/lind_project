@@ -3,7 +3,7 @@
                  unsigned long, prot, unsigned long, flags,
                  unsigned long, fd, unsigned long, pgoff)
  */
-#include <asm/mman.h>
+#include <linux/mman.h>
 #include "sanitise.h"
 #include "compat.h"
 

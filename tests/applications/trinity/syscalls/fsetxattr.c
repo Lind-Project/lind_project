@@ -3,7 +3,7 @@
 	 const void __user *,value, size_t, size, int, flags)
  */
 
-#include <linux/xattr.h>
+#include <sys/xattr.h>
 #include "sanitise.h"
 
 struct syscall syscall_fsetxattr = {
@@ -27,3 +27,4 @@ struct syscall syscall_fsetxattr = {
 	.flags = NEED_ALARM,
 	.group = GROUP_VFS,
 };
+

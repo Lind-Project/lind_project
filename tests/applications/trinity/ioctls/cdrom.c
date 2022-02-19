@@ -1,3 +1,4 @@
+#include <sys/types.h>
 #include <linux/cdrom.h>
 
 #include "trinity.h"

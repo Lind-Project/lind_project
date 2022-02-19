@@ -1,7 +1,8 @@
 /*
  * SYSCALL_DEFINE(sync_file_range)(int fd, loff_t offset, loff_t nbytes, unsigned int flags)
  * SYSCALL_DEFINE(sync_file_range2)(int fd, unsigned int flags, loff_t offset, loff_t nbytes)
- */
+*/
+#include <sys/types.h>
 #include <linux/fs.h>
 #include <fcntl.h>
 #include <string.h>

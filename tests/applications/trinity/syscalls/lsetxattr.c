@@ -4,7 +4,7 @@
 	 size_t, size, int, flags)
  */
 
-#include <linux/xattr.h>
+#include <sys/xattr.h>
 #include "sanitise.h"
 
 struct syscall syscall_lsetxattr = {

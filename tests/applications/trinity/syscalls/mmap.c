@@ -4,7 +4,7 @@
 	unsigned long, fd, unsigned long, off)
  */
 #include <stdlib.h>
-#include <asm/mman.h>
+#include <linux/mman.h>
 #include "trinity.h"	// page_size
 #include "sanitise.h"
 #include "shm.h"

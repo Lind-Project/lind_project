@@ -1,3 +1,5 @@
+#include <sys/types.h>
+
 #include <linux/firewire-cdev.h>
 
 #include "trinity.h"
