@@ -467,7 +467,10 @@ static struct syscalltable * copy_syscall_table(struct syscalltable *from, unsig
 
 void select_syscall_tables(void)
 {
-#if defined(__x86_64__)
+#if defined(__native_client__)
+	syscalls = copy_syscall_table(syscalls_x86_64_nacl, ARRAY_SIZE(syscalls_x86_64_nacl));
+	max_nr_syscalls = ARRAY_SIZE(syscalls_x86_64_nacl);
+#elif defined(__x86_64__)
 	syscalls_64bit = copy_syscall_table(syscalls_x86_64, ARRAY_SIZE(syscalls_x86_64));
 	syscalls_32bit = copy_syscall_table(syscalls_i386, ARRAY_SIZE(syscalls_i386));
 

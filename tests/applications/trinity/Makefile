@@ -3,12 +3,6 @@ VERSION=1.2
 INSTALL_PREFIX ?= $(DESTDIR)
 INSTALL_PREFIX ?= $(HOME)
 
-CC=x86_64-nacl-gcc
-CXX=x86_64-nacl-g++
-LD=x86_64-nacl-ld
-CFLAGS=-g -fno-pie
-CXXFLAGS=-g -fno-pie
-LDFLAGS=-g -fno-pie
 
 CFLAGS = -Wall -W -g -O2 -I. -Iinclude/ -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE
 CFLAGS += -Wdeclaration-after-statement

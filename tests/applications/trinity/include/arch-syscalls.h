@@ -1,10 +1,13 @@
 #ifndef _ARCH_SYSCALLS_H
 #define _ARCH_SYSCALLS_H 1
 
-#ifdef __x86_64__
+#if defined(__native_client__)
+#include "syscalls-nacl.h"
+#elif defined(__x86_64__)
 #include "syscalls-x86_64.h"
 #include "syscalls-i386.h"
 #endif
+
 #ifdef __i386__
 #include "syscalls-i386.h"
 #endif
