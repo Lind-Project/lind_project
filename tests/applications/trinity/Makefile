@@ -4,6 +4,15 @@ INSTALL_PREFIX ?= $(DESTDIR)
 INSTALL_PREFIX ?= $(HOME)
 
 
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS=-g -fno-pie
+export CXXFLAGS=-g -fno-pie
+export LDFLAGS=-g -fno-pie
+
+
+
 CFLAGS = -Wall -W -g -O2 -I. -Iinclude/ -Wimplicit -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE
 CFLAGS += -Wdeclaration-after-statement
 CFLAGS += -Wformat=2
