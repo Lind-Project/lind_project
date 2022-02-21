@@ -26,3 +26,4 @@ getuid.c
 forkexecuid.c
 ioctl.c
 setsid.c
+dnstest.c
