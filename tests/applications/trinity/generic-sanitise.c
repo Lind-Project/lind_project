@@ -380,10 +380,8 @@ static unsigned long fill_arg(int childno, int call, int argnum)
 	return 0x5a5a5a5a;	/* Should never happen */
 }
 
-void generic_sanitise(int childno)
+void generic_sanitise(int call)
 {
-	unsigned int call = shm->syscallno[childno];
-
 	if (syscalls[call].entry->arg1type != 0)
 		shm->a1[childno] = fill_arg(childno, call, 1);
 	if (syscalls[call].entry->arg2type != 0)
