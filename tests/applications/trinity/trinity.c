@@ -177,19 +177,12 @@ int main(int argc, char* argv[])
 
 	select_syscall_tables();
 
-	if (logging == TRUE)
-		open_logfiles();
-
+	printf("pre-munge\n");
 	if (munge_tables() == FALSE) {
 		ret = EXIT_FAILURE;
 		goto out;
 	}
-
-	if (show_syscall_list == TRUE) {
-		dump_syscall_tables();
-		goto out;
-	}
-
+	printf("pre-init\n");
 	init_syscalls();
 
 	printf("About to run syscalls\n");
