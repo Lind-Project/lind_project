@@ -23,16 +23,16 @@ static const struct socket_ptr socketptrs[] = {
 #ifdef USE_CAIF
 	{ .family = AF_CAIF, .func = &caif_rand_socket },
 #endif
-	{ .family = AF_DECnet, .func = &decnet_rand_socket },
+	// { .family = AF_DECnet, .func = &decnet_rand_socket },
 	{ .family = AF_INET, .func = &inet_rand_socket },
 	{ .family = AF_INET6, .func = &inet6_rand_socket },
-	{ .family = AF_IPX, .func = &ipx_rand_socket },
-	{ .family = AF_NETLINK, .func = &netlink_rand_socket },
-	{ .family = AF_NFC, .func = &nfc_rand_socket },
+	// { .family = AF_IPX, .func = &ipx_rand_socket },
+	// { .family = AF_NETLINK, .func = &netlink_rand_socket },
+	// { .family = AF_NFC, .func = &nfc_rand_socket },
 //TODO	{ .family = AF_IB, .func = &ib_rand_socket },
-	{ .family = AF_PACKET, .func = &packet_rand_socket },
+	// { .family = AF_PACKET, .func = &packet_rand_socket },
 	{ .family = AF_UNIX, .func = &unix_rand_socket },
-	{ .family = AF_X25, .func = &x25_rand_socket },
+	// { .family = AF_X25, .func = &x25_rand_socket },
 };
 
 /* note: also called from generate_sockets() & sanitise_socketcall() */
