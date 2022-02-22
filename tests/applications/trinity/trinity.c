@@ -192,6 +192,7 @@ int main(int argc, char* argv[])
 
 	init_syscalls();
 
+	printf("About to run syscalls\n");
 
 	run_syscalls();
 
