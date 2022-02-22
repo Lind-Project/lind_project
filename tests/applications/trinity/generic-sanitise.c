@@ -298,7 +298,7 @@ static unsigned long handle_arg_mode_t(void)
 }
 
 
-static unsigned long fill_arg(int childno, int call, int argnum)
+unsigned long fill_arg(int childno, int call, int argnum)
 {
 	enum argtype argtype = 0;
 
