@@ -357,18 +357,27 @@ static const char * decode_exit(unsigned int reason)
 static void main_loop(void)
 {
 	while (shm->exit_reason == STILL_RUNNING) {
+		printf("in main loop\n");
+		fflush(stdout);
 
 		if (shm->spawn_no_more == FALSE) {
 			if (shm->running_childs < shm->max_children)
+				printf("forking children\n");
+				fflush(stdout);
 				fork_children();
 
 			if (shm->regenerate >= REGENERATION_POINT)
+				printf("regenerating\n");
+				fflush(stdout);
 				regenerate();
 
 			if (shm->need_reseed == TRUE)
+				printf("reseeding\n");
+				fflush(stdout);
 				reseed();
 		}
-
+		printf("handling children\n");
+		fflush(stdout);
 		handle_children();
 	}
 }
@@ -398,6 +407,8 @@ void do_main_loop(void)
 				_exit(EXIT_FAILURE);
 			}
 		}
+		printf("Entering main loop\n");
+		fflush(stdout);
 
 		main_loop();
 
