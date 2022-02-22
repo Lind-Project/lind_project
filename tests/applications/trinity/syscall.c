@@ -68,7 +68,8 @@ static long syscall32(int num_args, unsigned int call,
 
 
 int run_syscalls() {
-	for (int i = 0; i < max_nr_syscalls; i++) {
+	int i;
+	for (i = 0; i < max_nr_syscalls; i++) {
 
 		int pid = fork();
 		if (pid == 0) {
@@ -220,9 +221,6 @@ args_done:
 		BUG("Address of shm ended up in a register!\n");
 	}
 
-
-
-	unsigned long ret = 0;
 
 	errno = 0;
     ret = syscall(call, newa1, newa2, newa3, newa4, newa5, newa6);
