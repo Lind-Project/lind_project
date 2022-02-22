@@ -27,7 +27,6 @@ void * alloc_shared(unsigned int size)
 	void *ret;
 
 	ret = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_SHARED, -1, 0);
-	printf("Alloc shared ret %p\n", ret);
 	if (ret == MAP_FAILED)
 		return NULL;
 
