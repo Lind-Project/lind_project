@@ -49,7 +49,8 @@ static int create_shm(void)
 	printf("creating shm\n");
 	fflush(stdout);
 	shm_pages = ((sizeof(struct shm_s) + page_size - 1) & ~(page_size - 1)) / page_size;
-        
+    printf("shm pages %d\n", shm_pages);
+
 	printf("pre alloc\n");
 	fflush(stdout);
 	/* Waste some address space to set up some "protection" near the SHM location. */
@@ -58,6 +59,7 @@ static int create_shm(void)
 		perror("mmap");
 		return -1;
 	}
+	printf("p ptr: %p\n", p);
 	printf("post alloc, pre mprotect\n");
 	fflush(stdout);
 	mprotect(p, SHM_PROT_PAGES * page_size, PROT_NONE);
