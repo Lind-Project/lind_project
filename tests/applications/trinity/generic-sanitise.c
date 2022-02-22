@@ -298,7 +298,7 @@ static unsigned long handle_arg_mode_t(void)
 }
 
 
-unsigned long fill_arg(int childno, int call, int argnum)
+static unsigned long fill_arg(int childno, int call, int argnum)
 {
 	enum argtype argtype = 0;
 
@@ -380,18 +380,20 @@ unsigned long fill_arg(int childno, int call, int argnum)
 	return 0x5a5a5a5a;	/* Should never happen */
 }
 
-void generic_sanitise(int call)
+void generic_sanitise(int childno)
 {
-	// if (syscalls[call].entry->arg1type != 0)
-	// 	shm->a1[childno] = fill_arg(childno, call, 1);
-	// if (syscalls[call].entry->arg2type != 0)
-	// 	shm->a2[childno] = fill_arg(childno, call, 2);
-	// if (syscalls[call].entry->arg3type != 0)
-	// 	shm->a3[childno] = fill_arg(childno, call, 3);
-	// if (syscalls[call].entry->arg4type != 0)
-	// 	shm->a4[childno] = fill_arg(childno, call, 4);
-	// if (syscalls[call].entry->arg5type != 0)
-	// 	shm->a5[childno] = fill_arg(childno, call, 5);
-	// if (syscalls[call].entry->arg6type != 0)
-	// 	shm->a6[childno] = fill_arg(childno, call, 6);
+	unsigned int call = shm->syscallno[childno];
+
+	if (syscalls[call].entry->arg1type != 0)
+		shm->a1[childno] = fill_arg(childno, call, 1);
+	if (syscalls[call].entry->arg2type != 0)
+		shm->a2[childno] = fill_arg(childno, call, 2);
+	if (syscalls[call].entry->arg3type != 0)
+		shm->a3[childno] = fill_arg(childno, call, 3);
+	if (syscalls[call].entry->arg4type != 0)
+		shm->a4[childno] = fill_arg(childno, call, 4);
+	if (syscalls[call].entry->arg5type != 0)
+		shm->a5[childno] = fill_arg(childno, call, 5);
+	if (syscalls[call].entry->arg6type != 0)
+		shm->a6[childno] = fill_arg(childno, call, 6);
 }

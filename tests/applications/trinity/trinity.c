@@ -46,42 +46,29 @@ static int create_shm(void)
 {
 	void *p;
 	unsigned int shm_pages;
-	printf("creating shm\n");
-	fflush(stdout);
-	shm_pages = ((sizeof(struct shm_s) + page_size - 1) & ~(page_size - 1)) / page_size;
-    printf("shm pages %d\n", shm_pages);
 
-	printf("pre alloc\n");
-	fflush(stdout);
+	shm_pages = ((sizeof(struct shm_s) + page_size - 1) & ~(page_size - 1)) / page_size;
+
 	/* Waste some address space to set up some "protection" near the SHM location. */
 	p = alloc_shared((SHM_PROT_PAGES + shm_pages + SHM_PROT_PAGES) * page_size);
 	if (p == NULL) {
 		perror("mmap");
 		return -1;
 	}
-	printf("p ptr: %p\n", p);
-	printf("post alloc, pre mprotect\n");
-	fflush(stdout);
+
 	mprotect(p, SHM_PROT_PAGES * page_size, PROT_NONE);
 	mprotect(p + (SHM_PROT_PAGES + shm_pages) * page_size,
 			SHM_PROT_PAGES * page_size, PROT_NONE);
 
-	printf("post mprotect\n");
-	fflush(stdout);
 	shm = p + SHM_PROT_PAGES * page_size;
-	printf("post shm calc\n");
-	printf("page size %xd\n", page_size);
 
-	fflush(stdout);
 	memset(shm, 0, sizeof(struct shm_s));
-	printf("post memset \n");
-	fflush(stdout);
+
 	shm->total_syscalls_done = 1;
 	shm->regenerate = 0;
 
 	memset(shm->pids, EMPTY_PIDSLOT, sizeof(shm->pids));
-	printf("post memset2\n");
-	fflush(stdout);
+
 	/* Overwritten later in setup_shm_postargs if user passed -s */
 	shm->seed = new_seed();
 
@@ -166,8 +153,8 @@ int main(int argc, char* argv[])
 	int childstatus;
 	unsigned int i;
 
-	printf("LIND Trinity");
-	fflush(stdout);
+	printf("Trinity v" __stringify(VERSION) "  Dave Jones <davej@redhat.com>\n");
+
 	progname = argv[0];
 
 	initpid = getpid();
@@ -177,25 +164,110 @@ int main(int argc, char* argv[])
 
 	select_syscall_tables();
 
-	printf("pre-munge\n");
-	fflush(stdout);
+	if (create_shm())
+		exit(EXIT_FAILURE);
+
+	parse_args(argc, argv);
+	printf("Done parsing arguments.\n");
+
+	setup_shm_postargs();
+
+	if (logging == TRUE)
+		open_logfiles();
+
 	if (munge_tables() == FALSE) {
 		ret = EXIT_FAILURE;
 		goto out;
 	}
-	printf("pre-init\n");
-	fflush(stdout);
+
+	if (show_syscall_list == TRUE) {
+		dump_syscall_tables();
+		goto out;
+	}
 
 	init_syscalls();
 
-	printf("About to run syscalls\n");
-	fflush(stdout);
+	if (show_ioctl_list == TRUE) {
+		dump_ioctls();
+		goto out;
+	}
 
+	if (getuid() == 0) {
+		if (dangerous == TRUE) {
+			printf("DANGER: RUNNING AS ROOT.\n");
+			printf("Unless you are running in a virtual machine, this could cause serious problems such as overwriting CMOS\n");
+			printf("or similar which could potentially make this machine unbootable without a firmware reset.\n\n");
+			printf("ctrl-c now unless you really know what you are doing.\n");
+			for (i = 10; i > 0; i--) {
+				printf("Continuing in %d seconds.\r", i);
+				(void)fflush(stdout);
+				sleep(1);
+			}
+		} else {
+			printf("Don't run as root (or pass --dangerous if you know what you are doing).\n");
+			exit(EXIT_FAILURE);
+		}
+	}
 
-	run_syscalls();
+	if (do_specific_proto == TRUE)
+		find_specific_proto(specific_proto_optarg);
+
+	init_buffers();
+
+	parse_devices();
+
+	pids_init();
+
+	setup_main_signals();
+
+	if (check_tainted() != 0) {
+		output(0, "Kernel was tainted on startup. Will keep running if trinity causes an oops.\n");
+		ignore_tainted = TRUE;
+	}
+
+	/* just in case we're not using the test.sh harness. */
+	chmod("tmp/", 0755);
+	ret = chdir("tmp/");
+	if (!ret) {
+		/* nothing right now */
+	}
+
+	/* check if we ctrl'c or something went wrong during init. */
+	if (shm->exit_reason != STILL_RUNNING)
+		goto cleanup_fds;
+
+	init_watchdog();
+
+	do_main_loop();
+
+	/* Shutting down. */
+	waitpid(watchdog_pid, &childstatus, 0);
+
+	printf("\nRan %ld syscalls. Successes: %ld  Failures: %ld\n",
+		shm->total_syscalls_done - 1, shm->successes, shm->failures);
 
 	ret = EXIT_SUCCESS;
 
+cleanup_fds:
+
+	for (i = 0; i < nr_sockets; i++) {
+		int r = 0;
+		struct linger ling = { .l_onoff = FALSE, };
+
+		ling.l_onoff = FALSE;	/* linger active */
+		r = setsockopt(shm->socket_fds[i], SOL_SOCKET, SO_LINGER, &ling, sizeof(struct linger));
+		if (r)
+			perror("setsockopt");
+		r = shutdown(shm->socket_fds[i], SHUT_RDWR);
+		if (r)
+			perror("shutdown");
+		close(shm->socket_fds[i]);
+	}
+
+	destroy_maps();
+
+	if (logging == TRUE)
+		close_logfiles();
 
 out:
 
