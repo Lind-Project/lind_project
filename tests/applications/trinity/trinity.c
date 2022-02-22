@@ -51,7 +51,7 @@ static int create_shm(void)
 
 	/* Waste some address space to set up some "protection" near the SHM location. */
 	// p = alloc_shared((SHM_PROT_PAGES + shm_pages + SHM_PROT_PAGES) * page_size);
-	p = malloc((SHM_PROT_PAGES + shm_pages + SHM_PROT_PAGES) * page_size)
+	p = malloc((SHM_PROT_PAGES + shm_pages + SHM_PROT_PAGES) * page_size);
 	if (p == NULL) {
 		perror("malloc");
 		return -1;
