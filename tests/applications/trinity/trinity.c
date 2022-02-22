@@ -193,15 +193,7 @@ int main(int argc, char* argv[])
 	init_syscalls();
 
 
-	for (i = 0; i < max_nr_syscalls; i++) {
-
-		int pid = fork();
-		if (pid == 0) {
-			mkcall(i);
-		}
-	}
-	
-
+	run_syscalls();
 
 	ret = EXIT_SUCCESS;
 

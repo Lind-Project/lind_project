@@ -24,7 +24,7 @@
 #include "maps.h"
 #include "trinity.h"
 
-int total_syscalls_done;
+int total_syscalls_done = 0;
 
 #define __syscall_return(type, res) \
 	do { \
@@ -67,6 +67,15 @@ static long syscall32(int num_args, unsigned int call,
 }
 
 
+int run_syscalls() {
+	for (int i = 0; i < max_nr_syscalls; i++) {
+
+		int pid = fork();
+		if (pid == 0) {
+			mkcall(i);
+		}
+	}
+}
 
 /*
  * Generate arguments, print them out, then call the syscall.
