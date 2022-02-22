@@ -50,9 +50,10 @@ static int create_shm(void)
 	shm_pages = ((sizeof(struct shm_s) + page_size - 1) & ~(page_size - 1)) / page_size;
 
 	/* Waste some address space to set up some "protection" near the SHM location. */
-	p = alloc_shared((SHM_PROT_PAGES + shm_pages + SHM_PROT_PAGES) * page_size);
+	// p = alloc_shared((SHM_PROT_PAGES + shm_pages + SHM_PROT_PAGES) * page_size);
+	p = malloc((SHM_PROT_PAGES + shm_pages + SHM_PROT_PAGES) * page_size)
 	if (p == NULL) {
-		perror("mmap");
+		perror("malloc");
 		return -1;
 	}
 
