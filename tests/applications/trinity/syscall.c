@@ -224,6 +224,7 @@ args_done:
 
 	errno = 0;
 	printf("Calling syscall #:%d\n", call);
+	fflush(stdout);
     ret = syscall(call, newa1, newa2, newa3, newa4, newa5, newa6);
 	errno_saved = errno;
 
