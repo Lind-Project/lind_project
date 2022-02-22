@@ -397,8 +397,14 @@ void do_main_loop(void)
 
 		mainpid = getpid();
 		output(0, "[%d] Main thread is alive.\n", getpid());
+		printf("post main output\n");
+		fflush(stdout);
 		prctl(PR_SET_NAME, (unsigned long) &taskname);
+		printf("post prctrl\n");
+		fflush(stdout);
 		set_seed(0);
+		printf("seed set\n");
+		fflush(stdout);
 
 		setup_fds();
 		if (no_files == FALSE) {
