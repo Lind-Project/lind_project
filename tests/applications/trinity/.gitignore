@@ -9,7 +9,6 @@ tmp
 trinity-*.tgz
 victims
 tags
-config.h
 .*.swp
 cscope.*
 ncscope.*
