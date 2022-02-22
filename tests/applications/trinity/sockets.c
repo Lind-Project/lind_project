@@ -87,10 +87,10 @@ static void generate_sockets(void)
 		output(2, "taking writer lock for cachefile\n");
 	fl.l_pid = getpid();
 	fl.l_type = F_WRLCK;
-	if (fcntl(cachefile, F_SETLKW, &fl) == -1) {
-		perror("fcntl F_WRLCK F_SETLKW");
-		exit(EXIT_FAILURE);
-	}
+	// if (fcntl(cachefile, F_SETLKW, &fl) == -1) {
+	// 	perror("fcntl F_WRLCK F_SETLKW");
+	// 	exit(EXIT_FAILURE);
+	// }
 
 	if (verbose)
 		output(2, "took writer lock for cachefile\n");
@@ -133,10 +133,10 @@ static void generate_sockets(void)
 
 done:
 	fl.l_type = F_UNLCK;
-	if (fcntl(cachefile, F_SETLK, &fl) == -1) {
-		perror("fcntl F_SETLK");
-		exit(1);
-	}
+	// if (fcntl(cachefile, F_SETLK, &fl) == -1) {
+	// 	perror("fcntl F_SETLK");
+	// 	exit(1);
+	// }
 
 	if (verbose)
 		output(2, "dropped writer lock for cachefile\n");
@@ -190,10 +190,10 @@ void open_sockets(void)
 		output(2, "taking reader lock for cachefile\n");
 	fl.l_pid = getpid();
 	fl.l_type = F_RDLCK;
-	if (fcntl(cachefile, F_SETLKW, &fl) == -1) {
-		perror("fcntl F_RDLCK F_SETLKW");
-		exit(1);
-	}
+	// if (fcntl(cachefile, F_SETLKW, &fl) == -1) {
+	// 	perror("fcntl F_RDLCK F_SETLKW");
+	// 	exit(1);
+	// }
 	if (verbose)
 		output(2, "took reader lock for cachefile\n");
 
@@ -244,10 +244,10 @@ regenerate:
 
 	fl.l_pid = getpid();
 	fl.l_type = F_UNLCK;
-	if (fcntl(cachefile, F_SETLK, &fl) == -1) {
-		perror("fcntl F_UNLCK F_SETLK ");
-		exit(1);
-	}
+	// if (fcntl(cachefile, F_SETLK, &fl) == -1) {
+	// 	perror("fcntl F_UNLCK F_SETLK ");
+	// 	exit(1);
+	// }
 
 	if (verbose)
 		output(2, "dropped reader lock for cachefile\n");
