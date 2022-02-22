@@ -95,6 +95,9 @@ long mkcall(int call)
 
 	sptr += sprintf(sptr, "[%d] ", getpid());
 
+	printf("randomizing args\n");
+	fflush(stdout);
+
 	olda1 = newa1 = (unsigned long)rand64();
 	olda2 = newa2 = (unsigned long)rand64();
 	olda3 = newa3 = (unsigned long)rand64();
@@ -109,6 +112,9 @@ long mkcall(int call)
 
 	// generic_sanitise(call);
 	// ported here
+	printf("sanitizing args\n");
+	fflush(stdout);
+
 	if (syscalls[call].entry->arg1type != 0)
 		newa1 = fill_arg(1, call, 1);
 	if (syscalls[call].entry->arg2type != 0)
@@ -123,6 +129,10 @@ long mkcall(int call)
 		newa6 = fill_arg(1, call, 6);
 	if (syscalls[call].entry->sanitise)
 		syscalls[call].entry->sanitise(call);
+
+
+	printf("coloring args\n");
+	fflush(stdout);
 
 /*
  * I *really* loathe how this macro has grown. It should be a real function one day.
@@ -208,9 +218,6 @@ args_done:
 
 	output(2, "%s", string);
 
-	/* If we're going to pause, might as well sync pre-syscall */
-	if (dopause == TRUE)
-		synclogs();
 
 	if (((unsigned long)newa1 == (unsigned long) shm) ||
 	    ((unsigned long)newa2 == (unsigned long) shm) ||
@@ -221,7 +228,6 @@ args_done:
 		BUG("Address of shm ended up in a register!\n");
 	}
 
-
 	errno = 0;
 	printf("Calling syscall #:%d\n", call);
 	fflush(stdout);
@@ -230,8 +236,6 @@ args_done:
 
 
 	total_syscalls_done++;
-
-
 
 	sptr = string;
 
