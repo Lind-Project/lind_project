@@ -68,6 +68,8 @@ static int create_shm(void)
 	fflush(stdout);
 	shm = p + SHM_PROT_PAGES * page_size;
 	printf("post shm calc\n");
+	printf("page size %xd\n", page_size);
+
 	fflush(stdout);
 	memset(shm, 0, sizeof(struct shm_s));
 	printf("post memset \n");
