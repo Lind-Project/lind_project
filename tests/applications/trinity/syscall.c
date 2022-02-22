@@ -106,7 +106,20 @@ long mkcall(int call)
 	else
 		sptr += sprintf(sptr, "%s", syscalls[call].entry->name);
 
-	generic_sanitise(call);
+	// generic_sanitise(call);
+	// ported here
+	if (syscalls[call].entry->arg1type != 0)
+		newa1 = fill_arg(1, call, 1);
+	if (syscalls[call].entry->arg2type != 0)
+		newa2 = fill_arg(1, call, 2);
+	if (syscalls[call].entry->arg3type != 0)
+		newa3 = fill_arg(1, call, 3);
+	if (syscalls[call].entry->arg4type != 0)
+		newa4 = fill_arg(1, call, 4);
+	if (syscalls[call].entry->arg5type != 0)
+		newa5 = fill_arg(1, call, 5);
+	if (syscalls[call].entry->arg6type != 0)
+		newa6 = fill_arg(1, call, 6);
 	if (syscalls[call].entry->sanitise)
 		syscalls[call].entry->sanitise(call);
 
