@@ -70,10 +70,14 @@ static long syscall32(int num_args, unsigned int call,
 int run_syscalls() {
 	int i;
 	for (i = 0; i < max_nr_syscalls; i++) {
-
-		int pid = fork();
+		int pid, status;
+		pid = fork();
 		if (pid == 0) {
+			printf("IN LOOP: calling #:%d", i);
+			fflush(stdout);
 			mkcall(i);
+		} else {
+    		waitpid(pid, &status, 0);
 		}
 	}
 }
