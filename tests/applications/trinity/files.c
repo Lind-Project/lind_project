@@ -298,12 +298,14 @@ retry:
 	if (ret == -1)
 		printf("failed lstat\n");
 		fflush(stdout);
+		sleep(1);
 		goto retry;
 
 	flags = check_stat_file(&sb);
 	if (flags == -1)
 		printf("failed stat\n");
 		fflush(stdout);
+		sleep(1);
 		goto retry;
 
 	fd = open(filename, flags | O_NONBLOCK);
