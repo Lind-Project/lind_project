@@ -44,8 +44,8 @@ void dump_pid_slots(void)
 		sptr += sprintf(sptr, "%d-%d: ", i, i+7);
 		for (j = 0; j < 8; j++) {
 			if (shm->pids[i+j] != EMPTY_PIDSLOT) {
-				if (pid_alive(shm->pids[i+j] == -1))
-					RED
+				// if (pid_alive(shm->pids[i+j] == -1))
+				// 	RED
 			}
 
 			sptr += sprintf(sptr, "%d ", shm->pids[i+j]);
