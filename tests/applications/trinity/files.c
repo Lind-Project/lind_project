@@ -263,6 +263,9 @@ void generate_filelist(void)
 		return;
 	}
 
+	printf("creating index\n");
+	fflush(stdout);
+
 	/* Generate an index of pointers to the filenames */
 
 	fileindex = malloc(sizeof(char *) * files_added);
