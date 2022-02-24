@@ -97,7 +97,7 @@ void init_child(int childno)
 
 	set_seed(childno);
 
-	disable_coredumps();
+	// disable_coredumps();
 
 	if (sched_getaffinity(pid, sizeof(set), &set) == 0) {
 		CPU_ZERO(&set);
@@ -159,7 +159,7 @@ int child_process(int childno)
 
 	ret = do_random_syscalls(childno);
 
-	reenable_coredumps();
+	// reenable_coredumps();
 
 	return ret;
 }
