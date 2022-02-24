@@ -298,7 +298,6 @@ retry:
 	if (ret == -1) {
 		printf("failed lstat\n");
 		fflush(stdout);
-		sleep(1);
 		goto retry;
 	}
 
@@ -306,7 +305,6 @@ retry:
 	if (flags == -1) {
 		printf("failed stat\n");
 		fflush(stdout);
-		sleep(1);
 		goto retry;
 	}
 
