@@ -201,7 +201,6 @@ static void open_fds(const char *dirpath)
 {
 	int before = files_added;
 	int flags = FTW_DEPTH | FTW_ACTIONRETVAL | FTW_MOUNT;
-	int ret;
 
 	/* By default, don't follow symlinks so we only get each file once.
 	 * But, if we do something like -V /lib, then follow it
@@ -263,9 +262,6 @@ void generate_filelist(void)
 		output(1, "Didn't add any files!!\n");
 		return;
 	}
-
-	printf("creating index\n");
-	fflush(stdout);
 
 	/* Generate an index of pointers to the filenames */
 

@@ -116,7 +116,7 @@ static void fork_children(void)
 		}
 
 		// (void)alarm(0);
-		printf("%Running in :\n";
+		printf("%Running in :\n");
 		fflush(stdout);
 		pid = fork();
 		if (pid != 0) 
