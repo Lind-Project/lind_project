@@ -286,18 +286,29 @@ static int open_file(void)
 	const char *modestr;
 	struct stat sb;
 
+	prinft("in open_file\n");
+	fflush(stdout);
+
 retry:
 	filename = get_filename();
+	printf("opening %s\n", filename);
+	fflush(stdout);
 	ret = lstat(filename, &sb);
 	if (ret == -1)
+		printf("failed lstat\n");
+		fflush(stdout);
 		goto retry;
 
 	flags = check_stat_file(&sb);
 	if (flags == -1)
+		printf("failed stat\n");
+		fflush(stdout);
 		goto retry;
 
 	fd = open(filename, flags | O_NONBLOCK);
 	if (fd < 0) {
+		printf("failed open\n");
+		fflush(stdout);
 		output(2, "Couldn't open %s : %s\n", filename, strerror(errno));
 		return fd;
 	}
