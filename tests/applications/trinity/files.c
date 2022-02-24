@@ -223,7 +223,7 @@ static void open_fds(const char *dirpath)
 			printf("name %s type %d\n", dir->d_name, dir->d_type);
 			fflush(stdout);
 			if (dir->d_name[0] != '.') {
-				sprintf(fullpath, "%s%s", dirpath, dir->d_name);
+				sprintf(fullpath, "%s/%s", dirpath, dir->d_name);
 				add_to_namelist(fullpath);
 				files_added++;
 			}
