@@ -222,13 +222,13 @@ static void handle_child(pid_t childpid, int childstatus)
 			debugf("[%d] All children exited!\n", getpid());
 			for_each_pidslot(i) {
 				if (shm->pids[i] != EMPTY_PIDSLOT) {
-					if (pid_alive(shm->pids[i]) == -1) {
-						debugf("[%d] Removing %d from pidmap\n", getpid(), shm->pids[i]);
-						shm->pids[i] = EMPTY_PIDSLOT;
-						shm->running_childs--;
-					} else {
-						debugf("[%d] %d looks still alive! ignoring.\n", getpid(), shm->pids[i]);
-					}
+					// if (pid_alive(shm->pids[i]) == -1) {
+					// 	debugf("[%d] Removing %d from pidmap\n", getpid(), shm->pids[i]);
+					// 	shm->pids[i] = EMPTY_PIDSLOT;
+					// 	shm->running_childs--;
+					// } else {
+					// 	debugf("[%d] %d looks still alive! ignoring.\n", getpid(), shm->pids[i]);
+					// }
 				}
 			}
 			break;
