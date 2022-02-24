@@ -144,12 +144,12 @@ static void fork_children(void)
 				printf("in slot loop\n");
 				fflush(stdout);
 
-				ret = pid_alive(mainpid);
-				if (ret != 0) {
-					shm->exit_reason = EXIT_SHM_CORRUPTION;
-					printf("[%d] " BUGTXT "parent (%d) went away!\n", getpid(), mainpid);
-					sleep(20000);
-				}
+				// ret = pid_alive(mainpid);
+				// if (ret != 0) {
+				// 	shm->exit_reason = EXIT_SHM_CORRUPTION;
+				// 	printf("[%d] " BUGTXT "parent (%d) went away!\n", getpid(), mainpid);
+				// 	sleep(20000);
+				// }
 			}
 
 			/* Wait for all the children to start up. */
