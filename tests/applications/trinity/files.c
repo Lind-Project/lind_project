@@ -217,6 +217,8 @@ static void open_fds(const char *dirpath)
 	struct dirent *dir;
 	d = opendir(dirpath);
 	if (d) {
+		printf("Adding files from dir:%s\n", dirpath);
+		fflush(stdout);
 		while ((dir = readdir(d)) != NULL) {
 			if (dir->d_type == DT_REG) {
 				add_to_namelist(dir->d_name);
@@ -224,15 +226,6 @@ static void open_fds(const char *dirpath)
 			}
 		}
 		closedir(d);
-	}
-
-	printf("ret:%d\n", ret);
-	fflush(stdout);
-
-	if (ret != 0) {
-		if (shm->exit_reason != EXIT_SIGINT)
-			output(0, "Something went wrong during nftw(%s). Returned %d\n", dirpath, ret);
-		return;
 	}
 
 	output(0, "Added %d filenames from %s\n", files_added - before, dirpath);
