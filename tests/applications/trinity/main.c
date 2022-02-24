@@ -114,7 +114,7 @@ static void fork_children(void)
 			exit(EXIT_FAILURE);
 		}
 
-		(void)alarm(0);
+		// (void)alarm(0);
 		fflush(stdout);
 		pid = fork();
 		if (pid != 0)
@@ -123,7 +123,7 @@ static void fork_children(void)
 			/* Child process. */
 			int ret = 0;
 
-			mask_signals_child();
+			// mask_signals_child();
 
 			memset(childname, 0, sizeof(childname));
 			sprintf(childname, "trinity-child%d", pidslot);
@@ -393,7 +393,7 @@ void do_main_loop(void)
 	fflush(stdout);
 	pid = fork();
 	if (pid == 0) {
-		setup_main_signals();
+		// setup_main_signals();
 
 		mainpid = getpid();
 		output(0, "[%d] Main thread is alive.\n", getpid());
