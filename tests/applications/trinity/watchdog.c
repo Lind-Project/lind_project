@@ -58,21 +58,21 @@ static int check_main_alive(void)
 {
 	int ret;
 
-	ret = kill(mainpid, 0);
-	if (ret == -1) {
-		if (errno == ESRCH) {
-			output(0, "[watchdog] main pid %d has disappeared.\n", mainpid);
-			shm->exit_reason = EXIT_MAIN_DISAPPEARED;
+	// ret = kill(mainpid, 0);
+	// if (ret == -1) {
+	// 	if (errno == ESRCH) {
+	// 		output(0, "[watchdog] main pid %d has disappeared.\n", mainpid);
+	// 		shm->exit_reason = EXIT_MAIN_DISAPPEARED;
 
-			/* if main crashed while regenerating, we'll hang the watchdog,
-			 * because nothing will ever set it back to FALSE. So we do it ourselves.
-			 */
-			shm->regenerating = FALSE;
-		} else {
-			output(0, "[watchdog] problem checking on pid %d (%d:%s)\n", mainpid, errno, strerror(errno));
-		}
-		return FALSE;
-	}
+	// 		/* if main crashed while regenerating, we'll hang the watchdog,
+	// 		 * because nothing will ever set it back to FALSE. So we do it ourselves.
+	// 		 */
+	// 		shm->regenerating = FALSE;
+	// 	} else {
+	// 		output(0, "[watchdog] problem checking on pid %d (%d:%s)\n", mainpid, errno, strerror(errno));
+	// 	}
+	// 	return FALSE;
+	// }
 	return TRUE;
 }
 
