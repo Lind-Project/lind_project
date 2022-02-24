@@ -211,7 +211,7 @@ static void open_fds(const char *dirpath)
 	if (victim_path == NULL)
 		flags |= FTW_PHYS;
 
-	ret = nftw(dirpath, file_tree_callback, 32, flags);
+	char fullpath[256];
 
 	DIR *d;
 	struct dirent *dir;
@@ -223,7 +223,8 @@ static void open_fds(const char *dirpath)
 			printf("name %s type %d\n", dir->d_name, dir->d_type);
 			fflush(stdout);
 			if (dir->d_name[0] != '.') {
-				add_to_namelist(dir->d_name);
+				sprintf(fullpath, "%s%s", dirpath, dir->d_name);
+				add_to_namelist(fullpath);
 				files_added++;
 			}
 		}
