@@ -329,6 +329,9 @@ void open_files(void)
 	unsigned int i, nr_to_open;
 	int fd;
 
+	printf("in open_files, nr_to_open %d", files_in_index);
+	fflush(stdout);
+
 	if (files_in_index < NR_FILE_FDS)
 		nr_to_open = files_in_index;
 	else
@@ -336,6 +339,9 @@ void open_files(void)
 
 	if (fileindex == NULL)	/* this can happen if we ctrl-c'd */
 		return;
+
+	printf("open loop\n");
+	fflush(stdout);
 
 	for (i = 0; i < nr_to_open; i++) {
 		fd = open_file();
