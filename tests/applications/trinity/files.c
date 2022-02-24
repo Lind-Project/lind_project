@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <dirent.h> 
 #include "trinity.h"	// __unused__
 #include "arch.h"	// page_size
 #include "files.h"
@@ -212,6 +212,20 @@ static void open_fds(const char *dirpath)
 		flags |= FTW_PHYS;
 
 	ret = nftw(dirpath, file_tree_callback, 32, flags);
+
+	DIR *d;
+	struct dirent *dir;
+	d = opendir(dirpath);
+	if (d) {
+		while ((dir = readdir(d)) != NULL) {
+			if (dir->d_type == DT_REG) {
+				add_to_namelist(dir->d_name);
+				files_added++;
+			}
+		}
+		closedir(d);
+	}
+
 	printf("ret:%d\n", ret);
 	fflush(stdout);
 
