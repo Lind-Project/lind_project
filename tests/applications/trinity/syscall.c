@@ -94,8 +94,8 @@ static unsigned long do_syscall(int childno, int *errno_saved)
 
 	*errno_saved = errno;
 
-	if (syscalls[nr].entry->flags & NEED_ALARM)
-		(void)alarm(0);
+	// if (syscalls[nr].entry->flags & NEED_ALARM)
+	// 	(void)alarm(0);
 
 	pidslot = find_pid_slot(getpid());
 	if (pidslot != PIDSLOT_NOT_FOUND) {
