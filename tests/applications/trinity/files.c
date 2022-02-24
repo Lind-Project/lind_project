@@ -130,7 +130,12 @@ static int check_stat_file(const struct stat *sb)
 	if (S_ISLNK(sb->st_mode))
 		return -1;
 
+	printf("st mode is %d", sb->st_mode);
+	fflush(stdout);
+
 	if (sb->st_uid == my_uid) {
+		printf("uid matches\n");
+		fflush(stdout);
 		if (sb->st_mode & S_IRUSR)
 			set_read = TRUE;
 		if (sb->st_mode & S_IWUSR)
@@ -138,6 +143,8 @@ static int check_stat_file(const struct stat *sb)
 	}
 
 	if (sb->st_gid == my_gid) {
+		printf("uid matches\n");
+		fflush(stdout);
 		if (sb->st_mode & S_IRGRP)
 			set_read = TRUE;
 		if (sb->st_mode & S_IWGRP)
