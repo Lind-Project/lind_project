@@ -220,6 +220,8 @@ static void open_fds(const char *dirpath)
 		printf("Adding files from dir:%s\n", dirpath);
 		fflush(stdout);
 		while ((dir = readdir(d)) != NULL) {
+			printf("name %s type %d\n", dir->d_name, dir->d_type);
+			fflush(stdout);
 			if (dir->d_type == DT_REG) {
 				add_to_namelist(dir->d_name);
 				files_added++;
