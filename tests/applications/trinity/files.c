@@ -169,16 +169,26 @@ static int check_stat_file(const struct stat *sb)
 static int file_tree_callback(const char *fpath, const struct stat *sb, __unused__ int typeflag, __unused__ struct FTW *ftwbuf)
 {
 
+	printf("in call back\n");
+	fflush(stdout);
 	if (ignore_files(fpath)) {
+		printf("ignore\n");
+		fflush(stdout);
 		return FTW_SKIP_SUBTREE;
 	}
 
 	// Check we can read it.
-	if (check_stat_file(sb) == -1)
+	if (check_stat_file(sb) == -1) {
+		printf("stat\n");
+		fflush(stdout);
 		return FTW_CONTINUE;
+	}
 
-	if (shm->exit_reason != STILL_RUNNING)
+	if (shm->exit_reason != STILL_RUNNING) {
+		printf("exit\n");
+		fflush(stdout);
 		return FTW_STOP;
+	}
 
 	add_to_namelist(fpath);
 	files_added++;
@@ -202,6 +212,9 @@ static void open_fds(const char *dirpath)
 		flags |= FTW_PHYS;
 
 	ret = nftw(dirpath, file_tree_callback, 32, flags);
+	printf("ret:%d\n", ret);
+	fflush(stdout);
+
 	if (ret != 0) {
 		if (shm->exit_reason != EXIT_SIGINT)
 			output(0, "Something went wrong during nftw(%s). Returned %d\n", dirpath, ret);
