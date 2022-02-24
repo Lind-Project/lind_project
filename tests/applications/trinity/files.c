@@ -347,6 +347,7 @@ void open_files(void)
 	for (i = 0; i < nr_to_open; i++) {
 		printf("opening file %d of %d", i, nr_to_open);
 		fflush(stdout);
+		sleep(1);
 		fd = open_file();
 
 		shm->file_fds[i] = fd;
