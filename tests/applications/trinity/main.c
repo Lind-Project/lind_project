@@ -361,20 +361,23 @@ static void main_loop(void)
 		fflush(stdout);
 
 		if (shm->spawn_no_more == FALSE) {
-			if (shm->running_childs < shm->max_children)
+			if (shm->running_childs < shm->max_children) {
 				printf("forking children\n");
 				fflush(stdout);
 				fork_children();
+			}
 
-			if (shm->regenerate >= REGENERATION_POINT)
+			if (shm->regenerate >= REGENERATION_POINT) {
 				printf("regenerating\n");
 				fflush(stdout);
 				regenerate();
+			}
 
-			if (shm->need_reseed == TRUE)
+			if (shm->need_reseed == TRUE) {
 				printf("reseeding\n");
 				fflush(stdout);
 				reseed();
+			}
 		}
 		printf("handling children\n");
 		fflush(stdout);
