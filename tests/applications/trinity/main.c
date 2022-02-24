@@ -124,11 +124,13 @@ static void fork_children(void)
 		// (void)alarm(0);
 		fflush(stdout);
 		pid = fork();
-		if (pid != 0)
+		if (pid != 0) 
 			shm->pids[pidslot] = pid;
 		else {
 			/* Child process. */
 			int ret = 0;
+			shm->pids[pidslot] = getpid();
+
 
 			// mask_signals_child();
 
