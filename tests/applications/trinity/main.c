@@ -91,6 +91,9 @@ static void fork_children(void)
 	int pidslot;
 	static char childname[17];
 
+	printf("in fork_Children\n");
+	fflush(stdout);
+
 	/* Generate children*/
 
 	while (shm->running_childs < shm->max_children) {
@@ -105,6 +108,10 @@ static void fork_children(void)
 		 */
 		if (shm->ready == TRUE)
 			reseed();
+
+		printf("finding pid slot\n");
+		fflush(stdout);
+
 
 		/* Find a space for it in the pid map */
 		pidslot = find_pid_slot(EMPTY_PIDSLOT);
@@ -134,6 +141,9 @@ static void fork_children(void)
 			/* Wait for parent to set our pidslot */
 			while (shm->pids[pidslot] != getpid()) {
 				/* Make sure parent is actually alive to wait for us. */
+				printf("in slot loop\n");
+				fflush(stdout);
+
 				ret = pid_alive(mainpid);
 				if (ret != 0) {
 					shm->exit_reason = EXIT_SHM_CORRUPTION;
@@ -146,6 +156,9 @@ static void fork_children(void)
 			while (shm->ready == FALSE);
 
 			init_child(pidslot);
+
+			printf("running child process\n");
+			fflush(stdout);
 
 			ret = child_process(pidslot);
 
