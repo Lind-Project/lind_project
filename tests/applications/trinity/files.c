@@ -295,18 +295,20 @@ retry:
 	printf("opening %s\n", filename);
 	fflush(stdout);
 	ret = lstat(filename, &sb);
-	if (ret == -1)
+	if (ret == -1) {
 		printf("failed lstat\n");
 		fflush(stdout);
 		sleep(1);
 		goto retry;
+	}
 
 	flags = check_stat_file(&sb);
-	if (flags == -1)
+	if (flags == -1) {
 		printf("failed stat\n");
 		fflush(stdout);
 		sleep(1);
 		goto retry;
+	}
 
 	fd = open(filename, flags | O_NONBLOCK);
 	if (fd < 0) {
@@ -332,7 +334,7 @@ void open_files(void)
 	unsigned int i, nr_to_open;
 	int fd;
 
-	printf("in open_files, nr_to_open %d", files_in_index);
+	printf("in open_files, nr_to_open %d\n", files_in_index);
 	fflush(stdout);
 
 	if (files_in_index < NR_FILE_FDS)
@@ -347,7 +349,7 @@ void open_files(void)
 	fflush(stdout);
 
 	for (i = 0; i < nr_to_open; i++) {
-		printf("opening file %d of %d", i, nr_to_open);
+		printf("opening file %d of %d\n", i, nr_to_open);
 		fflush(stdout);
 		sleep(1);
 		fd = open_file();
