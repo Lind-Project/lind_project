@@ -155,7 +155,13 @@ static void fork_children(void)
 			}
 
 			/* Wait for all the children to start up. */
-			while (shm->ready == FALSE);
+			// while (shm->ready == FALSE);
+			int i;
+			for (i = 10; i > 0; i--) {
+				printf("Running in %d\n", i);
+				fflush(stdout);
+				sleep(1);
+			}
 
 			init_child(pidslot);
 
