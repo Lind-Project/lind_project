@@ -169,8 +169,6 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 
 	parse_args(argc, argv);
-	printf("Done parsing arguments.\n");
-
 	setup_shm_postargs();
 
 	if (logging == TRUE)

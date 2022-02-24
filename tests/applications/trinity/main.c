@@ -91,9 +91,6 @@ static void fork_children(void)
 	int pidslot;
 	static char childname[17];
 
-	printf("in fork_Children\n");
-	fflush(stdout);
-
 	/* Generate children*/
 
 	while (shm->running_childs < shm->max_children) {
@@ -109,9 +106,6 @@ static void fork_children(void)
 		if (shm->ready == TRUE)
 			reseed();
 
-		printf("finding pid slot\n");
-		fflush(stdout);
-
 
 		/* Find a space for it in the pid map */
 		pidslot = find_pid_slot(EMPTY_PIDSLOT);
@@ -122,6 +116,7 @@ static void fork_children(void)
 		}
 
 		// (void)alarm(0);
+		printf("%Running in :\n";
 		fflush(stdout);
 		pid = fork();
 		if (pid != 0) 
@@ -143,9 +138,6 @@ static void fork_children(void)
 			/* Wait for parent to set our pidslot */
 			while (shm->pids[pidslot] != getpid()) {
 				/* Make sure parent is actually alive to wait for us. */
-				printf("in slot loop\n");
-				fflush(stdout);
-
 				// ret = pid_alive(mainpid);
 				// if (ret != 0) {
 				// 	shm->exit_reason = EXIT_SHM_CORRUPTION;
@@ -158,15 +150,12 @@ static void fork_children(void)
 			// while (shm->ready == FALSE);
 			int i;
 			for (i = 10; i > 0; i--) {
-				printf("Running in %d\n", i);
+				printf("%d\n", i);
 				fflush(stdout);
 				sleep(1);
 			}
 
 			init_child(pidslot);
-
-			printf("running child process\n");
-			fflush(stdout);
 
 			ret = child_process(pidslot);
 
@@ -378,30 +367,20 @@ static const char * decode_exit(unsigned int reason)
 static void main_loop(void)
 {
 	while (shm->exit_reason == STILL_RUNNING) {
-		printf("in main loop\n");
-		fflush(stdout);
 
 		if (shm->spawn_no_more == FALSE) {
 			if (shm->running_childs < shm->max_children) {
-				printf("forking children\n");
-				fflush(stdout);
 				fork_children();
 			}
 
 			if (shm->regenerate >= REGENERATION_POINT) {
-				printf("regenerating\n");
-				fflush(stdout);
 				regenerate();
 			}
 
 			if (shm->need_reseed == TRUE) {
-				printf("reseeding\n");
-				fflush(stdout);
 				reseed();
 			}
 		}
-		printf("handling children\n");
-		fflush(stdout);
 		handle_children();
 	}
 }
@@ -421,14 +400,8 @@ void do_main_loop(void)
 
 		mainpid = getpid();
 		output(0, "[%d] Main thread is alive.\n", getpid());
-		printf("post main output\n");
-		fflush(stdout);
 		prctl(PR_SET_NAME, (unsigned long) &taskname);
-		printf("post prctrl\n");
-		fflush(stdout);
 		set_seed(0);
-		printf("seed set\n");
-		fflush(stdout);
 
 		setup_fds();
 		if (no_files == FALSE) {
@@ -437,8 +410,6 @@ void do_main_loop(void)
 				_exit(EXIT_FAILURE);
 			}
 		}
-		printf("Entering main loop\n");
-		fflush(stdout);
 
 		main_loop();
 
