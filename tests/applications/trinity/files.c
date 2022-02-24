@@ -286,7 +286,7 @@ static int open_file(void)
 	const char *modestr;
 	struct stat sb;
 
-	prinft("in open_file\n");
+	printf("in open_file\n");
 	fflush(stdout);
 
 retry:
