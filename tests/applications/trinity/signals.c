@@ -32,38 +32,38 @@ static void sighandler(int sig)
 
 void mask_signals_child(void)
 {
-	struct sigaction sa;
-	sigset_t ss;
-	int i;
+	// struct sigaction sa;
+	// sigset_t ss;
+	// int i;
 
-	for (i = 1; i < 512; i++) {
-		(void)sigfillset(&ss);
-		sa.sa_flags = SA_RESTART;
-		sa.sa_handler = sighandler;
-		sa.sa_mask = ss;
-		(void)sigaction(i, &sa, NULL);
-	}
-	/* we want default behaviour for child process signals */
-	(void)signal(SIGCHLD, SIG_DFL);
+	// for (i = 1; i < 512; i++) {
+	// 	(void)sigfillset(&ss);
+	// 	sa.sa_flags = SA_RESTART;
+	// 	sa.sa_handler = sighandler;
+	// 	sa.sa_mask = ss;
+	// 	(void)sigaction(i, &sa, NULL);
+	// }
+	// /* we want default behaviour for child process signals */
+	// (void)signal(SIGCHLD, SIG_DFL);
 
-	/* ignore signals we don't care about */
-	(void)signal(SIGFPE, SIG_IGN);
-	(void)signal(SIGXCPU, SIG_IGN);
-	(void)signal(SIGTSTP, SIG_IGN);
-	(void)signal(SIGWINCH, SIG_IGN);
-	(void)signal(SIGIO, SIG_IGN);
-	(void)signal(SIGPIPE, SIG_IGN);
+	// /* ignore signals we don't care about */
+	// (void)signal(SIGFPE, SIG_IGN);
+	// (void)signal(SIGXCPU, SIG_IGN);
+	// (void)signal(SIGTSTP, SIG_IGN);
+	// (void)signal(SIGWINCH, SIG_IGN);
+	// (void)signal(SIGIO, SIG_IGN);
+	// (void)signal(SIGPIPE, SIG_IGN);
 
-	/* Ignore the RT signals. */
-	for (i = SIGRTMIN; i <= SIGRTMAX; i++)
-		(void)signal(i, SIG_IGN);
+	// /* Ignore the RT signals. */
+	// for (i = SIGRTMIN; i <= SIGRTMAX; i++)
+	// 	(void)signal(i, SIG_IGN);
 
-	/* If we are in debug mode, we want segfaults and core dumps */
-	if (debug == TRUE)
-		(void)signal(SIGSEGV, SIG_DFL);
+	// /* If we are in debug mode, we want segfaults and core dumps */
+	// if (debug == TRUE)
+	// 	(void)signal(SIGSEGV, SIG_DFL);
 
-	/* trap ctrl-c */
-	(void)signal(SIGINT, ctrlc_handler);
+	// /* trap ctrl-c */
+	// (void)signal(SIGINT, ctrlc_handler);
 }
 
 

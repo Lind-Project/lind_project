@@ -295,7 +295,7 @@ static void handle_child(pid_t childpid, int childstatus)
 			case SIGSTOP:
 				debugf("[%d] Sending PTRACE_DETACH (and then KILL)\n", getpid());
 				ptrace(PTRACE_DETACH, childpid, NULL, NULL);
-				kill(childpid, SIGKILL);
+				// kill(childpid, SIGKILL);
 				reap_child(childpid);
 				break;
 			case SIGFPE:

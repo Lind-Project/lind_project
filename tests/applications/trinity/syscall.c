@@ -80,8 +80,8 @@ static unsigned long do_syscall(int childno, int *errno_saved)
 	a5 = shm->a5[childno];
 	a6 = shm->a6[childno];
 
-	if (syscalls[nr].entry->flags & NEED_ALARM)
-		(void)alarm(1);
+	// if (syscalls[nr].entry->flags & NEED_ALARM)
+	// 	(void)alarm(1);
 
 	errno = 0;
 
