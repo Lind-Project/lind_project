@@ -249,6 +249,10 @@ void generate_filelist(void)
 	my_uid = getuid();
 	my_gid = getgid();
 
+	printf("uid is %d, gid is %d", my_uid, my_gid);
+	fflush(stdout);
+	sleep(5);
+
 	names = alloc_namenode();
 	INIT_LIST_HEAD(&names->list);
 
