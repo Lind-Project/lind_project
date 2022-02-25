@@ -2,6 +2,11 @@ name: Lind Project Build
 
 # Controls when the workflow will run
 on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        default: 'warning'
   push:
     branches:
       - develop
@@ -12,7 +17,6 @@ on:
       - main
   # Triggers the workflow on push or pull request events but only for the develop branch
   # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
 
 jobs:
   build:
