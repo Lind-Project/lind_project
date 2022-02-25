@@ -3,6 +3,10 @@ name: Lind Project Dispatcher
 # Controls when the workflow will run
 on:
   workflow_dispatch:
+      inputs:
+        logLevel:
+          description: 'Log level'     
+          default: 'warning'
   push:
     branches:
       - develop
