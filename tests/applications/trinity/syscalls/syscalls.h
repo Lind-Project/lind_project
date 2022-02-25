@@ -53,6 +53,8 @@ extern struct syscall syscall_fchown16;
 extern struct syscall syscall_fchownat;
 extern struct syscall syscall_fchown;
 extern struct syscall syscall_fcntl;
+extern struct syscall syscall_fcntl_get;
+extern struct syscall syscall_fcntl_set;
 extern struct syscall syscall_fdatasync;
 extern struct syscall syscall_fgetxattr;
 extern struct syscall syscall_finit_module;

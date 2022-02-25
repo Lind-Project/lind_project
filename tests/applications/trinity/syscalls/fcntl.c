@@ -148,3 +148,59 @@ struct syscall syscall_fcntl = {
 	.group = GROUP_VFS,
 	.sanitise = sanitise_fcntl,
 };
+
+
+struct syscall syscall_fcntl_get = {
+	.name = "fcntl_get",
+	.num_args = 2,
+	.arg1name = "fd",
+	.arg1type = ARG_FD,
+	.arg2name = "cmd",
+	.arg2type = ARG_OP,
+	.arg2list = {
+#ifndef HAVE_LK64
+		.num = 20,
+#else
+		.num = 23,
+#endif
+		.values = { F_DUPFD, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, F_GETFL, F_SETFL, F_GETLK, F_SETLK,
+		  F_SETLKW, F_GETOWN, F_SETOWN, F_GETOWN_EX, F_SETOWN_EX, F_GETSIG, F_SETSIG, F_GETLEASE,
+		  F_SETLEASE, F_NOTIFY, F_SETPIPE_SZ, F_GETPIPE_SZ,
+#ifdef HAVE_LK64
+		  F_GETLK64, F_SETLK64, F_SETLKW64,
+#endif
+		},
+	},
+	.rettype = RET_FD,	//FIXME: Needs to mutate somehow depending on 'cmd'
+	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
+	.sanitise = sanitise_fcntl,
+};
+
+struct syscall syscall_fcntl_set = {
+	.name = "fcntl_set",
+	.num_args = 3,
+	.arg1name = "fd",
+	.arg1type = ARG_FD,
+	.arg2name = "cmd",
+	.arg2type = ARG_OP,
+	.arg2list = {
+#ifndef HAVE_LK64
+		.num = 20,
+#else
+		.num = 23,
+#endif
+		.values = { F_DUPFD, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, F_GETFL, F_SETFL, F_GETLK, F_SETLK,
+		  F_SETLKW, F_GETOWN, F_SETOWN, F_GETOWN_EX, F_SETOWN_EX, F_GETSIG, F_SETSIG, F_GETLEASE,
+		  F_SETLEASE, F_NOTIFY, F_SETPIPE_SZ, F_GETPIPE_SZ,
+#ifdef HAVE_LK64
+		  F_GETLK64, F_SETLK64, F_SETLKW64,
+#endif
+		},
+	},
+	.arg3name = "arg",
+	.rettype = RET_FD,	//FIXME: Needs to mutate somehow depending on 'cmd'
+	.flags = NEED_ALARM,
+	.group = GROUP_VFS,
+	.sanitise = sanitise_fcntl,
+};
