@@ -1,0 +1,17 @@
+core.*
+*.o
+*.d
+trinity
+logs/
+trinity*.log
+trinity.socketcache
+tmp
+trinity-*.tgz
+victims
+tags
+.*.swp
+cscope.*
+ncscope.*
+*.patch
+cov-int
+trinity-coverity.tgz
