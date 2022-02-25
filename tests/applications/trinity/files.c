@@ -132,12 +132,7 @@ static int check_stat_file(const struct stat *sb)
 	if (S_ISLNK(sb->st_mode))
 		return -1;
 
-	printf("st mode is %d", sb->st_mode);
-	fflush(stdout);
-
 	if (sb->st_uid == my_uid) {
-		printf("uid matches\n");
-		fflush(stdout);
 		if (sb->st_mode & S_IRUSR)
 			set_read = TRUE;
 		if (sb->st_mode & S_IWUSR)
@@ -145,8 +140,6 @@ static int check_stat_file(const struct stat *sb)
 	}
 
 	if (sb->st_gid == my_gid) {
-		printf("gid matches\n");
-		fflush(stdout);
 		if (sb->st_mode & S_IRGRP)
 			set_read = TRUE;
 		if (sb->st_mode & S_IWGRP)
@@ -160,8 +153,6 @@ static int check_stat_file(const struct stat *sb)
 
 
 	if ((set_read | set_write) == 0) {
-		printf("no flags set\n");
-		fflush(stdout);
 		return -1;
 	}
 
@@ -182,24 +173,17 @@ static int check_stat_file(const struct stat *sb)
 static int file_tree_callback(const char *fpath, const struct stat *sb, __unused__ int typeflag, __unused__ struct FTW *ftwbuf)
 {
 
-	printf("in call back\n");
-	fflush(stdout);
+
 	if (ignore_files(fpath)) {
-		printf("ignore\n");
-		fflush(stdout);
 		return FTW_SKIP_SUBTREE;
 	}
 
 	// Check we can read it.
 	if (check_stat_file(sb) == -1) {
-		printf("stat\n");
-		fflush(stdout);
 		return FTW_CONTINUE;
 	}
 
 	if (shm->exit_reason != STILL_RUNNING) {
-		printf("exit\n");
-		fflush(stdout);
 		return FTW_STOP;
 	}
 
@@ -229,11 +213,7 @@ static void open_fds(const char *dirpath)
 	struct dirent *dir;
 	d = opendir(dirpath);
 	if (d) {
-		printf("Adding files from dir:%s\n", dirpath);
-		fflush(stdout);
 		while ((dir = readdir(d)) != NULL) {
-			printf("name %s type %d\n", dir->d_name, dir->d_type);
-			fflush(stdout);
 			if (dir->d_name[0] != '.') {
 				sprintf(fullpath, "%s/%s", dirpath, dir->d_name);
 				add_to_namelist(fullpath);
@@ -254,10 +234,6 @@ void generate_filelist(void)
 
 	my_uid = getuid();
 	my_gid = getgid();
-
-	printf("uid is %d, gid is %d", my_uid, my_gid);
-	fflush(stdout);
-	sleep(5);
 
 	names = alloc_namenode();
 	INIT_LIST_HEAD(&names->list);
@@ -300,31 +276,21 @@ static int open_file(void)
 	const char *modestr;
 	struct stat sb;
 
-	printf("in open_file\n");
-	fflush(stdout);
-
 retry:
 	filename = get_filename();
-	printf("opening %s\n", filename);
-	fflush(stdout);
+
 	ret = lstat(filename, &sb);
 	if (ret == -1) {
-		printf("failed lstat\n");
-		fflush(stdout);
 		goto retry;
 	}
 
 	flags = check_stat_file(&sb);
 	if (flags == -1) {
-		printf("failed stat\n");
-		fflush(stdout);
 		goto retry;
 	}
 
 	fd = open(filename, flags | O_NONBLOCK);
 	if (fd < 0) {
-		printf("failed open\n");
-		fflush(stdout);
 		output(2, "Couldn't open %s : %s\n", filename, strerror(errno));
 		return fd;
 	}
@@ -345,9 +311,6 @@ void open_files(void)
 	unsigned int i, nr_to_open;
 	int fd;
 
-	printf("in open_files, nr_to_open %d\n", files_in_index);
-	fflush(stdout);
-
 	if (files_in_index < NR_FILE_FDS)
 		nr_to_open = files_in_index;
 	else
@@ -356,13 +319,7 @@ void open_files(void)
 	if (fileindex == NULL)	/* this can happen if we ctrl-c'd */
 		return;
 
-	printf("open loop\n");
-	fflush(stdout);
-
 	for (i = 0; i < nr_to_open; i++) {
-		printf("opening file %d of %d\n", i, nr_to_open);
-		fflush(stdout);
-		sleep(1);
 		fd = open_file();
 
 		shm->file_fds[i] = fd;

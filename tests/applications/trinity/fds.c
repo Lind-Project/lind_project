@@ -129,18 +129,10 @@ void setup_fds(void)
 
 	open_pipes();
 
-	printf("generating filelist\n");
-	fflush(stdout);
-
 	generate_filelist();
-	printf("generated: %d files in index", files_in_index);
-	fflush(stdout);
-	
+
 	if (files_in_index == 0)
 		return;
-	printf("opening files\n");
-
-	fflush(stdout);
 
 	open_files();
 }
