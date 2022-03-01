@@ -27,3 +27,4 @@ forkexecuid.c
 ioctl.c
 setsid.c
 dnstest.c
+cloexec.c
