@@ -1,5 +1,11 @@
 #!/bin/bash
 # Builds postgres and copies the library in lindfs.
+
+echo "Prerequisite: Coreutils-bash as sh."
+cd /home/lind/lind_project/src/scripts
+./load_coreutils.sh
+lindfs cp /home/lind/lind_project/tests/applications/bash/bash /bin/sh
+
 echo "Compiling Postgres"
 cd /home/lind/lind_project/tests/applications/postgres/
 ./bootstrap_nacl;
@@ -22,3 +28,5 @@ rm /home/lind/lind_project/hosts
 lindfs cp /etc/resolv.conf /etc/resolv.conf
 lindfs cp /etc/nsswitch.conf /etc/nsswitch.conf
 lindfs cp /etc/host.conf /etc/host.conf
+lindfs cp /usr/share/zoneinfo/America/New_York /etc/localtime # As we don't have /etc/localtime default in lind.
+
