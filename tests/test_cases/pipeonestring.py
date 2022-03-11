@@ -7,8 +7,8 @@ import string
 lind_result = sys.argv[1].split('\n')
 native_result = sys.argv[2].split('\n')
 
-lind_result_sort = lind_result.sort(reverse=True)
-native_result_sort = native_result.sort(reverse=True)
+lind_result.sort(reverse=True)
+native_result.sort(reverse=True)
 
 """ A default output looks like this:
 Parent: Testing open in parent: pid 218238!
@@ -23,21 +23,21 @@ Alphabetically reverse ordering will give us the output in the same order. P...T
 """
 
 # Deterministic line comparison
-if len(lind_result_sort) != len(native_result_sort):
+if len(lind_result) != len(native_result):
     print "Mismatched number of lines!"
     exit(-1)
 
-resultLen = len(lind_result_sort)
+resultLen = len(lind_result)
 for line in range(0,resultLen):
-    if lind_result_sort[line].rstrip(string.digits) != native_result_sort[line].rstrip(string.digits):
+    if lind_result[line].rstrip(string.digits) != native_result[line].rstrip(string.digits):
         print "Lines do not match!"
         exit(-1)
 
 # Nondeterministic digit check
-lind_parent = lind_result_sort[1].split(' ')[-1]
-lind_child = lind_result_sort[2].split(' ')[-1]
-native_parent = native_result_sort[1].split(' ')[-1]
-native_child = native_result_sort[2].split(' ')[-1]
+lind_parent = lind_result[1].split(' ')[-1]
+lind_child = lind_result[2].split(' ')[-1]
+native_parent = native_result[1].split(' ')[-1]
+native_child = native_result[2].split(' ')[-1]
 
 if not (lind_parent.isdigit() or lind_child.isdigit()):
     print "Nondeterministic lines of unrecognized format in lind output."
