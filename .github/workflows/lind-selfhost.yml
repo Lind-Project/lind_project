@@ -17,6 +17,7 @@ on:
 jobs:
   build:
     runs-on: self-hosted
+    if: github.event.pull_request.draft == false
     steps:
       - name: Echo out branch values
         run: | 
