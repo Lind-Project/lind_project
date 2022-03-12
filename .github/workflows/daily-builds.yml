@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: self-hosted
+    if: github.event.pull_request.draft == false
     steps:
       - name: Echo out branch values
         run: | 
@@ -20,7 +21,6 @@ jobs:
         run: |
           git --git-dir /home/lind/lind_project/.git remote update origin --prune;
           git --git-dir /home/lind/lind_project/.git checkout --force remotes/origin/develop;
-
       - name: In the land of RUSTPOSIX where the shadows lie
         run: | 
          git --git-dir /home/lind/lind_project/src/safeposix-rust/.git remote update origin --prune;
@@ -32,17 +32,14 @@ jobs:
          git --git-dir /home/lind/lind_project/src/native_client/.git remote update origin --prune;
          git --git-dir /home/lind/lind_project/src/native_client/.git checkout remotes/origin/develop;
          make nacl; 
-
       - name: One GLIBC to find them
         run: | 
          git --git-dir /home/lind/lind_project/src/lind_glibc/.git remote update origin --prune;
          git --git-dir /home/lind/lind_project/src/lind_glibc/.git checkout remotes/origin/develop;
          make glibc; 
-
       - name: One ring to INSTALL them all
         run: | 
           make install;
-
       - name: And in darkness TEST them
         run: | 
           make test-verbose;
