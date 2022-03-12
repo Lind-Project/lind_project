@@ -1,5 +1,6 @@
 #!/bin/python2
 # Checks if forkandopen.c runs the same natively as it does within Lind
+from audioop import reverse
 import re
 import sys
 import string
@@ -19,8 +20,11 @@ forkandopen(native_results)
 lind_result_split = lind_results.split('\n')
 native_result_split = native_results.split('\n')
 
+lind_result_split.sort(reverse=True)
+native_result_split.sort(reverse=True)
+
 # Deterministic line comparisons
-if len(lind_result_split) != len(lind_result_split):
+if len(lind_result_split) != len(native_result_split):
     print "Mismatched number of lines!"
     exit(-1)
 

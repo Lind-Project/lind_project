@@ -1,9 +1,20 @@
+#Base files:
+cp /etc/hosts /home/lind/lind_project/hosts
+echo -e "127.0.0.1\tLind" >> /home/lind/lind_project/hosts
+lindfs cp /home/lind/lind_project/hosts /etc/hosts # Adjusted as we also need Lind's ip as 127.0.0.1 in the list.
+rm /home/lind/lind_project/hosts
+lindfs cp /etc/resolv.conf /etc/resolv.conf
+lindfs cp /etc/nsswitch.conf /etc/nsswitch.conf
+lindfs cp /etc/host.conf /etc/host.conf
+lindfs cp /usr/share/zoneinfo/America/New_York /etc/localtime # As we don't have /etc/localtime default in lind.
+
 #Coreutils
 cd /home/lind/lind_project/tests/applications/coreutils/src;
 find . -perm /a+x -type f -exec lindfs cp /home/lind/lind_project/tests/applications/coreutils/src/{} /bin/{} \;
 
 #Bash
 lindfs cp /home/lind/lind_project/tests/applications/bash/bash /bin/bash
+lindfs cp /home/lind/lind_project/tests/applications/bash/bash /bin/sh
 
 #Python
 lindfs cp /home/lind/lind_project/tests/applications/python/python /bin/python;
