@@ -14,8 +14,8 @@ int main()
     char filename[]={"pwrite.txt"};
     char buf_wr[]={"Lind is amazing!\n"};
     char buf_wr2[]={"NYU is amazing!\n"};
-    char buf_rd[120];
-    char buf_rd2[120];
+    char buf_rd[120]={0};
+    char buf_rd2[120]={0};
  
     //clear file
     fclose(fopen(filename, "w"));

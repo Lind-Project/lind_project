@@ -7,21 +7,9 @@ export LD=x86_64-nacl-ld
 export CFLAGS='-g -fno-pie'
 export CXXFLAGS='-g -fno-pie'
 export LDFLAGS='-g -fno-pie'
-export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
-export PREFIX="${PREFIX:-$HOME/lind_project/lind/repy/repy}"
 
-make clean
-rm -fv -- Makefile
-./configure
 
 ./configure \
-	--static \
 	--zprefix \
-	--prefix="$PREFIX" \
-	--eprefix="$PREFIX" \
-	--libdir="$PREFIX/lib" \
-	--sharedlibdir="$PREFIX/lib" \
-	--archs="-arch x86_64" \
 	"$@"
-
-make install prefix="$PREFIX"
+make

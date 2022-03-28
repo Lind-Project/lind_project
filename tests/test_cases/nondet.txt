@@ -6,3 +6,15 @@ fork2malloc.c
 forkandopen.c
 forkfiles.c
 forkmalloc.c
+pipe.c
+pipeinput.c
+pipeinput2.c
+pipewrite.c
+pipeonestring.c
+chdir_getcwd.c
+segfault.c
+sysconf.c
+fork_simple.c
+template.c
+serverclient.c
+gethostname.c

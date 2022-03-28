@@ -1,7 +1,3 @@
-[submodule "src/nacl_repy"]
-	path = src/nacl_repy
-	url = https://github.com/Lind-Project/nacl_repy.git
-	branch = develop
 [submodule "src/nacl-gcc"]
 	path = src/nacl-gcc
 	url = https://github.com/Lind-Project/nacl-gcc.git
@@ -18,20 +14,10 @@
 	path = src/nacl-binutils
 	url = https://github.com/Lind-Project/nacl-binutils
     	branch = develop
-[submodule "src/nacl_repy"]
-	path = src/nacl_repy
-	url = https://github.com/Lind-Project/nacl_repy
-    	branch = develop
-[submodule "tests/lind_experiments"]
-	path = tests/lind_experiments
-	url = https://github.com/Lind-Project/lind_experiments.git
 [submodule "src/native_client"]
 	path = src/native_client
 	url = https://github.com/Lind-Project/native_client.git
 	branch = develop
-[submodule "src/--force"]
-	path = src/--force
-	url = https://github.com/Lind-Project/safeposix-rust.git
 [submodule "src/safeposix-rust"]
 	path = src/safeposix-rust
 	url = https://github.com/Lind-Project/safeposix-rust.git

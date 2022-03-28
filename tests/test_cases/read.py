@@ -5,7 +5,7 @@ lindoutput = sys.argv[1].split('\n')
 hostoutput = sys.argv[2].split('\n')
 
 over = False
-
+# Compares ret and left values for Lind.
 for line in lindoutput:
     if line.startswith('read()'):
         first = line.find('[')
