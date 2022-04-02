@@ -18,3 +18,4 @@ fork_simple.c
 template.c
 serverclient.c
 gethostname.c
+socketselect.c
