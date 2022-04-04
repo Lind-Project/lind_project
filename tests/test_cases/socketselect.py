@@ -9,6 +9,9 @@ native_results = sys.argv[2]
 lind_result_split = lind_results.split('\n')
 native_result_split = native_results.split('\n')
 
+lind_result_split.sort(reverse=True)
+native_result_split.sort(reverse=True)
+
 # Deterministic line comparisons
 if len(lind_result_split) != len(native_result_split):
     print "Mismatched number of lines!\n"
@@ -21,7 +24,7 @@ for line in range(0,resultLen):
         print "Nondeterministic lines of an unrecognized format!"
         exit(-1)
 
-# Hello received check
-if lind_result_split[7] != native_result_split[7]:
+# Hello received check, in sorted array, 5th line is "Hello from client".
+if lind_result_split[4] != native_result_split[4]: 
     print "Hello mesage not received by lind!"
     exit(-1)
