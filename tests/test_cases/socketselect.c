@@ -13,7 +13,7 @@
 #include <arpa/inet.h> 
 #include <pthread.h> 
 
-#define PORT 9995
+#define PORT 9994
 
 #define TRUE             1
 #define FALSE            0
