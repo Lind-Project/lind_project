@@ -6,6 +6,7 @@ cd /home/lind/lind_project/src/scripts
 echo "Installing coreutils..."
 cd /home/lind/lind_project/src/scripts
 ./load_coreutils.sh
+cd /home/lind/lind_project/tests/test_cases/coreutils_suite
 
 lindfs deltree "/script_tests/" &> /dev/null
 
