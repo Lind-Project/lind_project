@@ -18,3 +18,4 @@ sysconf.c
 fork_simple.c
 template.c
 gethostname.c
+serverclient.c

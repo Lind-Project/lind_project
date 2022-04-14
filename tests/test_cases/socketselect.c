@@ -91,7 +91,7 @@ void* server(void* v) {
    /* Bind the socket                                           */
    
    addr.sin_family      = AF_INET;
-   memcpy(&addr.sin_addr, &in6addr_any, sizeof(in6addr_any));
+   memcpy(&addr.sin_addr, &inaddr_any, sizeof(inaddr_any));
    addr.sin_port        = htons(PORT);
    rc = bind(listen_sd,
              (struct sockaddr *)&addr, sizeof(addr));
