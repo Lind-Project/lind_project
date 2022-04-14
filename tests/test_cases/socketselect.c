@@ -23,7 +23,12 @@ void* client(void* v) {
     struct sockaddr_in serv_addr; 
     char *hello = "Hello from client"; 
     char buffer[1024] = {0}; 
+    long opt = 1;
     sock = socket(AF_INET, SOCK_STREAM, 0);
+      if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+      perror("setsockopt"); 
+      exit(EXIT_FAILURE); 
+    }
     serv_addr.sin_family = AF_INET; 
     serv_addr.sin_port = htons(PORT); 
        
@@ -86,13 +91,12 @@ void* server(void* v) {
       close(listen_sd);
       exit(-1);
    }
-
    
    /* Bind the socket                                           */
+   address.sin_family = AF_INET; 
+   address.sin_addr.s_addr = INADDR_ANY; 
+   address.sin_port = htons( PORT ); 
    
-   addr.sin_family      = AF_INET;
-   memcpy(&addr.sin_addr, &inaddr_any, sizeof(inaddr_any));
-   addr.sin_port        = htons(PORT);
    rc = bind(listen_sd,
              (struct sockaddr *)&addr, sizeof(addr));
    if (rc < 0)
