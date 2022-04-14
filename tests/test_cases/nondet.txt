@@ -16,5 +16,6 @@ segfault.c
 sysconf.c
 fork_simple.c
 template.c
-serverclient.c
 gethostname.c
+serverclient.c
+socketselect.c
