@@ -93,9 +93,9 @@ void* server(void* v) {
    }
    
    /* Bind the socket                                           */
-   address.sin_family = AF_INET; 
-   address.sin_addr.s_addr = INADDR_ANY; 
-   address.sin_port = htons( PORT ); 
+   addr.sin_family = AF_INET; 
+   addr.sin_addr.s_addr = INADDR_ANY; 
+   addr.sin_port = htons( PORT ); 
    
    rc = bind(listen_sd,
              (struct sockaddr *)&addr, sizeof(addr));
