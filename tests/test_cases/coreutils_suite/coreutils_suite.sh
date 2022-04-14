@@ -44,6 +44,9 @@ echo "Copying test cases..." #change
 
 lindfs cp $PWD /script_tests/ &> /dev/null
 
+mkdir tempfolder
+./prep.sh
+
 mkdir script_tests
 cp * script_tests/
 
@@ -82,6 +85,7 @@ echo "******************************************************************"
 
 lindfs deltree "/script_tests/" &> /dev/null
 rm -rf script_tests
+rm -rf tempfolder
 
 if [  "$error" == 0 ]; then
     echo "All tests passed.";
