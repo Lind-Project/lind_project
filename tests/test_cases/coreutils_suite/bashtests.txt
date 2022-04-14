@@ -1,0 +1,5 @@
+bash_t.sh
+ls_t.sh
+cat_t.sh
+mkdir_t.sh
+date_t.sh
