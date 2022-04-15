@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./write_to_pipe.nexe $1 | ./read_from_pipe.nexe
+
