@@ -18,6 +18,8 @@
 #define TRUE             1
 #define FALSE            0
 
+pthread_barrier_t closebarrier;
+
 void* client(void* v) { 
     int sock = 0, valread; 
     struct sockaddr_in serv_addr; 
@@ -44,6 +46,7 @@ void* client(void* v) {
     printf("%s\n",buffer ); 
     fflush(stdout);
     close(sock);
+    pthread_barrier_wait(&closebarrier);
     return NULL; 
 } 
 
@@ -57,6 +60,7 @@ void* server(void* v) {
    struct timeval       timeout;
    fd_set        master_set, working_set;
 
+   pthread_barrier_init(&closebarrier, NULL, 2);
    
    /* Create an AF_INET6 stream socket to receive incoming      */
    /* connections on                                            */
@@ -284,6 +288,7 @@ void* server(void* v) {
                      close_conn = TRUE;
                      break;
                   }
+                  pthread_barrier_wait(&closebarrier);
 
                } while (TRUE);
 
