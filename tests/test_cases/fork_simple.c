@@ -15,6 +15,7 @@ int main(void)
 	int pret = -1, cret = -1, ppret = -1, pid = -1, cpid = -1, ppid = -1, unused = -1;
 
 	printf("pid %d forking\n", getpid());
+	wait(NULL);
 	fflush(NULL);
 
 	switch ((pid = fork())) {
@@ -23,6 +24,7 @@ int main(void)
 		exit(EXIT_FAILURE);
 	case 0:
 		printf("pid %d forking\n", getpid());
+		wait(NULL);
 		fflush(NULL);
 
 		switch ((cpid = fork())) {
@@ -31,6 +33,7 @@ int main(void)
 			exit(EXIT_FAILURE);
 		case 0:
 			printf("pid = %d, ret = %d\n", getpid(), cpid);
+			wait(NULL);
 			fflush(NULL);
 			exit(EXIT_SUCCESS);
 		}
@@ -41,8 +44,10 @@ int main(void)
 	}
 
 	printf("pid = %d, ret = %d\n", getpid(), pid);
+	wait(NULL);
 	fflush(NULL);
 	printf("pid %d forking again\n", getpid());
+	wait(NULL);
 	fflush(NULL);
 
 	switch ((ppid = fork())) {
@@ -51,11 +56,13 @@ int main(void)
 		exit(EXIT_FAILURE);
 	case 0:
 		printf("pid = %d, ret = %d\n", getpid(), ppid);
+		wait(NULL);
 		fflush(NULL);
 		exit(EXIT_SUCCESS);
 	}
 
 	printf("pid = %d, ret = %d\n", getpid(), ppid);
+	wait(NULL);
 	fflush(NULL);
 
 	return 0;

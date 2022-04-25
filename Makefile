@@ -59,10 +59,10 @@ test-verbose:
 	cd tests/test_cases && bash suite.sh nondet.txt -d dettests.txt -v
 
 coreutils-test: 
-	cd tests/test_cases/coreutils_suite && bash coreutils_suite.sh bashtests.txt
+	cd tests/test_cases/coreutils_suite && bash coreutils_suite.sh nondets.txt -d bashdets.txt
 
 coreutils-test-verbose: 
-	cd tests/test_cases/coreutils_suite && bash coreutils_suite.sh bashtests.txt -v
+	cd tests/test_cases/coreutils_suite && bash coreutils_suite.sh nondets.txt -d bashdets.txt -v
 
 clean:
 	@$(MAKE) cleanall

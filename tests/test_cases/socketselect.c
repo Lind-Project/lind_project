@@ -128,10 +128,10 @@ void* server(void* v) {
    max_sd = listen_sd;
    FD_SET(listen_sd, &master_set);
 
-   /* Initialize the timeval struct to 5 seconds.  If no        */
-   /* activity after 5 seconds this program will end.           */
+   /* Initialize the timeval struct to 2 seconds.  If no        */
+   /* activity after 2 second this program will end.           */
    
-   timeout.tv_sec  = 5;
+   timeout.tv_sec  = 2;
    timeout.tv_usec = 0;
 
    
