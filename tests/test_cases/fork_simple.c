@@ -15,7 +15,6 @@ int main(void)
 	int pret = -1, cret = -1, ppret = -1, pid = -1, cpid = -1, ppid = -1, unused = -1;
 
 	printf("pid %d forking\n", getpid());
-	wait(NULL);
 	fflush(NULL);
 
 	switch ((pid = fork())) {
