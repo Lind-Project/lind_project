@@ -28,5 +28,3 @@ ioctl.c
 setsid.c
 dnstest.c
 cloexec.c
-fork_simple.c
-
