@@ -19,7 +19,7 @@ int main()
     printf("Data written in memory: %s\n", str);
     fflush(stdout);      
     //detach from shared memory 
-    shmdt(str);
+    shmdt(shm);
   
     return 0;
 }

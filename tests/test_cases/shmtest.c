@@ -1,0 +1,35 @@
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <stdio.h>
+#include <string.h>
+
+int main()
+{
+    struct shmid_ds buf1, buf2;
+
+    key_t key1 = 2000;
+    key_t key1 = 3000;
+  
+    int shmid1 = shmget(key1, 2048, 0666 | IPC_CREAT);
+    int shmid2 = shmget(key2, 2048, 0666 | IPC_CREAT);
+
+    void *shm1 = (char*) shmat(shmid1, (void*)0, 0);
+    void *shm2 = (char*) shmat(shmid2, (void*)0, 0);
+    void *shm3 = (char*) shmat(shmid1, (void*)0, 0);
+    void *shm4 = (char*) shmat(shmid1, (void*)0, 0);
+    void *shm5 = (char*) shmat(shmid2, (void*)0, 0);
+
+    shmctl(shmid1, IPC_STAT, &buf1);
+    shmctl(shmid2, IPC_STAT, &buf2);
+
+    shmctl(shmid1, IPC_RMID, (struct shmid_ds *) NULL); 
+    shmctl(shmid2, IPC_RMID, (struct shmid_ds *) NULL);
+    shmdt(shm1);
+    shmdt(shm2);
+    shmdt(shm3);
+    shmdt(shm4);
+    shmdt(shm5);
+
+    return 0;
+}
+
