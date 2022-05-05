@@ -17,7 +17,7 @@ int main()
     memcpy(shm, str, 8); 
   
     printf("Data written in memory: %s\n", str);
-      
+    fflush(stdout);      
     //detach from shared memory 
     shmdt(str);
   
