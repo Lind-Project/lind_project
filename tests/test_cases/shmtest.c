@@ -22,6 +22,8 @@ int main()
     shmctl(shmid1, IPC_STAT, &buf1);
     shmctl(shmid2, IPC_STAT, &buf2);
 
+    printf("SHM1: %d %d %d\n", buf1.shm_segsz, buf1.shm_cpid, buf1.shm_nattach);
+
     shmctl(shmid1, IPC_RMID, (struct shmid_ds *) NULL); 
     shmctl(shmid2, IPC_RMID, (struct shmid_ds *) NULL);
     shmdt(shm1);
@@ -32,4 +34,3 @@ int main()
 
     return 0;
 }
-
