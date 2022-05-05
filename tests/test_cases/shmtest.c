@@ -8,7 +8,7 @@ int main()
     struct shmid_ds buf1, buf2;
 
     key_t key1 = 2000;
-    key_t key1 = 3000;
+    key_t key2 = 3000;
   
     int shmid1 = shmget(key1, 2048, 0666 | IPC_CREAT);
     int shmid2 = shmget(key2, 2048, 0666 | IPC_CREAT);
