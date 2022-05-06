@@ -18,7 +18,7 @@ int main()
     void *shm3 = (char*) shmat(shmid1, (void*)0, 0);
     void *shm4 = (char*) shmat(shmid1, (void*)0, 0);
     void *shm5 = (char*) shmat(shmid2, (void*)0, 0);
-r
+
     shmctl(shmid1, IPC_STAT, &buf1);
     shmctl(shmid2, IPC_STAT, &buf2);
 
