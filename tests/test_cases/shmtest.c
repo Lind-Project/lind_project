@@ -18,11 +18,12 @@ int main()
     void *shm3 = (char*) shmat(shmid1, (void*)0, 0);
     void *shm4 = (char*) shmat(shmid1, (void*)0, 0);
     void *shm5 = (char*) shmat(shmid2, (void*)0, 0);
-
+r
     shmctl(shmid1, IPC_STAT, &buf1);
     shmctl(shmid2, IPC_STAT, &buf2);
 
-    printf("SHM1: %d %d %d\n", buf1.shm_segsz, buf1.shm_cpid, buf1.shm_nattch);
+    assert(buf1.shm_nattch == 3);
+    assert(buf2.shm_nattch == 2);
 
     shmctl(shmid1, IPC_RMID, (struct shmid_ds *) NULL); 
     shmctl(shmid2, IPC_RMID, (struct shmid_ds *) NULL);
