@@ -2,6 +2,7 @@
 #include <sys/shm.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 int main()
 {
