@@ -7,7 +7,7 @@ int main()
     key_t key = 31337; 
   
     // shmget returns an identifier in shmid
-    int shmid = shmget(key, 1024, 0666 | IPC_CREAT);
+    int shmid = shmget(key, 1024, 0);
   
     // shmat to attach to shared memory
     char *str = (char*) shmat(shmid, NULL, 0);

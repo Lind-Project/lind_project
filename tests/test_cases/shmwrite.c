@@ -18,7 +18,7 @@ int main()
   
     printf("Data written in memory: %s\n", str);
     fflush(stdout);      
-    //detach from shared memory 
+    //detach from shared memory, we'll rmid in shmread.c 
     shmdt(shm);
   
     return 0;
