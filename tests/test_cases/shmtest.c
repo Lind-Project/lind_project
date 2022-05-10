@@ -14,11 +14,11 @@ int main()
     int shmid1 = shmget(key1, 2048, 0666 | IPC_CREAT);
     int shmid2 = shmget(key2, 2048, 0666 | IPC_CREAT);
 
-    void *shm1 = (char*) shmat(shmid1, (void*)0, 0);
-    void *shm2 = (char*) shmat(shmid2, (void*)0, 0);
-    void *shm3 = (char*) shmat(shmid1, (void*)0, 0);
-    void *shm4 = (char*) shmat(shmid1, (void*)0, 0);
-    void *shm5 = (char*) shmat(shmid2, (void*)0, 0);
+    void *shm1 = (char*) shmat(shmid1, NULL, 0);
+    void *shm2 = (char*) shmat(shmid2, NULL, 0);
+    void *shm3 = (char*) shmat(shmid1, NULL, 0);
+    void *shm4 = (char*) shmat(shmid1, NULL, 0);
+    void *shm5 = (char*) shmat(shmid2, NULL, 0);
 
     shmctl(shmid1, IPC_STAT, &buf1);
     shmctl(shmid2, IPC_STAT, &buf2);

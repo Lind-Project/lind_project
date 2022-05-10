@@ -11,7 +11,7 @@ int main()
     int shmid = shmget(key, 1024, 0666 | IPC_CREAT);
   
     // shmat to attach to shared memory
-    char *shm = (char*) shmat(shmid, (void*)0, 0);
+    char *shm = (char*) shmat(shmid, NULL, 0);
     char str[8] = "Hello!";
     
     memcpy(shm, str, 8); 
