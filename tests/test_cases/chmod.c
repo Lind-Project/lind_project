@@ -10,15 +10,12 @@
 
 int main(int argc, char **argv)
 {
-	char mode[] = "0777";
-	char buf[100] = "chmod_text.txt";
-	int i;
-	i = strtol(mode, 0, 8);
-	char error[] = "ERROR with CHMOD\n";
-	if (chmod(buf, i) < 0)
+	char file_name[100] = "chmod_test.txt";
+	if (chmod(file_name, S_IRWXU | S_IRWXG | S_IRWXO) !=  0)
 	{
-		write(STDERR_FILENO, error, sizeof error - 1);
+		perror("ERROR with CHMOD");
 		exit(1);
 	}
 	return (0);
 }
+
