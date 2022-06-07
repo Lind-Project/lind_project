@@ -11,11 +11,28 @@
 int main(int argc, char **argv)
 {
 	char file_name[100] = "testfile.txt";
-	if (chmod(file_name, S_IRWXU | S_IRWXG | S_IRWXO) !=  0)
+	if(chmod(file_name, S_IRUSR | S_IXUSR) != 0) //change from 700 to 500
 	{
 		perror("ERROR with CHMOD");
 		exit(1);
 	}
+	struct stat st;
+	if (stat(file_name, &st) == -1) //get mode of file using stat()
+	{
+		perror("ERROR WITH STAT");
+		exit(1);
+	}
+	mode_t file_per = ((S_IRWXU | S_IRWXG | S_IRWXO) & st.st_mode); //isolate file permissions
+	if ((file_per ^ (S_IRUSR | S_IXUSR)) != 0)
+	{
+		fprintf (stderr, "Expected testfile.txt to have access mode 500 but was %03o\n,", (unsigned int) file_per);
+		exit(1);
+	}
+	if(chmod(file_name, S_IRWXU) != 0) //change file permissions back to original
+	{
+		perror("COULD NOT CHANGE MODE BACK TO 700");
+		exit(1);
+	}	
 	return (0);
 }
 
