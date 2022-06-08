@@ -23,16 +23,28 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	mode_t file_per = ((S_IRWXU | S_IRWXG | S_IRWXO) & st.st_mode); //isolate file permissions
-	if ((file_per ^ (S_IRUSR | S_IXUSR)) != 0)
+	if ((file_per & (S_IRUSR | S_IXUSR)) != file_per)
 	{
-		fprintf (stderr, "Expected testfile.txt to have access mode 500 but was %03o\n,", (unsigned int) file_per);
+		fprintf (stderr, "Expected testfile.txt to have access mode 500 but was %03o\n", (unsigned int) file_per);
 		exit(1);
 	}
 	if(chmod(file_name, S_IRWXU) != 0) //change file permissions back to original
 	{
 		perror("COULD NOT CHANGE MODE BACK TO 700");
 		exit(1);
-	}	
+	}
+	if(stat(file_name, &st) == -1)
+	{
+		perror("ERROR WITH SECOND STAT CALL");
+		exit(1);
+	}
+	file_per = ((S_IRWXU | S_IRWXG | S_IRWXO) & st.st_mode);
+	if((file_per & S_IRWXU) != file_per)
+	{
+		fprintf(stderr, "Expected testfile.txt to have access mode 700 but was %03o\n", (unsigned int) file_per);
+		exit(1);
+	}
+	fprintf(stdout, "Mode changed successfully");	
 	return (0);
 }
 
