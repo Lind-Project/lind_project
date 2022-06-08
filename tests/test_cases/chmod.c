@@ -44,7 +44,8 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Expected testfile.txt to have access mode 700 but was %03o\n", (unsigned int) file_per);
 		exit(1);
 	}
-	fprintf(stdout, "Mode changed successfully");	
+	printf("Mode changed successfully\n");	
+	fflush(stdout);
 	return (0);
 }
 
