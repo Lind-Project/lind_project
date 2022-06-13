@@ -29,3 +29,4 @@ setsid.c
 dnstest.c
 cloexec.c
 chmod.c
+rename.c
