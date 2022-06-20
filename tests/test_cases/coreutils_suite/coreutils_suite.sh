@@ -1,11 +1,18 @@
 #TODO ideal: Check if Lind has coreutils/bash by file checks, if they're present; already installed, skip installing part.
 
-echo "Installing bash..."
-cd /home/lind/lind_project/src/scripts
-./load_bash.sh
-echo "Installing coreutils..."
-cd /home/lind/lind_project/src/scripts
-./load_coreutils.sh
+
+binoutput=$(lindfs ls bin/)
+if [[ ${binoutput} != *"bash"* ]];then
+   echo "Installing bash..."
+   cd /home/lind/lind_project/src/scripts
+   ./load_bash.sh
+fi
+if [[ ${binoutput} != *"ls"* ]];then
+   echo "Installing coreutils..."
+   cd /home/lind/lind_project/src/scripts
+   ./load_coreutils.sh
+fi
+
 cd /home/lind/lind_project/tests/test_cases/coreutils_suite
 
 lindfs deltree "/script_tests/" &> /dev/null
