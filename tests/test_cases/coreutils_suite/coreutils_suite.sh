@@ -2,12 +2,12 @@
 
 
 binoutput=$(lindfs ls bin/)
-if [[ ${binoutput} != *"bash"* ]];then
+if [[ ${binoutput} != *"bin/bash"* ]];then
    echo "Installing bash..."
    cd /home/lind/lind_project/src/scripts
    ./load_bash.sh
 fi
-if [[ ${binoutput} != *"ls"* ]];then
+if [[ ${binoutput} != *"bin/ls"* ]];then
    echo "Installing coreutils..."
    cd /home/lind/lind_project/src/scripts
    ./load_coreutils.sh
