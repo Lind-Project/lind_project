@@ -1,12 +1,5 @@
 #Base files:
-cp /etc/hosts /home/lind/lind_project/hosts
-echo -e "127.0.0.1\tLind" >> /home/lind/lind_project/hosts
-lindfs cp /home/lind/lind_project/hosts /etc/hosts # Adjusted as we also need Lind's ip as 127.0.0.1 in the list.
-rm /home/lind/lind_project/hosts
-lindfs cp /etc/resolv.conf /etc/resolv.conf
-lindfs cp /etc/nsswitch.conf /etc/nsswitch.conf
-lindfs cp /etc/host.conf /etc/host.conf
-lindfs cp /usr/share/zoneinfo/America/New_York /etc/localtime # As we don't have /etc/localtime default in lind.
+./load_confs.sh
 
 #Coreutils
 cd /home/lind/lind_project/tests/applications/coreutils/src;
@@ -22,7 +15,6 @@ lindfs cp /home/lind/lind_project/tests/applications/python/libpython2.7.so.1.0 
 lindfs cp /home/lind/lind_project/tests/applications/python/Lib /usr/local/lib/python2.7
 lindfs cp /home/lind/lind_project/tests/applications/python/Makefile /usr/lib/python2.7/config/Makefile
 lindfs cp /home/lind/lind_project/tests/applications/python/pyconfig.h /usr/include/python2.7/pyconfig.h
-lindfs cp /home/lind/lind_project/src/scripts/includes/passwd /etc/passwd
 
 #Python Libs
 echo Copying files...
