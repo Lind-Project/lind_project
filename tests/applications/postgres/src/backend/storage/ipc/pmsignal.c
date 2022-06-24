@@ -369,7 +369,7 @@ PostmasterIsAliveInternal(void)
 void
 PostmasterDeathSignalInit(void)
 {
-// LIND: we don't use the Death Signal, ince we don't have signals in general
+// LIND: we don't use the Death Signal, since we don't have signals in general
 // and this sounds very scary regardless
 
 // #ifdef USE_POSTMASTER_DEATH_SIGNAL
