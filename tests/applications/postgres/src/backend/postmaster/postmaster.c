@@ -1852,6 +1852,10 @@ ServerLoop(void)
 			AbortStartTime = 0;
 		}
 
+		// LIND: we move the reaper into the server loop since we don't have SIGCHLD
+		// this will reaper once per loop versus on child exit
+		reaper(NULL);
+
 		/*
 		 * Once a minute, verify that postmaster.pid hasn't been removed or
 		 * overwritten.  If it has, we force a shutdown.  This avoids having
