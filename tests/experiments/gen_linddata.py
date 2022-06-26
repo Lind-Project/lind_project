@@ -10,7 +10,6 @@ for size in range(2,17):
     while count < 10:
         with open(os.devnull, 'w') as devnull:
             output = Popen(['lind', '-t', '/bin/bash', 'pipescriptvar', str(size)], stdout=PIPE, stderr=PIPE)
-        # dataset[size].append(int(float(output.rstrip("\n")) * 1000))
         stdout, stderr = output.communicate()
         print size
         try:
