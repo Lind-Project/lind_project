@@ -1,5 +1,5 @@
 FROM securesystemslab/lind:lind-base
-LABEL lind "v1.0-rc5"
+LABEL lind "v2.0-rc1"
 LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
 

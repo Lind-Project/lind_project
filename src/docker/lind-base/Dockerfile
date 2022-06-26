@@ -1,6 +1,6 @@
 FROM archlinux:latest
-LABEL lind "v1.0-rc5"
-LABEL description "Lind NaCl Glibc Toolchain (Base)"
+LABEL lind "v2.0-rc1"
+LABEL description "Lind Toolchain (Base)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
 
 ADD etc/ /etc/
@@ -50,7 +50,7 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 	bind-tools cowsay filesystem linux-headers \
 	grml-zsh-config linux-docs man-pages man-db \
 	util-linux help2man rlwrap \
-    glibc lib32-glibc libxcrypt rustup
+    glibc lib32-glibc libxcrypt perf rustup
 RUN pkgfile --update
 
 WORKDIR /usr/bin
@@ -85,8 +85,14 @@ WORKDIR /home/lind/build/make-3.82/
 RUN makepkg --noconfirm -sci
 WORKDIR /home/lind/build/texinfo-4.13/
 RUN ./configure --prefix="/home/lind/.local" && make install
+WORKDIR /home/lind/build/
+RUN git clone https://aur.archlinux.org/rr.git
+WORKDIR rr
+RUN makepkg -scr
 
 USER root
+
+RUN pacman -U *.pkg.tar.* 
 
 WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/" "/var/cache/pacman/pkg/"

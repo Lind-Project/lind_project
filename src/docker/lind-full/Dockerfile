@@ -1,6 +1,6 @@
 FROM securesystemslab/lind:lind-glibc
-LABEL lind "v1.0-rc5"
-LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
+LABEL lind "v2.0-rc1"
+LABEL description "Lind Toolchain Full (Pre-built)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
 
 ARG BRANCH
@@ -32,26 +32,9 @@ WORKDIR /home/lind/lind_project
 # finish install
 RUN git pull -t -j8
 RUN for t in rustposix nacl install; do ./src/mklind -q "$t"; done
-# make tests
-run mkdir -p lind/lindenv/tests
-run for c in $test_cases; do x86_64-nacl-gcc -std=c99 "tests/test_cases/$c.c" -o "lind/lindenv/tests/$c"; done
-# make bash
-WORKDIR /home/lind/lind_project/tests/applications/bash/
-RUN ./bootstrap_nacl --prefix="/home/lind/lind_project/lind/lindenv"
 
-# Set up the sandbox and copy bash
-WORKDIR /home/lind/lind_project/lind/lindenv
-RUN for f in ./bin/ ./lib/ ./share/ ./.bashrc ./.bash_logout ./.bash_profile; do lindfs cp "$f"; done
-
-# Copy and run the single-file tests
-RUN for f in $TEST_CASES; do lindfs cp "./tests/$f"; done
-RUN for a in $TEST_CASES; do script -qfc "$(printf '%q ' lind /tests/$a)" /dev/null; done
-
-# Run the bash test
-RUN script -qfc "$(printf '%q ' lind /bin/bash --version)" /dev/null
-
-# default to running test cases then a shell if no arguments are passed to `docker run`
-CMD bash -c 'for f in $TEST_CASES; do lind /tests/$f; done; lind /bin/bash --version; exec bash'
+RUN make test
+RUN make coreutils-test
 
 WORKDIR /home/lind/lind_project/
 
