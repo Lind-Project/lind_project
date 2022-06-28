@@ -1,6 +1,22 @@
-mkdir -p automated_tests
-mkdir -p lind_tests
-rm -f foo.txt &> /dev/null
+#TODO ideal: Check if Lind has coreutils/bash by file checks, if they're present; already installed, skip installing part.
+
+
+binoutput=$(lindfs ls bin/)
+if [[ ${binoutput} != *"bin/bash"* ]];then
+   echo "Installing bash..."
+   cd /home/lind/lind_project/src/scripts
+   ./load_bash.sh
+fi
+if [[ ${binoutput} != *"bin/ls"* ]];then
+   echo "Installing coreutils..."
+   cd /home/lind/lind_project/src/scripts
+   ./load_coreutils.sh
+fi
+
+cd /home/lind/lind_project/tests/test_cases/coreutils_suite
+
+lindfs deltree "/script_tests/" &> /dev/null
+
 deterministicinput=()
 nondeterministicinput=()
 failarray=()
@@ -16,7 +32,7 @@ for var in "$@"; do
         -d)
             declare -n arglist='deterministicinput';;
         -*)
-            echo "Invalid command line argument $var"
+            echo "Invalid command line argument $var, usage: ./coreutils_suite.sh nondets.txt -d bashdets.txt (-v)"
             exit;;
         *)
             for arg in $(cat "$var"); do
@@ -25,33 +41,34 @@ for var in "$@"; do
     esac;
 done;
 
+#Script to give them all chmod +x $var, so they can be executable.
+chmod +x *.sh
+
 error=0
 echo ${deterministicinput[@]}
 echo ${nondeterministicinput[@]}
 totalarray=( "${deterministicinput[@]}" "${nondeterministicinput[@]}" )
-echo "Compiling test cases..."
 
-for var in "${totalarray[@]}"; do
-    echo "Compiling test: $var"
-    varnexe="${var%.*}";
-    x86_64-nacl-gcc-4.4.3 $var -o lind_tests/$varnexe -std=gnu99 -lpthread;
-    varnonexe="${var%.*}";
-    gcc $var -o automated_tests/$varnonexe -lpthread
-done
-echo "Copying test cases..."
-lindfs cp $PWD/lind_tests/ /automated_tests/ &> /dev/null
-lindfs cp $PWD/testfile.txt /testfile.txt &> /dev/null # Copies the text file to be used in several test files.
+echo "Copying test cases..." #change
+
+lindfs cp $PWD /script_tests/ &> /dev/null
+
+mkdir tempfolder
+./prep.sh
+
+mkdir script_tests
+cp * script_tests/
 
 echo "Executing deterministic test cases"
 for var in "${deterministicinput[@]}"; do
     echo "=================================================================="
     echo "Running test: $var"
-    nexefile="${var%.*}";
-    varnonexe="${var%.*}";
-    exec 3>&2
-    exec 2> /dev/null
-    lindoutput=$(lind "/automated_tests/$nexefile");
-    regularoutput=$(./automated_tests/$varnonexe)
+    scriptfile="${var%.*}";
+    echo $scriptfile
+    exec 3>&1
+    exec 1>&2
+    lindoutput=$(lind /bin/bash "/script_tests/${scriptfile}.sh");
+    regularoutput=$(./${scriptfile}.sh 2>&1)
     exec 2>&3
 
     if [ "$verbose" = true ] ; then
@@ -67,24 +84,24 @@ for var in "${deterministicinput[@]}"; do
     if [[ "$lindoutput" = "$regularoutput" ]]; then
         echo TEST PASSED;
     else
-        echo TEST FAILED; 
+        echo TEST FAILED;
         error=1;
         detfails=$((detfails+1))
         failarray+=($var)
     fi;
 done
+
 echo "******************************************************************"
 echo "Executing nondeterministic test cases"
 for var in "${nondeterministicinput[@]}"; do
     echo "=================================================================="
     echo "Running test: $var"
-
-    nexefile="${var%.*}";
-    varnonexe="${var%.*}";
-    exec 3>&2
-    exec 2> /dev/null
-    lindoutput="$(lind "/automated_tests/$nexefile")";
-    regularoutput="$(./automated_tests/$varnonexe)";
+    scriptfile="${var%.*}";
+    echo $scriptfile
+    exec 3>&1
+    exec 1>&2
+    lindoutput=$(lind /bin/bash "/script_tests/${scriptfile}.sh");
+    regularoutput=$(./${scriptfile}.sh 2>&1)
     exec 2>&3
 
     if [ "$verbose" = true ] ; then
@@ -97,7 +114,6 @@ for var in "${nondeterministicinput[@]}"; do
         echo "Does lind output fit to regular output in script?"
     fi
 
-
     python2 "${var%.*}.py" "$lindoutput" "$regularoutput"
     if [  "$?" == 0 ]; then
         echo TEST PASSED;
@@ -109,21 +125,19 @@ for var in "${nondeterministicinput[@]}"; do
     fi;
 done
 
-rm ./automated_tests/* &> /dev/null
-rm ./lind_tests/* &> /dev/null
-rm -f foo.txt &> /dev/null
-lindfs deltree "/automated_tests/" &> /dev/null
-lindfs rm "/testfile.txt" &> /dev/null
+
+lindfs deltree "/script_tests/" &> /dev/null
+rm -rf script_tests
+rm -rf tempfolder
 
 echo "******************************************************************"
-
 if [  "$error" == 0 ]; then
     echo "All tests passed.";
-else 
-    echo "Some tests have failed."; 
+else
+    echo "Some tests have failed.";
     echo "$detfails deterministic tests and $nondetfails non-deterministic tests have failed."
     echo "Failed tests:"
-    echo "${failarray[*]}"    
+    echo "${failarray[*]}"
 fi;
 
 exit $error

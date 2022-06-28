@@ -72,10 +72,11 @@ extern void PostmasterDeathSignalInit(void);
  * the parent dies.  Checking the flag first makes PostmasterIsAlive() a lot
  * cheaper in usual case that the postmaster is alive.
  */
-#if (defined(HAVE_SYS_PRCTL_H) && defined(PR_SET_PDEATHSIG)) || \
-	(defined(HAVE_SYS_PROCCTL_H) && defined(PROC_PDEATHSIG_CTL))
-#define USE_POSTMASTER_DEATH_SIGNAL
-#endif
+// #if (defined(HAVE_SYS_PRCTL_H) && defined(PR_SET_PDEATHSIG)) || \
+// 	(defined(HAVE_SYS_PROCCTL_H) && defined(PROC_PDEATHSIG_CTL))
+// #define USE_POSTMASTER_DEATH_SIGNAL
+// #endif
+// LIND: we don't have any of this, lets not define it
 
 #ifdef USE_POSTMASTER_DEATH_SIGNAL
 extern volatile sig_atomic_t postmaster_possibly_dead;

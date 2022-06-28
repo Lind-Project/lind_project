@@ -14,7 +14,8 @@ pipeonestring.c
 chdir_getcwd.c
 segfault.c
 sysconf.c
-fork_simple.c
 template.c
-serverclient.c
 gethostname.c
+serverclient.c
+socketselect.c
+fork_simple.c
