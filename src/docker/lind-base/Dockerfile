@@ -88,7 +88,7 @@ RUN ./configure --prefix="/home/lind/.local" && make install
 WORKDIR /home/lind/build/
 RUN git clone https://aur.archlinux.org/rr.git
 WORKDIR rr
-RUN makepkg -noconfirm -sci
+RUN makepkg --noconfirm -sci
 
 USER root
 
