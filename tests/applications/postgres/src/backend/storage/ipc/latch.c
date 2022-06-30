@@ -66,8 +66,8 @@
 #if defined(WAIT_USE_EPOLL) || defined(WAIT_USE_POLL) || \
 	defined(WAIT_USE_KQUEUE) || defined(WAIT_USE_WIN32)
 /* don't overwrite manual choice */
-#elif defined(HAVE_SYS_EPOLL_H)
-#define WAIT_USE_EPOLL
+// #elif defined(HAVE_SYS_EPOLL_H) LIND: we won't use EPOLL for now since its WIP
+// #define WAIT_USE_EPOLL
 #elif defined(HAVE_KQUEUE)
 #define WAIT_USE_KQUEUE
 #elif defined(HAVE_POLL)

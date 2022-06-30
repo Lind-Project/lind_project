@@ -1,0 +1,16 @@
+MANIFEST
+*~
+*.userprefs
+*.pidb
+*.pyc
+*.sw[po]
+dist/*
+build/*
+doc/src/_build/*
+doc/html/*
+doc/psycopg2.txt
+scripts/pypi_docs_upload.py
+env
+.tox
+/rel
+/wheels

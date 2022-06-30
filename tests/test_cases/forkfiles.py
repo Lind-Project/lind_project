@@ -5,6 +5,7 @@ import sys
 lind_result = sys.argv[1].split('\n')
 host_result = sys.argv[2].split('\n')
 
+# Compares lines.
 if len(lind_result) != len(host_result):
     print "Mismatched number of lines"
     exit(-1)
@@ -16,6 +17,7 @@ if lind_result[0] != host_result[0]:
 lind = lind_result[1].split(' ')
 host = lind_result[1].split(' ')
 
+# Compares read char numbers.
 if not (lind[1].isdigit() and host[1].isdigit()):
     print "Nondeterministic part of unrecognized format"
     exit(-1)
