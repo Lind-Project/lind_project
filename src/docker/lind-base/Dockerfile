@@ -42,8 +42,8 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 	gnu-netcat zsh zsh-completions htop bc ctags sudo \
 	ncurses gcc-libs lib32-gcc-libs gperf diffutils fzf \
 	gperftools texinfo fortune-mod gnupg highlight fasd \
-	python2 python2-pip python2-setuptools p7zip fuse3 ack \
-	python2-virtualenv pkgfile dhcpcd iputils python iproute2 \
+	python2 python2-setuptools p7zip fuse3 ack \
+	pkgfile dhcpcd iputils python iproute2 \
 	net-tools openresolv openssh subversion pacman-contrib \
 	tree psmisc lsof wget pinfo asp unrar expac inetutils \
 	tmux screen bash-completion mlocate shadow ncdu \
