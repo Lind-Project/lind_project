@@ -49,7 +49,7 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 	tmux screen bash-completion mlocate shadow ncdu \
 	bind-tools cowsay filesystem linux-headers \
 	grml-zsh-config linux-docs man-pages man-db \
-	util-linux help2man rlwrap \
+	util-linux help2man rlwrap cmake ninja \
     glibc lib32-glibc libxcrypt perf rustup
 RUN pkgfile --update
 
