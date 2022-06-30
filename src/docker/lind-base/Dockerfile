@@ -92,8 +92,6 @@ RUN makepkg --noconfirm -sci
 
 USER root
 
-RUN pacman -U *.pkg.tar.* 
-
 WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/" "/var/cache/pacman/pkg/"
 RUN chown -Rc lind:lind .
