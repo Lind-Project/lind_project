@@ -67,7 +67,6 @@ RUN git config --global user.email "lind@nyu.edu"
 RUN git config --global core.excludesFile "/home/lind/.cvsignore"
 RUN git clone --progress -j8 https://github.com/Lind-Project/lind_project.git
 WORKDIR /home/lind/build/
-RUN lesskey
 
 USER root
 
@@ -77,7 +76,6 @@ RUN git config --global user.email "root@nyu.edu"
 RUN git config --global core.excludesFile "/root/.cvsignore"
 RUN ln -rsv "/home/lind/lind_project" "./"
 WORKDIR /root/build/
-RUN lesskey
 
 USER lind
 
