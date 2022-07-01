@@ -85,6 +85,8 @@ WORKDIR /home/lind/build/make-3.82/
 RUN makepkg --noconfirm -sci
 WORKDIR /home/lind/build/texinfo-4.13/
 RUN ./configure --prefix="/home/lind/.local" && make install
+WORKDIR /home/lind/build/pip2
+RUN python get-pip.py
 WORKDIR /home/lind/build/
 RUN git clone https://aur.archlinux.org/rr.git
 WORKDIR rr
