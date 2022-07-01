@@ -4,6 +4,8 @@ LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
 
 ARG BRANCH
+# download source files and make glibc
+USER lind
 
 ENV PATH="/root/bin:/home/lind/bin:$PATH"
 ENV PATH="/root/.local/bin:/home/lind/.local/bin:$PATH"
@@ -22,9 +24,6 @@ ENV NACL_SDK_ROOT="$LIND_ENV_PATH/sdk"
 ENV PYTHON="python2"
 ENV PNACLPYTHON="python2"
 ENV LD_LIBRARY_PATH="/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
-
-# download source files and make glibc
-USER lind
 
 WORKDIR /home/lind/lind_project
 RUN pip2 install -r requirements.txt
