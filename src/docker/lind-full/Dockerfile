@@ -23,8 +23,6 @@ ENV PYTHON "python2"
 ENV PNACLPYTHON "python2"
 ENV LD_LIBRARY_PATH "/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
 
-ENV TEST_CASES "cpuid dup2 dup exec fgets fork fork_simple getpid hello mprotec pipe read read_input segfault stat sysconf template write"
-
 USER lind
 
 WORKDIR /home/lind/lind_project
