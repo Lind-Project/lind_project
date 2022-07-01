@@ -29,7 +29,7 @@ WORKDIR /home/lind/lind_project
 RUN pip2 install -r requirements.txt
 RUN git checkout develop
 
-RUN ./src/mklind -q download
+RUN ./src/mklind download
 
 RUN echo "Lind download complete."
 

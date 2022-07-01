@@ -80,8 +80,7 @@ while getopts :eqhv opt; do
 
 	# only print errors
 	q)
-		# exec >/dev/null;;
-		print "hello";;
+		exec >/dev/null;;
 
 	# show usage information
 	h)
