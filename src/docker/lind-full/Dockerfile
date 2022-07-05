@@ -29,7 +29,9 @@ WORKDIR /home/lind/lind_project
 
 # finish install
 RUN git pull -t -j8
-RUN source ~/.bashrc && for t in rustposix nacl install; do ./src/mklind -q "$t"; done
+RUN source ~/.bashrc && ./src/mklind -q rustposix
+RUN source ~/.bashrc && ./src/mklind -q nacl
+RUN source ~/.bashrc && ./src/mklind -q install
 
 RUN make test
 RUN make coreutils-test
