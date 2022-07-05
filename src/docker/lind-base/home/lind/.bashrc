@@ -37,8 +37,6 @@ shopt -s expand_aliases autocd hostcomplete histappend
 
 # shellcheck disable=SC1090 disable=SC1091
 [[ -f "$HOME/.fzf.bash" ]] && . "$HOME/.fzf.bash"
-# shellcheck disable=SC1090 disable=SC1091
-[[ -f "$HOME/.bash_funcs" ]] && . "$HOME/.bash_funcs"
 
 HISTIGNORE='history*'
 HISTCONTROL='ignoreboth:erasedups'
