@@ -36,7 +36,7 @@ RUN echo "Lind download complete."
 RUN fortune
 
 WORKDIR /home/lind/lind_project
-RUN source ~/.bashrc && ./src/mklind -q glibc
+RUN source ~/.bashrc && ./src/mklind glibc
 
 RUN echo "Glibc installed."
 
