@@ -33,8 +33,5 @@ RUN ./src/mklind rustposix
 RUN ./src/mklind nacl
 RUN ./src/mklind install
 
-RUN make test
-RUN make coreutils-test
-
 WORKDIR /home/lind/lind_project/
 
