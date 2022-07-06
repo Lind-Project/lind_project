@@ -24,6 +24,7 @@ ENV NACL_SDK_ROOT="$LIND_ENV_PATH/sdk"
 ENV PYTHON="python2"
 ENV PNACLPYTHON="python2"
 ENV LD_LIBRARY_PATH="/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
+ENV LC_COLLATE="C"
 
 WORKDIR /home/lind/lind_project
 RUN pip2 install -r requirements.txt
