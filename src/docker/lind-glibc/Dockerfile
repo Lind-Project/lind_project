@@ -30,14 +30,14 @@ WORKDIR /home/lind/lind_project
 RUN pip2 install -r requirements.txt
 RUN git checkout develop
 
-RUN source ~/.bashrc && ./src/mklind download
+RUN ./src/mklind download
 
 RUN echo "Lind download complete."
 
 RUN fortune
 
 WORKDIR /home/lind/lind_project
-RUN source ~/.bashrc && ./src/mklind glibc
+RUN ./src/mklind glibc
 
 RUN echo "Glibc installed."
 
