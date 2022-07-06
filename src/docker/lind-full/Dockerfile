@@ -33,5 +33,8 @@ RUN ./src/mklind rustposix
 RUN ./src/mklind nacl
 RUN ./src/mklind install
 
+RUN ./src/scripts/load_bash.sh
+RUN ./src/scripts/load_coreutils.sh
+
 WORKDIR /home/lind/lind_project/
 
