@@ -255,7 +255,7 @@ function download_src() {
 	# initialize native client toolchain
 	ln -Trsfv "$LIND_BASE/src/native_client" "$NACL_BASE"
 	cd "$LIND_BASE/src"
-	# default to develop branch
+	# default to develop branch if not building inside travis
 	nacl_rev="${NATIVE_CLIENT_URL}@${BRANCH:-develop}"
 	gclient config --name=native_client --git-deps "$nacl_rev"
 	gclient sync
@@ -379,6 +379,10 @@ function nightly_build() {
 	build_glibc
 	install_to_path
 
+	build_docker
+
+	# test_apps
+	# test_glibc
 }
 
 function build_rustposix() {
@@ -416,7 +420,7 @@ function build_nacl() {
 			rm -f -- "$file.new"
 		done
 
-	# checkout the correct revision
+	# checkout the correct revision if building inside travis
 	cd "$NACL_BASE"
 	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
@@ -479,7 +483,7 @@ function build_glibc() {
 
 	print "Building glibc"
 
-	# checkout the correct revision
+	# checkout the correct revision if building inside travis
 	cd "$NACL_BASE"
 	if [[ -n "$BRANCH" ]]; then
 		git fetch --all
@@ -519,6 +523,19 @@ function update_glibc2() {
 	cd "$NACL_TOOLCHAIN_BASE"
 	rm -rf -- BUILD/stamp-glibc64
 	PATH="$LIND_BASE:$PATH" make -j"$JOBS" BUILD/stamp-glibc64
+}
+
+# build docker images
+#
+function build_docker() {
+	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
+
+	cd "$LIND_BASE"
+	docker image rm -f securesystemslab/lind:base securesystemslab/lind:prebuiltsdk securesystemslab/lind:latest
+	docker build -t securesystemslab/lind:base ./docker/base
+	docker build -t securesystemslab/lind:prebuiltsdk ./docker/prebuiltsdk
+	docker build -t securesystemslab/lind:naclruntime ./docker/naclruntime
+	docker build --cache-from=securesystemslab/lind:naclruntime -t securesystemslab/lind:latest ./docker/naclruntime
 }
 
 # prompt for target if none given on command line
@@ -573,6 +590,9 @@ for word in "$@"; do
 		update_glibc;;
 	updateglibc2)
 		update_glibc2;;
+	docker)
+		print "Building docker images"
+		build_docker;;
 	nightly)
 		print "Nightly build"
 		nightly_build;;

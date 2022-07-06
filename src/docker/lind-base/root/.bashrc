@@ -25,6 +25,9 @@ shopt -s expand_aliases autocd hostcomplete histappend
 	&& . /usr/bin/virtualenvwrapper_lazy.sh
 
 # shellcheck disable=SC1090 disable=SC1091
+[[ -f "$HOME/.profile" ]] && . "$HOME/.profile"
+
+# shellcheck disable=SC1090 disable=SC1091
 [[ -f "${ZDOTDIR:-$HOME/zsh.d}/plugins/z.sh" ]] && . "${ZDOTDIR:-$HOME/zsh.d}/plugins/z.sh"
 # shellcheck disable=SC1090 disable=SC1091
 
@@ -34,6 +37,8 @@ shopt -s expand_aliases autocd hostcomplete histappend
 
 # shellcheck disable=SC1090 disable=SC1091
 [[ -f "$HOME/.fzf.bash" ]] && . "$HOME/.fzf.bash"
+# shellcheck disable=SC1090 disable=SC1091
+[[ -f "$HOME/.bash_funcs" ]] && . "$HOME/.bash_funcs"
 
 HISTIGNORE='history*'
 HISTCONTROL='ignoreboth:erasedups'
