@@ -1,6 +1,6 @@
 # Loads only the core modules.
 export LD_LIBRARY_PATH="/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
-e
+
 echo "Compiling Openssl"
 cd /home/lind/lind_project/tests/applications/openssl
 ./Configure linux-x86_64 no-hw no-asm no-krb5 --prefix=build/ --openssldir=build/ssl -fPIC -shared -D_GNU_SOURCE
@@ -11,7 +11,7 @@ cp /home/lind/lind_project/tests/applications/openssl/libcrypto.so.1.0.0 /home/l
 cp /home/lind/lind_project/tests/applications/openssl/libssl.so.1.0.0 /home/lind/lind_project/fake_fs/lib/libssl.so.1.0.0
 
 echo "Fast Compile"
-cd /home/lind/lind_project/tests/applications/python/python-natieve
+cd /home/lind/lind_project/tests/applications/python/python-native
 ./fastcompile-native.sh
 
 # Copies 
