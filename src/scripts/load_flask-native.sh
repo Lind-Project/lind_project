@@ -1,7 +1,6 @@
 #!/bin/bash
-#Builds Flask in lind.
+#Builds Flask in native.
 export LD_LIBRARY_PATH="/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
-e
 echo "Compiling markupsafe/_speedups.so..."
 cd /home/lind/lind_project/tests/applications/python-modules/flask/site-packages/markupsafe
 gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -I/home/lind/lind_project/tests/applications/python/python-native/Include/ -I/home/lind/lind_project/tests/applications/python/python-native -c _speedups.c -o _speedups.o
