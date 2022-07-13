@@ -17,7 +17,7 @@ You can either `make run` or start the container yourself using:
 
 ```bash
 docker pull securesystemslab/lind
-docker run --privileged --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind /bin/bash
+docker run --privileged --ipc=host --init --cap-add=SYS_PTRACE -it securesystemslab/lind /bin/bash
 ```
 
 The `--privileged` option is so that /proc is writable, the `--ipc=host` option
