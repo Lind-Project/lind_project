@@ -2,8 +2,8 @@ echo "Starting...";
 
 mkdir -p /home/lind/lind_project/tests/applications/python/python-native/build/lib
 
-modulesarray=('_collectionsmodule' 'operator' 'itertoolsmodule' '_struct' 'mathmodule' 'binascii' 'timemodule' 'cStringIO' '_randommodule' 'arraymodule' 'socketmodule' '_functoolsmodule' 'cPickle' '_struct' 'selectmodule' 'arraymodule' 'unicodedata' 'fcntlmodule')
-libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata' 'fcntl')
+modulesarray=('_collectionsmodule' 'operator' 'itertoolsmodule' '_struct' 'mathmodule' 'binascii' 'timemodule' 'cStringIO' '_randommodule' 'arraymodule' 'socketmodule' '_functoolsmodule' 'cPickle' '_struct' 'selectmodule' 'arraymodule' 'unicodedata' 'fcntlmodule' 'grpmodule')
+libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata' 'fcntl' 'grp')
 echo Compiling...
 for var in "${modulesarray[@]}"
 do
@@ -13,19 +13,33 @@ echo Building libraries...
 length=${#libsarray[@]}
 for (( i = 0; i < length; i++ ));
 do
-        gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/${modulesarray[i]}.o -L./ -lpython2.7 -o build/lib/${libsarray[i]}.so
+        gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-rpath=/home/lind/lind_project/fake_fs/lib/ -std=c99 build/${modulesarray[i]}.o -L./ -lpython2.7 -o build/lib/${libsarray[i]}.so
 done
 echo Compiling special cases:
 echo Datetime...
 gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -c Modules/datetimemodule.c -o build/datetimemodule.o
-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/datetimemodule.o build/timemodule.o -L./ -lpython2.7 -o build/lib/datetime.so
+gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-rpath=/home/lind/lind_project/fake_fs/lib/ -std=c99 build/datetimemodule.o build/timemodule.o -L./ -lpython2.7 -o build/lib/datetime.so
 echo _io...
 ioarray=('bufferedio' 'bytesio' 'fileio' 'iobase' '_iomodule' 'stringio' 'textio')
 for iomodule in "${ioarray[@]}"
 do
     gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -IModules/_io -c Modules/_io/$iomodule.c -o build/$iomodule.o
 done
-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/bufferedio.o build/bytesio.o build/fileio.o build/iobase.o build/_iomodule.o build/stringio.o build/textio.o -L./ -lpython2.7 -o build/lib/_io.so
+
+echo libffi...
+cd /home/lind/lind_project/tests/applications/python/python-native/Modules/_ctypes/libffi/
+./configure --enable-shared
+make
+
+echo _ctypes...
+ctypearray=('_ctypes' '_ctypes_test' 'callbacks' 'callproc' 'cfield' 'malloc_closure' 'stgdict')
+for ctypemodule in "${ctypearray[@]}"
+do 
+    gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -IModules/_ctypes -c Modules/_ctypes/$ctypemodule.c -o build/$ctypemodule.o
+done
+gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-rpath=/home/lind/lind_project/fake_fs/lib/ -std=c99 build/bufferedio.o build/bytesio.o build/fileio.o build/iobase.o build/_iomodule.o build/stringio.o build/textio.o -L./ -lpython2.7 -o build/lib/_io.so
+gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-rpath=/home/lind/lind_project/fake_fs/lib/ -std=c99 build/_ctypes.o build/_ctypes_test.o build/callbacks.o build/callproc.o build/cfield.o build/malloc_closure.o build/stgdict.o -L. -LModules/_ctypes/libffi -lpython2.7 -lffi -o build/lib/_ctypes.so
+
 echo zlib...
 cd /home/lind/lind_project/tests/applications/python/python-native/Modules/zlib
 
@@ -34,11 +48,11 @@ make
 
 cd /home/lind/lind_project/tests/applications/python/python-native/
 gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -I/home/lind/lind_project/tests/applications/python/python-native/Modules/zlib/ -c Modules/zlibmodule.c -o build/zlibmodule.o
-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/zlibmodule.o -L./ -LModules/zlib -lpython2.7 -lz -o build/lib/zlib.so
+gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-rpath=/home/lind/lind_project/fake_fs/lib/ -std=c99 build/zlibmodule.o -L./ -LModules/zlib -lpython2.7 -lz -o build/lib/zlib.so
 
 echo _ssl and _hashlib...
 gcc -c Modules/_ssl.c -o build/_ssl.o -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -I/home/lind/lind_project/tests/applications/openssl/include/
-gcc build/_ssl.o -o build/lib/_ssl.so -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 -L. -L../openssl/ -lpython2.7 -lssl -lcrypto
+gcc build/_ssl.o -o build/lib/_ssl.so -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-rpath=/home/lind/lind_project/fake_fs/lib/ -std=c99 -L. -L../../openssl/ -lpython2.7 -lssl -lcrypto
 gcc -c Modules/_hashopenssl.c -o build/_hashopenssl.o -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -I/home/lind/lind_project/tests/applications/openssl/include/
-gcc build/_hashopenssl.o -o build/lib/_hashlib.so -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 -L. -L../../openssl/ -lpython2.7 -lssl -lcrypto
+gcc build/_hashopenssl.o -o build/lib/_hashlib.so -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-rpath=/home/lind/lind_project/fake_fs/lib/ -std=c99 -L. -L../../openssl/ -lpython2.7 -lssl -lcrypto
 
