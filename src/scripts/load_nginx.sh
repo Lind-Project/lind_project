@@ -1,3 +1,4 @@
+    int uidret = setuid(uid);
 #!/bin/bash
 
 cd /home/lind/lind_project/tests/applications/nginx
@@ -14,4 +15,5 @@ rm -rf /home/lind/lind_project/tmp
 
 echo "Copying Support files"
 
+cd /home/lind/lind_project/src/scripts/
 ./load_confs.sh
