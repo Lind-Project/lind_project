@@ -14,6 +14,5 @@ rm -rf /home/lind/lind_project/tmp
 
 echo "Copying Support files"
 
-    int uidret = setuid(uid);
 cd /home/lind/lind_project/src/scripts/
 ./load_confs.sh
