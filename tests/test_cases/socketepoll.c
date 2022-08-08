@@ -131,8 +131,8 @@ void* server(void* v) {
       close(listen_sd);
       exit(-1);
    }
-   fprintf(stderr, "SERVER: New socket bound and listen\n");
-   fflush(stderr);
+   fprintf(stdout, "SERVER: New socket bound and listen\n");
+   fflush(stdout);
     
    epfd = epoll_create(256);
    if(epfd == -1) 
