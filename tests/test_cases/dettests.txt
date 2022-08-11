@@ -30,3 +30,4 @@ dnstest.c
 cloexec.c
 chmod.c
 rename.c
+fchmod.c
