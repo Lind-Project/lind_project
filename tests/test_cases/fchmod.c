@@ -14,13 +14,13 @@ int main(int argc, char **argv)
 	int fd = open( "testfile.txt", O_RDONLY);
 	if(fchmod(fd, S_IRUSR | S_IXUSR) != 0) //change from 700 to 500
 	{
-		perror("ERROR with CHMOD");
+		perror("ERROR with FCHMOD");
 		exit(1);
 	}
 	struct stat st;
 	if (fstat(fd, &st) == -1) //get mode of file using stat()
 	{
-		perror("ERROR WITH STAT");
+		perror("ERROR WITH FSTAT");
 		exit(1);
 	}
 	mode_t file_per = ((S_IRWXU | S_IRWXG | S_IRWXO) & st.st_mode); //isolate file permissions
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 	}
 	if(fstat(fd, &st) == -1)
 	{
-		perror("ERROR WITH SECOND STAT CALL");
+		perror("ERROR WITH SECOND FSTAT CALL");
 		exit(1);
 	}
 	file_per = ((S_IRWXU | S_IRWXG | S_IRWXO) & st.st_mode);
