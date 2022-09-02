@@ -16,7 +16,7 @@ lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/datetime.s
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/_io.so /usr/local/lib/python2.7/lib-dynload/_io.so
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/_ctypes.so /usr/loacl/lib/python2.7/lib-dynload/_ctypes.so
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/zlib.so /usr/local/lib/python2.7/lib-dynload/zlib.so
-lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/libffi.so /usr/loacl/lib/python2.7/lib-dynload/zlib.so
+lindfs cp /home/lind/lind_project/tests/applications/python/Modules/_ctypes/libffi/.libs/libffi.so /usr/loacl/lib/python2.7/lib-dynload/libffi.so
 lindfs cp /home/lind/lind_project/tests/applications/python/Modules/zlib/libz.so.1.2.3 /lib/glibc/libz.so.1
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/_ssl.so /usr/local/lib/python2.7/lib-dynload/_ssl.so
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/_hashlib.so /usr/local/lib/python2.7/lib-dynload/_hashlib.so
