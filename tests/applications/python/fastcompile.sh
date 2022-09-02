@@ -2,8 +2,8 @@ echo "Starting...";
 
 mkdir -p /home/lind/lind_project/tests/applications/python/build/lib
 
-modulesarray=('_collectionsmodule' 'operator' 'itertoolsmodule' '_struct' 'mathmodule' 'binascii' 'timemodule' 'cStringIO' '_randommodule' 'arraymodule' 'socketmodule' '_functoolsmodule' 'cPickle' '_struct' 'selectmodule' 'arraymodule' 'unicodedata' 'fcntlmodule')
-libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata' 'fcntl')
+modulesarray=('_collectionsmodule' 'operator' 'itertoolsmodule' '_struct' 'mathmodule' 'binascii' 'timemodule' 'cStringIO' '_randommodule' 'arraymodule' 'socketmodule' '_functoolsmodule' 'cPickle' '_struct' 'selectmodule' 'arraymodule' 'unicodedata' 'fcntlmodule' 'grepmodule')
+libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata' 'fcntl' 'grp')
 
 echo Compiling...
 for var in "${modulesarray[@]}"
@@ -21,7 +21,7 @@ done
 echo Compiling special cases:
 echo Datetime...
 x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -c Modules/datetimemodule.c -o build/datetimemodule.o
-x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/datetimemodule.o build/timemodule.o -L. -lpython2.7 -o build/lib/datetime.so
+x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-rpath=/lib/ -std=c99 build/datetimemodule.o build/timemodule.o -L. -lpython2.7 -o build/lib/datetime.so
 
 echo _io...
 ioarray=('bufferedio' 'bytesio' 'fileio' 'iobase' '_iomodule' 'stringio' 'textio')
@@ -29,6 +29,22 @@ for iomodule in "${ioarray[@]}"
 do
     x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -IModules/_io -c Modules/_io/$iomodule.c -o build/$iomodule.o
 done
+
+echo libffi...
+cd /home/lind/lind_project/tests/applications/python/Modules/_ctypes/libffi/
+./configure --enable-shared
+make
+
+echo _ctypes...
+cd /home/lind/lind_project/tests/applications/python/
+ctypearray=('_ctypes' '_ctypes_test' 'callbacks' 'callproc' 'cfield' 'malloc_closure' 'stgdict')
+for ctypemodule in "${ctypearray[@]}"
+do
+    x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -IModules/_ctypes -c Modules/_ctypes/$ctypemodule.c -o build/$ctypemodule.o
+done
+x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-rpath=/lib/ -std=c99 build/bufferedio.o build/bytesio.o build/fileio.o build/iobase.o build/_iomodule.o build/stringio.o build/textio.o -L./ -lpython2.7 -o build/lib/_io.so
+x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-rpath=/lib/ -std=c99 build/_ctypes.o build/_ctypes_test.o build/callbacks.o build/callproc.o build/cfield.o build/malloc_closure.o build/stgdict.o -L. -LModules/_ctypes/libffi -lpython2.7 -lffi -o build/lib/_ctypes.so
+
 x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/bufferedio.o build/bytesio.o build/fileio.o build/iobase.o build/_iomodule.o build/stringio.o build/textio.o -L. -lpython2.7 -o build/lib/_io.so
 
 echo zlib...
