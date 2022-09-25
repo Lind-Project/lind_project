@@ -15,7 +15,7 @@ void check_filesize(off_t target_size)
 	{
 		fprintf(
 			stderr,
-			"ERROR: EXPECTING FILESIZE TO BE %d BUT GOT %d\n",
+			"ERROR: EXPECT FILESIZE TO BE %d BUT GOT %d\n",
 			target_size,
 			st.st_size
 		);
