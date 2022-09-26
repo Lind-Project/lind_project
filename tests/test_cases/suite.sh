@@ -41,6 +41,7 @@ done
 echo "Copying test cases..."
 lindfs cp $PWD/lind_tests/ /automated_tests/ &> /dev/null
 lindfs cp $PWD/testfile.txt /testfile.txt &> /dev/null # Copies the text file to be used in several test files.
+lindfs cp $PWD/truncatefile.txt /truncatefile.txt &> /dev/null # Copies the text file used for truncate.c
 
 echo "Executing deterministic test cases"
 for var in "${deterministicinput[@]}"; do
@@ -114,6 +115,7 @@ rm ./lind_tests/* &> /dev/null
 rm -f foo.txt &> /dev/null
 lindfs deltree "/automated_tests/" &> /dev/null
 lindfs rm "/testfile.txt" &> /dev/null
+lindfs rm "/truncatefile.txt" &> /dev/null
 
 echo "******************************************************************"
 

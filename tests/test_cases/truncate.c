@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-const char *FILENAME = "testfile.txt";
+const char *FILENAME = "truncatefile.txt";
 const off_t OFFSET = 123;
 
 void check_filesize(off_t target_size)
