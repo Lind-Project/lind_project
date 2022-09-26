@@ -19,9 +19,11 @@ void check_filesize(off_t target_size)
 			target_size,
 			st.st_size
 		);
+		fflush(NULL);
 		exit(1);
 	}
 	printf("Success\n");
+	fflush(NULL);
 }
 
 void check_success(int r)
@@ -29,6 +31,7 @@ void check_success(int r)
 	if (r == -1)
 	{
 		perror("ERROR WHEN TRUNCATING FILE");
+		fflush(NULL);
 		exit(1);
 	}
 }
@@ -45,24 +48,30 @@ int main(int argc, char **argv)
 	
 
 	printf("Test truncate(const char *, off_t)\n");
+	fflush(NULL);
 
 	printf("Truncating %s from %d to %d\n", FILENAME, filesize, filesize_inc); 
+	fflush(NULL);
 	check_success(truncate(FILENAME, filesize_inc));
 	check_filesize(filesize_inc);
 
 	printf("Truncating %s from %d to %d\n", FILENAME, filesize_inc, filesize);
+	fflush(NULL);
 	check_success(truncate(FILENAME, filesize));
 	check_filesize(filesize);
 
 
 	printf("Test ftruncate(int, off_t)\n");
+	fflush(NULL);
 	fd = open(FILENAME, O_WRONLY);
 
 	printf("Truncating %s from %d to %d\n", FILENAME, filesize, filesize_inc); 
+	fflush(NULL);
 	check_success(ftruncate(fd, filesize_inc));
 	check_filesize(filesize_inc);
 
 	printf("Truncating %s from %d to %d\n", FILENAME, filesize_inc, filesize); 
+	fflush(NULL);
 	check_success(ftruncate(fd, filesize));
 	check_filesize(filesize);
 
