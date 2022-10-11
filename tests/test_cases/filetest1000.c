@@ -7,6 +7,8 @@
 
 #define WRITE_BUFFER_SIZE    1UL << 8
 
+const char* FILENAME = "testfiles/filetest1000file.txt";
+
 int main()
 {
     char buffer[WRITE_BUFFER_SIZE] = "";
@@ -16,7 +18,7 @@ int main()
 	
     for (int j = 0; j < 1000; j++) {
 
-    	int test_fd = open("testfile.txt", O_RDWR);
+    	int test_fd = open(FILENAME, O_RDWR);
     	write(test_fd, buffer, WRITE_BUFFER_SIZE);
     	lseek(test_fd, 0, SEEK_SET);
     	read(test_fd, readbuffer, WRITE_BUFFER_SIZE);

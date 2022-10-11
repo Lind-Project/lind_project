@@ -1,2 +1,0 @@
-Lorem ipsum dolor sit Ahmet, consectetur adipiscing elit. If you're still reading this, it means the test probably have warked correctly. Or not but this got your attention better. Don't worry, this is just a test file that's required for several tests. Instead of giving each test case a different file to read, why not use the same file?
-Here's some spaces,		there's some tabs and let lorem ipsum handle the rest.
