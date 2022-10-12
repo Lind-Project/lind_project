@@ -10,8 +10,8 @@
 
 int main()
 {
-	char old_name[] = "testfile.txt";
-	char new_name[] = "renamed_testfile.txt";
+	char old_name[] = "testfiles/renamefile.txt";
+	char new_name[] = "testfiles/renamed_testfile.txt";
 	struct stat st;
 	if(stat(old_name, &st) == -1)
 	{
