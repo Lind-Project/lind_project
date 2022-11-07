@@ -62,10 +62,13 @@ int main(void)
       else
       {
          printf("Child received %d\n", pval);
+         fflush(stdout);
 
          pval += 1;
 
          printf("Child sends %d\n", pval);
+         fflush(stdout);
+
          if (write(child_to_parent[1], &pval, sizeof(pval)) < 0)
          {
              perror("Child failed to write data");
@@ -80,6 +83,8 @@ int main(void)
       pval += 1;
 
       printf("Parent sending %d\n", pval);
+      fflush(stdout);
+
       if (write(parent_to_child[1], &pval, sizeof(pval)) != sizeof(pval))
       {
           perror("Failed to send data to child");
@@ -92,29 +97,31 @@ int main(void)
       {
           perror("Parent failed to read data");
           exit(1);
-      }
-      else
+      } else if (readlen > 0)
       {
           printf("Parent received %d\n", pval);
+          fflush(stdout);
       }
     }
   }
 
-  wait(NULL); //wait for child to terminate
-
   //close pipe ends and exit child
-
-  close(parent_to_child[1]);
-  close(child_to_parent[0]);
 
   if (pid == 0)
   {
-  close(child_to_parent[1]);
-  close(parent_to_child[0]);
-  exit(0);
+    close(child_to_parent[1]);
+    close(parent_to_child[0]);
+    exit(0);
+  } else {
+    close(parent_to_child[1]);
+    close(child_to_parent[0]);
   }
 
+  wait(NULL); //wait for child to terminate
+
+
   printf("Pipe Pong complete.\nFinal value: %d\n", pval);
+  fflush(stdout);
 
   return 0;
 }
