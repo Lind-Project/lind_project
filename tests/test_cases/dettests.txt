@@ -32,3 +32,4 @@ chmod.c
 rename.c
 fchmod.c
 truncate.c
+mutex.c
