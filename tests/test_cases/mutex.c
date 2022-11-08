@@ -7,10 +7,10 @@ pthread_mutex_t pmt;
 pthread_cond_t pct;
 
 void* lock_and_unlock(void* _) {
-        pthread_mutex_lock(&pmt);
-        printf("locked child\n");
-        pthread_mutex_unlock(&pmt);
-        pthread_cond_signal(&pct);
+    pthread_mutex_lock(&pmt);
+    printf("locked child\n");
+    pthread_mutex_unlock(&pmt);
+    pthread_cond_signal(&pct);
 }
 
 int main() {
