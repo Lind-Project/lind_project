@@ -6,15 +6,8 @@ import re
 import sys
 import string
 
-def template(results):
-    pidlist = re.findall('[-\d]+', results)
-    print pidlist
-
 lind_results = sys.argv[1]
 native_results = sys.argv[2]
-
-template(lind_results)
-template(native_results)
 
 lind_result_split = lind_results.split('\n')
 native_result_split = native_results.split('\n')

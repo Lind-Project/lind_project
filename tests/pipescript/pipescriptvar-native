@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./write_to_pipe $1 | ./read_from_pipe
+

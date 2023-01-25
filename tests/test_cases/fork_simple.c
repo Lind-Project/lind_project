@@ -1,54 +1,20 @@
-#undef _GNU_SOURCE
-#define _GNU_SOURCE
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
+#include <sys/wait.h>
 #include <unistd.h>
-#include <wait.h>
-
-static volatile size_t counter = 0;
-#define printf(s, ...) printf("[#%zu:L%u] " s, ++counter, __LINE__, __VA_ARGS__)
-
-int main(void)
+ 
+int main()
 {
-	int pret = -1, cret = -1, ppret = -1, pid = -1, cpid = -1, ppid = -1, unused = -1;
+    pid_t cpid;
+    cpid = fork();
+    if (cpid == 0)
+        exit(0);           /* terminate child */
+    else
+        wait(NULL); /* reaping parent */
+    printf("Parent pid = %d\n", getpid());
+    printf("Child pid = %d\n", cpid);
+    fflush(stdout);
 
-	printf("pid %d forking\n", getpid());
-
-	switch ((pid = fork())) {
-	case -1:
-		perror("fork() failed");
-		exit(EXIT_FAILURE);
-	case 0:
-		printf("pid %d forking\n", getpid());
-
-		switch ((cpid = fork())) {
-		case -1:
-			perror("fork() failed");
-			exit(EXIT_FAILURE);
-		case 0:
-			printf("pid = %d, ret = %d\n", getpid(), cpid);
-			exit(EXIT_SUCCESS);
-		}
-
-		printf("pid = %d, ret = %d\n", getpid(), cpid);
-		exit(EXIT_SUCCESS);
-	}
-
-	printf("pid = %d, ret = %d\n", getpid(), pid);
-	printf("pid %d forking again\n", getpid());
-
-	switch ((ppid = fork())) {
-	case -1:
-		perror("fork() failed");
-		exit(EXIT_FAILURE);
-	case 0:
-		printf("pid = %d, ret = %d\n", getpid(), ppid);
-		exit(EXIT_SUCCESS);
-	}
-
-	printf("pid = %d, ret = %d\n", getpid(), ppid);
-
-	return 0;
+    return 0;
 }
+

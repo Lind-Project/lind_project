@@ -369,27 +369,30 @@ PostmasterIsAliveInternal(void)
 void
 PostmasterDeathSignalInit(void)
 {
-#ifdef USE_POSTMASTER_DEATH_SIGNAL
-	int			signum = POSTMASTER_DEATH_SIGNAL;
+// LIND: we don't use the Death Signal, since we don't have signals in general
+// and this sounds very scary regardless
 
-	/* Register our signal handler. */
-	pqsignal(signum, postmaster_death_handler);
+// #ifdef USE_POSTMASTER_DEATH_SIGNAL
+// 	int			signum = POSTMASTER_DEATH_SIGNAL;
 
-	/* Request a signal on parent exit. */
-#if defined(PR_SET_PDEATHSIG)
-	if (prctl(PR_SET_PDEATHSIG, signum) < 0)
-		elog(ERROR, "could not request parent death signal: %m");
-#elif defined(PROC_PDEATHSIG_CTL)
-	if (procctl(P_PID, 0, PROC_PDEATHSIG_CTL, &signum) < 0)
-		elog(ERROR, "could not request parent death signal: %m");
-#else
-#error "USE_POSTMASTER_DEATH_SIGNAL set, but there is no mechanism to request the signal"
-#endif
+// 	/* Register our signal handler. */
+// 	pqsignal(signum, postmaster_death_handler);
 
-	/*
-	 * Just in case the parent was gone already and we missed it, we'd better
-	 * check the slow way on the first call.
-	 */
-	postmaster_possibly_dead = true;
-#endif							/* USE_POSTMASTER_DEATH_SIGNAL */
+// 	/* Request a signal on parent exit. */
+// #if defined(PR_SET_PDEATHSIG)
+// 	if (prctl(PR_SET_PDEATHSIG, signum) < 0)
+// 		elog(ERROR, "could not request parent death signal: %m");
+// #elif defined(PROC_PDEATHSIG_CTL)
+// 	if (procctl(P_PID, 0, PROC_PDEATHSIG_CTL, &signum) < 0)
+// 		elog(ERROR, "could not request parent death signal: %m");
+// #else
+// #error "USE_POSTMASTER_DEATH_SIGNAL set, but there is no mechanism to request the signal"
+// #endif
+
+// 	/*
+// 	 * Just in case the parent was gone already and we missed it, we'd better
+// 	 * check the slow way on the first call.
+// 	 */
+// 	postmaster_possibly_dead = true;
+// #endif							/* USE_POSTMASTER_DEATH_SIGNAL */
 }
