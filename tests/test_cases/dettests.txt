@@ -28,3 +28,4 @@ ioctl.c
 setsid.c
 dnstest.c
 cloexec.c
+socketpair.c
