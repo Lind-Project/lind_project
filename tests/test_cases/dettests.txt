@@ -33,3 +33,4 @@ rename.c
 fchmod.c
 truncate.c
 mutex.c
+socketpair.c
