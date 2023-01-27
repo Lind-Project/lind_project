@@ -1,0 +1,16 @@
+#!/bin/bash
+
+export AR=x86_64-nacl-ar
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export CFLAGS='-g -fno-pie -fPIC'
+export CXXFLAGS='-g -fno-pie'
+export LDFLAGS='-g -fno-pie'
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+export PREFIX="/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/x86_64-nacl"
+
+
+./configure --shared #--prefix="$PREFIX" --exec_prefix="$PREFIX" --libdir="$PREFIX/lib" --host=x86_64-nacl # "$@"
+
+make 
