@@ -39,6 +39,7 @@ _2connect = connect
 
 def connect(*args, **kwargs):
     """connect(dsn, ...) -> new psycopg 1.1.x compatible connection object"""
+    print "in psypg1 connect"
     kwargs['connection_factory'] = connection
     conn = _2connect(*args, **kwargs)
     conn.set_isolation_level(_ext.ISOLATION_LEVEL_READ_COMMITTED)

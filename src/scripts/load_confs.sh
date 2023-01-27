@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cp /etc/hosts /home/lind/lind_project/hosts
-sed -i '/ip6/d' hostsi # remove inet6 addresses
+sed -i '/ip6/d' /home/lind/lind_project/hosts # remove inet6 addresses
 echo -e "127.0.0.1\tLind" >> /home/lind/lind_project/hosts
 lindfs cp /home/lind/lind_project/hosts /etc/hosts # Adjusted as we also need Lind's ip as 127.0.0.1 in the list.
 rm /home/lind/lind_project/hosts
