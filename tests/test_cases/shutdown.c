@@ -8,22 +8,33 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+const int NUM_OF_PINGER = 2;
+const int NUM_OF_PINGPONG = 10;
+
+void clear_buffer(char *buffer, int length) {
+	for (int i = 0; i < length; ++i) {
+		buffer[i] = 0;
+	}
+}
+
 // Adapted from https://www.geeksforgeeks.org/socket-programming-cc/
 void *ponger(void *vargp) {
 	int server_fd, new_socket, valread, finished;
 	int opt = 1;
-	int counter;
+	int counter = 0;
 	struct sockaddr_in address;
 	int addrlen = sizeof(address);
-	char buffer[1024];
+	char buffer[32];
 
 	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		printf("socket failed\n");
+		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
 	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
 		printf("setsockopt\n");
+		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
@@ -33,78 +44,115 @@ void *ponger(void *vargp) {
 
 	if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
 		printf("bind failed\n");
+		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
 	if (listen(server_fd, 3) < 0) {
 		printf("listen\n");
+		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
-	if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
-		printf("accept\n");
-		exit(EXIT_FAILURE);
+	while (counter < NUM_OF_PINGER * NUM_OF_PINGPONG) {
+		if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
+			printf("accept\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		clear_buffer(buffer, 32);
+		valread = read(new_socket, buffer, 32);
+		printf("ponger receive: %s\n", buffer);
+		fflush(stdout);
+		sprintf(buffer, "%d", atoi(buffer)+1);
+
+		send(new_socket, buffer, strlen(buffer), 0);
+		printf("ponger send: %s\n", buffer);
+		fflush(stdout);
+
+		close(new_socket);
+		++counter;
 	}
 
-	valread = read(new_socket, buffer, 1024);
-	printf("ponger: %s\n", buffer);
-	sprintf(buffer, "%d", atoi(buffer)+1);
-
-	send(new_socket, buffer, strlen(buffer), 0);
-	printf("ponger: %s\n", buffer);
-
-	close(new_socket);
 	shutdown(server_fd, SHUT_RDWR);
 }
 
 void *pinger(void *vargp) {
+	int pinger_id = *((int *)vargp);
 	int sock = 0, valread, client_fd;
 	int counter = 0;
 	struct sockaddr_in serv_addr;
-	char buffer[1024];
+	char buffer[32];
 
-	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-	    printf("client socket creation error\n");
-	    exit(EXIT_FAILURE);
+	for (int i = 0; i < NUM_OF_PINGPONG; ++i) {
+		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+			printf("client socket creation error\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		serv_addr.sin_family = AF_INET;
+		serv_addr.sin_port = htons(5000);
+
+		if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
+			printf("Invalid address/ Address not supported\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		if ((client_fd = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
+			printf("Connection Failed\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		clear_buffer(buffer, 32);
+		sprintf(buffer, "%d", ++counter);
+		printf("client %d send: %s\n", pinger_id, buffer);
+		fflush(stdout);
+
+		send(sock, buffer, strlen(buffer), 0);
+
+		// Call shutdown(). Not the way it's supposed to be used, but good enough for testing purpose
+		shutdown(sock, SHUT_RD); // Incorrect
+		// shutdown(sock, SHUT_WR);
+
+		clear_buffer(buffer, 32);
+		valread = read(sock, buffer, 32);
+
+		counter = atoi(buffer);
+		printf("client %d receive: %s\n", pinger_id, buffer);
+		fflush(stdout);
+
+		close(sock);
 	}
-
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(5000);
-
-	if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
-	    printf("Invalid address/ Address not supported\n");
-	    exit(EXIT_FAILURE);
-	}
-
-	if ((client_fd = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
-	    printf("Connection Failed\n");
-	    exit(EXIT_FAILURE);
-	}
-
-	sprintf(buffer, "%d", ++counter);
-	printf("client: %s\n", buffer);
-
-	send(sock, buffer, strlen(buffer), 0);
-	valread = read(sock, buffer, 1024);
-
-	counter = atoi(buffer);
-	printf("client: %s\n", buffer);
-
-	close(client_fd);
 }
 
 int main( int argc, char *argv[] ) {
-	pthread_t ponger_id, pinger_id;
+	pthread_t ponger_id, pinger_id[NUM_OF_PINGER];
+	int pinger_id_natural[NUM_OF_PINGER];
+	for (int i = 0; i < NUM_OF_PINGER; ++i) {
+		pinger_id_natural[i] = i;
+	}
 	
-	printf("Threads start\n");
-
+	printf("Starting Ponger\n");
+	fflush(stdout);
 	pthread_create(&ponger_id, NULL, ponger, NULL);
-	pthread_create(&pinger_id, NULL, pinger, NULL);
+
+	for (int i = 0; i < NUM_OF_PINGER; ++i) {
+		printf("Starting Pinger %d\n", i); 
+		fflush(stdout);
+		pthread_create(&pinger_id[i], NULL, pinger, (void *)&pinger_id_natural[i]);
+	}
 
 	pthread_join(ponger_id, NULL);
-	pthread_join(pinger_id, NULL);
+	for (int i = 0; i < NUM_OF_PINGER; ++i) {
+		pthread_join(pinger_id[i], NULL);
+	}
 
 	printf("Threads end\n");
+	fflush(stdout);
 
 	return 0;
 }
