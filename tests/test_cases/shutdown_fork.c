@@ -1,0 +1,130 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <time.h>
+
+int main(int argc, char *argv[]) {
+	int server_fd, new_socket, client_fd; 
+	int opt = 1, opt2 = 1;
+	int dummy = 0;
+	clock_t t;
+	struct sockaddr_in address, serv_addr;
+	int addrlen = sizeof(address);
+	char buffer[32];
+
+	int parent_to_child[2];
+	
+	if (pipe(parent_to_child) < 0)
+	{
+		printf("Failed to initialize parent to child pipe");
+		fflush(stdout);
+		exit(EXIT_FAILURE);
+	}
+
+	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		printf("server socket failed\n");
+		fflush(stdout);
+		exit(EXIT_FAILURE);
+	}
+
+	if (fork() == 0) {
+		close(parent_to_child[1]);
+
+		if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+			printf("client socket failed\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		if (setsockopt(client_fd, SOL_SOCKET, SO_REUSEADDR, &opt2, sizeof(opt2))) {
+			printf("client setsockopt failed\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		serv_addr.sin_family = AF_INET;
+		serv_addr.sin_port = htons(5000);
+
+		if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
+			printf("inet_pton failed\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		if (connect(client_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+			printf("client connection failed\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		// Blocking read pipe that continues when parent is about to read socket
+		read(parent_to_child[0], &dummy, sizeof(dummy));
+		
+		// Wait for parent to start read socket
+		sleep(3);
+
+		/* shutdown */
+		t = clock();
+		shutdown(server_fd, SHUT_RDWR);
+		t = clock() - t;
+		printf("%lf\n", ((double)t) / CLOCKS_PER_SEC);
+		fflush(stdout);
+		/* shutdown */
+
+		send(client_fd, buffer, strlen(buffer), 0);
+
+		close(server_fd);
+		close(client_fd);
+		close(parent_to_child[0]);
+
+		exit(0);
+	} else {
+		close(parent_to_child[0]);
+
+		if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+			printf("server setsockopt failed\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		address.sin_family = AF_INET;
+		address.sin_addr.s_addr = INADDR_ANY;
+		address.sin_port = htons(5000);
+
+		if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+			printf("server bind failed\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		if (listen(server_fd, 3) < 0) {
+			printf("server listen failed\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
+			printf("server accept failed\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+
+		// Tell child we'll call read() in the next step
+		write(parent_to_child[1], &dummy, sizeof(dummy));
+		read(new_socket, buffer, 32);
+
+		close(server_fd);
+		close(new_socket);
+		close(parent_to_child[1]);
+
+		wait(0);
+		exit(0);
+	}
+}
