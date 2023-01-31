@@ -40,6 +40,7 @@ for var in "${totalarray[@]}"; do
 done
 echo "Copying test cases..."
 lindfs cp $PWD/lind_tests/ /automated_tests/ &> /dev/null
+lindfs cp $PWD/testfiles/ /testfiles/ &> /dev/null
 lindfs cp $PWD/testfile.txt /testfile.txt &> /dev/null # Copies the text file to be used in several test files.
 
 echo "Executing deterministic test cases"
@@ -113,6 +114,7 @@ rm ./automated_tests/* &> /dev/null
 rm ./lind_tests/* &> /dev/null
 rm -f foo.txt &> /dev/null
 lindfs deltree "/automated_tests/" &> /dev/null
+lindfs deltree "/testfiles/" &> /dev/null
 lindfs rm "/testfile.txt" &> /dev/null
 
 echo "******************************************************************"

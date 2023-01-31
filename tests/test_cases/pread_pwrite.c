@@ -1,4 +1,5 @@
  // using code from from https://stackoverflow.com/questions/41362754/reading-with-pread-and-writing-with-pwrite-in-c
+#define _XOPEN_SOURCE 500
 
 #include <fcntl.h>
 #include <stdio.h>

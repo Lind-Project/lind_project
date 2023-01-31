@@ -30,3 +30,7 @@ dnstest.c
 cloexec.c
 chmod.c
 rename.c
+fchmod.c
+truncate.c
+mutex.c
+socketpair.c
