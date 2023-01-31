@@ -331,6 +331,7 @@ function install_to_path() {
 
 	print "Copying glibc into lindenv virtual filesytem"
 	cd "$LIND_ENV_PATH/fs"
+	cp "$LIND_ENV_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc/x86_64-nacl/lib/runnable-ld.so" runnable-ld.so
 	$LIND_BASE/src/safeposix-rust/gen_netdevs.sh
 	"$LIND_ENV_PATH_BIN/lind_fs_utils" mkdir "/lib"
 	"$LIND_ENV_PATH_BIN/lind_fs_utils" update "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"  "/lib/glibc"
