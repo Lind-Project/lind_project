@@ -22,17 +22,18 @@ void clear_buffer(char *buffer, int length) {
 void *ponger(void *vargp) {
 	int server_fd, new_socket, valread, finished;
 	int opt = 1;
-	int counter = 0;
 	struct sockaddr_in address;
 	int addrlen = sizeof(address);
 	char buffer[BUFFER_SIZE];
 
+	// Create server socket
 	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		printf("ponger socket failed\n");
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
+	// Set server socket option
 	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
 		printf("ponger setsockopt failed\n");
 		fflush(stdout);
@@ -43,37 +44,42 @@ void *ponger(void *vargp) {
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = htons(5000);
 
+	// Bind server socket to the address
 	if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
 		printf("ponger bind failed\n");
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
+	// Start listening
 	if (listen(server_fd, 3) < 0) {
 		printf("ponger listen failed\n");
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
-	while (counter < NUM_OF_PINGER * NUM_OF_PINGPONG) {
+	// Bounce and increment numbers between pingers
+	for (int i = 0; i < NUM_OF_PINGER * NUM_OF_PINGPONG; ++i) {
+		// Establish a new connection
 		if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
 			printf("ponger accept failed\n");
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
+		// Receive a value from a pinger
 		clear_buffer(buffer, BUFFER_SIZE);
 		valread = read(new_socket, buffer, BUFFER_SIZE);
 		printf("ponger receive: %s\n", buffer);
 		fflush(stdout);
-		sprintf(buffer, "%d", atoi(buffer)+1);
 
+		// Increment the value by 1 and send it back
+		sprintf(buffer, "%d", atoi(buffer)+1);
 		send(new_socket, buffer, strlen(buffer), 0);
 		printf("ponger send: %s\n", buffer);
 		fflush(stdout);
 
 		close(new_socket);
-		++counter;
 	}
 
 	shutdown(server_fd, SHUT_RDWR);
@@ -88,9 +94,18 @@ void *pinger(void *vargp) {
 	struct sockaddr_in serv_addr;
 	char buffer[BUFFER_SIZE];
 
+	// Loop a few times to try trigger race conditions
 	for (int i = 0; i < NUM_OF_PINGPONG; ++i) {
+		// Create a pinger socket
 		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			printf("pinger socket failed\n");
+			fflush(stdout);
+			exit(EXIT_FAILURE);
+		}
+		
+		// Set pinger socket options
+		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+			printf("pinger setsockopt failed\n");
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
@@ -98,37 +113,33 @@ void *pinger(void *vargp) {
 		serv_addr.sin_family = AF_INET;
 		serv_addr.sin_port = htons(5000);
 
+		// Set the address
 		if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
 			printf("inet_pton failed\n");
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
+		// Connect to ponger
 		if ((client_fd = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
 			printf("pinger connection failed\n");
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
-		
-		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-			printf("pinger setsockopt failed\n");
-			fflush(stdout);
-			exit(EXIT_FAILURE);
-		}
 
+		// Increment the current number by 1 and send it to ponger
 		clear_buffer(buffer, BUFFER_SIZE);
 		sprintf(buffer, "%d", ++counter);
 		printf("client %d send: %s\n", pinger_id, buffer);
 		fflush(stdout);
-
 		send(sock, buffer, strlen(buffer), 0);
 
 		// Call shutdown(). Not the way it's supposed to be used, but good enough for testing purpose
 		shutdown(sock, SHUT_WR);
 
+		// Read the incremented number from ponger
 		clear_buffer(buffer, BUFFER_SIZE);
 		valread = read(sock, buffer, BUFFER_SIZE);
-
 		counter = atoi(buffer);
 		printf("client %d receive: %s\n", pinger_id, buffer);
 		fflush(stdout);

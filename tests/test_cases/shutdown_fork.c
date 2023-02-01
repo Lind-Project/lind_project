@@ -21,6 +21,7 @@ int main(int argc, char *argv[]) {
 
 	int parent_to_child[2];
 	
+	// Open a pipe for syncing between parent and child process
 	if (pipe(parent_to_child) < 0)
 	{
 		printf("Failed to initialize parent to child pipe");
@@ -28,21 +29,25 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
+	// Create server socket, which we use to test shutdown
 	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		printf("server socket failed\n");
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
-	if (fork() == 0) {
+
+	if (fork() == 0) { // Child process
 		close(parent_to_child[1]);
 
+		// Create a client socket
 		if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			printf("client socket failed\n");
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
+		// Set client socket options
 		if (setsockopt(client_fd, SOL_SOCKET, SO_REUSEADDR, &opt2, sizeof(opt2))) {
 			printf("client setsockopt failed\n");
 			fflush(stdout);
@@ -52,12 +57,14 @@ int main(int argc, char *argv[]) {
 		serv_addr.sin_family = AF_INET;
 		serv_addr.sin_port = htons(5000);
 
+		// Set the server address
 		if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
 			printf("inet_pton failed\n");
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
+		// Connect to server
 		if (connect(client_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
 			printf("client connection failed\n");
 			fflush(stdout);
@@ -68,7 +75,7 @@ int main(int argc, char *argv[]) {
 		read(parent_to_child[0], &dummy, sizeof(dummy));
 		
 		// Wait for parent to start read socket
-		sleep(3);
+		sleep(1);
 
 		/* shutdown */
 		t = clock();
@@ -78,6 +85,7 @@ int main(int argc, char *argv[]) {
 		fflush(stdout);
 		/* shutdown */
 
+		// Send something to let parent process continue
 		send(client_fd, buffer, strlen(buffer), 0);
 
 		close(server_fd);
@@ -85,9 +93,10 @@ int main(int argc, char *argv[]) {
 		close(parent_to_child[0]);
 
 		exit(0);
-	} else {
+	} else { // Parent process
 		close(parent_to_child[0]);
 
+		// Set server socket option
 		if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
 			printf("server setsockopt failed\n");
 			fflush(stdout);
@@ -98,18 +107,21 @@ int main(int argc, char *argv[]) {
 		address.sin_addr.s_addr = INADDR_ANY;
 		address.sin_port = htons(5000);
 
+		// Bind server socket to the address
 		if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
 			printf("server bind failed\n");
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
+		// Start listening
 		if (listen(server_fd, 3) < 0) {
 			printf("server listen failed\n");
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
+		// Receiving a new connection from child process
 		if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
 			printf("server accept failed\n");
 			fflush(stdout);
@@ -118,6 +130,8 @@ int main(int argc, char *argv[]) {
 
 		// Tell child we'll call read() in the next step
 		write(parent_to_child[1], &dummy, sizeof(dummy));
+
+		/* The blocking read */
 		read(new_socket, buffer, 32);
 
 		close(server_fd);
