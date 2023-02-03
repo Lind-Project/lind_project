@@ -1,3 +1,4 @@
+/* Test if shutdown() would take longer to run in a multi-process program */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
