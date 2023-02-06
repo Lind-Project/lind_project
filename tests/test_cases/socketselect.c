@@ -19,6 +19,7 @@
 #define FALSE            0
 
 pthread_barrier_t closebarrier;
+pthread_barrier_t syncbarrier;
 
 void* client(void* v) { 
     int sock = 0, valread; 
@@ -37,7 +38,7 @@ void* client(void* v) {
     // Convert IPv4 and IPv6 addresses from text to binary form 
     inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
 
-    sleep(1);
+    pthread_barrier_wait(&syncbarrier);
    
     connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     send(sock , hello , strlen(hello) , 0 ); 
@@ -134,9 +135,8 @@ void* server(void* v) {
    timeout.tv_sec  = 2;
    timeout.tv_usec = 0;
 
-   
+   pthread_barrier_wait(&syncbarrier);
 
-   
    /* Loop waiting for incoming connects or for incoming data   */
    /* on any of the connected sockets.                          */
    
@@ -330,10 +330,13 @@ void* server(void* v) {
 
 int main() {
     pthread_t serverthread, clientthread1;
+    
+    pthread_barrier_init(&syncbarrier, NULL, 2);
     pthread_create(&serverthread, NULL, server, NULL);
     pthread_create(&clientthread1, NULL, client, NULL);
     pthread_join(clientthread1, NULL);
     pthread_join(serverthread, NULL);
+    pthread_barrier_destroy(&syncbarrier);
     return 0;
 }
 

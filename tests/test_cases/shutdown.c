@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+pthread_barrier_t barrier;
+
 const int NUM_OF_PINGER = 2;
 const int NUM_OF_PINGPONG = 10;
 const int BUFFER_SIZE = 32;
@@ -62,6 +64,8 @@ void *ponger(void *vargp) {
 		exit(EXIT_FAILURE);
 	}
 
+	pthread_barrier_wait(&barrier);
+
 	// Bounce and increment numbers between pingers
 	for (int i = 0; i < NUM_OF_PINGER * NUM_OF_PINGPONG; ++i) {
 		// Establish a new connection
@@ -98,7 +102,7 @@ void *pinger(void *vargp) {
 	struct sockaddr_in serv_addr;
 	char buffer[BUFFER_SIZE];
 
-	sleep(1); // Wait for ponger to setup its socket
+	pthread_barrier_wait(&barrier);
 
 	// Loop a few times to try trigger race conditions
 	for (int i = 0; i < NUM_OF_PINGPONG; ++i) {
@@ -160,6 +164,8 @@ int main( int argc, char *argv[] ) {
 	for (int i = 0; i < NUM_OF_PINGER; ++i) {
 		pinger_id_natural[i] = i;
 	}
+
+	pthread_barrier_init(&barrier, NULL, NUM_OF_PINGER+1);
 	
 	printf("Starting Ponger\n");
 	fflush(stdout);
@@ -178,6 +184,8 @@ int main( int argc, char *argv[] ) {
 
 	printf("Threads end\n");
 	fflush(stdout);
+
+	pthread_barrier_destroy(&barrier);
 
 	return 0;
 }
