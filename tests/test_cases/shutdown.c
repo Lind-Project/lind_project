@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <errno.h>
 
 const int NUM_OF_PINGER = 2;
 const int NUM_OF_PINGPONG = 10;
@@ -30,14 +31,14 @@ void *ponger(void *vargp) {
 
 	// Create server socket
 	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		printf("ponger socket failed\n");
+		printf("ponger socket failed: %s\n", strerror(errno));
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
 	// Set server socket option
 	if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-		printf("ponger setsockopt failed\n");
+		printf("ponger setsockopt failed: %s\n", strerror(errno));
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
@@ -48,14 +49,15 @@ void *ponger(void *vargp) {
 
 	// Bind server socket to the address
 	if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-		printf("ponger bind failed\n");
+			printf(strerror(errno));
+		printf("ponger bind failed: %s\n", strerror(errno));
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
 	// Start listening
 	if (listen(server_fd, 3) < 0) {
-		printf("ponger listen failed\n");
+		printf("ponger listen failed: %s\n", strerror(errno));
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
@@ -64,7 +66,7 @@ void *ponger(void *vargp) {
 	for (int i = 0; i < NUM_OF_PINGER * NUM_OF_PINGPONG; ++i) {
 		// Establish a new connection
 		if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
-			printf("ponger accept failed\n");
+			printf("ponger accept failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
@@ -96,18 +98,20 @@ void *pinger(void *vargp) {
 	struct sockaddr_in serv_addr;
 	char buffer[BUFFER_SIZE];
 
+	sleep(1); // Wait for ponger to setup its socket
+
 	// Loop a few times to try trigger race conditions
 	for (int i = 0; i < NUM_OF_PINGPONG; ++i) {
 		// Create a pinger socket
 		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-			printf("pinger socket failed\n");
+			printf("pinger socket failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 		
 		// Set pinger socket options
 		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-			printf("pinger setsockopt failed\n");
+			printf("pinger setsockopt failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
@@ -117,14 +121,14 @@ void *pinger(void *vargp) {
 
 		// Set the address
 		if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
-			printf("inet_pton failed\n");
+			printf("pinger inet_pton failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
 		// Connect to ponger
 		if ((client_fd = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
-			printf("pinger connection failed\n");
+			printf("pinger connection failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}

@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <time.h>
+#include <errno.h>
 
 int main(int argc, char *argv[]) {
 	int server_fd, new_socket, client_fd; 
@@ -25,14 +26,14 @@ int main(int argc, char *argv[]) {
 	// Open a pipe for syncing between parent and child process
 	if (pipe(parent_to_child) < 0)
 	{
-		printf("Failed to initialize parent to child pipe");
+		printf("Failed to initialize parent to child pipe: %n\n", strerror(errno));
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 
 	// Create server socket, which we use to test shutdown
 	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		printf("server socket failed\n");
+		printf("server socket failed: %s\n", strerror(errno));
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
@@ -43,14 +44,14 @@ int main(int argc, char *argv[]) {
 
 		// Create a client socket
 		if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-			printf("client socket failed\n");
+			printf("client socket failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
 		// Set client socket options
 		if (setsockopt(client_fd, SOL_SOCKET, SO_REUSEADDR, &opt2, sizeof(opt2))) {
-			printf("client setsockopt failed\n");
+			printf("client setsockopt failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
@@ -60,14 +61,14 @@ int main(int argc, char *argv[]) {
 
 		// Set the server address
 		if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
-			printf("inet_pton failed\n");
+			printf("client inet_pton failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
 		// Connect to server
 		if (connect(client_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-			printf("client connection failed\n");
+			printf("client connection failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
 
 		// Set server socket option
 		if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-			printf("server setsockopt failed\n");
+			printf("server setsockopt failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
@@ -110,21 +111,21 @@ int main(int argc, char *argv[]) {
 
 		// Bind server socket to the address
 		if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-			printf("server bind failed\n");
+			printf("server bind failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
 		// Start listening
 		if (listen(server_fd, 3) < 0) {
-			printf("server listen failed\n");
+			printf("server listen failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
 
 		// Receiving a new connection from child process
 		if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
-			printf("server accept failed\n");
+			printf("server accept failed: %s\n", strerror(errno));
 			fflush(stdout);
 			exit(EXIT_FAILURE);
 		}
