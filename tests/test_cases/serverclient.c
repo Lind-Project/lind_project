@@ -89,5 +89,6 @@ int main() {
     pthread_create(&clientthread1, NULL, client, NULL);
     pthread_join(clientthread1, NULL);
     pthread_join(serverthread, NULL);
+    pthread_barrier_destroy(&barrier);
     return 0;
 }
