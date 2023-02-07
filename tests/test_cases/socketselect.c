@@ -337,6 +337,7 @@ int main() {
     pthread_join(clientthread1, NULL);
     pthread_join(serverthread, NULL);
     pthread_barrier_destroy(&syncbarrier);
+    pthread_barrier_destroy(&closebarrier);
     return 0;
 }
 
