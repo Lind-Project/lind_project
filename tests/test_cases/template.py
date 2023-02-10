@@ -8,7 +8,7 @@ import string
 
 def template(results):
     pidlist = re.findall('[-\d]+', results)
-    print pidlist
+    # print pidlist
 
 lind_results = sys.argv[1]
 native_results = sys.argv[2]
