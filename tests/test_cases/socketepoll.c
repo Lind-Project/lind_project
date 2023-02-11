@@ -163,7 +163,8 @@ void* server(void* v) {
       }
       if (connected == 1 && n == 0 && num_fd == 0) 
       {
-         exit(0);
+         pthread_barrier_wait(&closebarrier);
+	 return NULL;
       }
       for (i = 0; i < n; ++i) 
       {
