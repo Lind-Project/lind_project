@@ -11,3 +11,5 @@ lindfs cp /home/lind/lind_project/tests/applications/postgres/src/interfaces/lib
 lindfs cp /home/lind/lind_project/lind/tmp/usr/local/pgsql/bin/postgres bin/postgres
 lindfs cp /home/lind/lind_project/src/scripts/postgres/init_postgres.sh init_postgres.sh
 lindfs cp /home/lind/lind_project/src/scripts/postgres/run_pgsql.sh run_pgsql.sh
+
+lindfs mkdir /tmp
