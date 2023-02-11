@@ -2,10 +2,7 @@
 
 /usr/local/pgsql/bin/postgres -F -d 5 -c listen_addresses='' -D /usr/local/pgsql/data/ &
 sleep 90
-echo "postgres ready"
-/bin/python /init_table.py
-sleep 3
-echo "table ready"
+echo "POSTGRES READY"
 /usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf -p /usr/local/nginx/
 sleep 5
 echo "nginx ready"

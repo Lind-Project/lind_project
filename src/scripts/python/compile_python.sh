@@ -1,15 +1,15 @@
 #!/bin/bash
-# Builds python executable for lind.
-
-echo "Building python"
-cd /home/lind/lind_project/tests/applications/python/;
-./bootstrap_nacl;
-./fastcompile.sh
 
 # Builds openssl and libraries in nacl.
 echo "Compiling Openssl"
 cd /home/lind/lind_project/tests/applications/openssl
 ./bootstrap_nacl
+
+# Builds python executable for lind.
+echo "Building python"
+cd /home/lind/lind_project/tests/applications/python/;
+./bootstrap_nacl;
+./fastcompile.sh
 
 echo "Compiling markupsafe/_speedups.so..."
 cd /home/lind/lind_project/tests/applications/python-modules/site-packages/markupsafe
