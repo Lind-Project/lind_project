@@ -31,6 +31,17 @@ do
 done
 x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/bufferedio.o build/bytesio.o build/fileio.o build/iobase.o build/_iomodule.o build/stringio.o build/textio.o -L. -lpython2.7 -o build/lib/_io.so
 
+echo _ctypes...
+ctypesarray=('_ctypes' 'callbacks'  'callproc'  'cfield' 'malloc_closure' 'stgdict')
+cd /home/lind/lind_project/tests/applications/python/Modules/_ctypes/libffi/
+./bootstrap_nacl
+cd /home/lind/lind_project/tests/applications/python/
+for ctypesmodule in "${ctypesarray[@]}"
+do
+    x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -IModules/_ctypes -c Modules/_ctypes/$ctypesmodule.c -o build/$ctypesmodule.o
+done
+x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/_ctypes.o build/callbacks.o  build/callproc.o  build/cfield.o build/malloc_closure.o build/stgdict.o -L. -lpython2.7 -o build/lib/_ctypes.so
+
 echo zlib...
 cd /home/lind/lind_project/tests/applications/python/Modules/zlib
 ./bootstrap_nacl
