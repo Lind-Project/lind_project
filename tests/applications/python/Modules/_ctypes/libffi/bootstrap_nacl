@@ -1,0 +1,18 @@
+#!/bin/bash
+
+export AR=x86_64-nacl-ar
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD='x86_64-nacl-ld -fPIC -shared'
+export CFLAGS='-g -fno-pie -fPIC' 
+export CXXFLAGS='-g -fno-pie'
+export LDFLAGS='-g -fno-pie'
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+export PREFIX="/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/x86_64-nacl"
+
+
+./configure --enable-shared --host=x86_64-nacl-linux
+
+make
+
+cp .libs/libffi.so.5.0.10 libffi.so

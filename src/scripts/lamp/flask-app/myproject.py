@@ -16,12 +16,14 @@ def get_db_connection():
 def index():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM books;')
+    cur.execute('CREATE TABLE test (Info VarChar(255));')
+    cur.execute('SELECT * FROM test;')
     books = cur.fetchall()
     cur.close()
     conn.close()
     return render_template('index.html', books=books)
 
+'''
 @app.route('/create/', methods=('GET', 'POST'))
 def create():
     if request.method == 'POST':
@@ -41,6 +43,7 @@ def create():
         return redirect(url_for('index'))
 
     return render_template('create.html')
+    '''
 
 if __name__ == "__main__":
     app.run(host = "0.0.0.0", debug=True)
