@@ -30,65 +30,7 @@
 #include <fficonfig.h>
 #include <ffi.h>
 
-.text
-
-/* ffi_call_unix64 (void *args, unsigned long bytes, unsigned flags,
-	            void *raddr, void (*fnaddr)(void));
-
-   Bit o trickiness here -- ARGS+BYTES is the base of the stack frame
-   for this function.  This has been allocated by ffi_call.  We also
-   deallocate some of the stack that has been alloca'd.  */
-
-	.align	2
-	.globl	ffi_call_unix64
-	.type	ffi_call_unix64,@function
-
-ffi_call_unix64:
-.LUW0:
-	movq	(%rsp), %r10		/* Load return address.  */
-	leaq	(%rdi, %rsi), %rax	/* Find local stack base.  */
-	movq	%rdx, (%rax)		/* Save flags.  */
-	movq	%rcx, 8(%rax)		/* Save raddr.  */
-	movq	%rbp, 16(%rax)		/* Save old frame pointer.  */
-	movq	%r10, 24(%rax)		/* Relocate return address.  */
-	movq	%rax, %rbp		/* Finalize local stack frame.  */
-.LUW1:
-	movq	%rdi, %r10		/* Save a copy of the register area. */
-	movq	%r8, %r11		/* Save a copy of the target fn.  */
-	movl	%r9d, %eax		/* Set number of SSE registers.  */
-
-	/* Load up all argument registers.  */
-	movq	(%r10), %rdi
-	movq	8(%r10), %rsi
-	movq	16(%r10), %rdx
-	movq	24(%r10), %rcx
-	movq	32(%r10), %r8
-	movq	40(%r10), %r9
-	testl	%eax, %eax
-	jnz	.Lload_sse
-.Lret_from_load_sse:
-
-	/* Deallocate the reg arg area.  */
-	leaq	176(%r10), %rsp
-
-	/* Call the user function.  */
-	call	*%r11
-
-	/* Deallocate stack arg area; local stack frame in redzone.  */
-	leaq	24(%rbp), %rsp
-
-	movq	0(%rbp), %rcx		/* Reload flags.  */
-	movq	8(%rbp), %rdi		/* Reload raddr.  */
-	movq	16(%rbp), %rbp		/* Reload old frame pointer.  */
-.LUW2:
-
-	/* The first byte of the flags contains the FFI_TYPE.  */
-	movzbl	%cl, %r10d
-	leaq	.Lstore_table(%rip), %r11
-	movslq	(%r11, %r10, 4), %r10
-	addq	%r11, %r10
-	jmp	*%r10
-
+.section .rodata
 .Lstore_table:
 	.long	.Lst_void-.Lstore_table		/* FFI_TYPE_VOID */
 	.long	.Lst_sint32-.Lstore_table	/* FFI_TYPE_INT */
@@ -106,56 +48,139 @@ ffi_call_unix64:
 	.long	.Lst_struct-.Lstore_table	/* FFI_TYPE_STRUCT */
 	.long	.Lst_int64-.Lstore_table	/* FFI_TYPE_POINTER */
 
-	.align 2
+.text
+
+/* ffi_call_unix64 (void *args, unsigned long bytes, unsigned flags,
+	            void *raddr, void (*fnaddr)(void));
+
+   Bit o trickiness here -- ARGS+BYTES is the base of the stack frame
+   for this function.  This has been allocated by ffi_call.  We also
+   deallocate some of the stack that has been alloca'd.  */
+
+	.align	2
+	.globl	ffi_call_unix64
+	.type	ffi_call_unix64,@function
+
+ffi_call_unix64:
+.LUW0:
+	movq	(%rsp), %r10		/* Load return address.  */
+	leaq	(%rdi, %rsi), %rax	/* Find local stack base.  */
+ 	movq	%rdx, %nacl:0(%r15, %rax)		/* Save flags.  */
+ 	movq	%rcx, %nacl:8(%r15, %rax)		/* Save raddr.  */
+ 	movq	%rbp, %nacl:16(%r15, %rax)		/* Save old frame pointer.  */
+ 	movq	%r10, %nacl:24(%r15, %rax)		/* Relocate return address.  */
+ 	naclrestbp	%eax, %r15		/* Finalize local stack frame.  */
+.LUW1:
+ 	movl	%edi, %r10d		/* Save a copy of the register area. */
+ 	movl	%r8d, %r11d		/* Save a copy of the target fn.  */
+	movl	%r9d, %eax		/* Set number of SSE registers.  */
+
+	/* Load up all argument registers.  */
+ 	movq	%nacl:0(%r15, %r10), %rdi
+ 	movq	%nacl:8(%r15, %r10), %rsi
+ 	movq	%nacl:16(%r15, %r10), %rdx
+ 	movq	%nacl:24(%r15, %r10), %rcx
+ 	movq	%nacl:32(%r15, %r10), %r8
+ 	movq	%nacl:40(%r15, %r10), %r9
+	testl	%eax, %eax
+	jnz	.Lload_sse
+.Lret_from_load_sse:
+
+	/* Deallocate the reg arg area.  */
+ 	.bundle_lock
+ 		leal	176(%r10), %esp
+ 		addq	%r15, %rsp
+ 	.bundle_unlock
+
+	/* Call the user function.  */
+ 	call	*%r11
+ 	naclcall	%r11d, %r15
+
+	/* Deallocate stack arg area; local stack frame in redzone.  */
+ 	.bundle_lock
+ 		leal	24(%rbp), %esp
+ 		addq	%r15, %rsp
+ 	.bundle_unlock
+
+	movq	0(%rbp), %rcx		/* Reload flags.  */
+	movq	8(%rbp), %rdi		/* Reload raddr.  */
+ 	naclrestbp	16(%rbp), %r15	/* Reload old frame pointer.  */
+.LUW2:
+
+	/* The first byte of the flags contains the FFI_TYPE.  */
+	movzbl	%cl, %r10d
+ 	leal	.Lstore_table(%rip), %r11d
+ 	leal	(%r11, %r10, 4), %r10d
+ 	movl	%nacl:(%r15, %r10), %r10d
+ 	addl	%r11d, %r10d
+ 	nacljmp	%r10d, %r15
+
+    .align 32
 .Lst_void:
-	ret
-	.align 2
+	pop %r11
+    nacljmp %r11d, %r15
+	.align 32
 
 .Lst_uint8:
 	movzbq	%al, %rax
-	movq	%rax, (%rdi)
-	ret
-	.align 2
+ 	pop	%r11
+ 	nacljmp	%r11d, %r15
+ 
+ 	.align 32
 .Lst_sint8:
 	movsbq	%al, %rax
-	movq	%rax, (%rdi)
-	ret
-	.align 2
+ 	movq	%rax, %nacl:0(%r15, %rdi)
+ 	pop	%r11
+ 	nacljmp	%r11d, %r15
+ 
+ 	.align 32
 .Lst_uint16:
 	movzwq	%ax, %rax
-	movq	%rax, (%rdi)
-	.align 2
+ 	movq	%rax, %nacl:0(%r15, %rdi)
+ 	pop	%r11
+ 	nacljmp	%r11d, %r15
+ 
+ 	.align 32
 .Lst_sint16:
 	movswq	%ax, %rax
-	movq	%rax, (%rdi)
-	ret
-	.align 2
+ 	movq	%rax, %nacl:0(%r15, %rdi)
+ 	pop	%r11
+ 	nacljmp	%r11d, %r15
+ 
+ 	.align 32
 .Lst_uint32:
 	movl	%eax, %eax
-	movq	%rax, (%rdi)
-	.align 2
+ 	movq	%rax, %nacl:0(%r15, %rdi)
+ 	pop	%r11
+ 	nacljmp	%r11d, %r15
+ 
+ 	.align 32
 .Lst_sint32:
 	cltq
-	movq	%rax, (%rdi)
-	ret
-	.align 2
+ 	movq	%rax, %nacl:0(%r15, %rdi)
+ 	pop	%r11
+ 	nacljmp	%r11d, %r15
+ 
+ 	.align 32
 .Lst_int64:
-	movq	%rax, (%rdi)
-	ret
+ 	movq	%rax, %nacl:0(%r15, %rdi)
+ 	pop	%r11
+ 	nacljmp	%r11d, %r15
 
-	.align 2
+	.align 32
 .Lst_float:
-	movss	%xmm0, (%rdi)
-	ret
-	.align 2
+ 	movss	%xmm0, %nacl:0(%r15, %rdi)
+ 	pop	%r11
+ 	nacljmp	%r11d, %r15
+ 
+ 	.align 32
 .Lst_double:
-	movsd	%xmm0, (%rdi)
-	ret
 .Lst_ldouble:
-	fstpt	(%rdi)
-	ret
+ 	movsd	%xmm0, %nacl:0(%r15, %rdi)
+ 	pop	%r11
+ 	nacljmp	%r11d, %r15
 
-	.align 2
+	.align 32
 .Lst_struct:
 	leaq	-20(%rsp), %rsi		/* Scratch area in redzone.  */
 
@@ -174,14 +199,15 @@ ffi_call_unix64:
 	testl	$0x400, %ecx
 	cmovnz	%r10, %rax
 	cmovnz	%r11, %rdx
-	movq	%rax, (%rsi)
-	movq	%rdx, 8(%rsi)
+ 	movq	%rax, %nacl:0(%r15, %rsi)
+ 	movq	%rdx, %nacl:8(%r15, %rsi)
 
 	/* Bits 12-31 contain the true size of the structure.  Copy from
 	   the scratch area to the true destination.  */
 	shrl	$12, %ecx
-	rep movsb
-	ret
+ 	rep	movs	%nacl:(%rsi), %nacl:(%rdi), %r15
+ 	pop	%r11
+ 	nacljmp	%r11d, %r15
 
 	/* Many times we can avoid loading any SSE registers at all.
 	   It's not worth an indirect jump to load the exact set of
@@ -189,14 +215,14 @@ ffi_call_unix64:
 	.align 2
 .LUW3:
 .Lload_sse:
-	movdqa	48(%r10), %xmm0
-	movdqa	64(%r10), %xmm1
-	movdqa	80(%r10), %xmm2
-	movdqa	96(%r10), %xmm3
-	movdqa	112(%r10), %xmm4
-	movdqa	128(%r10), %xmm5
-	movdqa	144(%r10), %xmm6
-	movdqa	160(%r10), %xmm7
+ 	movdqa	%nacl:48(%r15, %r10), %xmm0
+ 	movdqa	%nacl:64(%r15, %r10), %xmm1
+ 	movdqa	%nacl:80(%r15, %r10), %xmm2
+ 	movdqa	%nacl:96(%r15, %r10), %xmm3
+ 	movdqa	%nacl:112(%r15, %r10), %xmm4
+ 	movdqa	%nacl:128(%r15, %r10), %xmm5
+ 	movdqa	%nacl:144(%r15, %r10), %xmm6
+ 	movdqa	%nacl:160(%r15, %r10), %xmm7
 	jmp	.Lret_from_load_sse
 
 .LUW4:
@@ -207,6 +233,10 @@ ffi_call_unix64:
 	.type	ffi_closure_unix64,@function
 
 ffi_closure_unix64:
++#ifdef __native_client__
++	hlt
++#else
++	/* THIS IMPLEMENTATION VIOLATES NATIVE CLIENT SFI MODEL */
 .LUW5:
 	/* The carry flag is set by the trampoline iff SSE registers
 	   are used.  Don't clobber it before the branch instruction.  */
@@ -414,6 +444,8 @@ ffi_closure_unix64:
 
 	.align 8
 .LEFDE3:
+
+#endif /* __native_client__ */
 
 #endif /* __x86_64__ */
 
