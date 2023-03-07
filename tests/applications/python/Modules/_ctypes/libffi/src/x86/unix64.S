@@ -86,21 +86,16 @@ ffi_call_unix64:
 	jnz	.Lload_sse
 .Lret_from_load_sse:
 
+    .align 32
 	/* Deallocate the reg arg area.  */
- 	.bundle_lock
  		leal	176(%r10), %esp
  		addq	%r15, %rsp
- 	.bundle_unlock
 
 	/* Call the user function.  */
- 	call	*%r11
  	naclcall	%r11d, %r15
 
 	/* Deallocate stack arg area; local stack frame in redzone.  */
- 	.bundle_lock
- 		leal	24(%rbp), %esp
- 		addq	%r15, %rsp
- 	.bundle_unlock
+    naclspadj $24, %r15
 
 	movq	0(%rbp), %rcx		/* Reload flags.  */
 	movq	8(%rbp), %rdi		/* Reload raddr.  */
@@ -123,6 +118,7 @@ ffi_call_unix64:
 
 .Lst_uint8:
 	movzbq	%al, %rax
+ 	movq	%rax, %nacl:0(%r15, %rdi)
  	pop	%r11
  	nacljmp	%r11d, %r15
  
@@ -233,10 +229,10 @@ ffi_call_unix64:
 	.type	ffi_closure_unix64,@function
 
 ffi_closure_unix64:
-+#ifdef __native_client__
-+	hlt
-+#else
-+	/* THIS IMPLEMENTATION VIOLATES NATIVE CLIENT SFI MODEL */
+#ifdef __native_client__
+	hlt
+#else
+	/* THIS IMPLEMENTATION VIOLATES NATIVE CLIENT SFI MODEL */
 .LUW5:
 	/* The carry flag is set by the trampoline iff SSE registers
 	   are used.  Don't clobber it before the branch instruction.  */
