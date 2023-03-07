@@ -17,13 +17,19 @@
 /* Define this if you want extra debugging. */
 #undef FFI_DEBUG
 
+/* Cannot use PROT_EXEC on this target, so, we revert to alternative means */
+#undef FFI_EXEC_TRAMPOLINE_TABLE
+
+/* Define this if you want to enable pax emulated trampolines */
+#undef FFI_MMAP_EXEC_EMUTRAMP_PAX
+
 /* Cannot use malloc on this target, so, we revert to alternative means */
 #undef FFI_MMAP_EXEC_WRIT
 
-/* Define this is you do not want support for the raw API. */
+/* Define this if you do not want support for the raw API. */
 #undef FFI_NO_RAW_API
 
-/* Define this is you do not want support for aggregate types. */
+/* Define this if you do not want support for aggregate types. */
 #undef FFI_NO_STRUCTS
 
 /* Define to 1 if you have `alloca', as a function or macro. */
@@ -32,6 +38,9 @@
 /* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix).
    */
 #undef HAVE_ALLOCA_H
+
+/* Define if your assembler supports .ascii. */
+#undef HAVE_AS_ASCII_PSEUDO_OP
 
 /* Define if your assembler supports .cfi_* directives. */
 #undef HAVE_AS_CFI_PSEUDO_OP
@@ -42,6 +51,12 @@
 /* Define if your assembler and linker support unaligned PC relative relocs.
    */
 #undef HAVE_AS_SPARC_UA_PCREL
+
+/* Define if your assembler supports .string. */
+#undef HAVE_AS_STRING_PSEUDO_OP
+
+/* Define if your assembler supports unwind section type. */
+#undef HAVE_AS_X86_64_UNWIND_SECTION_TYPE
 
 /* Define if your assembler supports PC relative relocs. */
 #undef HAVE_AS_X86_PCREL
@@ -57,6 +72,9 @@
 
 /* Define if you have the long double type and it is bigger than a double */
 #undef HAVE_LONG_DOUBLE
+
+/* Define if you support more than one size of the long double type */
+#undef HAVE_LONG_DOUBLE_VARIANT
 
 /* Define to 1 if you have the `memcpy' function. */
 #undef HAVE_MEMCPY
@@ -103,8 +121,7 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
@@ -137,6 +154,9 @@
 /* The size of `long double', as computed by sizeof. */
 #undef SIZEOF_LONG_DOUBLE
 
+/* The size of `size_t', as computed by sizeof. */
+#undef SIZEOF_SIZE_T
+
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
    automatically deduced at runtime.
@@ -147,6 +167,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* Define if symbols are underscored. */
+#undef SYMBOL_UNDERSCORE
 
 /* Define this if you are using Purify and want to suppress spurious messages.
    */
@@ -166,6 +189,9 @@
 #  undef WORDS_BIGENDIAN
 # endif
 #endif
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t
 
 
 #ifdef HAVE_HIDDEN_VISIBILITY_ATTRIBUTE

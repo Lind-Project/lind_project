@@ -33,12 +33,54 @@
 
 /* Type definitions */
 
+#ifdef __native_client__
+/*
+ * Dummy implementation of libffi functions.  This may be an incomplete
+ * list.  It was intented to be enough to allow glib to be built.
+ * TODO(sbc): Remove this once we fix libffi:
+ * https://bugs.chromium.org/p/webports/issues/detail?id=183
+ */
+void ffi_call(ffi_cif *cif, void (*fn)(void), void *rvalue, void **avalue) {
+  abort();
+}
+
+ffi_status ffi_prep_cif_machdep(ffi_cif *cif) {
+  abort();
+  return FFI_BAD_ABI;
+}
+
+ffi_status ffi_prep_closure_loc(ffi_closure *closure, ffi_cif* cif,
+    void (*fun)(ffi_cif*,void*,void**,void*), void *user_data, void *codeloc)
+{
+  abort();
+  return FFI_BAD_ABI;
+}
+
+ffi_status ffi_prep_raw_closure_loc(ffi_raw_closure *closure, ffi_cif *cif,
+    void (*fun)(ffi_cif*,void*,ffi_raw*,void*), void *user_data,
+    void *codeloc) {
+  abort();
+  return FFI_BAD_ABI;
+}
+#endif
+
 #define FFI_TYPEDEF(name, type, id)		\
 struct struct_align_##name {			\
   char c;					\
   type x;					\
 };						\
 const ffi_type ffi_type_##name = {		\
+  sizeof(type),					\
+  offsetof(struct struct_align_##name, x),	\
+  id, NULL					\
+}
+
+#define FFI_NONCONST_TYPEDEF(name, type, id)	\
+struct struct_align_##name {			\
+  char c;					\
+  type x;					\
+};						\
+ffi_type ffi_type_##name = {			\
   sizeof(type),					\
   offsetof(struct struct_align_##name, x),	\
   id, NULL					\
@@ -73,5 +115,9 @@ FFI_TYPEDEF(double, double, FFI_TYPE_DOUBLE);
 # endif
 const ffi_type ffi_type_longdouble = { 16, 16, 4, NULL };
 #elif FFI_TYPE_LONGDOUBLE != FFI_TYPE_DOUBLE
+# if HAVE_LONG_DOUBLE_VARIANT
+FFI_NONCONST_TYPEDEF(longdouble, long double, FFI_TYPE_LONGDOUBLE);
+# else
 FFI_TYPEDEF(longdouble, long double, FFI_TYPE_LONGDOUBLE);
+# endif
 #endif

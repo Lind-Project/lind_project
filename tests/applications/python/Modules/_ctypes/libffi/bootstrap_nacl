@@ -13,6 +13,11 @@ export PREFIX="/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glib
 
 ./configure --enable-shared --host=x86_64-nacl-linux
 
+
+cd x86_64-nacl-linux-gnu
+
 make
 
-cp .libs/libffi.so.5.0.10 libffi.so
+cp .libs/libffi.so.6.0.2 libffi.so
+
+cd ..
