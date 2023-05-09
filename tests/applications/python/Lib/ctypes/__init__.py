@@ -546,4 +546,5 @@ del(kind)
 # function is needed for the unittests on Win64 to succeed.  This MAY
 # be a compiler bug, since the problem occurs only when _ctypes is
 # compiled with the MS SDK compiler.  Or an uninitialized variable?
-CFUNCTYPE(c_int)(lambda: None)
+# Commenting the next line because it causes a segfault in lind
+# CFUNCTYPE(c_int)(lambda: None)
