@@ -10,7 +10,7 @@ parser.add_argument("-c", "--count", dest="count", type=int, default=10, help="N
 args = parser.parse_args()
 
 def execute_script(write_buffer_size, read_buffer_size):
-    process = subprocess.call(["cd", "scripts/", ";", "/bin/bash", "ps16var2", write_buffer_size, read_buffer_size])
+    process = subprocess.call(["/bin/bash", "ps16var2", write_buffer_size, read_buffer_size], cwd="./scripts/")
 
 run_times = {}
 

@@ -1,3 +1,0 @@
-[ perf record: Woken up 53 times to write data ]
-[ perf record: Captured and wrote 14.279 MB perf.data (1905 samples) ]
-failed to signal wakeup fd, error: Bad file descriptor
