@@ -11,17 +11,23 @@
 int main(int argc, char **argv) {
   // Open the file first
   char file_name[100] = "testfiles/fstatfsfile.txt";
-  FILE *file = fopen("testfiles/fstatfsfile.txt", "r");
+  // FILE *file = fopen("testfiles/fstatfsfile.txt", "r");
   // int fd = open(file_name, O_RDONLY);
   // if (fd == -1) {
   //   perror("Error opening file for statfs\n");
   //   exit(EXIT_FAILURE);
   // }
-  if (file == NULL){
-    perror("Error opening file\n");
+  // if (file == NULL){
+  //   perror("Error opening file\n");
+  //   exit(EXIT_FAILURE);
+  // }
+  // int fd = fileno(file);
+
+  if ((fd = open("/dev/urandom", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO))){
+    perror("open()");
     exit(EXIT_FAILURE);
   }
-  int fd = fileno(file);
+  
 
   // fstatfs
   struct statfs buf = {0};
