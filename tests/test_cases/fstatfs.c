@@ -10,22 +10,22 @@
 
 int main(int argc, char **argv) {
   // Open the file first
-  // char file_name[100] = "testfiles/fstatfsfile.txt";
-  FILE *file = fopen("testfiles/fstatfsfile.txt", "r");
-  // int fd = open(file_name, O_RDONLY);
-  // if (fd == -1) {
-  //   perror("Error opening file for statfs\n");
-  //   exit(EXIT_FAILURE);
-  // }
-  if (file == NULL){
+  char file_name[100] = "testfiles/fstatfsfile.txt";
+  // FILE *file = fopen("testfiles/fstatfsfile.txt", "r");
+  int fd = open(file_name, O_RDONLY);
+  if (fd == -1) {
     perror("Error opening file for statfs\n");
     exit(EXIT_FAILURE);
   }
+  // if (file == NULL){
+  //   perror("Error opening file for statfs\n");
+  //   exit(EXIT_FAILURE);
+  // }
   
 
   // fstatfs
   struct statfs buf = {0};
-  if (fstatfs(file_name, &buf) == -1) {
+  if (fstatfs(fd, &buf) == -1) {
     perror("Error in fstatfs\n");
     close(fd);
     exit(EXIT_FAILURE);
