@@ -10,7 +10,7 @@
 
 int main(int argc, char **argv) {
   // Open the file first
-  char file_name[100] = "testfiles/fstatfsfile.txt";
+  // char file_name[100] = "testfiles/fstatfsfile.txt";
   // FILE *file = fopen("testfiles/fstatfsfile.txt", "r");
   // int fd = open(file_name, O_RDONLY);
   // if (fd == -1) {
@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
   // int fd = fileno(file);
   int fd;
   if ((fd = open("/dev/urandom", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO))){
-    perror("open()");
+    perror("Error in open()\n");
     exit(EXIT_FAILURE);
   }
   
