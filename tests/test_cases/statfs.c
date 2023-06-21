@@ -72,13 +72,12 @@ int main(int argc, char **argv) {
 
   // statfs
   struct statfs buf = {0};
-  int result = statfs(file_name, &buf);
-  if (result == -1) {
+  if (statfs(file_name, &buf) == -1) {
     perror("Error in fstatfs\n");
     exit(EXIT_FAILURE);
   }
   // expected output is: 
-  printf("filesystem type: %d", buf.f_type);
+  printf("filesystem type: %lx\n", buf.f_type);
   fflush(stdout);
   return 0;
 }
