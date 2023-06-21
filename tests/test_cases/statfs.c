@@ -72,11 +72,12 @@ int main(int argc, char **argv) {
 
   // statfs
   struct statfs buf = {0};
-  if (statfs(file_name, &buf) == -1) {
+  int result = statfs(file_name, &buf);
+  if (result == -1) {
     perror("Error in fstatfs\n");
     exit(EXIT_FAILURE);
   }
-  // expected output is: NFS_SUPER_MAGIC 0x6969 on native CentOS 7 on CIMS
+  // expected output is: 
   printf("filesystem type: %d", buf.f_type);
   fflush(stdout);
   return 0;
