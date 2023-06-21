@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
   //   exit(EXIT_FAILURE);
   // }
   // int fd = fileno(file);
-
+  int fd;
   if ((fd = open("/dev/urandom", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO))){
     perror("open()");
     exit(EXIT_FAILURE);
