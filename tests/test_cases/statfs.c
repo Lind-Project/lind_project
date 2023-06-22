@@ -67,21 +67,23 @@
 #include <string.h>
 #include <sys/statfs.h>
 
+extern char **environ;
 
+const char* FILENAME = "testfiles/statfsfile.txt";
 
 int main(int argc, char **argv) {
-  char file_name[100] = "testfiles/statfsfile.txt";
+  // char file_name[100] = "testfiles/statfsfile.txt";
+  FILE *fp = stdout;
 
   // statfs
   struct statfs buf = {0};
-  if (statfs(file_name, &buf) == -1) {
+  if (statfs(FILENAME, &buf) == -1) {
     perror("Error in statfs\n");
     exit(EXIT_FAILURE);
   }
   // expected output is: 
-  printf("filesystem type: %lx\n", buf.f_type);
+  printf("Filesystem type: %lx\n", buf.f_type);
   printf("Testing file: %s\n", file_name);
-  // printf("File system type: %d\n", buf.f_type);
   printf("Total file system blocks: %ld\n", buf.f_blocks);
   printf("Free blocks: %ld\n", buf.f_bfree);
   printf("Total file system inodes: %ld\n", buf.f_files);
