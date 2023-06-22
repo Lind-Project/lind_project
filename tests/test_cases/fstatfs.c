@@ -8,6 +8,9 @@
 #include <string.h>
 #include <sys/statfs.h>
 
+extern char **environ;
+const char* FILENAME = "testfiles/statfsfile.txt";
+
 int main(int argc, char **argv) {
   // Open the file first
   // char file_name[100] = "testfiles/fstatfsfile.txt";
@@ -22,8 +25,8 @@ int main(int argc, char **argv) {
   //   exit(EXIT_FAILURE);
   // }
   // int fd = fileno(file);
-  int fd;
-  if ((fd = open("/dev/urandom", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO))){
+  int fd = open("/dev/urandom", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO);
+  if (fd < 0){
     perror("Error in open()\n");
     exit(EXIT_FAILURE);
   }
@@ -40,7 +43,7 @@ int main(int argc, char **argv) {
 
   // system file info
   // expected output is: NFS_SUPER_MAGIC 0x6969 on native CentOS 7 on CIMS
-  printf("filesystem type: %d\n", buf.f_type);
+  printf("filesystem type: %lx\n", buf.f_type);
   printf("Total blocks: %ld\n", buf.f_blocks);
   printf("Free blocks: %ld\n", buf.f_bfree);
   printf("Available blocks (non-root): %ld\n", buf.f_bavail);
