@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
   }
   // expected output is: 
   printf("Filesystem type: %lx\n", buf.f_type);
-  printf("Testing file: %s\n", file_name);
+  printf("Testing file: %s\n", FILENAME);
   printf("Total file system blocks: %ld\n", buf.f_blocks);
   printf("Free blocks: %ld\n", buf.f_bfree);
   printf("Total file system inodes: %ld\n", buf.f_files);
