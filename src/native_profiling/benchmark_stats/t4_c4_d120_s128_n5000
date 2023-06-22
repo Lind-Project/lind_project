@@ -1,0 +1,37 @@
+Runtime stats
+Application	|	% of runtime
+--------------------------------
+No stats found for nginx
+postgres   	|	66.15%
+python2.7  	|	1.85%
+Total      	|	68.0%
+
+
+syscall stats
+
+__x64_sys_recvfrom
+Application	|	Perf %
+--------------------------------
+postgres   	|	0.0%
+python2.7  	|	0.68%
+Total      	|	0.68%
+
+syscall/LAMP ->  1.00000%
+
+__x64_sys_sendto
+Application	|	Perf %
+--------------------------------
+postgres   	|	1.4%
+python2.7  	|	0.01%
+Total      	|	1.41%
+
+syscall/LAMP ->  2.07353%
+
+__x64_sys_poll
+Application	|	Perf %
+--------------------------------
+python2.7  	|	0.37%
+Total      	|	0.37%
+
+syscall/LAMP ->  0.54412%
+

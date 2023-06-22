@@ -1,0 +1,15 @@
+Runtime stats
+Application	|	% of runtime
+--------------------------------
+No stats found for nginx
+No stats found for postgres
+No stats found for python
+Total      	|	0%
+
+
+syscall stats
+
+__x64_sys_recvfrom
+Application	|	Perf %
+--------------------------------
+Total      	|	0%
