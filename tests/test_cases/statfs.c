@@ -67,13 +67,15 @@
 #include <string.h>
 #include <sys/statfs.h>
 
+
+
 int main(int argc, char **argv) {
   char file_name[100] = "testfiles/statfsfile.txt";
 
   // statfs
   struct statfs buf = {0};
   if (statfs(file_name, &buf) == -1) {
-    perror("Error in fstatfs\n");
+    perror("Error in statfs\n");
     exit(EXIT_FAILURE);
   }
   // expected output is: 
