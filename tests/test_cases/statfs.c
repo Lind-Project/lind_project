@@ -67,14 +67,14 @@
 #include <string.h>
 #include <sys/statfs.h>
 
-extern char **environ;
+// extern char **environ;
 
-const char* FILENAME = "testfiles/statfsfile.txt";
+// const char* FILENAME = "testfiles/statfsfile.txt";
 
 int main(int argc, char **argv) {
   // char file_name[100] = "testfiles/statfsfile.txt";
-  FILE *fp = stdout;
-
+  // FILE *fp = stdout;
+  char FILENAME[100] = "/dev/urandom";
   // statfs
   struct statfs buf = {0};
   if (statfs(FILENAME, &buf) == -1) {
