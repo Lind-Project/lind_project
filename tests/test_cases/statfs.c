@@ -83,11 +83,11 @@ int main(int argc, char **argv) {
   }
   // expected output is: 
   printf("Filesystem type: %lx\n", buf.f_type);
-  printf("Testing file: %s\n", FILENAME);
-  printf("Total file system blocks: %ld\n", buf.f_blocks);
+  printf("Total blocks: %ld\n", buf.f_blocks);
   printf("Free blocks: %ld\n", buf.f_bfree);
-  printf("Total file system inodes: %ld\n", buf.f_files);
-  printf("Free inodes: %ld\n", buf.f_ffree);
+  printf("Available blocks (non-root): %ld\n", buf.f_bavail);
+  printf("Total file inodes: %ld\n", buf.f_files);
+  printf("Free file inodes: %ld\n", buf.f_ffree);
   fflush(stdout);
   return 0;
 }
