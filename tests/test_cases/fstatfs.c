@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
 
   // system file info
   // expected output is: NFS_SUPER_MAGIC 0x6969 on native CentOS 7 on CIMS
-  printf("filesystem type: %lx\n", buf.f_type);
+  printf("Filesystem type: %lx\n", buf.f_type);
   printf("Total blocks: %ld\n", buf.f_blocks);
   printf("Free blocks: %ld\n", buf.f_bfree);
   printf("Available blocks (non-root): %ld\n", buf.f_bavail);
