@@ -14,7 +14,7 @@
 pthread_barrier_t barrier;
 
 const int NUM_OF_PINGER = 2;
-const int NUM_OF_PINGPONG = 10;
+const int NUM_OF_PINGPONG = 2;
 const int BUFFER_SIZE = 32;
 
 void clear_buffer(char *buffer, int length) {
