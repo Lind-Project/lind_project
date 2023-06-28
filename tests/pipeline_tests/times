@@ -1,0 +1,88 @@
+Test: /bin/cat ./test_content/1GB.txt > /dev/null
+
+real	0m0.097s
+user	0m0.007s
+sys	0m0.090s
+
+executing: [sel_ldr -a -t -- "runnable-ld.so" --library-path "/lib/glibc" /bin/bash /pipeline_tests/cat_test.sh]
+[54095,2802903040:22:39:39.184448] BYPASSING ALL ACL CHECKS
+Not using the CoW Loadable kernel module!
+[TimeInfo] NaCl main program time spent = 0.156145 
+[TimeInfo] NaCl initialization time spent = 0.006829 
+[TimeInfo] NaCl user program time spent = 0.149280 
+
+--------------------------------------------------------------------------------
+Test: /bin/cat ./test_content/1GB.txt | /bin/wc
+20159892 180881905 1069547520
+
+real	0m4.534s
+user	0m4.474s
+sys	0m0.340s
+
+executing: [sel_ldr -a -t -- "runnable-ld.so" --library-path "/lib/glibc" /bin/bash /pipeline_tests/cat_wc.sh]
+[54148,2964731904:22:39:43.884595] BYPASSING ALL ACL CHECKS
+Not using the CoW Loadable kernel module!
+20159892 180881905 1069547520
+[TimeInfo] NaCl main program time spent = 18.831201 
+[TimeInfo] NaCl initialization time spent = 0.006939 
+[TimeInfo] NaCl user program time spent = 18.824236 
+
+--------------------------------------------------------------------------------
+Test: /bin/grep -i "sherlock" ./test_content/1GB.txt > /dev/null
+
+real	0m0.004s
+user	0m0.002s
+sys	0m0.002s
+
+executing: [sel_ldr -a -t -- "runnable-ld.so" --library-path "/lib/glibc" /bin/bash /pipeline_tests/grep_test.sh]
+[54332,395347968:22:40:02.730339] BYPASSING ALL ACL CHECKS
+Not using the CoW Loadable kernel module!
+[TimeInfo] NaCl main program time spent = 0.068801 
+[TimeInfo] NaCl initialization time spent = 0.006692 
+[TimeInfo] NaCl user program time spent = 0.062082 
+
+--------------------------------------------------------------------------------
+Test: /bin/grep -i "sherlock" ./test_content/1GB.txt | /bin/wc
+  20400 1641380 9022282
+
+real	0m1.005s
+user	0m0.931s
+sys	0m0.116s
+
+executing: [sel_ldr -a -t -- "runnable-ld.so" --library-path "/lib/glibc" /bin/bash /pipeline_tests/grep_wc.sh]
+[54351,2502068224:22:40:03.816316] BYPASSING ALL ACL CHECKS
+Not using the CoW Loadable kernel module!
+  20400 1641380 9022282
+[TimeInfo] NaCl main program time spent = 1.364703 
+[TimeInfo] NaCl initialization time spent = 0.007663 
+[TimeInfo] NaCl user program time spent = 1.357013 
+
+--------------------------------------------------------------------------------
+Test: /bin/cat ./test_content/1GB.txt | /bin/grep -Eo '[+-]?[0-9]+([.][0-9]+)?' > /dev/null
+
+real	0m0.246s
+user	0m0.002s
+sys	0m0.264s
+
+executing: [sel_ldr -a -t -- "runnable-ld.so" --library-path "/lib/glibc" /bin/bash /pipeline_tests/cat_grep.sh]
+[54382,4138788864:22:40:05.437240] BYPASSING ALL ACL CHECKS
+Not using the CoW Loadable kernel module!
+[TimeInfo] NaCl main program time spent = 0.209205 
+[TimeInfo] NaCl initialization time spent = 0.007082 
+[TimeInfo] NaCl user program time spent = 0.202094 
+
+--------------------------------------------------------------------------------
+Test: /bin/cat ./test_content/1GB.txt | /bin/grep -Eo '[+-]?[0-9]+([.][0-9]+)?' | /bin/wc -l
+2002056
+
+real	0m2.045s
+user	0m1.954s
+sys	0m0.346s
+
+executing: [sel_ldr -a -t -- "runnable-ld.so" --library-path "/lib/glibc" /bin/bash /pipeline_tests/cat_grep_wc.sh]
+[54414,3400202240:22:40:07.703037] BYPASSING ALL ACL CHECKS
+Not using the CoW Loadable kernel module!
+2002056
+[TimeInfo] NaCl main program time spent = 3.952823 
+[TimeInfo] NaCl initialization time spent = 0.006844 
+[TimeInfo] NaCl user program time spent = 3.945942 
