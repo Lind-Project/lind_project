@@ -197,10 +197,6 @@ void *pinger(void *vargp) {
     fflush(stdout);
     send(sock, buffer, strlen(buffer), 0);
 
-    // Call shutdown(). Not the way it's supposed to be used, but good enough
-    // for testing purpose
-    shutdown(sock, SHUT_WR);
-
     // Read the incremented number from ponger
     clear_buffer(buffer, BUFFER_SIZE);
     valread = read(sock, buffer, BUFFER_SIZE);
