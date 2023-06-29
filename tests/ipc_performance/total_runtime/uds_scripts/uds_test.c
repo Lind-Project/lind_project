@@ -23,8 +23,6 @@ void parent(int socket, int buf_size) {
             exit(1);
         }
     }
-    //printf("Parent process finished.\n");
-    //fflush(stdout);
 
     free(send_buf);
     free(recv_buf);
@@ -46,9 +44,6 @@ void child(int socket, int buf_size) {
             exit(1);
         }
     }
-
-    //printf("Child process finished.\n");
-    //fflush(stdout);
 
     free(send_buf);
     free(recv_buf);
