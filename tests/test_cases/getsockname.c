@@ -133,8 +133,8 @@ void *ponger(void *vargp) {
 
     // Increment the value by 1 and send it back
     sprintf(buffer, "%d", atoi(buffer) + 1);
-    send(new_socket, buffer, strlen(buffer), 0);
     printf("ponger send: %s\n", buffer);
+    send(new_socket, buffer, strlen(buffer), 0);
     fflush(stdout);
 
     // Test functions
