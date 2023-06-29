@@ -16,10 +16,11 @@ int main(void) {
     if (result == NULL) {
         perror("getcwd() error");
         return EXIT_FAILURE;
-    } else {
-        printf("current working directory is: %s :: %s\n", path, result);
-    	fflush(stdout);
     }
+    
+    printf("current working directory is: %s :: %s\n", path, result);
+    fflush(stdout);
+    
 
     // Open a directory
     int fd = open("automated_tests/", O_RDWR);
@@ -41,10 +42,10 @@ int main(void) {
         perror("Error with getcwd");
         close(fd);
         return EXIT_FAILURE;
-    } else {
-        printf("current working directory is: %s :: %s\n", path, second_result);
-	fflush(stdout);
-    }
+    } 
+    printf("current working directory is: %s :: %s\n", path, second_result);
+    fflush(stdout);
+    
 
 
     // Close the file descriptor
