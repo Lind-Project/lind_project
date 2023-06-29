@@ -128,8 +128,7 @@ void *ponger(void *vargp) {
     // Receive a value from a pinger
     clear_buffer(buffer, BUFFER_SIZE);
     valread = read(new_socket, buffer, BUFFER_SIZE);
-    // printf("ponger receive: %s, valread: %n\n", buffer, valread);
-    printf("ponger receive: %s\n", buffer);
+    printf("ponger receive: %s, valread: %d\n", buffer, valread);
     fflush(stdout);
 
     // Increment the value by 1 and send it back
@@ -206,8 +205,7 @@ void *pinger(void *vargp) {
     clear_buffer(buffer, BUFFER_SIZE);
     valread = read(sock, buffer, BUFFER_SIZE);
     counter = atoi(buffer);
-    // printf("client %d receive: %s, valread: %n\n", pinger_id, buffer, valread);
-    printf("client %d receive: %s\n", pinger_id, buffer);
+    printf("client %d receive: %s, valread: %d\n", pinger_id, buffer, valread);
     fflush(stdout);
 
     close(sock);
