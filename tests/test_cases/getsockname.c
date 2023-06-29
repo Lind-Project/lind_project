@@ -140,7 +140,7 @@ void *ponger(void *vargp) {
     // Test functions
     // test_getpeername(new_socket);
     // test_getsockname(new_socket);
-    // test_getsockopt(new_socket);
+    test_getsockopt(new_socket);
 
     // Close the socket after sending the response
     shutdown(new_socket, SHUT_WR); 
