@@ -13,7 +13,7 @@
 
 pthread_barrier_t barrier;
 
-const int NUM_OF_PINGER = 2;
+const int NUM_OF_PINGER = 3;
 const int NUM_OF_PINGPONG = 10;
 const int BUFFER_SIZE = 32;
 
@@ -138,8 +138,8 @@ void *ponger(void *vargp) {
     fflush(stdout);
 
     // Test functions
-    // test_getpeername(new_socket);
-    // test_getsockname(new_socket);
+    test_getpeername(new_socket);
+    test_getsockname(new_socket);
     test_getsockopt(new_socket);
 
     // Close the socket after sending the response
