@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo "Compiling native test binaries"
+gcc uds_scripts/uds_test.c -o uds_scripts/uds
+
+echo "Compiling lind test binaries"
+x86_64-nacl-gcc uds_scripts/uds_test.c -o uds_scripts/uds.nexe -std=gnu99
