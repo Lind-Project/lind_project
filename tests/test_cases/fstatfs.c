@@ -10,7 +10,7 @@
 
 int main(int argc, char **argv) {
   // int fd = open("/dev/urandom", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO);
-  int fd = open("testfiles/statfsfile.txt", O_RDONLY | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
+  int fd = open("testfiles/fstatfsfile.txt", O_RDONLY | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
   if (fd < 0){
     perror("Error in open()\n");
     exit(EXIT_FAILURE);
