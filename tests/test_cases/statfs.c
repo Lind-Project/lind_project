@@ -8,21 +8,17 @@
 #include <string.h>
 #include <sys/statfs.h>
 
-// extern char **environ;
-
-// const char* FILENAME = "testfiles/statfsfile.txt";
-
 int main(int argc, char **argv) {
-  // char file_name[100] = "testfiles/statfsfile.txt";
-  // FILE *fp = stdout;
-  char FILENAME[100] = "/dev/urandom";
+  // char FILENAME[100] = "/dev/urandom";
+  char FILENAME[100] = "testfiles/statfsfile.txt";
+  
   // statfs
   struct statfs buf = {0};
   if (statfs(FILENAME, &buf) == -1) {
     perror("Error in statfs\n");
     exit(EXIT_FAILURE);
   }
-  // expected output is: 
+  // system file info
   printf("Filesystem type: %lx\n", buf.f_type);
   printf("Total blocks: %ld\n", buf.f_blocks);
   printf("Free blocks: %ld\n", buf.f_bfree);
