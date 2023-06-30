@@ -15,7 +15,7 @@ for size in range(4, 17, 2):
     run_times[size] = []
     print(f"Buffer: {buffer_size}")
     for _ in range(args.count):
-        output = Popen(["lind", "-t", "/bin/bash", "uds", buffer_size], stdout=PIPE, stderr=PIPE)
+        output = Popen(["lind", "-t", "uds.nexe", buffer_size], stdout=PIPE, stderr=PIPE)
         stdout, stderr = output.communicate()
         try:
             run_time = int(float(stderr.split()[-1]) * 1000)
