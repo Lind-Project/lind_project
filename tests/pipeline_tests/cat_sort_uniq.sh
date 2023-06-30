@@ -1,1 +1,1 @@
-/bin/cat ./test_content/num.txt | /bin/sort -n | /bin/uniq
+/bin/cat ./test_content/1GB.txt | /bin/sort -n | /bin/uniq > cat_sort_uniq.out

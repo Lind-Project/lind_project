@@ -1,1 +1,1 @@
-/bin/grep -i "sherlock" ./test_content/1GB.txt > /dev/null
+/bin/grep -i "sherlock" ./test_content/1GB.txt > grep_test.out
