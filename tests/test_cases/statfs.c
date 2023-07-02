@@ -8,9 +8,10 @@
 #include <string.h>
 #include <sys/statfs.h>
 
+#define FILENAME "testfiles/statfsfile.txt"
+
 int main(int argc, char **argv) {
   // char FILENAME[100] = "/dev/urandom";
-  char FILENAME[100] = "testfiles/statfsfile.txt";
   
   // statfs
   struct statfs buf = {0};
