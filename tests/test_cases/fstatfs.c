@@ -26,17 +26,17 @@ int main(int argc, char **argv) {
   close(fd);
 
   // check system file info
-  if (buf.f_type != "beefc0de")
+  if (buf.f_type != 0xBEEFC0DE)
   {
     fprintf(stderr, "Expected fstatfsfile.txt to have file type beefc0de but was  %lx\n", buf.f_type);
 		exit(EXIT_FAILURE);
   }
-  if (buf.f_blocks != "4096")
+  if (buf.f_blocks != 4096)
   {
     fprintf(stderr, "Expected fstatfsfile.txt to have total block 4096 but was  %ld\n", buf.f_blocks);
 		exit(EXIT_FAILURE);
   }
-  if (buf.f_bavail != "1073741824")
+  if (buf.f_bavail != 1073741824)
   {
     fprintf(stderr, "Expected fstatfsfile.txt to have available blocks (non-root) 1073741824 but was  %ld\n", buf.f_bavail);
 		exit(EXIT_FAILURE);
