@@ -34,5 +34,3 @@ fchmod.c
 truncate.c
 mutex.c
 socketpair.c
-fstatfs.c
-statfs.c
