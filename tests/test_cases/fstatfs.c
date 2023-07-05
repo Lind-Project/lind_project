@@ -24,13 +24,23 @@ int main(int argc, char **argv) {
   }
   close(fd);
 
-  // system file info
-  printf("Filesystem type: %lx\n", buf.f_type);
-  printf("Total blocks: %ld\n", buf.f_blocks);
-  printf("Free blocks: %ld\n", buf.f_bfree);
-  printf("Available blocks (non-root): %ld\n", buf.f_bavail);
-  printf("Total file inodes: %ld\n", buf.f_files);
-  printf("Free file inodes: %ld\n", buf.f_ffree);
+  // check system file info
+  if (buf.f_type != 0xBEEFC0DE)
+  {
+    fprintf(stderr, "Expected fstatfsfile.txt to have file type beefc0de but was  %lx\n", buf.f_type);
+		exit(EXIT_FAILURE);
+  }
+  if (buf.f_blocks != 4096)
+  {
+    fprintf(stderr, "Expected fstatfsfile.txt to have total block 4096 but was  %ld\n", buf.f_blocks);
+		exit(EXIT_FAILURE);
+  }
+  if (buf.f_bavail != 1073741824)
+  {
+    fprintf(stderr, "Expected fstatfsfile.txt to have available blocks (non-root) 1073741824 but was  %ld\n", buf.f_bavail);
+		exit(EXIT_FAILURE);
+  }
+  fprintf(stdout, "Getting file info successfully\n");
   fflush(stdout);
   return 0;
 }
