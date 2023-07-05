@@ -13,7 +13,7 @@ match = re.search(r'Filesystem type: (\w+)', lind_result)
 if match:
     lind_string = match.group (1)
 # Expect lind output: beefcOde
-if lind_string != "beefcode":
+if lind_string != "beefc0de":
     print "Lind info: ", lind_string
     exit (-1)
 
