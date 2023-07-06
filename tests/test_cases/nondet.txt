@@ -23,3 +23,5 @@ fork_simple.c
 socketepoll.c
 shutdown.c
 shutdown_fork.c
+fstatfs.c
+statfs.c
