@@ -19,10 +19,11 @@ if lind_string != "beefc0de":
 
 # Extract output
 # sample output: Filesystem type: 794c7630
-match2 = re. search (r'Filesystem type: (\w+)', host_result)
+match2 = re.search(r'Filesystem type: (\w+)', host_result)
 if match2:
     host_string = match2.group (1)
 # Expect host output: 794c7630
 if host_string != "794c7630":
     print "Host info: ", host_string
     exit(-1)
+    
