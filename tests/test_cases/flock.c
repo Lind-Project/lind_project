@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+// Helper function to remove a file
 int remove_file(char file_name[]) {
   int rm = remove(file_name);
   if (rm == -1) {
@@ -19,8 +20,8 @@ int remove_file(char file_name[]) {
 }
 
 int main(int argc, char **argv) {
-  // Open a file to use
-  char file_name[100] = "flock.txt";
+  // Create a temporary file to use
+  char file_name[100] = "testfiles/flock.txt";
   int fd = open(file_name, O_RDWR | O_CREAT, 0777);
   if (fd == -1) {
     perror("OPEN FAILED\n");
@@ -70,7 +71,7 @@ int main(int argc, char **argv) {
   // Close file before removing
   close(fd);
 
-  // Remove the file
+  // Remove the temporary file
   remove(file_name);
   return 0;
 }
