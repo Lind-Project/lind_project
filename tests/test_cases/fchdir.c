@@ -24,7 +24,7 @@ int main(void) {
     
 
     // Open a directory
-    int fd = open("automated_tests/", O_RDWR);
+    int fd = open("automated_tests/", O_RDONLY);
     if (fd == -1) {
         perror("Error with open");
         return EXIT_FAILURE;
