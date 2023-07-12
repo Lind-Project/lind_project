@@ -1,0 +1,1 @@
+/bin/cat ./test_content/1GB.txt | /bin/cat > cat_cat.out
