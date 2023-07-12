@@ -1,1 +1,1 @@
-/bin/cat ./test_content/1GB.txt | /bin/wc
+/bin/cat ./test_content/content.txt | /bin/wc

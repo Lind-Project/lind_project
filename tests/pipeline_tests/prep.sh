@@ -1,6 +1,8 @@
+#!/bin/bash
+
 # generate test content
 echo "Generating test content..."
-./gen_test_content.sh 4096 1GB.txt
+./gen_test_content.sh $1 content.txt
 
 # load test files
 echo "Loading test files..."

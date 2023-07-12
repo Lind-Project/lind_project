@@ -1,0 +1,12 @@
+#!/bin/bash
+
+/bin/bash prep.sh 2048
+
+echo -e "\nRunning pipeline tests on native"
+python3 native_pipelines.py
+
+echo -e "\nRunning pipeline tests on lind"
+python3 lind_pipelines.py
+
+echo -e "\nRemoving .out files"
+rm *.out

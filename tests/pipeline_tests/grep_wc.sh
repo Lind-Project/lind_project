@@ -1,1 +1,1 @@
-/bin/grep -i "sherlock" ./test_content/1GB.txt | /bin/wc
+/bin/grep -i "sherlock" ./test_content/content.txt | /bin/wc
