@@ -34,3 +34,6 @@ fchmod.c
 truncate.c
 mutex.c
 socketpair.c
+getppid.c
+creat_access.c
+mkdir_rmdir.c
