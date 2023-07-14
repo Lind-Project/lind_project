@@ -8,9 +8,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define FILE "testfiles/create_foo.txt"
+
 int main() {
   int file_perm = S_IRUSR | S_IWUSR; // set file permissions
-  int fd = creat("create_foo.txt", file_perm);
+  int fd = creat(FILE, file_perm);
   if (fd == -1) {
     perror("ERROR WITH CREATE");
     exit(EXIT_FAILURE);
@@ -19,7 +21,7 @@ int main() {
   printf("Created file\n");
 
   // Check if file exists
-  int access_result = access("create_foo.txt", F_OK);
+  int access_result = access(FILE, F_OK);
   if (access_result == -1) {
     perror("COULD NOT ACCESS FILE");
     exit(EXIT_FAILURE);
@@ -27,7 +29,7 @@ int main() {
   printf("File exists\n");
 
   // Check if file permissions are valid
-  access_result = access("create_foo.txt", R_OK | W_OK);
+  access_result = access(FILE, R_OK | W_OK);
   if (access_result == -1) {
     perror("INVALID PERMISSIONS FOR FILE");
     exit(EXIT_FAILURE);
@@ -35,7 +37,7 @@ int main() {
   printf("File has the right permissions\n");
 
   // Cleanup
-  remove("create_foo.txt");
+  remove(FILE);
   fflush(stdout);
   return 0;
 }
