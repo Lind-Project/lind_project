@@ -7,15 +7,16 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#define DIR "testfolder"
+
 int main(int argc, char **argv) {
-  char dir_name[100] = "testfolder";
   mode_t dir_per = (S_IRUSR | S_IWUSR);
-  if (mkdir(dir_name, dir_per) == -1) {
+  if (mkdir(DIR, dir_per) == -1) {
     perror("mkdir");
     exit(EXIT_FAILURE);
   }
   printf("Created directory successfully\n");
-  if (rmdir(dir_name) == -1) {
+  if (rmdir(DIR) == -1) {
     perror("rmdir");
     exit(EXIT_FAILURE);
   }
