@@ -16,7 +16,7 @@ int main() {
     exit(EXIT_FAILURE);
   }
   close(fd);
-  printf("Created fd %d\n", fd);
+  printf("Created file\n");
 
   // Check if file exists
   int access_result = access("create_foo.txt", F_OK);
