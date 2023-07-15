@@ -34,5 +34,5 @@ fchmod.c
 truncate.c
 mutex.c
 socketpair.c
-mknod.c
 poll.c
+fchdir.c
