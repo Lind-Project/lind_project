@@ -35,4 +35,3 @@ truncate.c
 mutex.c
 socketpair.c
 poll.c
-fchdir.c
