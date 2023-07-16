@@ -12,6 +12,7 @@ pipeinput2.c
 pipewrite.c
 pipeonestring.c
 chdir_getcwd.c
+fchdir.c
 segfault.c
 sysconf.c
 template.c
