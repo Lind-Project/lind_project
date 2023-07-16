@@ -12,6 +12,7 @@ pipeinput2.c
 pipewrite.c
 pipeonestring.c
 chdir_getcwd.c
+fchdir.c
 segfault.c
 sysconf.c
 template.c
@@ -24,3 +25,5 @@ shutdown.c
 shutdown_fork.c
 fstatfs.c
 statfs.c
+pipe2.c
+getifaddrs.c
