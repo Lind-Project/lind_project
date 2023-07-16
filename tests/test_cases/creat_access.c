@@ -19,6 +19,7 @@ int main() {
   }
   close(fd);
   printf("Created file\n");
+  fflush(stdout);
 
   // Check if file exists
   int access_result = access(FILE, F_OK);
@@ -27,6 +28,7 @@ int main() {
     exit(EXIT_FAILURE);
   }
   printf("File exists\n");
+  fflush(stdout);
 
   // Check if file permissions are valid
   access_result = access(FILE, R_OK | W_OK);
@@ -35,6 +37,7 @@ int main() {
     exit(EXIT_FAILURE);
   }
   printf("File has the right permissions\n");
+  fflush(stdout);
 
   // Cleanup
   remove(FILE);

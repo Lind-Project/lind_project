@@ -16,13 +16,15 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
   printf("Created directory successfully\n");
+  fflush(stdout);
+
   if (rmdir(DIR) == -1) {
     perror("rmdir");
     exit(EXIT_FAILURE);
   }
   printf("Removed directory successfully\n");
-
   fflush(stdout);
+
   return 0;
 }
 
