@@ -35,3 +35,4 @@ int main(int argc, char *argv[]) {
   freeifaddrs(ifaddr);
   exit(EXIT_SUCCESS);
 }
+

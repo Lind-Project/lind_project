@@ -32,3 +32,4 @@ for line in lindoutput:
 
 for line in hostoutput:
     verify(line)
+
