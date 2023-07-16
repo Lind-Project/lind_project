@@ -25,3 +25,10 @@ if not (lind_line0[0][-1].isdigit() and lind_line0[1][1].isdigit() \
     and host_line0[0][-1].isdigit() and host_line0[1][1].isdigit()):
     print "Nondeterministic lines of an unrecognized format!"
     exit(-1)
+
+# Verify # of bytes that write and read return
+lines = [lind_result[1].split(), host_result[1].split(), lind_result[2].split(), host_result[2].split()]
+for line in lines:
+    if not (line[-1] == '3'):
+        print "Incorrect number of bytes written!"
+        exit(-1)

@@ -11,7 +11,6 @@ int main(void) {
 
   // Get pid of current process
   pid_t pid = getpid();
-  fflush(stdout);
 
   // Fork
   int f = fork();
@@ -36,7 +35,7 @@ int main(void) {
   }
   // Parent process
   else {
-    // Wait till child process returns, and then only then exit
+    // Wait till child process returns, and only then exit
     wait(NULL);
   }
   return 0;
