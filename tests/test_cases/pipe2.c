@@ -18,18 +18,21 @@ int main(void) {
     exit(EXIT_FAILURE);
   }
   printf("pipe2() ret: [%d, %d]\n", fd[0], fd[1]);
+  fflush(stdout);
 
   if ((ret = write(fd[1], "hi\n", 3)) < 0) {
     printf("write(): %s\n", strerror(errno));
     exit(EXIT_FAILURE);
   }
   printf("write() ret: %d\n", ret);
+  fflush(stdout);
 
   if ((ret = read(fd[0], str, 3)) < 0) {
     printf("read(): %s\n", strerror(errno));
     exit(EXIT_FAILURE);
   }
   printf("read() ret: %d\n", ret);
+  fflush(stdout);
 
   for (size_t i = 0; i < sizeof fd / sizeof *fd; i++) {
     if (close(fd[i]) < 0) {
