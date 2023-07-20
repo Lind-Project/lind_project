@@ -52,7 +52,7 @@ void* thread_function(void* arg) {
     // Wait for SIGUSR2 signal
     int received;
     check_errno(sigwait(&mask, &received));
-    if (received == 31) {
+    if (received == SIGUSR2) {
         printf("SIGUSR2 received\n");
         fflush(stdout);
     } else {
