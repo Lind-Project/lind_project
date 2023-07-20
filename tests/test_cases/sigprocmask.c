@@ -20,31 +20,29 @@ void* thread_function(void* arg) {
         perror("sigprocmask");
         exit(EXIT_FAILURE);
     }
-    printf("new thread succeed");
+    printf("New thread succeed\n");
     fflush(stdout);
-    // The thread continues to run
-    while (1) {
-        sleep(1);
-    }
+    
     // Wait for SIGUSR2 signal
     int sig;
     sigwait(&mask, &sig);
     printf("Received SIGUSR2 signal in the thread!\n");
     fflush(stdout);
+    
     return NULL;
 }
 
-int main() {
+int main(void) {
     pthread_t thread;
     int ret;
-    printf("program start");
+    printf("Program start\n");
     fflush(stdout);
     // Register the SIGUSR2 signal handler for the main thread
     if (signal(SIGUSR2, sigusr2_handler) == SIG_ERR) {
         perror("signal");
         exit(EXIT_FAILURE);
     }
-    printf("register succeed");
+    printf("Register succeed\n");
     fflush(stdout);
     // Create the thread
     ret = pthread_create(&thread, NULL, thread_function, NULL);
@@ -63,7 +61,7 @@ int main() {
 
     // Wait for the thread to finish
     pthread_join(thread, NULL);
-    printf("Successful");
+    printf("Successful\n");
     fflush(stdout);
     return EXIT_SUCCESS;
 }
