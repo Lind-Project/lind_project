@@ -56,6 +56,8 @@ void* thread_function(void* arg) {
         printf("SIGUSR2 received\n");
         fflush(stdout);
     } else {
+        printf("Singal %d received\n", received);
+        fflush(stdout);
         exit(EXIT_FAILURE);
     }
     
