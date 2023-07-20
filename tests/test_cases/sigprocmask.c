@@ -20,7 +20,8 @@ void* thread_function(void* arg) {
         perror("sigprocmask");
         exit(EXIT_FAILURE);
     }
-
+    printf("new thread succeed");
+    fflush(stdout);
     // The thread continues to run
     while (1) {
         sleep(1);
@@ -41,14 +42,17 @@ int main() {
     // Register the SIGUSR2 signal handler for the main thread
     if (signal(SIGUSR2, sigusr2_handler) == SIG_ERR) {
         perror("signal");
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
-
+    printf("register succeed");
+    fflush(stdout);
     // Create the thread
     ret = pthread_create(&thread, NULL, thread_function, NULL);
+
+
     if (ret != 0) {
         perror("pthread_create");
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 
     // Sleep briefly to ensure the thread has started
