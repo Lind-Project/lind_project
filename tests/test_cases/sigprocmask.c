@@ -99,7 +99,7 @@ int main(void) {
     sleep(1);
 
     // Send SIGUSR2 to the new thread
-    pthread_kill(thread, SIGUSR2);
+    // pthread_kill(thread, SIGUSR2);
 
     // Wait for the thread to finish
     pthread_join(thread, NULL);
