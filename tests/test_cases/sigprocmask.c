@@ -29,14 +29,15 @@ void* thread_function(void* arg) {
     int sig;
     sigwait(&mask, &sig);
     printf("Received SIGUSR2 signal in the thread!\n");
-    fflush(NULL);
+    fflush(stdout);
     return NULL;
 }
 
 int main() {
     pthread_t thread;
     int ret;
-
+    printf("program start");
+    fflush(stdout);
     // Register the SIGUSR2 signal handler for the main thread
     if (signal(SIGUSR2, sigusr2_handler) == SIG_ERR) {
         perror("signal");
@@ -59,7 +60,7 @@ int main() {
     // Wait for the thread to finish
     pthread_join(thread, NULL);
     printf("Successful");
-    fflush(NULL);
+    fflush(stdout);
     return EXIT_SUCCESS;
 }
 
