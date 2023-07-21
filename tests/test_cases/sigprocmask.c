@@ -16,7 +16,7 @@ static void sig_usr(int signum){
 
 // Thread 1
 void* th1(void* arg){
-    printf("I am thread01\n");
+    printf("I am thread %d\n", getpid());
     char buf[512];
     int n;
     // Set signal handler
