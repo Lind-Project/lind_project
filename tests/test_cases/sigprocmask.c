@@ -48,42 +48,6 @@ void* th1(void* arg){
     
 //     return NULL;
 // }
-
-// int main(void) {
-//     pthread_t thread1, thread2;
-    
-//     pthread_create(&thread1, NULL, th1, NULL);
-//     pthread_create(&thread2, NULL, th2, NULL);
-    
-//     sleep(2);
-    
-//     // Send signal to threads
-//     if (pthread_kill(thread1, SIGUSR2) != 0){
-//         printf("Error of Thread 1 is: %s\n", strerror(errno));
-//         fflush(stdout);
-//     }
-//     if (pthread_kill(thread2, SIGUSR2) != 0){
-//         printf("Error of Thread 2 is: %s\n", strerror(errno));
-//         fflush(stdout);
-//     }
-    
-// //    // Send signal to main
-// //    char buf[512];
-// //    printf("My PID is %d\n", getpid());
-// //    while (1) {
-// //        if (read(STDIN_FILENO, buf, 511) == -1){
-// //            printf("Error of Main is: %d\n", errno);
-// //            fflush(stdout);
-// //        }
-// //    }
-    
-//     pthread_join(thread1, NULL);
-//     pthread_join(thread2, NULL);
-//     printf("Successful\n");
-//     fflush(stdout);
-//     return EXIT_SUCCESS;
-
-// }
  
 static void sig_usr(int signum){
     if(signum == SIGUSR2){
@@ -94,28 +58,29 @@ static void sig_usr(int signum){
 }
  
 int main(void){
-    char buf[512];
-    int n;
-    struct sigaction sa_usr;
-    sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sig_usr;   
+    // char buf[512];
+    // int n;
+    // struct sigaction sa_usr;
+    // sa_usr.sa_flags = 0;
+    // sa_usr.sa_handler = sig_usr;   
     
-    sigaction(SIGUSR2, &sa_usr, NULL);
+    // sigaction(SIGUSR2, &sa_usr, NULL);
     
-    printf("My PID is %d\n", getpid());
+    // printf("My PID is %d\n", getpid());
     
-    while(1){
-        if((n = read(STDIN_FILENO, buf, 511)) == -1){
-            if(errno == EINTR){
-                printf("read is interrupted by signal\n");
-                break;
-            }
-        }
-        else{
-            buf[n] = '\0';
-            printf("%d bytes read: %s\n", n, buf);
-        }
-    }
+    // while(1){
+    //     // Blocking main 
+    //     if((n = read(STDIN_FILENO, buf, 511)) == -1){
+    //         if(errno == EINTR){
+    //             printf("read is interrupted by signal\n");
+    //             break;
+    //         }
+    //     }
+    //     else{
+    //         buf[n] = '\0';
+    //         printf("%d bytes read: %s\n", n, buf);
+    //     }
+    // }
 
     int ret;
     pthread_t thread1;
