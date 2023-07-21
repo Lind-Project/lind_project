@@ -23,12 +23,6 @@ void* th1(void* arg){
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGUSR1);
-    
-    struct sigaction sa1;
-    sa1.sa_handler = sh1;
-    sa1.sa_flags = 0;
-    sa1.sa_mask = mask;
-    sigaction(SIGUSR1, &sa1, NULL);
 
     sigprocmask(SIG_BLOCK, &mask, NULL);
     
