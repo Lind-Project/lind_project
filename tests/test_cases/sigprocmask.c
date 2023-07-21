@@ -1,8 +1,10 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <signal.h>
 #include <errno.h>
-
+#include <string.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
 
 void sh1(int sig){
     printf("signal %d received\n", sig);
