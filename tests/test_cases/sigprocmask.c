@@ -6,107 +6,103 @@
 #include <unistd.h>
 #include <pthread.h>
 
-void sh1(int sig){
-    printf("signal %d received\n", sig);
+static void sig_usr(int signum){
+    if(signum == SIGUSR1){
+        printf("SIGUSR1 received\n");
+    }else{
+        printf("signal %d received\n", signum);
+    }
 }
 
-// void sh2(int sig){
-//     printf("signal %d received\n", sig);
-//     fflush(stdout);
-// }
-
+// Thread 1
 void* th1(void* arg){
     printf("I am thread01\n");
     char buf[512];
     int n;
+    // Set signal handler
     struct sigaction sa_usr;
     sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sh1;   
+    sa_usr.sa_handler = sig_usr;   
+
     sigaction(SIGUSR1, &sa_usr, NULL);
+
     while(1){
-        // Blocking main 
+        // Blocking thread1
         if((n = read(STDIN_FILENO, buf, 511)) == -1){
             if(errno == EINTR){
-                printf("read is interrupted by signal\n");
+                printf("Thread 1 is interrupted by EINTR\n");
                 break;
             }
-        }
-        else{
-            buf[n] = '\0';
-            printf("%d bytes read: %s\n", n, buf);
         }
     }
     
     return NULL;
 }
 
-// void* th2(void* arg){
-//     printf("I am thread02\n");
-//     fflush(stdout);
-    
-//     sigset_t mask;
-//     sigemptyset(&mask);
-//     sigaddset(&mask, SIGUSR2);
-    
-//     struct sigaction sa2;
-//     sa2.sa_handler = sh2;
-//     sa2.sa_flags = 0;
-//     sa2.sa_mask = mask;
-//     sigaction(SIGUSR2, &sa2, NULL);
-    
+// Thread 2
+void* th2(void* arg){
+    printf("I am thread01\n");
+    char buf[512];
+    int n;
+    // Set signal handler
+    struct sigaction sa_usr;
+    sa_usr.sa_flags = 0;
+    sa_usr.sa_handler = sig_usr;   
 
-//     sigprocmask(SIG_BLOCK, &mask, NULL);
+    sigaction(SIGUSR1, &sa_usr, NULL);
+
+    while(1){
+        // Blocking thread2
+        if((n = read(STDIN_FILENO, buf, 511)) == -1){
+            if(errno == EINTR){
+                printf("Thread 2 is interrupted by EINTR\n");
+                break;
+            }
+        }
+    }
     
-//     return NULL;
-// }
- 
-// static void sig_usr(int signum){
-//     if(signum == SIGUSR2){
-//         printf("SIGUSR2 received\n");
-//     }else{
-//         printf("signal %d received\n", signum);
-//     }
-// }
+    return NULL;
+}
  
 int main(void){
-    // char buf[512];
-    // int n;
-    // struct sigaction sa_usr;
-    // sa_usr.sa_flags = 0;
-    // sa_usr.sa_handler = sig_usr;   
+    /* Test main */
+    char buf[512];
+    int n;
+    // Set signal handler
+    struct sigaction sa_usr;
+    sa_usr.sa_flags = 0;
+    sa_usr.sa_handler = sig_usr;   
     
-    // sigaction(SIGUSR2, &sa_usr, NULL);
+    sigaction(SIGUSR1, &sa_usr, NULL);
     
-    // printf("My PID is %d\n", getpid());
-    
-    // while(1){
-    //     // Blocking main 
-    //     if((n = read(STDIN_FILENO, buf, 511)) == -1){
-    //         if(errno == EINTR){
-    //             printf("read is interrupted by signal\n");
-    //             break;
-    //         }
-    //     }
-    //     else{
-    //         buf[n] = '\0';
-    //         printf("%d bytes read: %s\n", n, buf);
-    //     }
-    // }
+    printf("My PID is %d\n", getpid());
+    // Type: "kill -USR1 (pid)" from another terminal
+    while(1){
+        if((n = read(STDIN_FILENO, buf, 511)) == -1){
+            if(errno == EINTR){
+                printf("Main is interrupted by EINTR\n");
+                break;
+            }
+        }
+    }
 
-    int ret;
+    /* Thread 1 */
     pthread_t thread1;
-    ret = pthread_create(&thread1, NULL, th1, NULL);
-    if (ret != 0){
+    if (pthread_create(&thread1, NULL, th1, NULL) != 0){
         perror("Thread1 failed");
     }
     sleep(1);
-    int res;
-    res = pthread_kill(thread1, SIGUSR1);
-    if (res == EINTR){
-        printf("Error of Thread 1 is: %s\n", strerror(errno));
+    pthread_kill(thread1, SIGUSR1);
+    /* Thread 2 */
+    pthread_t thread2;
+    if (pthread_create(&thread2, NULL, th1, NULL) != 0){
+        perror("Thread2 failed");
     }
-    pthread_join(thread1, NULL);
+    sleep(1);
+    pthread_kill(thread2, SIGUSR1);
 
+    pthread_join(thread1, NULL);
+    pthread_join(thread2, NULL);
     printf("End\n");
     return 0;
 }
