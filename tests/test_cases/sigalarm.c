@@ -12,13 +12,13 @@ int main() {
 	int i;
 
 	// signal(SIGALRM, sig_handler);
+	alarm(5);
 
     sigset_t set;
     sigemptyset(&set);
     sigaddset(&set, SIGALRM);
     sigprocmask(SIG_BLOCK, &set, NULL);
-
-	alarm(5);
+    signal(SIGALRM, sig_handler);
 
 	for (i = 1; i < 11; i++) {
         // Should print alarm on 6th
