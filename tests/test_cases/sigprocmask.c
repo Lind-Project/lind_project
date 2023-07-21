@@ -88,14 +88,14 @@ int main(void){
 
     /* Thread 1 */
     pthread_t thread1;
-    if (pthread_create(&thread1, NULL, th1, NULL) != 0){
+    if (pthread_create(&thread1, NULL, th1, (void*)(long)thread1) != 0){
         perror("Thread1 failed");
     }
     sleep(1);
     pthread_kill(thread1, SIGUSR1);
     /* Thread 2 */
     pthread_t thread2;
-    if (pthread_create(&thread2, NULL, th1, NULL) != 0){
+    if (pthread_create(&thread2, NULL, th1, (void*)(long)thread2) != 0){
         perror("Thread2 failed");
     }
     sleep(1);
