@@ -6,104 +6,82 @@
 #include <unistd.h>
 #include <pthread.h>
 
-void sigusr2_handler(int signum) {
-    printf("Received SIGUSR2 signal!\n");
+void sh1(int sig){
+    printf("signal %d received\n", sig);
+    fflush(stdout);
 }
 
-/* Check whether a specific signal (int sig) is a member of a given signal set (sigset_t *set)*/
-void sigIsMember(sigset_t *set, int sig, char *set_name){
-    if (sigismember(set, sig)){
-        printf("Signal %d is in %s\n", sig, set_name);
-        fflush(stdout);
-    } else {
-        printf("Signal %d is NOT in %s\n", sig, set_name);
-        fflush(stdout);
-    }
+void sh2(int sig){
+    printf("signal %d received\n", sig);
+    fflush(stdout);
 }
 
-/* Check error message for sigprocmask */
-void check_errno(int res) {
-    if (res != 0) {
-        printf("errno: %s\n", strerror(errno));
-        fflush(stdout);
-    }
-}
-
-void* thread_function(void* arg) {
-    // Initialze
+void* th1(void* arg){
+    printf("I am thread01\n");
+    fflush(stdout);
+    
+    struct sigaction sa1;
+    sa1.sa_handler = sh1;
+    sa1.sa_flags = 0;
+    sigaction(SIGUSR2, &sa1, NULL);
+    
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGUSR2);
-    sigset_t old_mask;
-    sigemptyset(&old_mask);
-    sigset_t new_mask;
-    sigemptyset(&new_mask);
-
+    sigprocmask(SIG_BLOCK, &mask, NULL);
     
-    // Block SIGUSR2 in this thread
-    check_errno(sigprocmask(SIG_BLOCK, &mask, NULL));
-    // Get current SIG mask
-    check_errno(sigprocmask(SIG_SETMASK, NULL, &old_mask));
-    // Check whether SIGUSR2 is in current mask
-    sigIsMember(&mask, SIGUSR2, "current signal set");
-    printf("Block SIGUSR2 in new thread succeed\n");
+    return NULL;
+}
+
+void* th2(void* arg){
+    printf("I am thread02\n");
     fflush(stdout);
     
-    // Wait for SIGUSR2 signal
-    int received;
-    check_errno(sigwait(&mask, &received));
-    if (received == SIGUSR2) {
-        printf("SIGUSR2 received\n");
-        fflush(stdout);
-    } else {
-        printf("Singal %d received\n", received);
-        fflush(stdout);
-        exit(EXIT_FAILURE);
-    }
+    struct sigaction sa2;
+    sa2.sa_handler = sh2;
+    sa2.sa_flags = 0;
+    sigaction(SIGUSR2, &sa2, NULL);
     
-    // Add to the new signal set
-    sigaddset(&new_mask, received);
-    
-    // Unblock SIGUSR2 in this thread
-    check_errno(sigprocmask(SIG_UNBLOCK, &new_mask, NULL));
-    check_errno(sigprocmask(SIG_SETMASK, NULL, &old_mask));
-    sigIsMember(&old_mask, SIGUSR2, "current signal set");;
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGUSR2);
+    sigprocmask(SIG_BLOCK, &mask, NULL);
     
     return NULL;
 }
 
 int main(void) {
-    pthread_t thread;
-    int ret;
+    pthread_t thread1, thread2;
     
-    printf("Program start\n");
-    fflush(stdout);
+    pthread_create(&thread1, NULL, th1, NULL);
+    pthread_create(&thread2, NULL, th2, NULL);
     
-    // Register the SIGUSR2 signal handler for the main thread
-    if (signal(SIGUSR2, sigusr2_handler) == SIG_ERR) {
-        perror("signal");
-        exit(EXIT_FAILURE);
+    sleep(2);
+    
+    // Send signal to threads
+    if (pthread_kill(thread1, SIGUSR1) != 0){
+        printf("Error of Thread 1 is: %s\n", strerror(errno));
+        fflush(stdout);
     }
-    printf("Register succeed\n");
-    fflush(stdout);
-    
-    // Create the thread
-    ret = pthread_create(&thread, NULL, thread_function, NULL);
-
-    if (ret != 0) {
-        perror("pthread_create");
-        exit(EXIT_FAILURE);
+    if (pthread_kill(thread2, SIGUSR1) != 0){
+        printf("Error of Thread 2 is: %s\n", strerror(errno));
+        fflush(stdout);
     }
-
-    // Sleep briefly to ensure the thread has started
-    sleep(1);
-
-    // Send SIGUSR2 to the new thread
-    // pthread_kill(thread, SIGUSR2);
-
-    // Wait for the thread to finish
-    pthread_join(thread, NULL);
-    printf("Successful\n");
+    
+//    // Send signal to main
+//    char buf[512];
+//    printf("My PID is %d\n", getpid());
+//    while (1) {
+//        if (read(STDIN_FILENO, buf, 511) == -1){
+//            printf("Error of Main is: %d\n", errno);
+//            fflush(stdout);
+//        }
+//    }
+    
+    pthread_join(thread1, NULL);
+    pthread_join(thread2, NULL);
+    printf("Successfule\n");
     fflush(stdout);
     return EXIT_SUCCESS;
+
 }
