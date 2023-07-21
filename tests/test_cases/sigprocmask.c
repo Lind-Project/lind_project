@@ -1,10 +1,8 @@
-#include <errno.h>
-#include <string.h>
-#include <signal.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>
+#include <signal.h>
+#include <errno.h>
+
 
 void sh1(int sig){
     printf("signal %d received\n", sig);
@@ -123,12 +121,12 @@ int main(void){
         }
     }
 
-    // pthread_t thread1;
-    // pthread_create(&thread1, NULL, th1, NULL);
-    // if (pthread_kill(thread1, SIGUSR2) != 0){
-    //     printf("Error of Thread 1 is: %s\n", strerror(errno));
-    // }
-    // pthread_join(thread1, NULL);
+    pthread_t thread1;
+    pthread_create(&thread1, NULL, th1, NULL);
+    if (pthread_kill(thread1, SIGUSR2) != 0){
+        printf("Error of Thread 1 is: %s\n", strerror(errno));
+    }
+    pthread_join(thread1, NULL);
 
     printf("End\n");
     return 0;
