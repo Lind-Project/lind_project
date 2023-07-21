@@ -14,7 +14,7 @@ static void sig_usr(int signum){
     }
 }
 
-// Thread 1
+// Thread function
 void* th1(void* arg){
     printf("I am thread %ld\n", (long)arg);
     char buf[512];
@@ -30,32 +30,7 @@ void* th1(void* arg){
         // Blocking thread1
         if((n = read(STDIN_FILENO, buf, 511)) == -1){
             if(errno == EINTR){
-                printf("Thread 1 is interrupted by EINTR\n");
-                break;
-            }
-        }
-    }
-    
-    return NULL;
-}
-
-// Thread 2
-void* th2(void* arg){
-    printf("I am thread02\n");
-    char buf[512];
-    int n;
-    // Set signal handler
-    struct sigaction sa_usr;
-    sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sig_usr;   
-
-    sigaction(SIGUSR1, &sa_usr, NULL);
-
-    while(1){
-        // Blocking thread2
-        if((n = read(STDIN_FILENO, buf, 511)) == -1){
-            if(errno == EINTR){
-                printf("Thread 2 is interrupted by EINTR\n");
+                printf("Thread is interrupted by EINTR\n");
                 break;
             }
         }
