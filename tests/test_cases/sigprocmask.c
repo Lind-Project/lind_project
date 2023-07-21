@@ -59,11 +59,11 @@ int main(void) {
     sleep(2);
     
     // Send signal to threads
-    if (pthread_kill(thread1, SIGUSR1) != 0){
+    if (pthread_kill(thread1, SIGUSR2) != 0){
         printf("Error of Thread 1 is: %s\n", strerror(errno));
         fflush(stdout);
     }
-    if (pthread_kill(thread2, SIGUSR1) != 0){
+    if (pthread_kill(thread2, SIGUSR2) != 0){
         printf("Error of Thread 2 is: %s\n", strerror(errno));
         fflush(stdout);
     }
@@ -80,7 +80,7 @@ int main(void) {
     
     pthread_join(thread1, NULL);
     pthread_join(thread2, NULL);
-    printf("Successfule\n");
+    printf("Successful\n");
     fflush(stdout);
     return EXIT_SUCCESS;
 
