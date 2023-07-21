@@ -20,14 +20,17 @@ void* th1(void* arg){
     printf("I am thread01\n");
     fflush(stdout);
     
-    struct sigaction sa1;
-    sa1.sa_handler = sh1;
-    sa1.sa_flags = 0;
-    sigaction(SIGUSR2, &sa1, NULL);
-    
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGUSR2);
+    
+    struct sigaction sa1;
+    sa1.sa_handler = sh1;
+    sa1.sa_flags = 0;
+    sa1.sa_mask = mask;
+    sigaction(SIGUSR2, &sa1, NULL);
+    
+
     sigprocmask(SIG_BLOCK, &mask, NULL);
     
     return NULL;
@@ -37,14 +40,17 @@ void* th2(void* arg){
     printf("I am thread02\n");
     fflush(stdout);
     
-    struct sigaction sa2;
-    sa2.sa_handler = sh2;
-    sa2.sa_flags = 0;
-    sigaction(SIGUSR2, &sa2, NULL);
-    
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, SIGUSR2);
+    
+    struct sigaction sa2;
+    sa2.sa_handler = sh2;
+    sa2.sa_flags = 0;
+    sa2.sa_mask = mask;
+    sigaction(SIGUSR2, &sa2, NULL);
+    
+
     sigprocmask(SIG_BLOCK, &mask, NULL);
     
     return NULL;
