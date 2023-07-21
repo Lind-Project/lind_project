@@ -22,8 +22,7 @@ void* th1(void* arg){
     struct sigaction sa_usr;
     sa_usr.sa_flags = 0;
     sa_usr.sa_handler = sh1;   
-    
-    sigaction(SIGUSR2, &sa_usr, NULL);
+    sigaction(SIGUSR1, &sa_usr, NULL);
     while(1){
         // Blocking main 
         if((n = read(STDIN_FILENO, buf, 511)) == -1){
