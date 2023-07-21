@@ -48,12 +48,23 @@ void* th2(void* arg){
     printf("Thread 2\n");
     char buf[512];
     int n;
-    // Set signal handler
-    struct sigaction sa_usr;
-    sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sig_usr2;   
+    // // Set signal handler
+    // struct sigaction sa_usr;
+    // sa_usr.sa_flags = 0;
+    // sa_usr.sa_handler = sig_usr2;   
 
-    sigaction(SIGUSR1, &sa_usr, NULL);
+    // sigaction(NULL, &sa_usr, NULL);
+
+    sigset_t pending_signals;
+    if (sigpending(&pending_signals) == 0) {
+        for (int i = 1; i < NSIG; i++) {
+            if (sigismember(&pending_signals, i)) {
+                printf("Thread received signal: %d\n", i);
+            }
+        }
+    } else {
+        perror("sigpending");
+    }
 
     while(1){
         // Blocking thread2
@@ -69,15 +80,15 @@ void* th2(void* arg){
 }
  
 int main(void){
-    /* Test main */
-    char buf[512];
-    int n;
-    // Set signal handler
-    struct sigaction sa_usr;
-    sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sig_usr;   
+    // /* Test main */
+    // char buf[512];
+    // int n;
+    // // Set signal handler
+    // struct sigaction sa_usr;
+    // sa_usr.sa_flags = 0;
+    // sa_usr.sa_handler = sig_usr;   
     
-    sigaction(SIGUSR1, &sa_usr, NULL);
+    // sigaction(SIGUSR1, &sa_usr, NULL);
     
     // printf("My PID is %d\n", getpid());
     // // Type: "kill -USR1 (pid)" from another terminal
@@ -98,7 +109,7 @@ int main(void){
 
     /* Thread 2 */
     pthread_t thread2;
-    if (pthread_create(&thread2, NULL, th1, (void*)(long)thread2) != 0){
+    if (pthread_create(&thread2, NULL, th2, (void*)(long)thread2) != 0){
         perror("Thread2 failed");
     }
     sleep(1);
