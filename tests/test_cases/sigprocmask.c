@@ -99,8 +99,7 @@
 static void sig_usr(int signum){
     if(signum == SIGUSR1){
         printf("SIGUSR1 received\n");
-    }else
-    {
+    }else{
         printf("signal %d received\n", signum);
     }
 }
@@ -116,17 +115,14 @@ int main(void){
     
     printf("My PID is %d\n", getpid());
     
-    while(1)
-    {
-        if(read(STDIN_FILENO, buf, 511) == -1)
-        {
-            if(errno == EINTR)
-            {
+    while(1){
+        if(read(STDIN_FILENO, buf, 511) == -1){
+            if(errno == EINTR){
                 printf("read is interrupted by signal\n");
+                break;
             }
         }
-        else
-        {
+        else{
             buf[n] = '\0';
             printf("%d bytes read: %s\n", n, buf);
         }
