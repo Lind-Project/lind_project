@@ -4,13 +4,13 @@
 #include <signal.h>
  
 /* Signal Handler */
-void sig_handler() {
-	printf("ALARM!\n ");
-}
+// void sig_handler() {
+// printf("ALARM!\n ");
+// }
  
 int main() {
 	int i;
-	signal(SIGALRM, sig_handler);
+	// signal(SIGALRM, sig_handler);
 	alarm(5);
 	for (i = 1; i < 11; i++) {
         // Should print alarm on 6th
