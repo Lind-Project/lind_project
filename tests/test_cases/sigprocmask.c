@@ -6,12 +6,8 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#define STR(x)   #x
-#define SHOW_DEFINE(x) printf("%s=%s\n", #x, STR(x))
-
 static void sig_usr(int signum){
-    printf("Thread1: ");
-    SHOW_DEFINE(signum);
+    printf("Thread1 received signal %d\n", signum);
 }
 
 // Thread function
