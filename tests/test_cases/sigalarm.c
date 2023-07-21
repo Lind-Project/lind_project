@@ -13,13 +13,8 @@ int main() {
 
     signal(SIGALRM, sig_handler);
 
-
-    sigset_t set;
-    sigemptyset(&set);
-    sigaddset(&set, SIGALRM);
-    sigprocmask(SIG_BLOCK, &set, NULL);
-
     signal(SIGALRM, SIG_DFL);
+    
 	alarm(5);
 
 	for (i = 1; i < 11; i++) {
