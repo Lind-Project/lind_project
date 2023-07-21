@@ -10,16 +10,18 @@
 #define SHOW_DEFINE(x) printf("%s=%s\n", #x, STR(x))
 
 static void sig_usr(int signum){
+    printf("Thread1: ");
     SHOW_DEFINE(signum);
 }
 
-// static void sig_usr2(int signum){
-//     SHOW_DEFINE(signum);
-// }
+static void sig_usr2(int signum){
+    printf("Thread2: ");
+    SHOW_DEFINE(signum);
+}
 
 // Thread function
 void* th1(void* arg){
-    printf("I am thread %ld\n", (long)arg);
+    printf("Thread 1\n");
     char buf[512];
     int n;
     // Set signal handler
@@ -33,7 +35,7 @@ void* th1(void* arg){
         // Blocking thread1
         if((n = read(STDIN_FILENO, buf, 511)) == -1){
             if(errno == EINTR){
-                printf("Thread is interrupted by EINTR\n");
+                printf("Thread 1 is interrupted by EINTR\n");
                 break;
             }
         }
@@ -43,21 +45,21 @@ void* th1(void* arg){
 }
 
 void* th2(void* arg){
-    printf("I am thread %ld\n", (long)arg);
+    printf("Thread 2\n");
     char buf[512];
     int n;
     // Set signal handler
     struct sigaction sa_usr;
     sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sig_usr;   
+    sa_usr.sa_handler = sig_usr2;   
 
     sigaction(SIGUSR1, &sa_usr, NULL);
 
     while(1){
-        // Blocking thread1
+        // Blocking thread2
         if((n = read(STDIN_FILENO, buf, 511)) == -1){
             if(errno == EINTR){
-                printf("Thread is interrupted by EINTR\n");
+                printf("Thread 2 is interrupted by EINTR\n");
                 break;
             }
         }
@@ -93,7 +95,6 @@ int main(void){
     if (pthread_create(&thread1, NULL, th1, (void*)(long)thread1) != 0){
         perror("Thread1 failed");
     }
-    sleep(1);
 
     /* Thread 2 */
     pthread_t thread2;
