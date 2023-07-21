@@ -41,7 +41,7 @@ void* th1(void* arg){
 
 // Thread 2
 void* th2(void* arg){
-    printf("I am thread01\n");
+    printf("I am thread02\n");
     char buf[512];
     int n;
     // Set signal handler
