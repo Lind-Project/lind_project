@@ -5,17 +5,21 @@
  
 /* Signal Handler */
 void sig_handler() {
-printf("ALARM!\n ");
+    printf("ALARM!\n ");   
 }
  
 int main() {
 	int i;
-	signal(SIGALRM, sig_handler);
+
+	// signal(SIGALRM, sig_handler);
+
     sigset_t set;
     sigemptyset(&set);
     sigaddset(&set, SIGALRM);
     sigprocmask(SIG_BLOCK, &set, NULL);
+
 	alarm(5);
+
 	for (i = 1; i < 11; i++) {
         // Should print alarm on 6th
 		printf("sleep %d...\n", i);
