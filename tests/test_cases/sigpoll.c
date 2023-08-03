@@ -24,35 +24,38 @@ int main(void)
 
     pid_t pid = fork();
 
-    struct pollfd fds[1];
-    int ret;
-
-    /* Checking if stdout (file descriptor 1) is ready for writing. */
-    fds[0].fd = 1;
-    fds[0].events = POLLOUT;
-
-    /* The poll call is blocked for the specified duration (in this case, 5 seconds). */
-    ret = poll(fds, 1, TIMEOUT * 1000);
 
     if (pid == 0) {
-            // Cage 2
-            printf("Cage 2 pid: %ld\n", (long)getpid());
-            printf("Handler function ptr %p\n", handler);
-            fflush(stdout);
+        // Cage 2
+        printf("Cage 2 pid: %ld\n", (long)getpid());
+        printf("Handler function ptr %p\n", handler);
+        fflush(stdout);
 
-            new_action.sa_handler = handler;
+        new_action.sa_handler = handler;
 
-            sigaction(SIGUSR2, &new_action, NULL);
-            sigaction(SIGUSR2, NULL, &old_action);
+        sigaction(SIGUSR2, &new_action, NULL);
+        sigaction(SIGUSR2, NULL, &old_action);
 
-            if (new_action.sa_handler == old_action.sa_handler) {
-                    printf("Successfully changed the signal handler for Signal %d\n", SIGUSR2);
-                    fflush(NULL);
-            } else {
-                    printf("Fail to correctly change the signal handler for Signal %d\n", SIGUSR2);
-                    fflush(NULL);
-            }
-            while(1);
+        if (new_action.sa_handler == old_action.sa_handler) {
+                printf("Successfully changed the signal handler for Signal %d\n", SIGUSR2);
+                fflush(NULL);
+        } else {
+                printf("Fail to correctly change the signal handler for Signal %d\n", SIGUSR2);
+                fflush(NULL);
+        }
+
+        struct pollfd fds[1];
+        int ret;
+
+        fds[0].fd = 0; // wait for STDIN
+        fds[0].events = POLLIN;
+        // Should never return
+        ret = poll(fds, 1, TIMEOUT);
+        if (ret == -1){
+            perror("poll");
+            return EXIT_FAILURE;
+        }
+        
     }
 
     else {
