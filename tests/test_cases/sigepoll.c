@@ -46,7 +46,7 @@ int main(void)
         int epoll_fd, num_events, i;
         struct epoll_event events[MAX_EVENTS];
 
-        epoll_fd = epoll_create(0);
+        epoll_fd = epoll_create(256);
         if (epoll_fd < 0) {
             perror("epoll_create");
         }
