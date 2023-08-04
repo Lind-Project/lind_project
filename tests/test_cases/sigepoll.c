@@ -59,13 +59,11 @@ int main(void)
             perror("epoll_ctl");
         }
 
-        while (1) {
-            num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-            if (num_events < 0) {
-                perror("epoll_wait");
-            }
+        num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+        if (num_events < 0) {
+            perror("epoll_wait");
         }
-        
+    
     }
 
     else {
