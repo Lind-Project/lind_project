@@ -7,6 +7,8 @@
 #include <string.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
+#include <sys/file.h>
+#include <sys/wait.h> 
 #include <unistd.h>
 
 #define FILE "testfiles/flock.txt"
