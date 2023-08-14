@@ -16,7 +16,7 @@ static void sig_usr(int signum){
 }
 
 int main() {
-    printf("Thread 1\n");
+    printf("Start\n");
     char buf[512];
     int n;
     // Set signal handler
@@ -24,7 +24,7 @@ int main() {
     sa_usr.sa_flags = 0;
     sa_usr.sa_handler = sig_usr;   
 
-    sigaction(SIGUSR1, &sa_usr, NULL);
+    sigaction(SIGINT, &sa_usr, NULL);
 
     while(1){
         // Blocking thread1
