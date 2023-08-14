@@ -11,6 +11,9 @@
 #include <unistd.h>
 #include <signal.h>
 
+static void sig_usr(int signum){
+    printf("Thread1 received signal %d\n", signum);
+}
 
 int main() {
     printf("Thread 1\n");
