@@ -14,7 +14,6 @@ void handler(int signum)
     printf("Signal Handler Test!\n");
     printf("Exiting Cage 2\n");
     fflush(stdout);
-    exit(0);
 }
 
 int main(void)
@@ -23,7 +22,6 @@ int main(void)
     struct sigaction old_action;
 
     pid_t pid = fork();
-
 
     if (pid == 0) {
         // Cage 2
@@ -51,9 +49,8 @@ int main(void)
         fds[0].events = POLLIN;
         // Should never return
         ret = poll(fds, 1, TIMEOUT);
-        if (ret == -1){
+        if (ret < 0){
             perror("poll");
-            return EXIT_FAILURE;
         }
         
     }
