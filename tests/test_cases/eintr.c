@@ -9,31 +9,28 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <wait.h>
 
-void handle_signal(int signum) {
-    // This handler will be called when a signal is received.
-
-}
 
 int main() {
-    // Set up a signal handler for SIGINT (Ctrl+C)
-    signal(SIGINT, handle_signal);
+    printf("Thread 1\n");
+    char buf[512];
+    int n;
+    // Set signal handler
+    struct sigaction sa_usr;
+    sa_usr.sa_flags = 0;
+    sa_usr.sa_handler = sig_usr;   
 
-    char buffer[100];
-    ssize_t bytes_read;
+    sigaction(SIGUSR1, &sa_usr, NULL);
 
-    // Try to read from stdin
-    do {
-        bytes_read = read(STDIN_FILENO, buffer, sizeof(buffer));
-    } while (bytes_read == -1 && errno == EINTR);
-
-    if (bytes_read == -1) {
-        perror("read");
-        return 1;
+    while(1){
+        // Blocking thread1
+        if((n = read(STDIN_FILENO, buf, 511)) == -1){
+            if(errno == EINTR){
+                printf("Thread 1 is interrupted by EINTR\n");
+                break;
+            }
+        }
     }
-
-    printf("Read %zd bytes: %s\n", bytes_read, buffer);
 
     return 0;
 }
