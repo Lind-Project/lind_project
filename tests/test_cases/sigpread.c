@@ -23,7 +23,7 @@ int main() {
     sa_usr.sa_flags = 0;
     sa_usr.sa_handler = sig_usr;      
     // Register SIG handler
-    sigaction(SIGUSR2, &sa_usr, NULL);
+    sigaction(SIGUSR1, &sa_usr, NULL);
     // Open a file
     int fd = open("testfile.txt", O_RDONLY);
 
