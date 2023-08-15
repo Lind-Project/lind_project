@@ -51,6 +51,8 @@ int main(void)
         ret = poll(fds, 1, TIMEOUT);
         if (ret < 0){
             perror("poll");
+            printf("Error code: %d\n", errno);
+            fflush(NULL);
         }
         
     }
