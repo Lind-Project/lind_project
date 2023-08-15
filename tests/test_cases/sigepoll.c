@@ -49,6 +49,7 @@ int main(void)
         epoll_fd = epoll_create(256);
         if (epoll_fd < 0) {
             perror("epoll_create");
+            fflush(NULL);
         }
 
         struct epoll_event event;
@@ -57,11 +58,13 @@ int main(void)
 
         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, STDIN_FILENO, &event) < 0) {
             perror("epoll_ctl");
+            fflush(NULL);
         }
 
         num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (num_events < 0) {
             perror("epoll_wait");
+            fflush(NULL);
         }
     
     }
