@@ -17,12 +17,13 @@ static void sig_usr(int signum){
 }
 
 int main() {
-    printf("Start pread()\n");
+
 
     pid_t pid = fork();
 
     if (pid ==0) {
         // Cage 2
+        printf("Start pread()\n");
         char buf[512];  
         off_t offset = 0;
 
