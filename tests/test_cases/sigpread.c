@@ -37,6 +37,7 @@ int main() {
     // Try reading using pread
     nread = pread(fd, buffer, sizeof(buffer), 0);
     printf("check point\n");
+    printf("nread: %zu\n", nread);
     fflush(NULL);
     if (nread == -1) {
         if (errno == EINTR) {
