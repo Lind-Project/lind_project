@@ -50,8 +50,10 @@ int main(void)
         
         // Use the select function to wait for the readable status of standard input
         int num_fds = select(STDIN_FILENO + 1, &read_fds, NULL, NULL, NULL);
-        if (num_fds < 0) {
-            perror("select");
+        if (num_fds < 0 && errno == EINTR) {
+            printf("Error code: %d\n", errno);
+            printf("EINTR error\n");
+            fflush(NULL);
         }
         
     }
