@@ -36,7 +36,8 @@ int main() {
 
     // Try reading using pread
     nread = pread(fd, buffer, sizeof(buffer), 0);
-
+    printf("check point\n");
+    fflush(NULL);
     if (nread == -1) {
         if (errno == EINTR) {
             printf("pread was interrupted by signal\n");
