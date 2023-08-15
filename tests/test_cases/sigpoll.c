@@ -50,8 +50,8 @@ int main(void)
         // Should never return
         ret = poll(fds, 1, TIMEOUT);
         if (ret < 0){
-            perror("poll");
             printf("Error code: %d\n", errno);
+            printf("Error message: %s\n", strerror(errno));
             fflush(NULL);
         }
         
