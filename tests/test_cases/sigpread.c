@@ -19,46 +19,59 @@ static void sig_usr(int signum){
 int main() {
     printf("Start pread()\n");
 
-    char buf[512];
-    off_t offset = 0;
+    pid_t pid = fork();
 
-    // Set signal handler
-    struct sigaction sa_usr;
-    sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sig_usr;   
+    if (pid ==0) {
+        // Cage 2
+        char buf[512];  
+        off_t offset = 0;
 
-    // Create a test file
-    int fd = open("testfile.txt", O_CREAT|O_RDWR, 0666);
-    if (fd < 0) {
-        printf("Error open file\n");
-        fflush(NULL);
+        // Set signal handler
+        struct sigaction sa_usr;
+        sa_usr.sa_flags = 0;
+        sa_usr.sa_handler = sig_usr;   
+
+        // Create a test file
+        int fd = open("testfile.txt", O_CREAT|O_RDWR, 0666);
+        if (fd < 0) {
+            printf("Error open file\n");
+            fflush(NULL);
+        }
+
+        // // Write to the file
+        // const char *data = "TEST";
+        // ssize_t wret = write(fd, data, strlen(data));
+        // if (wret < 0) {
+        //     printf("Error write to file\n");
+        //     fflush(NULL);
+        // }
+
+        // Register SIG handler
+        sigaction(SIGUSR2, &sa_usr, NULL);
+        ssize_t prret;
+        do {
+            prret = pread(fd, buf, sizeof(buf), offset);
+            // printf("Return Value: %zu\n", prret);
+            // fflush(NULL);
+            if(prret < 0) {
+                if(errno == EINTR){
+                    printf("Error code: %d\n", errno);
+                    printf("EINTR error\n");
+                    fflush(NULL);
+                }
+            }
+        } while (prret == 0);
+        // Blocking read
+    
+        close(fd);
+    } else {
+        sleep(2);
+        printf("Killing Cage 2 using PID: %ld\n", (long)pid);
+        fflush(stdout);
+        kill(pid, SIGUSR2);
+        sleep(2);
     }
 
-    // // Write to the file
-    // const char *data = "TEST";
-    // ssize_t wret = write(fd, data, strlen(data));
-    // if (wret < 0) {
-    //     printf("Error write to file\n");
-    //     fflush(NULL);
-    // }
-
-    // Register SIG handler
-    sigaction(SIGINT, &sa_usr, NULL);
-    ssize_t prret;
-    do {
-        prret = pread(fd, buf, sizeof(buf), offset);
-        // printf("Return Value: %zu\n", prret);
-        // fflush(NULL);
-        if(prret < 0) {
-            if(errno == EINTR){
-                printf("Error code: %d\n", errno);
-                printf("EINTR error\n");
-                fflush(NULL);
-            }
-        }
-    } while (prret == 0);
-    // Blocking read
-   
-    close(fd);
+    
     return 0;
 }
