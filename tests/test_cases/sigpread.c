@@ -20,7 +20,7 @@ int main() {
     printf("Start pread()\n");
 
     char buf[512];
-    off_t offset = 0;
+    off_t offset = 10;
 
     // Set signal handler
     struct sigaction sa_usr;
