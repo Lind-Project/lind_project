@@ -49,9 +49,9 @@ int main(void)
         fds[0].events = POLLIN;
         // Should never return
         ret = poll(fds, 1, TIMEOUT);
-        if (ret < 0){
+        if (ret < 0 && errno == EINTR){
             printf("Error code: %d\n", errno);
-            printf("Error message: %s\n", strerror(errno));
+            printf("EINTR error\n");
             fflush(NULL);
         }
         
