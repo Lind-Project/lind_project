@@ -62,8 +62,9 @@ int main(void)
         }
 
         num_events = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-        if (num_events < 0) {
-            perror("epoll_wait");
+        if (num_events < 0 && errno == EINTR) {
+            printf("Error code: %d\n", errno);
+            printf("EINTR error\n");
             fflush(NULL);
         }
     
