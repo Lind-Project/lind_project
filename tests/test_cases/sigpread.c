@@ -34,13 +34,13 @@ int main() {
         fflush(NULL);
     }
 
-    // Write to the file
-    const char *data = "TEST";
-    ssize_t wret = write(fd, data, strlen(data));
-    if (wret < 0) {
-        printf("Error write to file\n");
-        fflush(NULL);
-    }
+    // // Write to the file
+    // const char *data = "TEST";
+    // ssize_t wret = write(fd, data, strlen(data));
+    // if (wret < 0) {
+    //     printf("Error write to file\n");
+    //     fflush(NULL);
+    // }
 
     // Register SIG handler
     sigaction(SIGINT, &sa_usr, NULL);
