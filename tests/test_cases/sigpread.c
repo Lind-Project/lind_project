@@ -20,7 +20,7 @@ int main() {
     printf("Start pread()\n");
 
     char buf[512];
-    off_t offset = 10;
+    off_t offset = 0;
 
     // Set signal handler
     struct sigaction sa_usr;
@@ -44,16 +44,19 @@ int main() {
 
     // Register SIG handler
     sigaction(SIGINT, &sa_usr, NULL);
-
-    // Blocking read
-    ssize_t prret = pread(fd, buf, sizeof(buf), offset);
-    if(prret < 0) {
-        if(errno == EINTR){
-            printf("Error code: %d\n", errno);
-            printf("EINTR error\n");
-            fflush(NULL);
+    ssize_t prret;
+    do {
+        prret = pread(fd, buf, sizeof(buf), offset);
+        if(prret < 0) {
+            if(errno == EINTR){
+                printf("Error code: %d\n", errno);
+                printf("EINTR error\n");
+                fflush(NULL);
+            }
         }
-    }
+    } while (prret > 0);
+    // Blocking read
+   
     close(fd);
     return 0;
 }
