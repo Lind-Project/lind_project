@@ -47,8 +47,8 @@ int main() {
     ssize_t prret;
     do {
         prret = pread(fd, buf, sizeof(buf), offset);
-        printf("Return Value: %zu\n", prret);
-        fflush(NULL);
+        // printf("Return Value: %zu\n", prret);
+        // fflush(NULL);
         if(prret < 0) {
             if(errno == EINTR){
                 printf("Error code: %d\n", errno);
@@ -56,7 +56,7 @@ int main() {
                 fflush(NULL);
             }
         }
-    } while (prret > 0);
+    } while (prret == 0);
     // Blocking read
    
     close(fd);
