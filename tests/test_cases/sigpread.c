@@ -62,7 +62,8 @@ int main() {
             }
         } while (prret == 0);
         // Blocking read
-    
+        printf("pread value: %zu\n", prret);
+        fflush(NULL);
         close(fd);
     } else {
         sleep(2);
