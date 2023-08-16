@@ -36,7 +36,7 @@ int main() {
         lock.l_start = 0;
         lock.l_len = 0; // Lock the whole file
 
-        int result = fcntl(fd, F_SETLK, &lock);
+        int result = fcntl(fd, F_SETLKW, 0);
         if(result < 0) {
             perror("fcntl");
             printf("Error code: %d\n", errno);
@@ -53,7 +53,7 @@ int main() {
         fflush(NULL);
 
         lock.l_type = F_UNLCK;
-        fcntl(fd, F_SETLK, &lock);
+        fcntl(fd, F_SETLK, 0);
         
         exit(0);
     } else {    // Parent process
