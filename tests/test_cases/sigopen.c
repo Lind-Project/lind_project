@@ -18,11 +18,8 @@ static void sig_usr(int signum){
 
 int main() {
     pid_t lock_pid = fork();
-    // Fork a child process
-    pid_t child_pid = fork();
-    pid_t parent_pid = getppid();
 
-    if (child_pid == -1) {
+    if (lock_pid == -1) {
         perror("fork");
         return 0;
     } else if (lock_pid == 0) {     // lock() process
