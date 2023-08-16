@@ -12,92 +12,73 @@
 #include <signal.h>
 #include <errno.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <sys/stat.h>
+
 static void sig_usr(int signum){
     printf("Received signal %d\n", signum);
 }
 
 int main() {
-    pid_t lock_pid = fork();
-        // Create or open the testfile.txt
-        int fd = open("testfile.txt", O_WRONLY);
-        if (fd == -1) {
-            perror("open");
-            return EXIT_FAILURE;
-        }
-    if (lock_pid == -1) {
+    if (mkfifo("testfifo", S_IRUSR | S_IWUSR) == -1) {
+        perror("mkfifo");
+        return 1;
+    }
+
+    pid_t child_open_pid = fork();
+
+    if (child_open_pid == -1) {
         perror("fork");
-        return 0;
-    } else if (lock_pid == 0) {     // lock() process
-
-        // Lock the file
-        struct flock lock;
-        lock.l_type = F_WRLCK;
-        lock.l_whence = SEEK_SET;
-        lock.l_start = 0;
-        lock.l_len = 0; // Lock the whole file
-
-        int result = fcntl(fd, F_SETLKW, 0);
-        if(result < 0) {
-            perror("fcntl");
-            printf("Error code: %d\n", errno);
-            // printf("EINTR error\n");
-            fflush(NULL);
-        }
-        printf("lock() process acquired the lock.\n");
-        fflush(NULL);
+        return 1;
+    } else if (child_open_pid == 0) {
+        // Child process: Wait for the signal and handle open interruption
+        printf("Child process waiting for the signal...\n");
         
-        sleep(10);
+        // Set signal handler
+        struct sigaction sa_usr;
+        sa_usr.sa_flags = 0;
+        sa_usr.sa_handler = sig_usr;   
 
-        // Release the lock
-        printf("lock() process released the lock.\n");
-        fflush(NULL);
+        sigaction(SIGUSR2, &sa_usr, NULL);
 
-        lock.l_type = F_UNLCK;
-        fcntl(fd, F_SETLK, 0);
-        
-        exit(0);
-    } else {    // Parent process
-        // Fork open() process
-        pid_t open_pid = fork();
-        if(open_pid < 0){
-            perror("fork");
-            return EXIT_FAILURE;
-        } else if(open_pid == 0){ // open() process
-            // sleep(5);
-            printf("open() process waiting for the lock...\n");
-            // Set signal handler
-            struct sigaction sa_usr;
-            sa_usr.sa_flags = 0;
-            sa_usr.sa_handler = sig_usr;   
+        // Wait for the signal
+        pause();
 
-            sigaction(SIGUSR2, &sa_usr, NULL);
+        printf("Child process received the signal.\n");
 
-            // Try to open the file while the lock is held by the child
-            sleep(2);
-            int open_fd = open("testfile.txt", O_WRONLY);
-            if (open_fd < 0 && errno == EINTR) {
-                printf("Error code: %d\n", errno);
-                printf("EINTR error\n");
-                fflush(NULL);
+        // Try to open the FIFO
+        int child_fd = open("testfifo", O_RDWR);
+        if (child_fd == -1) {
+            if (errno == EINTR) {
+                printf("Child process received EINTR from open.\n");
             } else {
-                printf("open() process successfully opened the file.\n");
-                fflush(NULL);
-                close(open_fd);
+                perror("open");
             }
-            exit(0);
         } else {
-            sleep(2);
-
-            printf("Sending SIGUSR2 signal to open() process...\n");
-            fflush(NULL);
-            kill(open_pid, SIGUSR2);
-            // Wait for child processes to finish
-            waitpid(lock_pid, NULL, 0);
-            waitpid(open_pid, NULL, 0);
-            close(fd);
-            
+            printf("Child process successfully opened the FIFO.\n");
+            close(child_fd);
         }
-        
+
+        exit(0);
+    } else {
+        // Parent process
+        sleep(2);
+
+        // Send SIGUSR1 signal to child_open_pid
+        printf("Sending SIGUSR1 signal to child process...\n");
+        kill(child_open_pid, SIGUSR1);
+
+        // Wait for the child process to finish
+        waitpid(child_open_pid, NULL, 0);
+
+        // Remove the FIFO
+        unlink("testfifo");
     }
 
     return 0;
