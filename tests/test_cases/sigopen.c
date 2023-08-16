@@ -17,12 +17,7 @@ static void sig_usr(int signum){
 }
 
 int main() {
-    // Create or open the testfile.txt
-    int fd = open("testfile.txt", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-    if (fd == -1) {
-        perror("open");
-        return EXIT_FAILURE;
-    }
+
 
     pid_t lock_pid = fork();
     // Fork a child process
@@ -33,6 +28,12 @@ int main() {
         perror("fork");
         return 0;
     } else if (lock_pid == 0) {     // lock() process
+        // Create or open the testfile.txt
+        int fd = open("testfile.txt", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+        if (fd == -1) {
+            perror("open");
+            return EXIT_FAILURE;
+        }
         // Lock the file
         struct flock lock;
         lock.l_type = F_WRLCK;
@@ -91,8 +92,7 @@ int main() {
             waitpid(lock_pid, NULL, 0);
             waitpid(open_pid, NULL, 0);
 
-            // Close and unlink the semaphore
-            close(fd);
+            
         }
         
     }
