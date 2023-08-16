@@ -47,8 +47,6 @@ int main() {
 
         sigaction(SIGUSR2, &sa_usr, NULL);
 
-        // Wait for the signal
-        pause();
 
         printf("Child process received the signal.\n");
 
@@ -66,7 +64,7 @@ int main() {
         // Parent process
         sleep(2);
 
-        // Send SIGUSR1 signal to child_open_pid
+        // Send SIGUSR2 signal to child_open_pid
         printf("Sending SIGUSR2 signal to child process...\n");
         kill(child_open_pid, SIGUSR2);
 
