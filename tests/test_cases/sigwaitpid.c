@@ -44,6 +44,7 @@ int main() {
             int ret = waitpid(child1_1_pid, NULL, 0);
             if (ret < 0) {
                 perror("waitpid");
+                printf("Error code: %d\n", errno);
                 return 0;
             }
             printf("Child 1 process end..\n");
