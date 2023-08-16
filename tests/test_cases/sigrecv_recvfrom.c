@@ -42,8 +42,21 @@ void* client(void* v) {
    
     pthread_barrier_wait(&barrier);
     int connret = connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    send(sock, hello, strlen(hello), 0);
+
+    /* Continue and only interrupted once */
+    int i = 0;
+    while(i == 0) {
+        int ret = send(sock, hello, strlen(hello), 0);
+        if(ret < 0) {
+            perror("send");
+            i++;
+            continue;
+        }
+    }
+
     printf("Hello message sent\n");
+
+    /* Retry after received signal */
     while(1) {
         valread = recv(sock, buffer, 1024, 0); 
         if(valread < 0) {
@@ -92,14 +105,19 @@ void* server(void* v) {
         perror("listen"); 
         exit(EXIT_FAILURE); 
     } 
+
     pthread_barrier_wait(&barrier);
+
     if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
                        (socklen_t*)&addrlen))<0) { 
         perror("accept"); 
         exit(EXIT_FAILURE); 
     } 
+
     valread = recv(new_socket, buffer, 1024, 0);
     printf("%s\n",buffer); 
+
+    /* Continue after SIGUSR2 interruption of recv() */
     sleep(10);
     send(new_socket, hello, strlen(hello), 0 ); 
     printf("Hello message sent\n"); 
