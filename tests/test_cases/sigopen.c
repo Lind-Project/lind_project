@@ -12,15 +12,6 @@
 #include <signal.h>
 #include <errno.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <sys/stat.h>
-
 static void sig_usr(int signum){
     printf("Received signal %d\n", signum);
 }
