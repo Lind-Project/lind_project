@@ -31,7 +31,10 @@ void* client(void* v) {
     send(sock, hello, strlen(hello), 0);
     printf("Hello message sent\n");
     valread = recv(sock, buffer, 1024, 0); 
-    printf("%s\n",buffer ); 
+    if(valread < 0) {
+        perror("recv");
+    }
+    printf("%s\n",buffer); 
     return NULL; 
 } 
 
@@ -75,8 +78,8 @@ void* server(void* v) {
         perror("accept"); 
         exit(EXIT_FAILURE); 
     } 
-    valread = recv(new_socket , buffer, 1024, 0);
-    printf("%s\n",buffer ); 
+    valread = recv(new_socket, buffer, 1024, 0);
+    printf("%s\n",buffer); 
     // send(new_socket , hello , strlen(hello) , 0 ); 
     // printf("Hello message sent\n"); 
     return NULL;
