@@ -36,6 +36,7 @@ int main() {
                     printf("Error code: %d\n", errno);
                     printf("EINTR error\n");
                     fflush(NULL);
+                    break;
                 }
             }
         }
