@@ -71,6 +71,7 @@ int main() {
             sigaction(SIGUSR2, &sa_usr, NULL);
 
             // Try to open the file while the lock is held by the child
+            sleep(2);
             int open_fd = open("testfile.txt", O_RDWR);
             if (open_fd < 0 && errno == EINTR) {
                 printf("Error code: %d\n", errno);
