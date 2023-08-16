@@ -33,6 +33,13 @@ void* client(void* v) {
     // Convert IPv4 and IPv6 addresses from text to binary form 
     inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
    
+    // Set signal handler
+    struct sigaction sa_usr;
+    sa_usr.sa_flags = 0;
+    sa_usr.sa_handler = sig_usr;   
+
+    sigaction(SIGINT, &sa_usr, NULL);
+
     pthread_barrier_wait(&barrier);
     int connret = connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     send(sock, hello, strlen(hello), 0);
@@ -40,6 +47,7 @@ void* client(void* v) {
     valread = recv(sock, buffer, 1024, 0); 
     if(valread < 0) {
         perror("recv");
+        return NULL;
     }
     printf("%s\n",buffer); 
     return NULL; 
@@ -85,13 +93,6 @@ void* server(void* v) {
         perror("accept"); 
         exit(EXIT_FAILURE); 
     } 
-
-    // Set signal handler
-    struct sigaction sa_usr;
-    sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sig_usr;   
-
-    sigaction(SIGINT, &sa_usr, NULL);
 
     valread = recv(new_socket, buffer, 1024, 0);
     printf("%s\n",buffer); 
