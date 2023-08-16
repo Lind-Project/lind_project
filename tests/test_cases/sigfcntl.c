@@ -80,7 +80,7 @@ int main() {
             lock.l_start = 0;
             lock.l_len = 0; // Lock the whole file
 
-            int result = fcntl(fd, F_SETLK, &lock);
+            int result = fcntl(fd, F_SETLKW, &lock);
             if(result < 0) {
                 perror("fcntl");
                 printf("Error code: %d\n", errno);
