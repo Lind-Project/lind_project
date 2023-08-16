@@ -31,8 +31,9 @@ int main() {
             return EXIT_FAILURE;
         } else if(child1_1_pid == 0) {  // Child 1-1 process
             printf("Child1-1 process start...\n");
-            for(;;);    // never returns
+            // for(;;);    // never returns
         } else {    // Child 1 process
+            printf("Child 1 prcess start...\n");
             // Set signal handler
             struct sigaction sa_usr;
             sa_usr.sa_flags = 0;
@@ -49,7 +50,7 @@ int main() {
         }
     } else {   // Father process 
         printf("Father process start...\n");
-        kill(child1_pid, SIGUSR2);
+        // kill(child1_pid, SIGUSR2);
 
     }
     return 0;
