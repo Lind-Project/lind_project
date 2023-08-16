@@ -29,6 +29,7 @@ int main() {
         kill(getppid(), SIGUSR2);
         for(;;); // Didn't return, so wait() blocked
     } else {   
+        sleep(5);
         // Set signal handler
         struct sigaction sa_usr;
         sa_usr.sa_flags = 0;
