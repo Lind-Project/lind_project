@@ -152,7 +152,7 @@ int main() {
     pthread_create(&clientthread, NULL, client, NULL);
     sleep(5);
     pthread_kill(clientthread, SIGUSR2);
-    sleep(11);
+    sleep(15);
     pthread_kill(serverthread, SIGUSR1);
     pthread_join(clientthread, NULL);
     pthread_join(serverthread, NULL);
