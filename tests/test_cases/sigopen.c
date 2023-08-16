@@ -44,11 +44,13 @@ int main() {
             fflush(NULL);
         }
         printf("lock() process acquired the lock.\n");
+        fflush(NULL);
         
         sleep(10);
 
         // Release the lock
         printf("lock() process released the lock.\n");
+        fflush(NULL);
 
         lock.l_type = F_UNLCK;
         fcntl(fd, F_SETLK, &lock);
@@ -79,6 +81,7 @@ int main() {
                 fflush(NULL);
             } else {
                 printf("open() process successfully opened the file.\n");
+                fflush(NULL);
                 close(open_fd);
             }
             exit(0);
@@ -86,6 +89,7 @@ int main() {
             sleep(2);
 
             printf("Sending SIGUSR2 signal to open() process...\n");
+            fflush(NULL);
             kill(open_pid, SIGUSR2);
             // Wait for child processes to finish
             waitpid(lock_pid, NULL, 0);
