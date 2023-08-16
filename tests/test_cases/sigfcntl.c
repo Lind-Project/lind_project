@@ -73,10 +73,7 @@ int main() {
 
             sigaction(SIGUSR2, &sa_usr, NULL);
 
-
             // Try to lock the file while the lock is held 
-            sleep(2);
-            // Lock the file
             struct flock lock;
             lock.l_type = F_RDLCK;
             lock.l_whence = SEEK_SET;
@@ -92,7 +89,7 @@ int main() {
             }
        } else {
            sleep(2);
-           printf("Sending SIGUSR2 signal to open() process...\n");
+           printf("Sending SIGUSR2 signal to child process...\n");
            kill(child_pid, SIGUSR2);
            // Wait for child processes to finish
            waitpid(lock_pid, NULL, 0);
