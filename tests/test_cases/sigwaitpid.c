@@ -46,9 +46,10 @@ int main() {
                 perror("waitpid");
                 return 0;
             }
-            
+            printf("Child 1 process end..\n");
         }
     } else {   // Father process 
+        sleep(5);
         printf("Father process start...\n");
         // kill(child1_pid, SIGUSR2);
 
