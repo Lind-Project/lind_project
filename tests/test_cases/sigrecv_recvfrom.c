@@ -6,8 +6,15 @@
 #include <string.h> 
 #include <arpa/inet.h> 
 #include <pthread.h> 
+#include <errno.h>
+#include <signal.h>
+
 #define PORT 9995
 pthread_barrier_t barrier;
+
+static void sig_usr(int signum){
+    printf("[!] Received signal %d\n", signum);
+}
 
 void* client(void* v) { 
     int sock = 0, valread; 
@@ -78,6 +85,14 @@ void* server(void* v) {
         perror("accept"); 
         exit(EXIT_FAILURE); 
     } 
+
+    // Set signal handler
+    struct sigaction sa_usr;
+    sa_usr.sa_flags = 0;
+    sa_usr.sa_handler = sig_usr;   
+
+    sigaction(SIGINT, &sa_usr, NULL);
+
     valread = recv(new_socket, buffer, 1024, 0);
     printf("%s\n",buffer); 
     // send(new_socket , hello , strlen(hello) , 0 ); 
