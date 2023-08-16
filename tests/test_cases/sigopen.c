@@ -19,7 +19,7 @@ static void sig_usr(int signum){
 int main() {
     pid_t lock_pid = fork();
         // Create or open the testfile.txt
-        int fd = open("testfile.txt", O_RDONLY);
+        int fd = open("testfile.txt", O_WRONLY);
         if (fd == -1) {
             perror("open");
             return EXIT_FAILURE;
