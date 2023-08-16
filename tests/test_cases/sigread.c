@@ -31,14 +31,15 @@ int main() {
         sigaction(SIGUSR2, &sa_usr, NULL);
 
         // Blocking read
-        int ret = read(STDIN_FILENO, buf, 511);
+        // int ret = read(STDIN_FILENO, buf, 511);
         int wret = write(STDOUT_FILENO, buf, 511);
         if(wret < 0) {
-            if(errno == EINTR){
-                printf("Error code: %d\n", errno);
-                printf("EINTR error\n");
-                fflush(NULL);
-            }
+            perror("write");
+            // if(errno == EINTR){
+            //     printf("Error code: %d\n", errno);
+            //     printf("EINTR error\n");
+            //     fflush(NULL);
+            // }
         }
         
     } else {
