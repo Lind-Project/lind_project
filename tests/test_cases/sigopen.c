@@ -54,12 +54,8 @@ int main() {
 
         // Try to open the FIFO
         int child_fd = open("testfifo", O_RDONLY);
-        if (child_fd == -1) {
-            if (errno == EINTR) {
-                printf("Child process received EINTR from open.\n");
-            } else {
-                perror("open");
-            }
+        if (child_fd < 0) {
+            perror("open");
         } else {
             printf("Child process successfully opened the FIFO.\n");
             close(child_fd);
@@ -71,7 +67,7 @@ int main() {
         sleep(2);
 
         // Send SIGUSR1 signal to child_open_pid
-        printf("Sending SIGUSR1 signal to child process...\n");
+        printf("Sending SIGUSR2 signal to child process...\n");
         kill(child_open_pid, SIGUSR2);
 
         // Wait for the child process to finish
