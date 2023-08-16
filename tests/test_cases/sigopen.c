@@ -29,20 +29,20 @@ int main() {
         return 0;
     } else if (lock_pid == 0) {     // lock() process
 
-        // Lock the file
-        struct flock lock;
-        lock.l_type = F_RDLCK;
-        lock.l_whence = SEEK_SET;
-        lock.l_start = 0;
-        lock.l_len = 0; // Lock the whole file
+        // // Lock the file
+        // struct flock lock;
+        // lock.l_type = F_RDLCK;
+        // lock.l_whence = SEEK_SET;
+        // lock.l_start = 0;
+        // lock.l_len = 0; // Lock the whole file
 
-        int result = fcntl(fd, F_SETLK, &lock);
-        if(result < 0) {
-            perror("fcntl");
-            printf("Error code: %d\n", errno);
-            // printf("EINTR error\n");
-            fflush(NULL);
-        }
+        // int result = fcntl(fd, F_SETLK, &lock);
+        // if(result < 0) {
+        //     perror("fcntl");
+        //     printf("Error code: %d\n", errno);
+        //     // printf("EINTR error\n");
+        //     fflush(NULL);
+        // }
         printf("lock() process acquired the lock.\n");
         fflush(NULL);
         
@@ -52,8 +52,8 @@ int main() {
         printf("lock() process released the lock.\n");
         fflush(NULL);
 
-        lock.l_type = F_UNLCK;
-        fcntl(fd, F_SETLK, &lock);
+        // lock.l_type = F_UNLCK;
+        // fcntl(fd, F_SETLK, &lock);
         
         exit(0);
     } else {    // Parent process
