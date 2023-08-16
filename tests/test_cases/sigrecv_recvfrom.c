@@ -5,6 +5,7 @@
 #include <string.h> 
 #include <errno.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 static void sig_usr(int signum){
     printf("Received signal %d\n", signum);
