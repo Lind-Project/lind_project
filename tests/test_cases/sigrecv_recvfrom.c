@@ -13,13 +13,18 @@
 pthread_barrier_t barrier;
 
 static void sig_usr(int signum){
-    printf("Received signal %d\n", signum);
+    if(signum == SIGUSR1){
+        printf("[Server] Received signal %d\n", signum);
+    } else {
+        printf("[Client] Received signal %d\n", signum);
+    }
+    
 }
 
 void* client(void* v) { 
     int sock = 0, valread; 
     struct sockaddr_in serv_addr; 
-    char *hello = "Hello from client"; 
+    char *hello = "[Server] Hello from client"; 
     char buffer[1024] = {0}; 
     long opt = 1;
     sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -43,18 +48,19 @@ void* client(void* v) {
     pthread_barrier_wait(&barrier);
     int connret = connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
+    send(sock, hello, strlen(hello), 0);
     /* Continue and only interrupted once */
-    int i = 0;
-    while(i == 0) {
-        int ret = send(sock, hello, strlen(hello), 0);
-        if(ret < 0) {
-            perror("send");
-            i++;
-            continue;
-        }
-    }
+    // int i = 0;
+    // while(i == 0) {
+    //     int ret = ;
+    //     if(ret < 0) {
+    //         perror("send");
+    //         i++;
+    //         continue;
+    //     }
+    // }
 
-    printf("Hello message sent\n");
+    printf("[Client] Hello message sent\n");
 
     /* Retry after received signal */
     while(1) {
@@ -77,7 +83,7 @@ void* server(void* v) {
     long opt = 1;
     int addrlen = sizeof(address); 
     char buffer[1024] = {0}; 
-    char *hello = "Hello from server"; 
+    char *hello = "[Client] Hello from server"; 
        
     // Creating socket file descriptor 
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -114,13 +120,27 @@ void* server(void* v) {
         exit(EXIT_FAILURE); 
     } 
 
+    // Set signal handler
+    struct sigaction sa_usr;
+    sa_usr.sa_flags = 0;
+    sa_usr.sa_handler = sig_usr;   
+
+    sigaction(SIGUSR1, &sa_usr, NULL);
+
     valread = recv(new_socket, buffer, 1024, 0);
     printf("%s\n",buffer); 
 
     /* Continue after SIGUSR2 interruption of recv() */
     sleep(10);
-    send(new_socket, hello, strlen(hello), 0 ); 
-    printf("Hello message sent\n"); 
+    while(1) {
+        int ret = send(new_socket, hello, strlen(hello), 0);
+        if(ret < 0){
+            perror("send");
+            break;
+        } 
+    }
+     
+    printf("[Server] Hello message sent\n"); 
     return NULL;
 } 
 
@@ -131,6 +151,8 @@ int main() {
     pthread_create(&clientthread, NULL, client, NULL);
     sleep(5);
     pthread_kill(clientthread, SIGUSR2);
+    sleep(11);
+    pthread_kill(serverthread, SIGUSR1);
     pthread_join(clientthread, NULL);
     pthread_join(serverthread, NULL);
     pthread_barrier_destroy(&barrier);
