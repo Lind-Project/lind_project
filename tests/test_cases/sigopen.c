@@ -48,7 +48,7 @@ int main() {
         sigaction(SIGUSR2, &sa_usr, NULL);
 
         // Wait for the signal
-        pause();
+        sleep(5);
 
         printf("Child process received the signal.\n");
 
