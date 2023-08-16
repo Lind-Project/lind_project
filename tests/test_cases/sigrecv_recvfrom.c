@@ -44,11 +44,16 @@ void* client(void* v) {
     int connret = connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     send(sock, hello, strlen(hello), 0);
     printf("Hello message sent\n");
-    valread = recv(sock, buffer, 1024, 0); 
-    if(valread < 0) {
-        perror("recv");
-        return NULL;
+    while(1) {
+        valread = recv(sock, buffer, 1024, 0); 
+        if(valread < 0) {
+            perror("recv");
+            continue;
+        } else {
+            break;
+        }
     }
+    
     printf("%s\n",buffer); 
     return NULL; 
 } 
@@ -95,8 +100,9 @@ void* server(void* v) {
     } 
     valread = recv(new_socket, buffer, 1024, 0);
     printf("%s\n",buffer); 
-    // send(new_socket, hello, strlen(hello), 0 ); 
-    // printf("Hello message sent\n"); 
+    sleep(10);
+    send(new_socket, hello, strlen(hello), 0 ); 
+    printf("Hello message sent\n"); 
     return NULL;
 } 
 
@@ -105,7 +111,7 @@ int main() {
     pthread_barrier_init(&barrier, NULL, 2);
     pthread_create(&serverthread, NULL, server, NULL);
     pthread_create(&clientthread, NULL, client, NULL);
-    sleep(10);
+    sleep(5);
     pthread_kill(clientthread, SIGUSR2);
     pthread_join(clientthread, NULL);
     pthread_join(serverthread, NULL);
