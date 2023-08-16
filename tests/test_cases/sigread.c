@@ -16,26 +16,37 @@ static void sig_usr(int signum){
 }
 
 int main() {
-    printf("Start\n");
-    char buf[512];
-    int n;
-    // Set signal handler
-    struct sigaction sa_usr;
-    sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sig_usr;   
+    struct sigaction new_action;
+    struct sigaction old_action;
 
-    sigaction(SIGINT, &sa_usr, NULL);
+    pid_t pid = fork();
 
-    while(1){
+    if (pid == 0) {
+        char buf[512];
+        // Set signal handler
+        struct sigaction sa_usr;
+        sa_usr.sa_flags = 0;
+        sa_usr.sa_handler = sig_usr;   
+
+        sigaction(SIGINT, &sa_usr, NULL);
+
         // Blocking read
-        if((n = read(STDIN_FILENO, buf, 511)) == -1){
+        int ret = read(STDIN_FILENO, buf, 511);
+        if(ret < 0) {
             if(errno == EINTR){
                 printf("Error code: %d\n", errno);
                 printf("EINTR error\n");
-                break;
+                fflush(NULL);
             }
         }
+        
+    } else {
+        // Cage 1
+        sleep(2);
+        printf("Killing Cage 2 using PID: %ld\n", (long)pid);
+        fflush(stdout);
+        kill(pid, SIGUSR2);
+        sleep(2);
     }
-
     return 0;
 }
