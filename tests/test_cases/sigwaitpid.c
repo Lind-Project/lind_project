@@ -20,37 +20,37 @@ static void sig_usr(int signum){
 
 int main() {
     pid_t child1_pid = fork();
-    pid_t father_pid = getppid();
+
     if(child1_pid < 0) {
         perror("fork");
         return EXIT_FAILURE;
-    } else if(child1_pid == 0) {    // Child 1 process
-        printf("Child1 process start...\n");
-        for(;;); // Didn't return, so wait() blocked
-    } else {   
-        pid_t child2_pid = fork();
-        if(child2_pid < 0) {    // Child 2 process
+    } else if(child1_pid == 0) {    
+        pid_t child1_1_pid = fork();
+        if(child1_1_pid < 0) {
             perror("fork");
             return EXIT_FAILURE;
-        } else if(child2_pid == 0) {
-            printf("Child2 process start...\n");
-            kill(father_pid, SIGUSR2);
-        } else {
-            sleep(5);
-            printf("Father process start...\n");
+        } else if(child1_1_pid == 0) {  // Child 1-1 process
+            printf("Child1-1 process start...\n");
+            for(;;);    // never returns
+        } else {    // Child 1 process
             // Set signal handler
             struct sigaction sa_usr;
             sa_usr.sa_flags = 0;
-            sa_usr.sa_handler = sig_usr;      
-            // Register SIG handler
+            sa_usr.sa_handler = sig_usr;
+            // Register signal handler
             sigaction(SIGUSR2, &sa_usr, NULL);
-            int ret = waitpid(child1_pid, NULL, 0);
-            if(ret < 0 && errno == EINTR) {
-                perror("wait");
-                printf("Errno: %d\n", errno);
-                return EXIT_FAILURE;
+
+            int ret = waitpid(child1_1_pid, NULL, 0);
+            if (ret < 0) {
+                perror("waitpid");
+                return 0;
             }
+            
         }
+    } else {   // Father process 
+        printf("Father process start...\n");
+        kill(child1_pid, SIGUSR2);
+
     }
     return 0;
 }
