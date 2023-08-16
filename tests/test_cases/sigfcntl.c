@@ -64,7 +64,7 @@ int main() {
             perror("fork");
             return EXIT_FAILURE;
        } else if(child_pid == 0){ // Child process
-            // sleep(5);
+            sleep(5);
             printf("Child process waiting for the lock...\n");
             // Set signal handler
             struct sigaction sa_usr;
@@ -75,7 +75,7 @@ int main() {
 
             // Try to lock the file while the lock is held 
             struct flock lock;
-            lock.l_type = F_RDLCK;
+            lock.l_type = F_WRLCK;
             lock.l_whence = SEEK_SET;
             lock.l_start = 0;
             lock.l_len = 0; // Lock the whole file
@@ -88,7 +88,7 @@ int main() {
                 fflush(NULL);
             }
        } else {
-           sleep(2);
+           sleep(10);
            printf("Sending SIGUSR2 signal to child process...\n");
            kill(child_pid, SIGUSR2);
            // Wait for child processes to finish
