@@ -55,24 +55,18 @@ int main() {
 
     printf("Server listening on port 12345...\n");
 
-    // Accept connections
-    while (1) {
-        struct sockaddr_in client_addr;
-        socklen_t client_len = sizeof(client_addr);
+    struct sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
 
-        // Simulate an interrupt signal (Ctrl+C)
-        raise(SIGINT);
-
-        // Try to accept a connection
-        int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
-        if (client_fd == -1) {
-            if (errno == EINTR) {
-                printf("accept returned EINTR due to interrupt signal.\n");
-            } else {
-                perror("accept");
-                close(server_fd);
-                return 1;
-            }
+    // Try to accept a connection
+    int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
+    if (client_fd == -1) {
+        if (errno == EINTR) {
+            printf("accept returned EINTR due to interrupt signal.\n");
+        } else {
+            perror("accept");
+            close(server_fd);
+            return 1;
         }
     }
 
