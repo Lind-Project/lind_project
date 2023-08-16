@@ -36,13 +36,15 @@ int main() {
             printf("Child2 process start...\n");
             kill(getppid(), SIGUSR2);
         } else {
+            sleep(5);
+            printf("Father process start...\n");
             // Set signal handler
             struct sigaction sa_usr;
             sa_usr.sa_flags = 0;
             sa_usr.sa_handler = sig_usr;      
             // Register SIG handler
             sigaction(SIGUSR2, &sa_usr, NULL);
-            int ret = wait(NULL);
+            int ret = waitpid(child1_pid, NULL, 0);
             if(ret < 0 && errno == EINTR) {
                 perror("wait");
                 printf("Errno: %d\n", errno);
