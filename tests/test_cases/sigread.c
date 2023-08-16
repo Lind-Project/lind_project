@@ -32,7 +32,8 @@ int main() {
 
         // Blocking read
         int ret = read(STDIN_FILENO, buf, 511);
-        if(ret < 0) {
+        int wret = write(STDOUT_FILENO, buf, 511);
+        if(wret < 0) {
             if(errno == EINTR){
                 printf("Error code: %d\n", errno);
                 printf("EINTR error\n");
