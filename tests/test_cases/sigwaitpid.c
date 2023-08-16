@@ -51,7 +51,8 @@ int main() {
     } else {   // Father process 
         sleep(5);
         printf("Father process start...\n");
-        // kill(child1_pid, SIGUSR2);
+        sleep(5);
+        kill(child1_pid, SIGUSR2);
         waitpid(child1_pid, NULL, 0);
         printf("Father process end...\n");
     }
