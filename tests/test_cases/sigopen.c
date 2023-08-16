@@ -1,53 +1,73 @@
 #undef _GNU_SOURCE
 #define _GNU_SOURCE
-
-#include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
-#include <signal.h>
-
-static void sig_usr(int signum){
-    printf("Received signal %d\n", signum);
-}
+#include <fcntl.h>
+#include <semaphore.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
 
 int main() {
-    pid_t pid = fork();
-
-    if (pid == 0) {
-        // Set signal handler
-        struct sigaction sa_usr;
-        sa_usr.sa_flags = 0;
-        sa_usr.sa_handler = sig_usr;   
-
-        sigaction(SIGUSR2, &sa_usr, NULL);
-
-        while(1) {
-            // Blocking read
-            int ret = open("test.txt", O_RDONLY);
-            if(ret < 0) {
-                if(errno == EINTR){
-                    printf("Error code: %d\n", errno);
-                    printf("EINTR error\n");
-                    fflush(NULL);
-                }
-            } else {
-                close(ret);
-            }
-        }
-        
-
-    } else {
-        // Cage 1
-        sleep(2);
-        printf("Killing open() thread using PID: %ld\n", (long)pid);
-        fflush(stdout);
-        kill(pid, SIGUSR2);
-        sleep(2);
+    // Create or open the testfile.txt
+    int fd = open("testfile.txt", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("open");
+        return 1;
     }
+
+    // Initialize and create a named semaphore
+    sem_t *file_lock = sem_open("/file_lock", O_CREAT | O_EXCL, S_IRUSR | S_IWUSR, 1);
+    if (file_lock == SEM_FAILED) {
+        perror("sem_open");
+        return 1;
+    }
+
+    // Fork a child process
+    pid_t child_pid = fork();
+
+    if (child_pid == -1) {
+        perror("fork");
+        return 1;
+    } else if (child_pid == 0) {
+        // Child process
+        sem_wait(file_lock);  // Acquire the lock
+        printf("Child process acquired the lock.\n");
+
+        // Simulate some work
+        sleep(5);
+
+        sem_post(file_lock);  // Release the lock
+        printf("Child process released the lock.\n");
+
+        // Close and unlink the semaphore
+        sem_close(file_lock);
+        sem_unlink("/file_lock");
+        
+        exit(0);
+    } else {
+        // Parent process
+        printf("Parent process trying to open the file...\n");
+
+        // Try to open the file while the lock is held by the child
+        int parent_fd = open("testfile.txt", O_RDWR);
+        if (parent_fd == -1) {
+            perror("open");
+        } else {
+            printf("Parent process successfully opened the file.\n");
+            close(parent_fd);
+        }
+
+        // Wait for the child process to finish
+        wait(NULL);
+        
+        // Close and unlink the semaphore
+        sem_close(file_lock);
+        sem_unlink("/file_lock");
+
+        close(fd);
+    }
+
     return 0;
 }
