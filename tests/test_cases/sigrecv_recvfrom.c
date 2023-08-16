@@ -136,6 +136,7 @@ void* server(void* v) {
         int ret = send(new_socket, hello, strlen(hello), 0);
         if(ret < 0){
             perror("send");
+            printf("[!] send %d", ret);
             break;
         } 
     }
