@@ -28,7 +28,7 @@ int main() {
         sa_usr.sa_flags = 0;
         sa_usr.sa_handler = sig_usr;   
 
-        sigaction(SIGINT, &sa_usr, NULL);
+        sigaction(SIGUSR2, &sa_usr, NULL);
 
         // Blocking read
         int ret = read(STDIN_FILENO, buf, 511);
