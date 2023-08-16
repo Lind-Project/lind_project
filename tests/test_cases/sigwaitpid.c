@@ -20,7 +20,7 @@ static void sig_usr(int signum){
 
 int main() {
     pid_t child1_pid = fork();
-
+    pid_t father_pid = getppid();
     if(child1_pid < 0) {
         perror("fork");
         return EXIT_FAILURE;
@@ -34,7 +34,7 @@ int main() {
             return EXIT_FAILURE;
         } else if(child2_pid == 0) {
             printf("Child2 process start...\n");
-            kill(getppid(), SIGUSR2);
+            kill(father_pid, SIGUSR2);
         } else {
             sleep(5);
             printf("Father process start...\n");
