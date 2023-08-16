@@ -17,8 +17,6 @@ static void sig_usr(int signum){
 }
 
 int main() {
-
-
     pid_t lock_pid = fork();
     // Fork a child process
     pid_t child_pid = fork();
@@ -44,7 +42,9 @@ int main() {
         int result = fcntl(fd, F_SETLK, &lock);
         if(result < 0) {
             perror("fcntl");
-            return EXIT_FAILURE;
+            printf("Error code: %d\n", errno);
+            // printf("EINTR error\n");
+            fflush(NULL);
         }
         printf("lock() process acquired the lock.\n");
         
