@@ -18,17 +18,17 @@ static void sig_usr(int signum){
 
 int main() {
     pid_t lock_pid = fork();
-
-    if (lock_pid == -1) {
-        perror("fork");
-        return 0;
-    } else if (lock_pid == 0) {     // lock() process
         // Create or open the testfile.txt
         int fd = open("testfile.txt", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
         if (fd == -1) {
             perror("open");
             return EXIT_FAILURE;
         }
+    if (lock_pid == -1) {
+        perror("fork");
+        return 0;
+    } else if (lock_pid == 0) {     // lock() process
+
         // Lock the file
         struct flock lock;
         lock.l_type = F_RDLCK;
@@ -61,7 +61,7 @@ int main() {
             perror("fork");
             return EXIT_FAILURE;
         } else if(open_pid == 0){ // open() process
-            sleep(5);
+            // sleep(5);
             printf("open() process waiting for the lock...\n");
             // Set signal handler
             struct sigaction sa_usr;
@@ -89,7 +89,7 @@ int main() {
             // Wait for child processes to finish
             waitpid(lock_pid, NULL, 0);
             waitpid(open_pid, NULL, 0);
-
+            close(fd);
             
         }
         
