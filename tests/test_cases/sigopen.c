@@ -53,7 +53,7 @@ int main() {
         printf("Child process received the signal.\n");
 
         // Try to open the FIFO
-        int child_fd = open("testfifo", O_RDWR);
+        int child_fd = open("testfifo", O_RDONLY);
         if (child_fd == -1) {
             if (errno == EINTR) {
                 printf("Child process received EINTR from open.\n");
