@@ -19,7 +19,7 @@ static void sig_usr(int signum){
 int main() {
     pid_t lock_pid = fork();
         // Create or open the testfile.txt
-        int fd = open("testfile.txt", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+        int fd = open("testfile.txt", O_RDONLY);
         if (fd == -1) {
             perror("open");
             return EXIT_FAILURE;
@@ -72,7 +72,7 @@ int main() {
 
             // Try to open the file while the lock is held by the child
             sleep(2);
-            int open_fd = open("testfile.txt", O_RDWR);
+            int open_fd = open("testfile.txt", O_RDONLY);
             if (open_fd < 0 && errno == EINTR) {
                 printf("Error code: %d\n", errno);
                 printf("EINTR error\n");
