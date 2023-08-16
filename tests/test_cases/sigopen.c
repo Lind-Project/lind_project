@@ -48,10 +48,10 @@ int main() {
         }
         printf("lock() process acquired the lock.\n");
         
-        sleep(5);
+        sleep(10);
 
         // Release the lock
-        printf("Child process released the lock.\n");
+        printf("lock() process released the lock.\n");
 
         lock.l_type = F_UNLCK;
         fcntl(fd, F_SETLK, &lock);
@@ -64,6 +64,7 @@ int main() {
             perror("fork");
             return EXIT_FAILURE;
         } else if(open_pid == 0){ // open() process
+            sleep(5);
             printf("open() process waiting for the lock...\n");
             // Set signal handler
             struct sigaction sa_usr;
