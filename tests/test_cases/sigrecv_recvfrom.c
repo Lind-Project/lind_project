@@ -105,6 +105,7 @@ int main() {
     pthread_barrier_init(&barrier, NULL, 2);
     pthread_create(&serverthread, NULL, server, NULL);
     pthread_create(&clientthread, NULL, client, NULL);
+    sleep(10);
     pthread_kill(clientthread, SIGUSR2);
     pthread_join(clientthread, NULL);
     pthread_join(serverthread, NULL);
