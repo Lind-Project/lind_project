@@ -26,16 +26,21 @@ int main() {
 
         sigaction(SIGUSR2, &sa_usr, NULL);
 
-        // Blocking read
-        int ret = open("test.txt", O_RDONLY);
-        if(ret < 0) {
-            if(errno == EINTR){
-                printf("Error code: %d\n", errno);
-                printf("EINTR error\n");
-                fflush(NULL);
+        while(1) {
+            // Blocking read
+            int ret = open("test.txt", O_RDONLY);
+            if(ret < 0) {
+                if(errno == EINTR){
+                    printf("Error code: %d\n", errno);
+                    printf("EINTR error\n");
+                    fflush(NULL);
+                }
+            } else {
+                close(ret);
             }
         }
         
+
     } else {
         // Cage 1
         sleep(2);
