@@ -35,10 +35,8 @@ void* client(void* v) {
     pthread_barrier_wait(&barrier);
     int connret = connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
-    sleep(5);
-
     send(sock , hello , strlen(hello) , 0 );
-    printf("Hello message sent\n");
+    printf("[C1] Hello message sent\n");
     valread = recv( sock , buffer, 1024, 0); 
     printf("%s\n",buffer ); 
     return NULL; 
@@ -68,7 +66,6 @@ void* client2(void* v) {
     sigaction(SIGALRM, &sa_usr, NULL);
     alarm(2);
     pthread_barrier_wait(&barrier);
-
     int connret = connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     if(connret < 0) {
         perror("connect");
@@ -128,7 +125,7 @@ void* server(void* v) {
     valread = recv( new_socket , buffer, 1024, 0);
     printf("%s\n",buffer ); 
     send(new_socket , hello , strlen(hello) , 0 ); 
-    printf("Hello message sent\n"); 
+    printf("[S] Hello message sent\n"); 
     return NULL;
 } 
 
@@ -137,6 +134,7 @@ int main() {
     pthread_barrier_init(&barrier, NULL, 3);
     pthread_create(&serverthread, NULL, server, NULL);
     pthread_create(&clientthread1, NULL, client, NULL);
+    sleep(2);
     pthread_create(&clientthread2, NULL, client2, NULL);
     pthread_join(clientthread2, NULL);
     pthread_join(clientthread1, NULL);
