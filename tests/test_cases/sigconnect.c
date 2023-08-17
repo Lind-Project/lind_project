@@ -65,7 +65,7 @@ void* client2(void* v) {
     sa_usr.sa_flags = 0;
     sa_usr.sa_handler = sig_usr;   
 
-    sigaction(SIGUSR1, &sa_usr, NULL);
+    sigaction(SIGALRM, &sa_usr, NULL);
     alarm(2);
     pthread_barrier_wait(&barrier);
 
@@ -124,7 +124,7 @@ void* server(void* v) {
     } 
 
     sleep(5);
-    
+
     valread = recv( new_socket , buffer, 1024, 0);
     printf("%s\n",buffer ); 
     send(new_socket , hello , strlen(hello) , 0 ); 
