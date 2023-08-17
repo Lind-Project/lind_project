@@ -38,14 +38,13 @@ int main() {
         if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
             if (errno == EINTR) {
                 printf("Connect interrupted by a signal.\n");
-            } else {
                 perror("connect");
-            }
+                return 0;
+            } 
         } else {
             printf("Connected successfully.\n");
         }
     }
-    
 
     // Clean up and close the socket
     close(sockfd);
