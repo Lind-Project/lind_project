@@ -30,6 +30,7 @@ int main() {
 
         // Blocking read
         int ret = pread(STDIN_FILENO, buf, 511, 0);
+        printf("pread: %d\n", ret);
         if(ret < 0) {
             if(errno == EINTR){
                 printf("Error code: %d\n", errno);
