@@ -11,10 +11,12 @@
 #define PORT 9995
 
 pthread_barrier_t barrier;
+static volatile sig_atomic_t sigusr1_received = 0;
 
 static void sig_usr(int signum){
     if(signum == SIGUSR1){
         printf("[Server] Received signal %d\n", signum);
+        sigusr1_received = 1;
     } else {
         printf("[Client] Received signal %d\n", signum);
     }
@@ -132,7 +134,7 @@ void* server(void* v) {
 
     /* Continue after SIGUSR2 interruption of recv() */
     sleep(10);
-    while(1) {
+    while(!sigusr1_received) {
         int ret = send(new_socket, hello, strlen(hello), 0);
         if(ret < 0){
             perror("send");
