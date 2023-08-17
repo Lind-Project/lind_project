@@ -47,7 +47,7 @@ void* client(void* v) {
 void* client2(void* v) { 
     int sock = 0, valread; 
     struct sockaddr_in serv_addr; 
-    char *hello = "Hello from client"; 
+    char *hello = "[C2] Hello from client"; 
     char buffer[1024] = {0}; 
     long opt = 1;
     sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -75,7 +75,7 @@ void* client2(void* v) {
         return NULL;
     }
     send(sock, hello, strlen(hello), 0 );
-    printf("Hello message sent\n");
+    printf("[C2] Hello message sent\n");
     valread = recv( sock , buffer, 1024, 0); 
     printf("%s\n",buffer ); 
     return NULL; 
@@ -110,7 +110,7 @@ void* server(void* v) {
         perror("bind failed"); 
         exit(EXIT_FAILURE); 
     } 
-    if (listen(server_fd, 3) < 0) 
+    if (listen(server_fd, 1) < 0) 
     { 
         perror("listen"); 
         exit(EXIT_FAILURE); 
