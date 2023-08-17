@@ -39,7 +39,7 @@ int main() {
             fflush(NULL);
         }
         printf("[Child] nanosleep() ends...\n");
-        struct timespec reqtp;
+        struct timespec reqtp, remtp;
         reqtp.tv_nsec = 0;
         reqtp.tv_sec = 5;
         int clock_ret = clock_nanosleep(CLOCK_REALTIME, 0, &reqtp, &remtp);
