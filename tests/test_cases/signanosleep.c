@@ -41,8 +41,9 @@ int main() {
         printf("[Child] nanosleep() ends...\n");
         struct timespec reqtp, remtp;
         reqtp.tv_nsec = 0;
-        reqtp.tv_sec = 5;
+        reqtp.tv_sec = 20;
         int clock_ret = clock_nanosleep(CLOCK_REALTIME, 0, &reqtp, &remtp);
+        printf("clock_nanosleep returns: %d\n", clock_ret);
         if(clock_ret < 0){
             perror("clock_nanosleep");
             fflush(NULL);
@@ -54,7 +55,7 @@ int main() {
         sleep(3);
         printf("[Parent] Sending signal for nanosleep()\n");
         kill(child_pid, SIGUSR2);
-        sleep(3);
+        sleep(5);
         printf("[Parent] Sending signal for clock_nanosleep()\n");
         kill(child_pid, SIGUSR2);
         wait(NULL);
