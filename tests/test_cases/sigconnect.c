@@ -1,53 +1,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <signal.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-
-void signal_handler(int signum) {
-    // Just an empty signal handler to interrupt the connect call
-}
+#include <arpa/inet.h>
+#include <errno.h>
 
 int main() {
-    struct sockaddr_in server_addr;
     int sockfd;
-
-    // Set up a simple TCP server address
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(12345);
-    server_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    struct sockaddr_in server_addr;
 
     // Create a socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
         perror("socket");
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
-    // Register the signal handler for SIGALRM
-    signal(SIGALRM, signal_handler);
+    // Set up the server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    // Set a timer to send a SIGALRM after 3 seconds
-    alarm(3);
-    while(1) {
-        // Attempt to connect - this may be interrupted by the alarm signal
-        if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
-            if (errno == EINTR) {
-                printf("Connect interrupted by a signal.\n");
-                perror("connect");
-                return 0;
-            } 
-        } else {
-            printf("Connected successfully.\n");
-        }
+    // Attempt to connect to the server
+    int ret;
+    do {
+        ret = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    } while (ret == -1 && errno == EINTR);
+
+    if (ret == -1) {
+        perror("connect");
+        close(sockfd);
+        exit(EXIT_FAILURE);
     }
 
-    // Clean up and close the socket
+    printf("Connected successfully!\n");
+
     close(sockfd);
-
     return 0;
 }
