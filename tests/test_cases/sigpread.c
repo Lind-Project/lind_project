@@ -64,7 +64,7 @@ int main() {
             perror("fork");
             return EXIT_FAILURE;
         } else if(child_pid == 0){ // Child process
-            sleep(5);
+            sleep(2);
             printf("[pread] process start\n");
             // Set signal handler
             struct sigaction sa_usr;
@@ -74,13 +74,16 @@ int main() {
             sigaction(SIGUSR2, &sa_usr, NULL);
 
             char buf[512];
-            int ret = pread(fd, buf, 511, 0);
-            printf("[pread]: %d\n", ret);
-            perror("pread");
-            if(ret < 0) {
+            while(1) {
+                int ret = pread(fd, buf, 511, 0);
+                printf("[pread]: %d\n", ret);
                 perror("pread");
-                exit(0);
+                if(ret < 0) {
+                    perror("pread");
+                    exit(0);
+                }
             }
+            
         } else {
             sleep(10);
             printf("Sending SIGUSR2 signal to child process...\n");
