@@ -30,6 +30,7 @@ int main() {
 
         sigaction(SIGUSR2, &sa_usr, NULL);
         
+        /* nanosleep() test */
         struct timespec req;
         req.tv_nsec = 0;        
         req.tv_sec = 5; 
@@ -38,7 +39,9 @@ int main() {
             perror("nanosleep");
             fflush(NULL);
         }
-        printf("[Child] nanosleep() ends...\n");
+        printf("[Child] nanosleep() ends: %d\n", ret);
+
+        /* clock_nanosleep() test */
         struct timespec reqtp, remtp;
         reqtp.tv_nsec = 0;
         reqtp.tv_sec = 20;
@@ -47,6 +50,16 @@ int main() {
             perror("clock_nanosleep");
             fflush(NULL);
         }
+        printf("[Child] clock_nanosleep() ends: %d\n", clock_ret);
+
+        /* usleep() test */
+        unsigned int microseconds = 5000000;  // 5sec
+        int uret = usleep(microseconds);
+        if(uret < 0 && errno == EINTR) {
+            perror("usleep");
+        }
+        printf("[Child] usleep() ends: %d\n", uret);
+
 
         exit(0);
     } else {
@@ -56,6 +69,9 @@ int main() {
         kill(child_pid, SIGUSR2);
         sleep(5);
         printf("[Parent] Sending signal for clock_nanosleep()\n");
+        kill(child_pid, SIGUSR2);
+        sleep(3);
+        printf("[Parent] Sending signal for usleep()\n");
         kill(child_pid, SIGUSR2);
         wait(NULL);
         return 0;
