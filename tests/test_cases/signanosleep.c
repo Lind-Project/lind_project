@@ -34,7 +34,7 @@ int main() {
     
         req.tv_nsec = 0;        
         req.tv_sec = 5; 
-        int ret = nanosleep(&req, 0);
+        int ret = nanosleep(&req, &rem);
         printf("Nanosleep ends: %d\n", ret);
         if(ret < 0) {
             perror("nanosleep");
@@ -44,7 +44,8 @@ int main() {
     } else {
         printf("Parent process start..\n");
         sleep(3);
-        kill(SIGUSR2, child_pid);
+        printf("Sending signal\n");
+        kill(child_pid, SIGUSR2);
         wait(NULL);
         return 0;
     }
