@@ -1,52 +1,156 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
-#include <string.h>
+#include <stdio.h> 
+#include <sys/socket.h> 
+#include <stdlib.h> 
+#include <netinet/in.h> 
+#include <string.h> 
+#include <arpa/inet.h> 
+#include <pthread.h> 
 #include <signal.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include <errno.h>
+#define PORT 9995
 
-void signal_handler(int signum) {
-    // Just an empty signal handler to interrupt the connect call
+pthread_barrier_t barrier;
+static volatile sig_atomic_t sigusr1_received = 0;
+
+static void sig_usr(int signum){
+    if(signum == SIGUSR1){
+        printf("[Server] Received signal %d\n", signum);
+        sigusr1_received = 1;
+    } else {
+        printf("[Client] Received signal %d\n", signum);
+    }
+    
 }
 
-int main() {
-    struct sockaddr_in server_addr;
-    int sockfd;
-
-    // Set up a simple TCP server address
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(12345);
-    server_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-
-    // Create a socket
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        perror("socket");
-        return 1;
+void* client(void* v) { 
+    int sock = 0, valread; 
+    struct sockaddr_in serv_addr; 
+    char *hello = "[Server] Hello from client"; 
+    char buffer[1024] = {0}; 
+    long opt = 1;
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        perror("setsockopt"); 
+        exit(EXIT_FAILURE); 
     }
+    serv_addr.sin_family = AF_INET; 
+    serv_addr.sin_port = htons(PORT); 
+       
+    // Convert IPv4 and IPv6 addresses from text to binary form 
+    inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
 
-    // Register the signal handler for SIGALRM
-    signal(SIGALRM, signal_handler);
+    // Set signal handler
+    struct sigaction sa_usr;
+    sa_usr.sa_flags = 0;
+    sa_usr.sa_handler = sig_usr;   
 
-    // Set a timer to send a SIGALRM after 3 seconds
-    alarm(3);
+    alarm(1);
+    sigaction(SIGALRM, &sa_usr, NULL);
+   
+    pthread_barrier_wait(&barrier);
+    int connret = connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    if(connret < 0) {
+        perror("connect");
+    }
+    send(sock, hello, strlen(hello), 0);
 
-    // Attempt to connect - this may be interrupted by the alarm signal
-    if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
-        if (errno == EINTR) {
-            printf("Connect interrupted by a signal.\n");
+    printf("[Client] Hello message sent\n");
+
+    /* Retry after received signal */
+    while(1) {
+        valread = recv(sock, buffer, 1024, 0); 
+        if(valread < 0) {
+            perror("recv");
+            continue;
         } else {
-            perror("connect");
+            break;
         }
-    } else {
-        printf("Connected successfully.\n");
     }
+    
+    printf("%s\n",buffer); 
+    return NULL; 
+} 
 
-    // Clean up and close the socket
-    close(sockfd);
+void* server(void* v) {
+    int server_fd, new_socket, valread; 
+    struct sockaddr_in address; 
+    long opt = 1;
+    int addrlen = sizeof(address); 
+    char buffer[1024] = {0}; 
+    char *hello = "[Client] Hello from server"; 
+       
+    // Creating socket file descriptor 
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("socket failed"); 
+        exit(EXIT_FAILURE); 
+    } 
+       
+    // Forcefully attaching socket to the port
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+        perror("setsockopt"); 
+        exit(EXIT_FAILURE); 
+    } 
+    address.sin_family = AF_INET; 
+    address.sin_addr.s_addr = INADDR_ANY; 
+    address.sin_port = htons(PORT); 
+       
+    // Forcefully attaching socket to the port
+    if (bind(server_fd, (struct sockaddr *)&address,  
+                                 sizeof(address))<0) { 
+        perror("bind failed"); 
+        exit(EXIT_FAILURE); 
+    } 
+    if (listen(server_fd, 3) < 0) 
+    { 
+        perror("listen"); 
+        exit(EXIT_FAILURE); 
+    } 
 
+    pthread_barrier_wait(&barrier);
+
+    if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
+                       (socklen_t*)&addrlen))<0) { 
+        perror("accept"); 
+        exit(EXIT_FAILURE); 
+    } 
+
+    // Set signal handler
+    struct sigaction sa_usr;
+    sa_usr.sa_flags = 0;
+    sa_usr.sa_handler = sig_usr;   
+
+    sigaction(SIGUSR1, &sa_usr, NULL);
+
+    valread = recv(new_socket, buffer, 1024, 0);
+    printf("%s\n",buffer); 
+
+    /* Continue after SIGUSR2 interruption of recv() */
+    sleep(10);
+    while(!sigusr1_received) {
+        int ret = send(new_socket, hello, strlen(hello), 0);
+        if(ret < 0){
+            perror("send");
+            printf("[!] send %d", ret);
+            break;
+        } 
+    }
+     
+    printf("[Server] Hello message sent\n"); 
+    return NULL;
+} 
+
+int main() {
+    pthread_t serverthread, clientthread;
+    pthread_barrier_init(&barrier, NULL, 2);
+    pthread_create(&serverthread, NULL, server, NULL);
+    pthread_create(&clientthread, NULL, client, NULL);
+    sleep(5);
+    pthread_kill(clientthread, SIGUSR2);
+    sleep(15);
+    pthread_kill(serverthread, SIGUSR1);
+    pthread_join(clientthread, NULL);
+    pthread_join(serverthread, NULL);
+    pthread_barrier_destroy(&barrier);
     return 0;
 }
