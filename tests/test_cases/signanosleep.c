@@ -22,7 +22,7 @@ int main() {
         perror("fork");
         return EXIT_FAILURE;
     } else if(child_pid == 0) {
-
+        printf("Child process start..\n");
         // Set signal handler
         struct sigaction sa_usr;
         sa_usr.sa_flags = 0;
@@ -35,12 +35,14 @@ int main() {
         req.tv_sec = 0;        
         req.tv_sec = 10; 
         int ret = nanosleep(&req, 0);
-
+        printf("Nanosleep failed..\n");
         if(ret < 0) {
             perror("nanosleep");
+            fflush(NULL);
         }
         exit(0);
     } else {
+        printf("Parent process start..\n");
         sleep(3);
         kill(SIGUSR2, child_pid);
         wait(NULL);
