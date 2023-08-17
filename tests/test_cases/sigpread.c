@@ -33,7 +33,7 @@ int main() {
     } else if (lock_pid == 0) {     // lock() process
         // Lock the file
         struct flock lock;
-        lock.l_type = F_RDLCK;
+        lock.l_type = F_WRLCK;
         lock.l_whence = SEEK_SET;
         lock.l_start = 0;
         lock.l_len = 0; // Lock the whole file
@@ -75,13 +75,11 @@ int main() {
 
             char buf[512];
             int ret = pread(fd, buf, 511, 0);
+            printf("[pread]: %d\n", ret);
+            perror("pread");
             if(ret < 0) {
-                if(errno == EINTR){
-                    printf("Error code: %d\n", errno);
-                    printf("EINTR error\n");
-                    fflush(NULL);
-                    exit(0);
-                }
+                perror("pread");
+                exit(0);
             }
         } else {
             sleep(10);
