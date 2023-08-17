@@ -8,6 +8,7 @@
 #include <pthread.h> 
 #include <signal.h>
 #include <errno.h>
+#include <sys/time.h>
 #define PORT 9995
 
 pthread_barrier_t barrier;
@@ -53,7 +54,7 @@ void* client(void* v) {
 
     if (setitimer(ITIMER_REAL, &timer, NULL) == -1) {
         perror("setitimer");
-        return 1;
+        return NULL;
     }
     sigaction(SIGALRM, &sa_usr, NULL);
    
