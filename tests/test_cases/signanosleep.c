@@ -35,7 +35,7 @@ int main() {
         req.tv_sec = 0;        
         req.tv_sec = 10; 
         int ret = nanosleep(&req, 0);
-        printf("Nanosleep failed..\n");
+        printf("Nanosleep ends: %d\n", ret);
         if(ret < 0) {
             perror("nanosleep");
             fflush(NULL);
