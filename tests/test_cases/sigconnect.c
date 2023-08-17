@@ -45,7 +45,16 @@ void* client(void* v) {
     sa_usr.sa_flags = 0;
     sa_usr.sa_handler = sig_usr;   
 
-    alarm(1);
+    // Set up the timer using setitimer for 0.5 seconds
+    struct itimerval timer;
+    timer.it_interval.tv_sec = 0;      // Interval for subsequent alarms
+    timer.it_interval.tv_usec = 500000; // 0.5 seconds
+    timer.it_value = timer.it_interval; // Initial value for the timer
+
+    if (setitimer(ITIMER_REAL, &timer, NULL) == -1) {
+        perror("setitimer");
+        return 1;
+    }
     sigaction(SIGALRM, &sa_usr, NULL);
    
     pthread_barrier_wait(&barrier);
@@ -53,22 +62,22 @@ void* client(void* v) {
     if(connret < 0) {
         perror("connect");
     }
-    send(sock, hello, strlen(hello), 0);
+    // send(sock, hello, strlen(hello), 0);
 
-    printf("[Client] Hello message sent\n");
+    // printf("[Client] Hello message sent\n");
 
-    /* Retry after received signal */
-    while(1) {
-        valread = recv(sock, buffer, 1024, 0); 
-        if(valread < 0) {
-            perror("recv");
-            continue;
-        } else {
-            break;
-        }
-    }
+    // /* Retry after received signal */
+    // while(1) {
+    //     valread = recv(sock, buffer, 1024, 0); 
+    //     if(valread < 0) {
+    //         perror("recv");
+    //         continue;
+    //     } else {
+    //         break;
+    //     }
+    // }
     
-    printf("%s\n",buffer); 
+    // printf("%s\n",buffer); 
     return NULL; 
 } 
 
@@ -101,42 +110,42 @@ void* server(void* v) {
         perror("bind failed"); 
         exit(EXIT_FAILURE); 
     } 
-    if (listen(server_fd, 3) < 0) 
-    { 
-        perror("listen"); 
-        exit(EXIT_FAILURE); 
-    } 
+    // if (listen(server_fd, 3) < 0) 
+    // { 
+    //     perror("listen"); 
+    //     exit(EXIT_FAILURE); 
+    // } 
 
-    pthread_barrier_wait(&barrier);
+    // pthread_barrier_wait(&barrier);
 
-    if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
-                       (socklen_t*)&addrlen))<0) { 
-        perror("accept"); 
-        exit(EXIT_FAILURE); 
-    } 
+    // if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
+    //                    (socklen_t*)&addrlen))<0) { 
+    //     perror("accept"); 
+    //     exit(EXIT_FAILURE); 
+    // } 
 
-    // Set signal handler
-    struct sigaction sa_usr;
-    sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sig_usr;   
+    // // Set signal handler
+    // struct sigaction sa_usr;
+    // sa_usr.sa_flags = 0;
+    // sa_usr.sa_handler = sig_usr;   
 
-    sigaction(SIGUSR1, &sa_usr, NULL);
+    // sigaction(SIGUSR1, &sa_usr, NULL);
 
-    valread = recv(new_socket, buffer, 1024, 0);
-    printf("%s\n",buffer); 
+    // valread = recv(new_socket, buffer, 1024, 0);
+    // printf("%s\n",buffer); 
 
-    /* Continue after SIGUSR2 interruption of recv() */
-    sleep(10);
-    while(!sigusr1_received) {
-        int ret = send(new_socket, hello, strlen(hello), 0);
-        if(ret < 0){
-            perror("send");
-            printf("[!] send %d", ret);
-            break;
-        } 
-    }
+    // /* Continue after SIGUSR2 interruption of recv() */
+    // sleep(10);
+    // while(!sigusr1_received) {
+    //     int ret = send(new_socket, hello, strlen(hello), 0);
+    //     if(ret < 0){
+    //         perror("send");
+    //         printf("[!] send %d", ret);
+    //         break;
+    //     } 
+    // }
      
-    printf("[Server] Hello message sent\n"); 
+    // printf("[Server] Hello message sent\n"); 
     return NULL;
 } 
 
@@ -145,10 +154,10 @@ int main() {
     pthread_barrier_init(&barrier, NULL, 2);
     pthread_create(&serverthread, NULL, server, NULL);
     pthread_create(&clientthread, NULL, client, NULL);
-    sleep(5);
-    pthread_kill(clientthread, SIGUSR2);
-    sleep(15);
-    pthread_kill(serverthread, SIGUSR1);
+    // sleep(5);
+    // pthread_kill(clientthread, SIGUSR2);
+    // sleep(15);
+    // pthread_kill(serverthread, SIGUSR1);
     pthread_join(clientthread, NULL);
     pthread_join(serverthread, NULL);
     pthread_barrier_destroy(&barrier);
