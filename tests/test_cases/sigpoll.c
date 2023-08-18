@@ -51,7 +51,8 @@ int main(void)
         ret = poll(fds, 1, TIMEOUT);
         if (ret < 0 && errno == EINTR){
             printf("Error code: %d\n", errno);
-            printf("EINTR error\n");
+            printf("poll: %d\n", ret);
+            // printf("EINTR error\n");
             fflush(NULL);
         }
         
