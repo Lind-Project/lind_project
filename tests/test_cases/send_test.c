@@ -16,7 +16,7 @@ int main() {
         perror("socket failed"); 
         exit(EXIT_FAILURE); 
     } 
-    
+    printf("[send]");
     int ret = send(server_fd, hello, strlen(hello), 0); 
     // printf("[send]: %d\n", ret);
     printf("[send]");
