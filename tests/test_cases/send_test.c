@@ -28,7 +28,7 @@ int main() {
         perror("setsockopt"); 
         exit(EXIT_FAILURE); 
     } 
-    int ret = send(new_socket , hello , strlen(hello) , 0 ); 
+    int ret = send(server_fd, hello, strlen(hello), 0); 
     if(ret < 0) {
         perror("send");
         printf("[send]: %d\n", ret);
