@@ -12,11 +12,10 @@ int main() {
     int server_fd; 
     char *hello = "Hello from server"; 
        
-    // Creating socket file descriptor 
-    // if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-    //     perror("socket failed"); 
-    //     exit(EXIT_FAILURE); 
-    // } 
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("socket failed"); 
+        exit(EXIT_FAILURE); 
+    } 
 
     int ret = send(server_fd, hello, strlen(hello), 0); 
     printf("[send]: %d\n", ret);
