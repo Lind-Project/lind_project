@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <pthread.h> 
 #define PORT 9995
+pthread_barrier_t barrier;
 void* client(void* v) { 
     int sock = 0, valread; 
     struct sockaddr_in serv_addr; 
