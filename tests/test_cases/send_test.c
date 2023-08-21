@@ -7,7 +7,6 @@
 #include <arpa/inet.h> 
 #include <signal.h>
 #include <errno.h>
-#include <pthread.h> 
 #define PORT 9995
 int main() {
     int server_fd, new_socket, valread; 
@@ -22,13 +21,9 @@ int main() {
         perror("socket failed"); 
         exit(EXIT_FAILURE); 
     } 
-       
-    // // Forcefully attaching socket to the port
-    // if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-    //     perror("setsockopt"); 
-    //     exit(EXIT_FAILURE); 
-    // } 
+
     int ret = send(server_fd, hello, strlen(hello), 0); 
+    printf("[send]: %d\n", ret);
     if(ret < 0) {
         perror("send");
         printf("[send]: %d\n", ret);
