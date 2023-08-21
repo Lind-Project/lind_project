@@ -23,11 +23,11 @@ int main() {
         exit(EXIT_FAILURE); 
     } 
        
-    // Forcefully attaching socket to the port
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
-        perror("setsockopt"); 
-        exit(EXIT_FAILURE); 
-    } 
+    // // Forcefully attaching socket to the port
+    // if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+    //     perror("setsockopt"); 
+    //     exit(EXIT_FAILURE); 
+    // } 
     int ret = send(server_fd, hello, strlen(hello), 0); 
     if(ret < 0) {
         perror("send");
