@@ -15,8 +15,8 @@ int main() {
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     printf("server fd: %d\n", server_fd);
     int ret = send(server_fd, hello, strlen(hello), 0); 
-    // printf("[send]: %d\n", ret);
     printf("[send]");
+    fflush(NULL);
     if(ret < 0) {
         perror("send");
         printf("[send]: %d\n", ret);
