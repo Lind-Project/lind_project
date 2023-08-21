@@ -9,11 +9,7 @@
 #include <errno.h>
 #define PORT 9995
 int main() {
-    int server_fd, new_socket, valread; 
-    struct sockaddr_in address; 
-    long opt = 1;
-    int addrlen = sizeof(address); 
-    char buffer[1024] = {0}; 
+    int server_fd; 
     char *hello = "Hello from server"; 
        
     // Creating socket file descriptor 
