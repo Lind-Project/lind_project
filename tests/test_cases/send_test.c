@@ -12,11 +12,8 @@ int main() {
     int server_fd; 
     char *hello = "Hello from server"; 
        
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("socket failed"); 
-        exit(EXIT_FAILURE); 
-    } 
-    printf("[send]");
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    printf("server fd: %d\n", server_fd);
     int ret = send(server_fd, hello, strlen(hello), 0); 
     // printf("[send]: %d\n", ret);
     printf("[send]");
