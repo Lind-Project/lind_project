@@ -16,7 +16,9 @@ int main() {
         perror("socket failed"); 
         exit(EXIT_FAILURE); 
     } 
-
+    socklen_t sendbuflen = 0;
+    socklen_t len = sizeof(sendbuflen);
+    getsockopt(server_fd,  SOL_SOCKET, SO_SNDBUF,(void*)&sendbuflen, &len);
     int ret = send(server_fd, hello, strlen(hello), 0); 
     printf("[send]: %d\n", ret);
     if(ret < 0) {
