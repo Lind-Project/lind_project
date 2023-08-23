@@ -9,13 +9,16 @@
 int main() {
     int sockfd;
     struct sockaddr_in address;
-    
+    address.sin_family = AF_INET;
+    address.sin_port = htons(12345);
+
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    address.sin_family = AF_INET;
-    address.sin_port = htons(12345);  // Port number
-    // Bind to a non-existent address (example: 192.168.1.100)
-    address.sin_addr.s_addr = inet_addr("192.168.1.100");
+    /* TEST: non-exitstent address */
+    // address.sin_addr.s_addr = inet_addr("192.168.1.100");
+
+    /* TEST: null address */ 
+    address.sin_addr.s_addr = inet_addr("");
 
     if(bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0 ) { 
         perror("bind"); 
