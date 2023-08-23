@@ -16,9 +16,13 @@ int main() {
     int sockfd;
 
     /* TEST: not socket */
-    sockfd = open("/home/lind/lind_project/tests/test_cases/write.c", O_RDONLY, 0777);
+    // sockfd = open("/home/lind/lind_project/tests/test_cases/write.c", O_RDONLY, 0777);
+
+    /* TEST: EINVAL */
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
     struct sockaddr_in address;
+    address.sin_family = AF_UNIX;
     int ret = connect(sockfd, (struct sockaddr *)&address, sizeof(address));
     if(ret < 0) {
         perror("connect"); 
