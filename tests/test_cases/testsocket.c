@@ -18,7 +18,7 @@ int main( int argc, char *argv[] ) {
 //     }
 
     /* Test: non-blocking */ 
-    sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    sockfd = socket(AF_INET, SOCK_NONBLOCK, 0);
     if(sockfd < 0) {
         perror("socket");
         printf("ERROR: %d\n", errno);
