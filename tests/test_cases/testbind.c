@@ -14,7 +14,7 @@
 
 int main() {
     int sockfd;
-    /* NOT socket*/
+    /* TEST: NOT socket*/
     sockfd = open("/home/lind/lind_project/tests/test_cases/write.c", O_RDONLY, 0777);
     struct sockaddr_in address;
     /* AF_INET */
