@@ -36,7 +36,8 @@ int main() {
     // const char *invalidPath = "/path/to/invalid/directory";
 
     /* TEST: null path */
-    const char *invalidPath = "";
+    // const char *invalidPath = "";
+    const char *invalidPath = "/home/lind/lind_project/tests/test_cases";
     strncpy(address.sun_path, invalidPath, sizeof(address.sun_path)-1);
 
     if(bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0 ) { 
