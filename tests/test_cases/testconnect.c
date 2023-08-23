@@ -55,7 +55,7 @@ int main() {
 
     memset(&address, 0, sizeof(struct sockaddr_un));
     address.sun_family = AF_UNIX;
-    strncpy(address.sun_path, "/tmp/my_unix_socket", sizeof(address.sun_path) - 1);
+    strncpy(address.sun_path, "/home/lind/lind_project/tests/test_cases/testbind.c", sizeof(address.sun_path) - 1);
        
     int ret = connect(sockfd, (struct sockaddr *)&address, sizeof(address));
     if(ret < 0) {
