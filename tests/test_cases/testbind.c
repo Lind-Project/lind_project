@@ -18,7 +18,11 @@ int main() {
     // address.sin_addr.s_addr = inet_addr("192.168.1.100");
 
     /* TEST: null address */ 
-    address.sin_addr.s_addr = inet_addr("");
+    // address.sin_addr.s_addr = inet_addr("");
+
+    /* TEST: invalid path */
+    const char *invalidPath = "/path/to/invalid/directory";
+    address.sin_addr.s_addr = inet_addr(invalidPath);
 
     if(bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0 ) { 
         perror("bind"); 
@@ -27,7 +31,7 @@ int main() {
     } 
 
     printf("Succeed\n");
-    
+
     return 0;
 
 }
