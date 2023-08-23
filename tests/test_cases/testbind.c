@@ -4,13 +4,14 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <string.h>
+#include <arpa/inet.h>
 
 int main() {
     int sockfd;
     struct sockaddr_in address;
     
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    
+
     address.sin_family = AF_INET;
     address.sin_port = htons(12345);  // Port number
     // Bind to a non-existent address (example: 192.168.1.100)
