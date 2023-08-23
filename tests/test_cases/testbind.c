@@ -7,10 +7,16 @@
 #include <arpa/inet.h>
 #include <sys/un.h>
 #include <sys/socket.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 int main() {
     int sockfd;
-
+    /* NOT socket*/
+    sockfd = open("/home/lind/lind_project/tests/test_cases/write.c", O_RDONLY, 0777);
+    struct sockaddr_in address;
     /* AF_INET */
     /* TEST: non-exitstent address */
     // sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -27,18 +33,18 @@ int main() {
     // address.sin_addr.s_addr = inet_addr("");
 
     /* AF_UNIX */ 
-    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    // sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
 
-    struct sockaddr_un address;
-    address.sun_family = AF_UNIX;
+    // struct sockaddr_un address;
+    // address.sun_family = AF_UNIX;
 
     /* TEST: invalid path */
     // const char *invalidPath = "/path/to/invalid/directory";
 
     /* TEST: null path */
     // const char *invalidPath = "";
-    const char *invalidPath = "/home/lind/lind_project/tests/test_cases";
-    strncpy(address.sun_path, invalidPath, sizeof(address.sun_path)-1);
+    // const char *invalidPath = "/home/lind/lind_project/tests/test_cases";
+    // strncpy(address.sun_path, invalidPath, sizeof(address.sun_path)-1);
 
     if(bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0 ) { 
         perror("bind"); 
