@@ -12,18 +12,20 @@ int main() {
     address.sin_family = AF_INET;
     address.sin_port = htons(12345);
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    
 
     /* TEST: non-exitstent address */
+    // sockfd = socket(AF_INET, SOCK_STREAM, 0);
     // address.sin_addr.s_addr = inet_addr("192.168.1.100");
 
     /* TEST: null address */ 
+    // sockfd = socket(AF_INET, SOCK_STREAM, 0);
     // address.sin_addr.s_addr = inet_addr("");
 
     /* TEST: invalid path */
-    // const char *invalidPath = "/path/to/invalid/directory";
-    // address.sin_addr.s_addr = inet_addr(invalidPath);
-    inet_pton(AF_INET, "/path/to/invalid/directory", &address.sin_addr);
+    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    const char *invalidPath = "/path/to/invalid/directory";
+    address.sin_addr.s_addr = inet_addr(invalidPath);
 
     if(bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0 ) { 
         perror("bind"); 
