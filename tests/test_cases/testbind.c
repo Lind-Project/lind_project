@@ -19,13 +19,13 @@ int main() {
     // address.sin_addr.s_addr = inet_addr("192.168.1.100");
 
     /* TEST: null address */ 
-    // sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    // address.sin_addr.s_addr = inet_addr("");
+    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    address.sin_addr.s_addr = inet_addr("");
 
     /* TEST: invalid path */
-    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    const char *invalidPath = "/path/to/invalid/directory";
-    address.sin_addr.s_addr = inet_addr(invalidPath);
+    // sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    // const char *invalidPath = "/path/to/invalid/directory";
+    // address.sin_addr.s_addr = inet_addr(invalidPath);
 
     if(bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0 ) { 
         perror("bind"); 
