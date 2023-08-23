@@ -26,6 +26,8 @@ int main() {
         exit(EXIT_FAILURE); 
     } 
 
+    printf("Succeed\n");
+    
     return 0;
 
 }
