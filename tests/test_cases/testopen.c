@@ -1,0 +1,21 @@
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+int main() {
+    int fd;
+    /* TEST: null path */
+    fd = open("", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO);
+
+    if(fd < 0) {
+        perror("open");
+        printf("ERROR: %d\n", errno);
+        exit(1);
+    }
+
+    return 0;
+}
