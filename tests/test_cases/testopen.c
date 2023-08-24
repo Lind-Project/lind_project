@@ -15,8 +15,9 @@ int main() {
     // fd = open("/home/lind/lind_project/tests/test_cases/read.c", O_CREAT, S_IRWXU|S_IRWXG|S_IRWXO);
 
     if(fd < 0) {
-        perror("open");
         printf("ERROR: %d\n", errno);
+        perror("open");
+        
         fflush(NULL);
         exit(1);
     }
