@@ -17,6 +17,7 @@ int main() {
     if(fd < 0) {
         perror("open");
         printf("ERROR: %d\n", errno);
+        fflush(NULL);
         exit(1);
     }
 
