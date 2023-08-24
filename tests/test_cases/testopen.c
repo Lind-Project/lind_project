@@ -9,7 +9,10 @@
 int main() {
     int fd;
     /* TEST: null path */
-    fd = open("", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO);
+    // fd = open("", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO);
+
+    /* TEST: file already exits */
+    fd = open("/home/lind/lind_project/tests/test_cases/read.c", O_CREAT, S_IRWXU|S_IRWXG|S_IRWXO);
 
     if(fd < 0) {
         perror("open");
