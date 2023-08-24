@@ -7,9 +7,13 @@
 #include <unistd.h>
 
 int main() {
-    const char *filename = "";
     int ret;
 
+    /* TEST: null path */
+    // const char *filename = "";
+
+    /* TEST: root path */
+    const char *filename = "/";
     ret = unlink(filename);
     if(ret < 0) {
         perror("unlink");
