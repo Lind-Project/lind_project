@@ -59,8 +59,10 @@ int main() {
        
     int ret = connect(sockfd, (struct sockaddr *)&address, sizeof(address));
     if(ret < 0) {
-        perror("connect"); 
         printf("ERROR: %d\n", errno);
+        fflush(NULL);
+        perror("connect"); 
+        printf("Return: %d\n", ret);
         exit(EXIT_FAILURE); 
     }
 
