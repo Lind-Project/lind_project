@@ -14,8 +14,8 @@
 
 int main() {
     int sockfd;
-    // struct sockaddr_in address;
-    struct sockaddr_un address;
+    struct sockaddr_in address;
+    // struct sockaddr_un address;
 
     /* TEST: not socket */
     // sockfd = open("/home/lind/lind_project/tests/test_cases/write.c", O_RDONLY, 0777);
