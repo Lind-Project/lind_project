@@ -46,9 +46,12 @@ int main() {
     // const char *invalidPath = "/home/lind/lind_project/tests/test_cases";
     // strncpy(address.sun_path, invalidPath, sizeof(address.sun_path)-1);
 
-    if(bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0 ) { 
-        perror("bind"); 
+    int ret = bind(sockfd, (struct sockaddr *)&address, sizeof(address));
+    if( ret < 0 ) { 
         printf("ERROR: %d\n", errno);
+        perror("bind"); 
+        fflush(NULL);
+        printf("Return: %d\n", ret);
         exit(EXIT_FAILURE); 
     } 
 
