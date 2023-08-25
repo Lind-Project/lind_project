@@ -18,8 +18,8 @@ int main() {
 
     int ret = send(server_fd, hello, strlen(hello), 0); 
     if(ret < 0) {
+        printf("ERROR: %d\n", errno);
         perror("send");
-        printf("[send]: %d\n", ret);
         fflush(NULL);
         printf("Return: %d\n", ret);
         return 0;
