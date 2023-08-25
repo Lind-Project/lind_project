@@ -9,7 +9,7 @@ int main( int argc, char *argv[] ) {
     int sockfd;
    
    /* Test: invalid protocal */
-   sockfd = socket(AF_INET, SOCK_STREAM, 99);
+   sockfd = socket(AF_INET, SOCK_STREAM, 0);
    
     if (sockfd < 0) {
         printf("ERROR: %d\n", errno);
@@ -18,6 +18,7 @@ int main( int argc, char *argv[] ) {
         fflush(NULL);
         exit(1);
     }
+    printf("Return: %d\n", sockfd);
 
     /* Test: non-blocking */ 
     // sockfd = socket(AF_INET, SOCK_NONBLOCK, 0);
