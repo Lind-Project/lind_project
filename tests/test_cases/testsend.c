@@ -9,10 +9,6 @@
 #include <errno.h>
 #include <signal.h>
 
-static void sig_usr(int signum){
-   printf("Received signal %d\n", signum);
-}
-
 int main() {
     int server_fd; 
     char *hello = "Hello from server"; 
@@ -20,18 +16,13 @@ int main() {
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     printf("server fd: %d\n", server_fd);
 
-    struct sigaction sa_usr;
-    sa_usr.sa_flags = 0;
-    sa_usr.sa_handler = sig_usr;  
-    sigaction(SIGINT, &sa_usr, NULL);
-
-    while (1) {
-        int ret = send(server_fd, hello, strlen(hello), 0); 
-        if(ret < 0) {
-            perror("send");
-            printf("[send]: %d\n", ret);
-            return 0;
-        }
+    int ret = send(server_fd, hello, strlen(hello), 0); 
+    if(ret < 0) {
+        perror("send");
+        printf("[send]: %d\n", ret);
+        fflush(NULL);
+        printf("Return: %d\n", ret);
+        return 0;
     }
     
     return 0;
