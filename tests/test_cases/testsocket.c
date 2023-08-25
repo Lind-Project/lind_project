@@ -9,7 +9,7 @@ int main( int argc, char *argv[] ) {
     int sockfd;
    
    /* Test: invalid protocal */
-   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+   sockfd = socket(AF_INET, SOCK_STREAM, 99);
    
     if (sockfd < 0) {
         printf("ERROR: %d\n", errno);
