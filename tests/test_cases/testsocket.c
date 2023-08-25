@@ -12,8 +12,10 @@ int main( int argc, char *argv[] ) {
    sockfd = socket(AF_INET, SOCK_STREAM, 99);
    
     if (sockfd < 0) {
-        perror("socket");
         printf("ERROR: %d\n", errno);
+        perror("socket");
+        printf("Return: %d\n", sockfd);
+        fflush(NULL);
         exit(1);
     }
 
