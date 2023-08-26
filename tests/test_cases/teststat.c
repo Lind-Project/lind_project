@@ -9,8 +9,8 @@
 
 int main() {
     char old_name[] = "";
-    char new_name[] = "testfiles/renamefile.txt";
-    int fd = open(new_name, O_RDONLY);
+    // char new_name[] = "testfiles/renamefile.txt";
+    // int fd = open(new_name, O_RDONLY);
     struct stat st;
     int ret_stat, ret_fstat, ret_lstat;
     
@@ -22,13 +22,13 @@ int main() {
         printf("Return: %d\n", ret_stat);
     }
 
-    ret_fstat = fstat(fd, &st);
-        if(ret_fstat < 0) {
-        printf("ERROR: %d\n", errno);
-        perror("fstat");
-        fflush(NULL);
-        printf("Return: %d\n", ret_fstat);
-    }
-    
+    // ret_fstat = fstat(fd, &st);
+    //     if(ret_fstat < 0) {
+    //     printf("ERROR: %d\n", errno);
+    //     perror("fstat");
+    //     fflush(NULL);
+    //     printf("Return: %d\n", ret_fstat);
+    // }
+
     return 0;
 }
