@@ -8,7 +8,7 @@
 #include <sys/types.h>
 
 int main() {
-    char old_name[] = "";
+    char old_name[] = "testfiles/renamefile.txt";
     struct stat st;
     int ret_stat;
     
