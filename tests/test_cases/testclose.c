@@ -7,13 +7,14 @@
 #include <unistd.h>
 
 int main() {
-    int ret;
+    int ret, rv;
     int fd;
     fd = open("/dev/urandom", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO);
-    close(fd);
+    
+    rv = close(fd);
+    printf("Success return value: %d\n", rv);
 
     ret = close(fd);
-
     if(ret < 0) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
