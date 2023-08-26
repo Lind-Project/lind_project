@@ -8,19 +8,19 @@
 #include <sys/types.h>
 
 int main() {
-    char old_name[] = "";
+    char new_name[] = "testfiles/renamefile.txt";
+    int fd = open(new_name, O_RDONLY);
     struct stat st;
-    int ret_stat;
-    
-    ret_stat = stat(old_name, &st);
-    if(ret_stat < 0) {
+    int ret;
+
+    ret = fstat(fd, &st);
+    if(ret < 0) {
         printf("ERROR: %d\n", errno);
-        perror("stat");
+        perror("fstat");
         fflush(NULL);
-        printf("Return: %d\n", ret_stat);
+        printf("Return: %d\n", ret);
         exit(1);
     }
-
-    printf("Return: %d\n", ret_stat);
+    printf("Return: %d\n", ret);
     return 0;
 }
