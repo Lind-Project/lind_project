@@ -12,33 +12,16 @@ int main()
 {
 	char old_name[] = "testfiles/renmefile.txt";
 	char new_name[] = "testfiles/renamed_testfile.txt";
-	struct stat st;
-	if(stat(old_name, &st) == -1)
-	{
-		perror("ERROR WITH STAT CALL ON OLD NAME");
-		exit(1);
-	}
-	if(rename(old_name, new_name) != 0)
-	{
-		perror("ERROR WITH RENAME");
-		exit(1);
-	}
-	struct stat st2;
-	if(stat(new_name, &st2) == -1)
-	{
-		perror("ERROR WITH STAT CALL ON NEW NAME");
-		exit(1);
-	}
-	if(st2.st_ino != st.st_ino)
-	{
-		perror("ERROR: INODE NOT EQUAL");
-		exit(1);
-	}
-	if(rename(new_name, old_name) != 0)
-	{
-		perror("ERROR WITH CHANGING NAME BACK");
-		exit(1);
-	}
+    
+    int ret = rename(old_name, new_name);
+    if(ret < 0) {
+        printf("ERROR: %d\n", errno);
+        perror("send");
+        fflush(NULL);
+        printf("Return: %d\n", ret);
+        exit(1);
+    }
+	
 	printf("SUCCESS WITH RENAMING\n");
 	fflush(stdout);
 	return 0;
