@@ -7,14 +7,14 @@
 #include <string.h>
 
 int main() {
-    const char new_name[] = "testfiles/statfile.txt";
+    const char new_name[] = "testfiles/statfile1.txt";
     struct stat st;
     int ret;
 
     ret = lstat(new_name, &st);
     if(ret < 0) {
         printf("ERROR: %d\n", errno);
-        perror("fstat");
+        perror("lstat");
         fflush(NULL);
         printf("Return: %d\n", ret);
         exit(1);

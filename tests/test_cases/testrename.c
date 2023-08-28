@@ -12,11 +12,11 @@ int main()
 {
 	char old_name[] = "testfiles/renmefile.txt";
 	char new_name[] = "testfiles/renamed_testfile.txt";
-    
+
     int ret = rename(old_name, new_name);
     if(ret < 0) {
         printf("ERROR: %d\n", errno);
-        perror("send");
+        perror("rename");
         fflush(NULL);
         printf("Return: %d\n", ret);
         exit(1);
