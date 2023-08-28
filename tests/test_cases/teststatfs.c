@@ -18,6 +18,6 @@ int main() {
         printf("Return: %d\n", ret);
         exit(1);
     }
-
+    printf("Return: %d\n", ret);
     return 0;
 }
