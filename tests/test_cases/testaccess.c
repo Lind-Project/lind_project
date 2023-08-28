@@ -7,7 +7,7 @@
 #include <sys/types.h>
 
 int main() {
-    const char *path = "";
+    const char *path = "testfiles/1.txt";
     int ret = access(path,F_OK);
     if(ret < 0){
         printf("ERROR: %d\n", errno);
