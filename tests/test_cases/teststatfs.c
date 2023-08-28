@@ -8,7 +8,7 @@
 #include <sys/types.h>
 
 int main() {
-    char name = "";
+    char *name = "";
     struct statfs buf = {0};
     int ret = statfs(name, &buf);
     if (ret < 0) {
