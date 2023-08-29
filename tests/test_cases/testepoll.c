@@ -14,10 +14,10 @@ int main() {
 
     ret_create = epoll_create(0);
     if(ret_create < 0) {
-        printf("ERROR: %d\n", errno);
-        perror("epoll_create");
+        printf("epoll_create]ERROR: %d\n", errno);
+        perror("epoll_create]");
         fflush(NULL);
-        printf("Return: %d\n", ret_create);
+        printf("epoll_create]Error Return: %d\n", ret_create);
     }
 
     epoll_fd = epoll_create(MAX_EVENTS); 
@@ -47,20 +47,24 @@ int main() {
 
     ret_ctl = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fds[0], &ev);
     if(ret_ctl < 0) {
-        printf("ERROR: %d\n", errno);
-        perror("epoll_ctl");
+        printf("[epoll_ctl]ERROR: %d\n", errno);
+        perror("[epoll_ctl]");
         fflush(NULL);
-        printf("Return: %d\n", ret_create);
+        printf("[epoll_ctl]Error Return: %d\n", ret_create);
     }
 
     int wait_fd;
     ret_wait = epoll_wait(wait_fd, events, MAX_EVENTS, -1);
     if(ret_wait < 0) {
-        printf("ERROR: %d\n", errno);
-        perror("epoll_wait");
+        printf("[epoll_wait]ERROR: %d\n", errno);
+        perror("[epoll_wait]");
         fflush(NULL);
-        printf("Return: %d\n", ret_create);
+        printf("[epoll_wait]Return: %d\n", ret_create);
     }
+
+    nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, 5);
+    printf("[epoll_wait] return: %d\n", rv);
+    fflush(NULL);
 
     close(epoll_fd);
     return 0;
