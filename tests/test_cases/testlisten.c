@@ -14,7 +14,7 @@
 
 int main() {
     int sockfd;
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    // sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
     int ret;
     ret = listen(sockfd, 3);
