@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define DIR "testfolder"
+#define DIR "lis/testfolder"
 
 int main() {
     mode_t dir_per = (S_IRUSR | S_IWUSR);
