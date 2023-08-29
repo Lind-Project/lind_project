@@ -42,7 +42,7 @@ int main() {
         perror("epoll_ctl: pipe read end");
         return 1;
     }
-    printf("[epoll_ctl] return: %d\n", epoll_fd);
+    printf("[epoll_ctl] return: %d\n", rv);
     fflush(NULL);
 
     ret_ctl = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fds[0], &ev);
