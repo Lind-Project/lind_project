@@ -13,6 +13,7 @@ int main() {
 
     ret_mk1 = mkdir(DIR, dir_per);
     printf("First mkdir return: %d\n", ret_mk1);
+    fflush(NULL);
     ret_mk2 = mkdir(DIR, dir_per);
     if(ret_mk2 < 0) {
         printf("ERROR: %d\n", errno);
@@ -23,6 +24,7 @@ int main() {
 
     ret_rm1 = rmdir(DIR);
     printf("First rmdir return: %d\n", ret_rm1);
+    fflush(NULL);
     ret_rm2 = rmdir(DIR);
     if(ret_rm2 < 0) {
         printf("ERROR: %d\n", errno);
