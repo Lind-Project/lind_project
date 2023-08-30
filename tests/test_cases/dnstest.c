@@ -60,6 +60,10 @@ int main() {
     sad.sin_port = htons(53);
     inet_aton("208.67.222.222", &sad.sin_addr);
 
+    printf("sockfd: %d\n", sockfd);
+    printf("packvla: %s\n", packvla);
+    printf("packetlen: %d\n", packetlen);
+    fflush(NULL);
     int slen = sendto(sockfd, packvla, packetlen, 0, (struct sockaddr*) &sad, sizeof(sad));
     printf("%d is the length sent\n", slen);
 
