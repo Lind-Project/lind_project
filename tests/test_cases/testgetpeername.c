@@ -8,7 +8,7 @@
 #include <errno.h>
 
 int main() {
-    int fd;
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in server_addr;
     socklen_t len = sizeof(server_addr);
     int ret = getpeername(fd, (struct sockaddr*)&server_addr, &len);
