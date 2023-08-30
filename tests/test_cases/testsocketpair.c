@@ -9,7 +9,7 @@ int main() {
     int sockets[2], child;
     char buf[1024];
 
-    int ret = socketpair(AF_UNIX, SOCK_STREAM, 0, sockets);
+    int ret = socketpair(AF_UNIX, SOCK_STREAM, 3, sockets);
     if(ret < 0) {
         printf("ERROR: %d\n", errno);
         perror("socketpair");
