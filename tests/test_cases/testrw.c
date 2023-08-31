@@ -8,10 +8,10 @@
 #include <unistd.h>
 
 int main() {
-    int fd;
+    int fd = 0;
     char buf[4096] = {0};
 	size_t count = sizeof buf;
-    int ret_r = read(fd, buf, 0);
+    int ret_r = read(fd, buf, -1);
     if(ret_r < 0) {
         printf("[read] ERROR: %d\n", errno);
         perror("read");
@@ -19,7 +19,7 @@ int main() {
         printf("[read] Return: %d\n", ret_r);
     }
 
-    int ret_w = write(fd, buf, 0);
+    int ret_w = write(fd, buf, -1);
     if(ret_w < 0) {
         printf("[write] ERROR: %d\n", errno);
         perror("write");
