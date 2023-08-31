@@ -29,5 +29,20 @@ int main() {
         printf("[write] Return: %d\n", ret_w);
     }
 
+    int ret_pr = pread(fd, buf, 10, 1);
+    if(ret_pr < 0) {
+        printf("[pread] ERROR: %d\n", errno);
+        perror("pread");
+        fflush(NULL);
+        printf("[pread] Return: %d\n", ret_pr);
+    }
+
+    int ret_pw = pwrite(fd, buf, 10, 1);
+    if(ret_pw < 0) {
+        printf("[pwrite] ERROR: %d\n", errno);
+        perror("pwrite");
+        fflush(NULL);
+        printf("[pwrite] Return: %d\n", ret_pw);
+    }
     return 0;
 }
