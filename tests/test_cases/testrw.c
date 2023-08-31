@@ -11,7 +11,9 @@ int main() {
     int fd = 0;
     char buf[4096] = {0};
 	size_t count = sizeof buf;
-    int ret_r = read(fd, buf, -1);
+    fd = open("/dev/urandom", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO);
+    close(fd);
+    int ret_r = read(fd, buf, 10);
     if(ret_r < 0) {
         printf("[read] ERROR: %d\n", errno);
         perror("read");
@@ -19,7 +21,7 @@ int main() {
         printf("[read] Return: %d\n", ret_r);
     }
 
-    int ret_w = write(fd, buf, -1);
+    int ret_w = write(fd, buf, 10);
     if(ret_w < 0) {
         printf("[write] ERROR: %d\n", errno);
         perror("write");
