@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 int main() {
-    int fd = 0;
+    int fd;
     char buf[4096] = {0};
 	size_t count = sizeof buf;
     int ret_r = read(fd, buf, 0);
