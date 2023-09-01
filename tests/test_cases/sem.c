@@ -27,7 +27,7 @@ int main() {
     int ret;
     sa.sa_handler = handler;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
+    sa.sa_flags = SA_RESTART;
     if (sigaction(SIGALRM, &sa, NULL) == -1)
         handle_error("sigaction");
 
@@ -37,7 +37,7 @@ int main() {
     //     continue;
 
     ret = sem_wait(&sem);
-    
+
     printf("should display: %d\n", count);
     printf("return value of sem_wait: %d\n", ret);
     sem_post(&sem);
