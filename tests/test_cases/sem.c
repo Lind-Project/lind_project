@@ -13,10 +13,10 @@ sem_t sem;
 static void
 handler(int sig) {
     write(STDOUT_FILENO, "sem_post() from handler\n", 24);
-    // if (sem_post(&sem) == -1) {
-    //     write(STDERR_FILENO, "sem_post() failed\n", 18);
-    //     exit(EXIT_FAILURE);
-    // }
+    if (sem_post(&sem) == -1) {
+        write(STDERR_FILENO, "sem_post() failed\n", 18);
+        exit(EXIT_FAILURE);
+    }
 }
 
 int main() {
