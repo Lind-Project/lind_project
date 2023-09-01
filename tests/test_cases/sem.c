@@ -5,6 +5,8 @@
 #include <semaphore.h>
 #include <signal.h>
 #include <errno.h>
+#include <time.h>
+
 
 sem_t sem;
 #define handle_error(msg) \
@@ -22,24 +24,28 @@ handler(int sig) {
 int main() {
     // Initial sem with 0
     sem_init(&sem, 0, 0);
-    struct sigaction sa;
-    int count = 9;
+    
+    struct timespec ts;
     int ret;
+
+    struct sigaction sa;
     sa.sa_handler = handler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGALRM, &sa, NULL) == -1)
         handle_error("sigaction");
+    
+    ts.tv_sec = 5;
+    alarm(3);
 
-    alarm(5);
-
-    // while((ret = sem_wait(&sem)) == -1 && errno == EINTR)
-    //     continue;
-
-    ret = sem_wait(&sem);
-
-    printf("should display: %d\n", count);
-    printf("return value of sem_wait: %d\n", ret);
+    ret = sem_timedwait(&sem, &ts);
+    if(ret < 0) {
+        if (errno == ETIMEDOUT)
+            printf("sem_timedwait() timed out\n");
+        else
+            perror("sem_timedwait");
+    }
+    printf("sem_timedwait succeed with %d\n", ret);
     sem_post(&sem);
 
     sem_destroy(&sem);
