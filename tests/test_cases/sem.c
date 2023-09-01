@@ -4,6 +4,7 @@
 #include <string.h>
 #include <semaphore.h>
 #include <signal.h>
+#include <errno.h>
 
 sem_t sem;
 #define handle_error(msg) \
@@ -23,6 +24,7 @@ int main() {
     sem_init(&sem, 0, 0);
     struct sigaction sa;
     int count = 9;
+    int ret;
     sa.sa_handler = handler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
@@ -31,11 +33,11 @@ int main() {
 
     alarm(5);
 
-    if(sem_wait(&sem) < 0) {
-        perror("sem_wait");
-        exit(EXIT_FAILURE);
-    }
+    while((ret = sem_wait(&sem)) == -1 && errno == EINTR)
+        continue;
+
     printf("should display: %d\n", count);
+    printf("return value of sem_wait: %d\n", ret);
     sem_post(&sem);
 
     sem_destroy(&sem);
