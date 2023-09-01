@@ -31,7 +31,10 @@ int main() {
 
     alarm(5);
 
-    sem_wait(&sem);
+    if(sem_wait(&sem) < 0) {
+        perror("sem_wait");
+        exit(EXIT_FAILURE);
+    }
     printf("should display: %d\n", count);
     sem_post(&sem);
 
