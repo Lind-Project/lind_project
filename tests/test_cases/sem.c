@@ -13,10 +13,10 @@ sem_t sem;
 static void
 handler(int sig) {
     write(STDOUT_FILENO, "sem_post() from handler\n", 24);
-    if (sem_post(&sem) == -1) {
-        write(STDERR_FILENO, "sem_post() failed\n", 18);
-        _exit(EXIT_FAILURE);
-    }
+    // if (sem_post(&sem) == -1) {
+    //     write(STDERR_FILENO, "sem_post() failed\n", 18);
+    //     exit(EXIT_FAILURE);
+    // }
 }
 
 int main() {
@@ -33,9 +33,11 @@ int main() {
 
     alarm(5);
 
-    while((ret = sem_wait(&sem)) == -1 && errno == EINTR)
-        continue;
+    // while((ret = sem_wait(&sem)) == -1 && errno == EINTR)
+    //     continue;
 
+    ret = sem_wait(&sem);
+    
     printf("should display: %d\n", count);
     printf("return value of sem_wait: %d\n", ret);
     sem_post(&sem);
