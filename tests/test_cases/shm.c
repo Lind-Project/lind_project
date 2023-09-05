@@ -43,8 +43,6 @@ int main() {
         // Child process
         sem_wait(shm_ptr); // Child waits for the semaphore
         printf("Child process: Acquired semaphore\n");
-        // sem_getvalue(shm_ptr, &sval);
-        // printf("[CP] Current sval: %d\n", sval);
         sleep(5); 
         sem_post(shm_ptr); // Release the semaphore
         printf("Child process: Released semaphore\n");
@@ -52,8 +50,6 @@ int main() {
     } else {
         // Parent process
         sleep(1); // Ensure the child process starts first
-        // sem_getvalue(shm_ptr, &psval);
-        // printf("[PP] Current sval: %d\n", psval);
         sem_wait(shm_ptr); // Parent waits for the semaphore
         printf("Parent process: Acquired semaphore\n");
         sleep(2); 
