@@ -1,140 +1,101 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/sem.h>
-#include <sys/shm.h>
 #include <sys/ipc.h>
- 
-#define SHM_SIZE 128
- 
-union semun
-{
-	int val;
-	struct semid_ds *buf;
-	unsigned short *arry;
+#include <sys/shm.h>
+#include <sys/sem.h>
+
+#define SHM_SIZE 1024
+
+// Structure for a semaphore
+union semun {
+    int val;
+    struct semid_ds *buf;
+    unsigned short *array;
 };
- 
-static int sem_id = 0;
-int real_i = 0;
- 
-static int set_semvalue();
-static void del_semvalue();
-static int semaphore_p();
-static int semaphore_v();
- 
-int main(int argc, char *argv[]) {
-	int shm_id = 0;
-	char message = 'X';
-	char *share;
-	int i = 0;
- 
-	// Create semahore
-	sem_id = semget((key_t)1234, 1, 0666 | IPC_CREAT);
-	
-	// 1. Create shared memory
-    shm_id = shmget((key_t)1234, SHM_SIZE, IPC_CREAT|0666);
-    if(shm_id == -1){
-        perror("shmget()");
+
+// Function to perform the wait operation on a semaphore
+void sem_wait(int sem_id) {
+    struct sembuf sem_buf;
+    sem_buf.sem_num = 0;
+    sem_buf.sem_op = -1;
+    sem_buf.sem_flg = SEM_UNDO;
+    semop(sem_id, &sem_buf, 1);
+}
+
+// Function to perform the signal operation on a semaphore
+void sem_signal(int sem_id) {
+    struct sembuf sem_buf;
+    sem_buf.sem_num = 0;
+    sem_buf.sem_op = 1;
+    sem_buf.sem_flg = SEM_UNDO;
+    semop(sem_id, &sem_buf, 1);
+}
+
+int main() {
+    int shmid, semid;
+    key_t key = ftok("shm_semaphore_example", 'A');
+
+    // Create shared memory segment
+    if ((shmid = shmget(key, SHM_SIZE, IPC_CREAT | 0666)) == -1) {
+        perror("shmget");
+        exit(1);
     }
-	// 2.Link shared memory with 
-    share = shmat(shm_id, NULL, 0);
- 
-	if(argc > 1)
-	{
-		// Initialize semaphore when first time
-		if(!set_semvalue())
-		{
-			fprintf(stderr, "Failed to initialize semaphore\n");
-			exit(EXIT_FAILURE);
-		}
-		message = argv[1][0];
-		sleep(2);
-	}
-	for(i = 0; i < 10; ++i)
-	{
-		// Enter the critical section
-		if(!semaphore_p())
-			exit(EXIT_FAILURE);
-		printf("%c", message);
-		fflush(stdout);
-		sprintf(share+strlen(share), "%c", message);
-		real_i += 1;
-		sleep(rand() % 3);
-		sprintf(share+strlen(share), "%c", message);
-		real_i += 1;
-		// Leave critical section and sleep random time
-		printf("%c", message);
-		fflush(stdout);
-		if(!semaphore_v())
-			exit(EXIT_FAILURE);
-		sleep(rand() % 2);
-	}
- 
-	sleep(10);
-	printf("\n %s - finished\n", share);
- 
-	if(argc > 1)
-	{
-		//If the program is called for the first time, delete the semaphore before exiting
-		sleep(3);
-		del_semvalue();
-	}
-	
-	// 3. Detach shared memory from current process
-    shmdt(share);
-	// 4. Delete shared memory
-    shmctl(shm_id, IPC_RMID, 0);
-	
-	return 0;
-}
- 
-static int set_semvalue() {
-	// Initialize
-	union semun sem_union;
- 
-	sem_union.val = 1;
-	if(semctl(sem_id, 0, SETVAL, sem_union) == -1)
-		return 0;
-	return 1;
-}
- 
-static void del_semvalue() {
-	// Delete semahore
-	union semun sem_union;
- 
-	if(semctl(sem_id, 0, IPC_RMID, sem_union) == -1)
-		fprintf(stderr, "Failed to delete semaphore\n");
-}
- 
-static int semaphore_p() {
-	// -1
-	struct sembuf sem_b;
-	sem_b.sem_num = 0;
-	sem_b.sem_op = -1;//P()
-	sem_b.sem_flg = SEM_UNDO;
-	if(semop(sem_id, &sem_b, 1) == -1)
-	{
-        perror("semop");
-		fprintf(stderr, "semaphore_p failed\n");
-		return 0;
-	}
-	return 1;
-}
- 
-static int semaphore_v(){
-	//这是一个释放操作，它使信号量变为可用，即发送信号V（sv）
-	struct sembuf sem_b;
-	sem_b.sem_num = 0;
-	sem_b.sem_op = 1;//V()
-	sem_b.sem_flg = SEM_UNDO;
-	if(semop(sem_id, &sem_b, 1) == -1)
-	{
-		fprintf(stderr, "semaphore_v failed\n");
-		return 0;
-	}
-	return 1;
+
+    // Attach shared memory
+    char *shm_ptr = shmat(shmid, NULL, 0);
+    if (shm_ptr == (char *)-1) {
+        perror("shmat");
+        exit(1);
+    }
+
+    // Create a semaphore
+    if ((semid = semget(key, 1, IPC_CREAT | 0666)) == -1) {
+        perror("semget");
+        exit(1);
+    }
+
+    // Initialize the semaphore to 1 (unlocked)
+    union semun sem_union;
+    sem_union.val = 1;
+    semctl(semid, 0, SETVAL, sem_union);
+
+    // Shared counter
+    int *counter = (int *)shm_ptr;
+    *counter = 0;
+
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("Fork failed");
+        exit(1);
+    } else if (pid == 0) {
+        // Child process
+        for (int i = 0; i < 5; i++) {
+            sem_wait(semid);
+            (*counter)++;
+            printf("Child process: Counter = %d\n", *counter);
+            sem_signal(semid);
+            sleep(1);
+        }
+        exit(0);
+    } else {
+        // Parent process
+        for (int i = 0; i < 5; i++) {
+            sem_wait(semid);
+            (*counter)++;
+            printf("Parent process: Counter = %d\n", *counter);
+            sem_signal(semid);
+            sleep(1);
+        }
+    }
+
+    // Cleanup
+    wait(NULL);
+    shmdt(shm_ptr);
+    shmctl(shmid, IPC_RMID, NULL);
+    semctl(semid, 0, IPC_RMID);
+
+    return 0;
 }
