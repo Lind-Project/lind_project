@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <semaphore.h>
+#include <wait.h>
 
 #define SHM_SIZE 1024
 
