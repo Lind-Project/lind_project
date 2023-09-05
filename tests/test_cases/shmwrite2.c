@@ -4,6 +4,7 @@
 #include <string.h>
 #include <semaphore.h>
 #include <wait.h>
+#include <stdlib.h>
 
 int main() {
     key_t key = 31337;
