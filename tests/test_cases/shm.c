@@ -12,7 +12,7 @@
 #define SHM_SIZE 1024
 
 int main() {
-    sem_t *sem;
+    sem_t sem;
     int shmid;
     key_t key = 2000;
 
@@ -30,7 +30,7 @@ int main() {
     }
 
     // Initialize the semaphore - let 2nd argu be nonzero for ipc
-    if (sem_init(sem, 1, 1) < 0) {
+    if (sem_init(&sem, 1, 1) < 0) {
         perror("sem_init");
         exit(1);
     }
@@ -42,19 +42,19 @@ int main() {
         exit(1);
     } else if (pid == 0) {
         // Child process
-        sem_wait(sem); // Child waits for the semaphore
+        sem_wait(&sem); // Child waits for the semaphore
         printf("Child process: Acquired semaphore\n");
         sleep(5); 
-        sem_post(sem); // Release the semaphore
+        sem_post(&sem); // Release the semaphore
         printf("Child process: Released semaphore\n");
         exit(0);
     } else {
         // Parent process
         sleep(1); // Ensure the child process starts first
-        sem_wait(sem); // Parent waits for the semaphore
+        sem_wait(&sem); // Parent waits for the semaphore
         printf("Parent process: Acquired semaphore\n");
         sleep(2); 
-        sem_post(sem); // Release the semaphore
+        sem_post(&sem); // Release the semaphore
         printf("Parent process: Released semaphore\n");
     }
 
