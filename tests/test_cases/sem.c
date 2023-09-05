@@ -7,16 +7,19 @@
 #include <errno.h>
 #include <time.h>
 
-
-sem_t sem;
-
 int main() {
+    sem_t sem;
     // Initial sem with 0
-    sem_init(&sem, 0, 0);
+    int r = sem_init(&sem, 0, 0);
+    printf("sem_initial: %d\n", r);
     
     struct timespec ts;
     int ret;
     
+    // 1. sem_timedwait with open sem=1
+    // 2. make sem_timedwait work: maybe check the ts with clock_gettime?
+
+
     ts.tv_sec = 3;
 
     ret = sem_timedwait(&sem, &ts);
