@@ -6,35 +6,31 @@
 #include <sys/mman.h>
 #include <semaphore.h>
 #include <wait.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 
 #define SHM_SIZE 1024
 
 int main() {
     sem_t *sem;
-    int shm_fd;
+    int shmid;
+    key_t key = 2000;
 
     // Create a shared memory region
-    shm_fd = shm_open("/myshm", O_CREAT | O_RDWR, 0666);
-    if (shm_fd == -1) {
-        perror("shm_open");
+    if ((shmid = shmget(key, SHM_SIZE, IPC_CREAT | 0666)) == -1) {
+        perror("shmget");
         exit(1);
     }
 
-    // Set the size of the shared memory region
-    if (ftruncate(shm_fd, sizeof(sem_t)) == -1) {
-        perror("ftruncate");
+    // Attach the shared memory region
+    char *shm_ptr = shmat(shmid, NULL, 0);
+    if (shm_ptr == (char *)-1) {
+        perror("shmat");
         exit(1);
     }
 
-    // Map the shared memory region
-    sem = mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (sem == MAP_FAILED) {
-        perror("mmap");
-        exit(1);
-    }
-
-    // Initialize the semaphore
-    if (sem_init(sem, 1, 1) == -1) {
+    // Initialize the semaphore - let 2nd argu be nonzero for ipc
+    if (sem_init(sem, 1, 1) < 0) {
         perror("sem_init");
         exit(1);
     }
@@ -48,7 +44,7 @@ int main() {
         // Child process
         sem_wait(sem); // Child waits for the semaphore
         printf("Child process: Acquired semaphore\n");
-        sleep(2); // Simulate some work
+        sleep(5); 
         sem_post(sem); // Release the semaphore
         printf("Child process: Released semaphore\n");
         exit(0);
@@ -57,19 +53,16 @@ int main() {
         sleep(1); // Ensure the child process starts first
         sem_wait(sem); // Parent waits for the semaphore
         printf("Parent process: Acquired semaphore\n");
-        sleep(2); // Simulate some work
+        sleep(2); 
         sem_post(sem); // Release the semaphore
         printf("Parent process: Released semaphore\n");
-
-        // Wait for the child process to finish
-        wait(NULL);
     }
 
     // Cleanup
     wait(NULL);
-    sem_destroy(sem);
-    munmap(sem, sizeof(sem_t));
-    shm_unlink("/myshm");
+    shmdt(shm_ptr);
+    shmctl(shmid, IPC_RMID, NULL);
+    sem_destroy(&sem);
 
     return 0;
 }
