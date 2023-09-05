@@ -11,12 +11,12 @@
  
 #define SHM_SIZE 128
  
-// union semun
-// {
-// 	int val;
-// 	struct semid_ds *buf;
-// 	unsigned short *arry;
-// };
+union semun
+{
+	int val;
+	struct semid_ds *buf;
+	unsigned short *arry;
+};
  
 static int sem_id = 0;
 int real_i = 0;
