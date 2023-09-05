@@ -12,7 +12,8 @@
 #define SHM_SIZE 1024
 
 int main() {
-    sem_t sem;
+    sem_t sem; // make this ptr in shared memory
+    // make them equal / make them link to sem ptr and shm ptr
     int shmid;
     key_t key = 2000;
 
@@ -23,14 +24,14 @@ int main() {
     }
 
     // Attach the shared memory region
-    char *shm_ptr = shmat(shmid, NULL, 0);
-    if (shm_ptr == (char *)-1) {
+    sem_t *shm_ptr = (sem_t *)shmat(shmid, NULL, 0);
+    if (shm_ptr == (sem_t *)-1) {
         perror("shmat");
         exit(1);
     }
 
     // Initialize the semaphore - let 2nd argu be nonzero for ipc
-    if (sem_init(&sem, 1, 1) < 0) {
+    if (sem_init(shm_ptr, 1, 1) < 0) {
         perror("sem_init");
         exit(1);
     }
@@ -42,23 +43,23 @@ int main() {
         exit(1);
     } else if (pid == 0) {
         // Child process
-        sem_wait(&sem); // Child waits for the semaphore
+        sem_wait(shm_ptr); // Child waits for the semaphore
         printf("Child process: Acquired semaphore\n");
-        sem_getvalue(&sem, &sval);
+        sem_getvalue(shm_ptr, &sval);
         printf("[CP] Current sval: %d\n", sval);
         sleep(5); 
-        sem_post(&sem); // Release the semaphore
+        sem_post(shm_ptr); // Release the semaphore
         printf("Child process: Released semaphore\n");
         exit(0);
     } else {
         // Parent process
         sleep(1); // Ensure the child process starts first
-        sem_getvalue(&sem, &psval);
+        sem_getvalue(shm_ptr, &psval);
         printf("[PP] Current sval: %d\n", psval);
-        sem_wait(&sem); // Parent waits for the semaphore
+        sem_wait(shm_ptr); // Parent waits for the semaphore
         printf("Parent process: Acquired semaphore\n");
         sleep(2); 
-        sem_post(&sem); // Release the semaphore
+        sem_post(shm_ptr); // Release the semaphore
         printf("Parent process: Released semaphore\n");
     }
 
