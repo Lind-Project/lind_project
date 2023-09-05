@@ -118,6 +118,7 @@ static int semaphore_p() {
 	sem_b.sem_flg = SEM_UNDO;
 	if(semop(sem_id, &sem_b, 1) == -1)
 	{
+        perror("semop");
 		fprintf(stderr, "semaphore_p failed\n");
 		return 0;
 	}
