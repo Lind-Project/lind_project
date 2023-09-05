@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <semaphore.h>
-#include <wait.h>
 #include <stdlib.h>
 
 int main() {
@@ -41,7 +40,7 @@ int main() {
     // mark the shared memory for removal
     shmctl(shmid, IPC_RMID, NULL);
     // detach from shared memory
-    shmdt(shm);
+    shmdt(shm_ptr);
   
     return 0;
 }

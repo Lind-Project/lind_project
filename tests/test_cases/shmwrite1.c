@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <semaphore.h>
-#include <wait.h>
 #include <stdlib.h>
 
 int main() {
@@ -44,7 +43,7 @@ int main() {
     }
 
     //detach from shared memory, we'll rmid in shmwrite2.c
-    shmdt(shm);
+    shmdt(shm_ptr);
   
     return 0;
 }
