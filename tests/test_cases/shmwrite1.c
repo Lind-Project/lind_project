@@ -33,7 +33,7 @@ int main() {
 
     // Actions
     char str[22] = "Should appear first";
-    memcpy(shm, str, 8); 
+    memcpy(shm_ptr, str, 8); 
     printf("[1] Data written in memory: %s\n", str);
     fflush(stdout); 
 

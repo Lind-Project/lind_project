@@ -28,7 +28,7 @@ int main() {
 
     // Actions
     char str[22] = "Should appear second!";
-    memcpy(shm, str, 22); 
+    memcpy(shm_ptr, str, 22); 
     printf("[2] Data written in memory: %s\n", str);
     fflush(stdout); 
 
