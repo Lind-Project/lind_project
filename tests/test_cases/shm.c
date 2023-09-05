@@ -36,7 +36,7 @@ int main() {
     }
 
     pid_t pid = fork();
-    int sval;
+    int sval, psval;
     if (pid < 0) {
         perror("Fork failed");
         exit(1);
@@ -45,7 +45,7 @@ int main() {
         sem_wait(&sem); // Child waits for the semaphore
         printf("Child process: Acquired semaphore\n");
         sem_getvalue(&sem, &sval);
-        printf("Current sval: %d\n", sval);
+        printf("[CP] Current sval: %d\n", sval);
         sleep(5); 
         sem_post(&sem); // Release the semaphore
         printf("Child process: Released semaphore\n");
@@ -53,6 +53,8 @@ int main() {
     } else {
         // Parent process
         sleep(1); // Ensure the child process starts first
+        sem_getvalue(&sem, &psval);
+        printf("[PP] Current sval: %d\n", psval);
         sem_wait(&sem); // Parent waits for the semaphore
         printf("Parent process: Acquired semaphore\n");
         sleep(2); 
