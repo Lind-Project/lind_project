@@ -1,4 +1,4 @@
 #!/bin/bash
 
-./shmwrite1
-./shmwrite2
+./shmwrite1 &
+./shmwrite2 &
