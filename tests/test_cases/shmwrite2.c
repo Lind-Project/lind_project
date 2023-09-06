@@ -9,28 +9,31 @@
 
 int main() {
     key_t key = 31337;
-    printf("[2] start...\n");
-    fflush(stdout); 
+    printf("[2] Start\n");
+    fflush(NULL); 
     // shmget returns an identifier in shmid
     int shmid = shmget(key, 1024, 0666 | IPC_CREAT);
   
     // shmat to attach to shared memory
-    sem_t *sem_ptr = (sem_t *)shmat(shmid, NULL, 0);
-
-    // Initialize the semaphore - let 2nd argu be nonzero for ipc
-    if (sem_init(sem_ptr, 1, 1) < 0) {
-        perror("sem_init");
+    char *shm = (char *)shmat(shmid, NULL, 0);
+    // Link semaphore to shared memory
+    if (shm == (char *)-1) {
+        perror("shmat");
         exit(1);
     }
-
+    sem_t *sem_ptr = sem_open("/semaphore_x", 0);
+    // Initialize the semaphore - let 2nd argu be nonzero for ipc
+    if (sem_ptr == NULL) {
+        perror("sem_open");
+        exit(1);
+    }
     // Wait for the semaphore - LOCK
     if (sem_wait(sem_ptr) < 0) {
         perror("sem_wait");
         exit(1);
     }
 
-    // Actions
-    printf("[2] LOCKED\n");
+    printf("[2] Lock\n");
     fflush(NULL); 
 
     // UNLOCK
@@ -39,13 +42,14 @@ int main() {
         exit(1);
     }
 
-    // detach from shared memory
-    shmdt(sem_ptr);
+    sem_close(sem_ptr);
+    sem_unlink("/semaphore_x");
     // mark the shared memory for removal
     shmctl(shmid, IPC_RMID, NULL);
-    
-    sem_destroy(sem_ptr);
-    printf("[2] End...\n");
-    fflush(NULL);
+    // detach from shared memory
+    shmdt(shm);
+
+    printf("[2] End\n");
+    fflush(NULL); 
     return 0;
 }
