@@ -24,15 +24,13 @@ int main() {
     }
 
     // Wait for the semaphore - LOCK
-    int ret = sem_wait(sem_ptr);
-    
-    if (ret < 0) {
-        perror("sem_wait");
-        exit(1);
-    } else {
+    while(sem_trywait(sem_ptr) < 0) {
         printf("[2] LOCKED\n");
         fflush(NULL);
     }
+    
+    printf("[2] Release\n");
+    fflush(NULL);
 
     // UNLOCK
     if(sem_post(sem_ptr) < 0) {
