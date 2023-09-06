@@ -15,11 +15,12 @@ int main() {
     int shmid = shmget(key, 1024, 0666 | IPC_CREAT);
   
     // shmat to attach to shared memory
-    sem_t *sem_ptr = (sem_t *)shmat(shmid, NULL, 0);
+    char *shm = (char *)shmat(shmid, NULL, 0);
     
     // Initialize the semaphore - let 2nd argu be nonzero for ipc
-    if (sem_init(sem_ptr, 1, 1) < 0) {
-        perror("sem_init");
+    sem_t *sem_ptr = sem_open("/semaphore_x", O_CREAT | O_EXCL, S_IRWXU | S_IRWXG  | S_IRWXO, 1);
+    if (sem_ptr == NULL) {
+        perror("sem_open");
         exit(1);
     }
     // Wait for the semaphore - LOCK
@@ -29,7 +30,9 @@ int main() {
     }
     sleep(5);
     // Actions
-    printf("[1] Locked..\n");
+    char str[22] = "Should appear first";
+    memcpy(shm, str, 8); 
+    printf("[1] Data written in memory: %s\n", str);
     fflush(stdout); 
 
     // UNLOCK
@@ -39,9 +42,7 @@ int main() {
     }
 
     //detach from shared memory, we'll rmid in shmwrite2.c
-    shmdt(sem_ptr);
-    
-    printf("[1] End...\n");
-    fflush(NULL);
+    shmdt(shm);
+  
     return 0;
 }
