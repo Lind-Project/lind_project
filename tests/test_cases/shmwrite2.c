@@ -14,7 +14,7 @@ int main() {
     fflush(stdout); 
     // shmget returns an identifier in shmid
     int shmid = shmget(key, 1024, 0666 | IPC_CREAT);
-  
+    printf("[2] shmid: %d\n", shmid);
     // shmat to attach to shared memory
     sem_t *sem_ptr = (sem_t *)shmat(shmid, NULL, 0);
 
