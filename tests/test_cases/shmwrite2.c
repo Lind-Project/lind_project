@@ -21,7 +21,7 @@ int main() {
         perror("shmat");
         exit(1);
     }
-    sem_t *sem_ptr = sem_open("/semaphore_x", 0);
+    sem_t *sem_ptr = sem_open("/semaphore_x", 2);
     // Initialize the semaphore - let 2nd argu be nonzero for ipc
     if (sem_ptr == NULL) {
         perror("sem_open");
