@@ -22,7 +22,7 @@ int main() {
         perror("sem_init");
         exit(1);
     }
-    
+
     // Initialize the semaphore - let 2nd argu be nonzero for ipc
     if (sem_ptr == NULL) {
         perror("sem_open");
@@ -52,6 +52,7 @@ int main() {
     shmctl(shmid, IPC_RMID, NULL);
     
     sem_destroy(sem_ptr);
-  
+    printf("[2] End...\n");
+    fflush(NULL);
     return 0;
 }
