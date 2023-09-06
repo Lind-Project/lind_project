@@ -9,15 +9,15 @@
 
 int main() {
     key_t key = 31337;
-  
+    printf("[2] start...\n");
+    fflush(stdout); 
     // shmget returns an identifier in shmid
     int shmid = shmget(key, 1024, 0666 | IPC_CREAT);
   
     // shmat to attach to shared memory
     sem_t *sem_ptr = (sem_t *)shmat(shmid, NULL, 0);
+
     
-    printf("[2] start...\n");
-    fflush(stdout); 
 
     // Initialize the semaphore - let 2nd argu be nonzero for ipc
     if (sem_ptr == NULL) {
