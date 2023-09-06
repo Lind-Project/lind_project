@@ -21,6 +21,10 @@ int main() {
         perror("sem_open");
         exit(1);
     }
+
+    printf("[2] start...\n");
+    fflush(stdout); 
+
     // Wait for the semaphore - LOCK
     if (sem_wait(sem_ptr) < 0) {
         perror("sem_wait");
