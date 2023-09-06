@@ -5,7 +5,7 @@
 #include <semaphore.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <wait.h>
+#include <unistd.h>
 #include <sys/stat.h> 
 
 int main() {
