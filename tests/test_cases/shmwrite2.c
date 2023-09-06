@@ -25,11 +25,11 @@ int main() {
 
     // Wait for the semaphore - LOCK
     while(sem_trywait(sem_ptr) < 0) {
-        printf("[2] LOCKED\n");
+        printf("[2] Try lock\n");
         fflush(NULL);
     }
     
-    printf("[2] Release\n");
+    printf("[2] Lock\n");
     fflush(NULL);
 
     // UNLOCK
