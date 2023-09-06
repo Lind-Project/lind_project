@@ -10,7 +10,7 @@
 
 int main() {
     key_t key = 31337;
-    sem_unlink("/semaphore_x");
+    // sem_unlink("/semaphore_x");
     // shmget returns an identifier in shmid
     int shmid = shmget(key, 1024, 0666 | IPC_CREAT);
   
@@ -41,8 +41,6 @@ int main() {
         exit(1);
     }
 
-    sem_close(sem_ptr);
-    sem_unlink("/semaphore_x");
     //detach from shared memory, we'll rmid in shmwrite2.c
     shmdt(shm);
   

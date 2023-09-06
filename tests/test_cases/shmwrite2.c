@@ -44,6 +44,8 @@ int main() {
         exit(1);
     }
 
+    sem_close(sem_ptr);
+    sem_unlink("/semaphore_x");
     // mark the shared memory for removal
     shmctl(shmid, IPC_RMID, NULL);
     // detach from shared memory
