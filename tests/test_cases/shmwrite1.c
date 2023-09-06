@@ -29,7 +29,7 @@ int main() {
     }
     sleep(20);
     // Actions
-    printf("[1] Unlock..\n");
+    printf("[1] Locked..\n");
     fflush(stdout); 
 
     // UNLOCK
@@ -41,7 +41,7 @@ int main() {
     //detach from shared memory, we'll rmid in shmwrite2.c
     shmdt(sem_ptr);
     
-    printf("[1] end...\n");
+    printf("[1] End...\n");
     fflush(NULL);
     return 0;
 }
