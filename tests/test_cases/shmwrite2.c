@@ -19,6 +19,11 @@ int main() {
         exit(1);
     }
     
+    // Initialize the semaphore - let 2nd argu be nonzero for ipc
+    if (sem_init(shm_ptr, 1, 0) < 0) {
+        perror("sem_init");
+        exit(1);
+    }
     // Wait for the semaphore - LOCK
     if (sem_wait(shm_ptr) < 0) {
         perror("sem_wait");

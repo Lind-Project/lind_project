@@ -1,4 +1,5 @@
 #!/bin/bash
 
-./shmwrite1
 ./shmwrite2
+sleep 2
+./shmwrite1
