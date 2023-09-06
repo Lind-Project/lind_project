@@ -15,6 +15,9 @@ int main() {
   
     // shmat to attach to shared memory
     sem_t *sem_ptr = (sem_t *)shmat(shmid, NULL, 0);
+    
+    printf("[2] start...\n");
+    fflush(stdout); 
 
     // Initialize the semaphore - let 2nd argu be nonzero for ipc
     if (sem_ptr == NULL) {
@@ -22,9 +25,7 @@ int main() {
         exit(1);
     }
 
-    printf("[2] start...\n");
-    fflush(stdout); 
-
+    
     // Wait for the semaphore - LOCK
     if (sem_wait(sem_ptr) < 0) {
         perror("sem_wait");
