@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/stat.h> 
+#include <unistd.h>
 
 int main() {
     key_t key = 31337;
@@ -27,7 +28,7 @@ int main() {
         perror("sem_wait");
         exit(1);
     }
-
+    sleep(5);
     // Actions
     char str[22] = "Should appear first";
     memcpy(shm, str, 8); 
