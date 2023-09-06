@@ -27,7 +27,7 @@ int main() {
         perror("sem_wait");
         exit(1);
     }
-    sleep(5);
+    sleep(20);
     // Actions
     printf("[1] Unlock..\n");
     fflush(stdout); 
