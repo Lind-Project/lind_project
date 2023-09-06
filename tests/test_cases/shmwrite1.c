@@ -24,7 +24,7 @@ int main() {
         exit(1);
     }
     // Wait for the semaphore - LOCK
-    int ret = sem_trywait(sem_ptr);
+    int ret = sem_wait(sem_ptr);
     
     if (ret < 0) {
         perror("sem_wait");
