@@ -4,6 +4,8 @@
 #include <string.h>
 #include <semaphore.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h> 
 
 int main() {
     key_t key = 31337;
