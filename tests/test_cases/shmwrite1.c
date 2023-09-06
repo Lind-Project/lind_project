@@ -10,7 +10,7 @@
 
 int main() {
     key_t key = 31337;
-  
+    sem_unlink("/semaphore_x");
     // shmget returns an identifier in shmid
     int shmid = shmget(key, 1024, 0666 | IPC_CREAT);
   
