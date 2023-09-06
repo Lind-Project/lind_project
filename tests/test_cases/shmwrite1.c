@@ -41,6 +41,8 @@ int main() {
         exit(1);
     }
 
+    sem_close(sem_ptr);
+    sem_unlink("/semaphore_x");
     //detach from shared memory, we'll rmid in shmwrite2.c
     shmdt(shm);
   
