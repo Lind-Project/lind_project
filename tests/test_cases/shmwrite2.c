@@ -5,6 +5,7 @@
 #include <semaphore.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <wait.h>
 #include <sys/stat.h> 
 
 int main() {
@@ -27,6 +28,7 @@ int main() {
     while(sem_trywait(sem_ptr) < 0) {
         printf("[2] Try lock\n");
         fflush(NULL);
+        sleep(5);
     }
     
     printf("[2] Lock\n");
