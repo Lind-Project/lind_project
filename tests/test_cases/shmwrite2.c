@@ -18,7 +18,7 @@ int main() {
     sem_t *sem_ptr = (sem_t *)shmat(shmid, NULL, 0);
 
     // Initialize the semaphore - let 2nd argu be nonzero for ipc
-    if (sem_init(sem_ptr, 1, 1) < 0) {
+    if (sem_init(sem_ptr, 1, 0) < 0) {
         perror("sem_init");
         exit(1);
     }
