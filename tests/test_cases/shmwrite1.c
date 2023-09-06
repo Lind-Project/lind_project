@@ -40,6 +40,8 @@ int main() {
 
     //detach from shared memory, we'll rmid in shmwrite2.c
     shmdt(sem_ptr);
-  
+    
+    printf("[1] end...\n");
+    fflush(NULL);
     return 0;
 }
