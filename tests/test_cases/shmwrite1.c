@@ -35,6 +35,7 @@ int main() {
         fflush(NULL);
     }
 
+    sleep(5);
     // UNLOCK
     if(sem_post(sem_ptr) < 0) {
         perror("sem_post");
