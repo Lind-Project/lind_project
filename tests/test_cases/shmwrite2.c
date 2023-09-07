@@ -24,14 +24,14 @@ int main() {
         perror("sem_post");
         exit(1);
     }
-    printf("[2] sem+1\n");
+    printf("[2] sem = 1\n");
     fflush(NULL);
 
     if(sem_wait(sem_ptr) < 0) {
         perror("sem_wait");
         exit(1);
     }
-    printf("[2] sem-1\n");
+    printf("[2] sem = 0\n");
     fflush(NULL);
 
 
