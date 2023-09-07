@@ -15,29 +15,25 @@ int main() {
     sleep(2);
     // shmget returns an identifier in shmid
     int shmid = shmget(key, 1024, 0666 | IPC_CREAT);
-    printf("[2] shmid: %d\n", shmid);
+
     // shmat to attach to shared memory
     sem_t *sem_ptr = (sem_t *)shmat(shmid, NULL, 0);
-
-    int value;
-    sem_getvalue(sem_ptr, &value);
-    printf("[2] sem_value: %d\n", value);
-
-    // Wait for the semaphore - LOCK
-    while(sem_trywait(sem_ptr) < 0) {
-        printf("[2] Try lock\n");
-        fflush(NULL);
-        sleep(5);
-    }
-    
-    printf("[2] Lock\n");
-    fflush(NULL);
 
     // UNLOCK
     if(sem_post(sem_ptr) < 0) {
         perror("sem_post");
         exit(1);
     }
+    printf("[2] sem+1\n");
+    fflush(NULL);
+
+    if(sem_wait(sem_ptr) < 0) {
+        perror("sem_wait");
+        exit(1);
+    }
+    printf("[2] sem-1\n");
+    fflush(NULL);
+
 
     // detach from shared memory
     shmdt(sem_ptr);
