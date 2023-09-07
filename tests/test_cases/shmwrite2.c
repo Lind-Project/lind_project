@@ -9,6 +9,7 @@
 #include <sys/stat.h> 
 
 int main() {
+    sleep(2);
     key_t key = 31337;
     printf("[2] start...\n");
     fflush(stdout); 
