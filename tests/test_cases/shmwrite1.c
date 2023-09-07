@@ -23,6 +23,9 @@ int main() {
         perror("sem_init");
         exit(1);
     }
+    int value;
+    sem_getvalue(sem_ptr, &value);
+    printf("[1] sem_value: %d\n", value);
     // Wait for the semaphore - LOCK
     int ret = sem_trywait(sem_ptr);
     
@@ -39,6 +42,7 @@ int main() {
         perror("sem_post");
         exit(1);
     }
+
 
     //detach from shared memory, we'll rmid in shmwrite2.c
     shmdt(sem_ptr);

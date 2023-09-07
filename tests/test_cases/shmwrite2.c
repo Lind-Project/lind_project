@@ -9,6 +9,7 @@
 #include <sys/stat.h> 
 
 int main() {
+    sleep(2);
     key_t key = 31337;
     printf("[2] start...\n");
     fflush(stdout); 
@@ -17,6 +18,10 @@ int main() {
     printf("[2] shmid: %d\n", shmid);
     // shmat to attach to shared memory
     sem_t *sem_ptr = (sem_t *)shmat(shmid, NULL, 0);
+
+    int value;
+    sem_getvalue(sem_ptr, &value);
+    printf("[2] sem_value: %d\n", value);
 
     // Wait for the semaphore - LOCK
     while(sem_trywait(sem_ptr) < 0) {
