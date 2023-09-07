@@ -23,6 +23,7 @@ int main() {
         perror("sem_init");
         exit(1);
     }
+    /* may not sleep, check the value of sem_ptr, whether they work correctly */
     // Wait for the semaphore - LOCK
     int ret = sem_wait(sem_ptr);
     
