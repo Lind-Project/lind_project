@@ -48,10 +48,10 @@ int main() {
     fflush(NULL);
 
     // UNLOCK
-    if(sem_post(sem_ptr) < 0) {
-        perror("sem_post");
-        exit(1);
-    }
+    // if(sem_post(sem_ptr) < 0) {
+    //     perror("sem_post");
+    //     exit(1);
+    // }
 
     // detach from shared memory
     shmdt(sem_ptr);
