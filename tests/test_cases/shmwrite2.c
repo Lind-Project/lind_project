@@ -34,7 +34,7 @@ int main() {
     printf("[2] sem = 0\n");
     fflush(NULL);
 
-
+    sleep(1);
     // detach from shared memory
     shmdt(sem_ptr);
     // mark the shared memory for removal
