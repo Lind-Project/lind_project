@@ -22,10 +22,10 @@ int main() {
         exit(1);
     }
     // Initialize the semaphore - let 2nd argu be nonzero for ipc
-    if (sem_init(sem_ptr, 1, 0) < 0) {
-        perror("sem_init");
-        exit(1);
-    }
+    // if (sem_init(sem_ptr, 1, 0) < 0) {
+    //     perror("sem_init");
+    //     exit(1);
+    // }
 
     int value;
     int ret = sem_getvalue(sem_ptr, &value);
