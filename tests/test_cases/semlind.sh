@@ -1,4 +1,4 @@
 #!/bin/bash
 
-lind /shmwrite1.nexe &
-lind /shmwrite1.nexe
+/shmwrite1.nexe 
+/shmwrite1.nexe
