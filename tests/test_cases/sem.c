@@ -11,7 +11,7 @@ int main() {
     sem_t sem;
     
     // Initial sem with 0
-    int r = sem_init(&sem, 0, -1);
+    int r = sem_init(&sem, 0, 3);
     printf("sem_initial: %d\n", r);
     
     int val;
