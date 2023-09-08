@@ -18,7 +18,7 @@ int main() {
 
     // shmat to attach to shared memory
     sem_t *sem_ptr = (sem_t *)shmat(shmid, NULL, 0);
-
+ 
     // UNLOCK
     if(sem_post(sem_ptr) < 0) {
         perror("sem_post");
