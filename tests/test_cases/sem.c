@@ -9,13 +9,15 @@
 
 int main() {
     sem_t sem;
+    
+    // Initial sem with 0
+    int r = sem_init(&sem, 0, -1);
+    printf("sem_initial: %d\n", r);
+    
     int val;
     sem_getvalue(&sem, &val);
     printf("value: %d\n", val);
-    // Initial sem with 0
-    // int r = sem_init(&sem, 0, 0);
-    // printf("sem_initial: %d\n", r);
-    
+
     // struct timespec ts;
     // int ret;
     
