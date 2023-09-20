@@ -28,11 +28,14 @@ lindfs cp /home/lind/lind_project/tests/test_cases/coreutils_suite/tempfolder/sh
 #shm_sem
 gcc shm_sem_server.c -o /home/lind/lind_project/tests/test_cases/coreutils_suite/tempfolder/shm_sem_server;
 gcc shm_sem_client.c -o /home/lind/lind_project/tests/test_cases/coreutils_suite/tempfolder/shm_sem_client;
+gcc shm_sem_client_fork.c -o /home/lind/lind_project/tests/test_cases/coreutils_suite/tempfolder/shm_sem_client_fork;
 
 x86_64-nacl-gcc-4.4.3 shm_sem_server.c -o /home/lind/lind_project/tests/test_cases/coreutils_suite/tempfolder/shm_sem_server.nexe -std=gnu99 -lpthread;
 x86_64-nacl-gcc-4.4.3 shm_sem_client.c -o /home/lind/lind_project/tests/test_cases/coreutils_suite/tempfolder/shm_sem_client.nexe -std=gnu99 -lpthread;
+x86_64-nacl-gcc-4.4.3 shm_sem_client_fork.c -o /home/lind/lind_project/tests/test_cases/coreutils_suite/tempfolder/shm_sem_client_fork.nexe -std=gnu99 -lpthread;
 
 lindfs cp /home/lind/lind_project/tests/test_cases/coreutils_suite/tempfolder/shm_sem_server.nexe tempfolder/shm_sem_server
 lindfs cp /home/lind/lind_project/tests/test_cases/coreutils_suite/tempfolder/shm_sem_client.nexe tempfolder/shm_sem_client
+lindfs cp /home/lind/lind_project/tests/test_cases/coreutils_suite/tempfolder/shm_sem_client_fork.nexe tempfolder/shm_sem_client_fork
 
 cd /home/lind/lind_project/tests/test_cases/coreutils_suite;
