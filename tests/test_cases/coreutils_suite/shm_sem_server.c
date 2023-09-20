@@ -11,8 +11,6 @@
 int main()
 {
     key_t key = 31337;
-    printf("[server] start...\n");
-    fflush(stdout);
     // shmget returns an identifier in shmid
     int shmid = shmget(key, 1024, 0666 | IPC_CREAT);
 
@@ -36,8 +34,6 @@ int main()
     int count = 0;
     while (count++ < 5)
     {
-        printf("[server] wait\n");
-        fflush(stdout);
         int status = sem_wait(sem_ptr);
 
         if (status != 0)
@@ -49,16 +45,11 @@ int main()
         printf("[server] %s\n", shared_buffer);
         fflush(stdout);
         sem_post(sem_ptr);
-        printf("[server] sent post\n");
-        fflush(stdout);
         sleep(1);
     }
 
     // detach from shared memory, we'll rmid in client.c
     shmdt(sem_ptr);
     shmdt(shared_buffer);
-
-    printf("[server] end...\n");
-    fflush(stdout);
     return 0;
 }

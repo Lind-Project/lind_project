@@ -11,8 +11,6 @@
 int main()
 {
     key_t key = 31337;
-    printf("[client] start...\n");
-    fflush(stdout);
     // shmget returns an identifier in shmid
     int shmid = shmget(key, 1024, 0666);
 
@@ -28,33 +26,10 @@ int main()
 
     if (fork() == 0) {
         // child process
+        sleep(1);
         int count = 0;
         while (count++ < 5)
         {
-            printf("[client2] wait\n");
-            fflush(stdout);
-            int status = sem_wait(sem_ptr);
-
-            if (status != 0)
-            {
-                perror("in sem_wait");
-            }
-            sleep(2);
-            strcat(shared_buffer, "c");
-            printf("[client2] %s\n", shared_buffer);
-            fflush(stdout);
-            sem_post(sem_ptr);
-            printf("[client2] sent post\n");
-            fflush(stdout);
-            sleep(1);
-        }
-    } else {
-        // parent process
-        int count = 0;
-        while (count++ < 5)
-        {
-            printf("[client] wait\n");
-            fflush(stdout);
             int status = sem_wait(sem_ptr);
 
             if (status != 0)
@@ -63,11 +38,27 @@ int main()
             }
             sleep(2);
             strcat(shared_buffer, "u");
+            printf("[client2] %s\n", shared_buffer);
+            fflush(stdout);
+            sem_post(sem_ptr);
+            sleep(1);
+        }
+    } else {
+        // parent process
+        int count = 0;
+        while (count++ < 5)
+        {
+            int status = sem_wait(sem_ptr);
+
+            if (status != 0)
+            {
+                perror("in sem_wait");
+            }
+            sleep(2);
+            strcat(shared_buffer, "c");
             printf("[client] %s\n", shared_buffer);
             fflush(stdout);
             sem_post(sem_ptr);
-            printf("[client] sent post\n");
-            fflush(stdout);
             sleep(1);
         }
     }
@@ -77,14 +68,11 @@ int main()
     shmctl(shmid, IPC_RMID, NULL);
 
     sem_destroy(sem_ptr);
-
-    memset(shared_buffer, 0, sizeof(shared_buffer));
+    if (strlen(shared_buffer) == 15)
+        memset(shared_buffer, 0, sizeof(shared_buffer));
     // detach from shared memory
     shmdt(shared_buffer);
     // mark the shared memory for removal
     shmctl(shmid2, IPC_RMID, NULL);
-
-    printf("[client] end...\n");
-    fflush(stdout);
     return 0;
 }

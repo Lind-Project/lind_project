@@ -11,8 +11,6 @@
 int main()
 {
     key_t key = 31337;
-    printf("[client] start...\n");
-    fflush(stdout);
     // shmget returns an identifier in shmid
     int shmid = shmget(key, 1024, 0666);
 
@@ -29,8 +27,6 @@ int main()
     int count = 0;
     while (count++ < 5)
     {
-        printf("[client] wait\n");
-        fflush(stdout);
         int status = sem_wait(sem_ptr);
 
         if (status != 0)
@@ -42,8 +38,6 @@ int main()
         printf("[client] %s\n", shared_buffer);
         fflush(stdout);
         sem_post(sem_ptr);
-        printf("[client] sent post\n");
-        fflush(stdout);
         sleep(1);
     }
 
@@ -59,8 +53,5 @@ int main()
     shmdt(shared_buffer);
     // mark the shared memory for removal
     shmctl(shmid2, IPC_RMID, NULL);
-
-    printf("[client] end...\n");
-    fflush(stdout);
     return 0;
 }
