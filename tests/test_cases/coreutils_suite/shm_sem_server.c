@@ -56,6 +56,7 @@ int main()
 
     // detach from shared memory, we'll rmid in client.c
     shmdt(sem_ptr);
+    shmdt(shared_buffer);
 
     printf("[server] end...\n");
     fflush(stdout);

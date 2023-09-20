@@ -78,6 +78,12 @@ int main()
 
     sem_destroy(sem_ptr);
 
+    memset(shared_buffer, 0, sizeof(shared_buffer));
+    // detach from shared memory
+    shmdt(shared_buffer);
+    // mark the shared memory for removal
+    shmctl(shmid2, IPC_RMID, NULL);
+
     printf("[client] end...\n");
     fflush(stdout);
     return 0;
