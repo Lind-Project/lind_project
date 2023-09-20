@@ -32,7 +32,7 @@ int main()
     }
 
     int count = 0;
-    while (count++ < 5)
+    while (count++ < 3)
     {
         int status = sem_wait(sem_ptr);
 

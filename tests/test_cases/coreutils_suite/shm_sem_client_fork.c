@@ -26,9 +26,9 @@ int main()
 
     if (fork() == 0) {
         // child process
-        sleep(1);
+        sleep(0.5);
         int count = 0;
-        while (count++ < 5)
+        while (count++ < 3)
         {
             int status = sem_wait(sem_ptr);
 
@@ -46,7 +46,7 @@ int main()
     } else {
         // parent process
         int count = 0;
-        while (count++ < 5)
+        while (count++ < 3)
         {
             int status = sem_wait(sem_ptr);
 

@@ -25,7 +25,7 @@ int main()
     char *shared_buffer = (char *)shmat(shmid2, NULL, 0);
 
     int count = 0;
-    while (count++ < 5)
+    while (count++ < 3)
     {
         int status = sem_wait(sem_ptr);
 
