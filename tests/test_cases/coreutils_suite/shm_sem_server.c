@@ -39,6 +39,7 @@ int main()
         if (status != 0)
         {
             perror("in sem_wait");
+            exit(1);
         }
         sleep(2);
         strcat(shared_buffer, "s");

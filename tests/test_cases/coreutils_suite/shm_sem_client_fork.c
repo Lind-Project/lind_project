@@ -26,7 +26,6 @@ int main()
 
     if (fork() == 0) {
         // child process
-        sleep(0.5);
         int count = 0;
         while (count++ < 3)
         {
@@ -35,6 +34,7 @@ int main()
             if (status != 0)
             {
                 perror("in sem_wait");
+                exit(1);
             }
             sleep(2);
             strcat(shared_buffer, "u");
@@ -53,6 +53,7 @@ int main()
             if (status != 0)
             {
                 perror("in sem_wait");
+                exit(1);
             }
             sleep(2);
             strcat(shared_buffer, "c");
@@ -68,7 +69,7 @@ int main()
     shmctl(shmid, IPC_RMID, NULL);
 
     sem_destroy(sem_ptr);
-    if (strlen(shared_buffer) == 15)
+    if (strlen(shared_buffer) == 9)
         memset(shared_buffer, 0, sizeof(shared_buffer));
     // detach from shared memory
     shmdt(shared_buffer);
