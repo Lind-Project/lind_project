@@ -18,8 +18,9 @@ int main() {
             perror("ftok");
             exit(1);
         }
-        if ((shmid = shmget(key, 0, 0666)) == -1) {
+        if ((shmid = shmget(key, 0, IPC_CREAT|0666)) == -1) {
             printf("ERROR: %d\n", errno);
+            printf("%d\n", i);
             fflush(NULL);
             perror("shmget");
             exit(1);
