@@ -16,6 +16,7 @@ int main() {
         perror("fork");
         exit(1);
     } else if(pid == 0) {   // Child
+        printf("Child\n");
         int shmid1 = shmget(key1, 1024, 0666 | IPC_CREAT);
         if(shmid1 == -1) {
             printf("ERROR: %d\n", errno);
@@ -40,6 +41,8 @@ int main() {
             exit(1);
         }
     } else { // Parent
+        sleep(2);
+        printf("Parent\n");
         int shmid2 = shmget(key1, 0, 0666);
         if(shmid2 == -1) {
             printf("ERROR: %d\n", errno);
@@ -54,12 +57,7 @@ int main() {
             exit(1);
         }
     }
-  
-    
-    
-    
-    
-    
+    wait(NULL);
     printf("Success\n");
     return 0;
 }
