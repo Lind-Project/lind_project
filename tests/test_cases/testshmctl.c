@@ -16,13 +16,13 @@ int main() {
     if(shmctl(shmid1, IPC_RMID, (struct shmid_ds *) NULL) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
-        perror("shmctl");
+        perror("shmctl1");
         exit(1);
     }
     if(shmctl(shmid1, IPC_RMID, (struct shmid_ds *) NULL) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
-        perror("shmctl");
+        perror("shmctl2");
         exit(1);
     }
     shmdt(shm1);
