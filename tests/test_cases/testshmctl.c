@@ -37,7 +37,7 @@ int main() {
         perror("shmdt");
         exit(1);
     }
-    if(shmctl(shmid1, IPC_RMID, (struct shmid_ds *) NULL) == -1) {
+    if(shmctl(shmid1, IPC_STAT, (struct shmid_ds *) NULL) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
         perror("shmctl2");
