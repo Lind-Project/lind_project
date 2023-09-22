@@ -9,7 +9,7 @@
 int main() {
     key_t key1 = 2000;
   
-    int shmid1 = shmget(key1, 2048, 0666 | IPC_CREAT);
+    int shmid1 = shmget(key1, 1024, 0666 | IPC_CREAT);
     if(shmid1 == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
