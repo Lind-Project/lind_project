@@ -4,45 +4,62 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
+
 
 int main() {
+    pid_t pid = fork();
     key_t key1 = 2000;
     struct shmid_ds buf1;
-    int shmid1 = shmget(key1, 1024, 0666 | IPC_CREAT);
-    if(shmid1 == -1) {
-        printf("ERROR: %d\n", errno);
-        fflush(NULL);
-        perror("shmget");
+    
+    if(pid < 0) {
+        perror("fork");
         exit(1);
-    }
+    } else if(pid == 0) {   // Child
+        int shmid1 = shmget(key1, 1024, 0666 | IPC_CREAT);
+        if(shmid1 == -1) {
+            printf("ERROR: %d\n", errno);
+            fflush(NULL);
+            perror("shmget");
+            exit(1);
+        }
+        void *shm1 = (char*)shmat(shmid1, NULL, 0);
 
-    void *shm1 = (char*) shmat(shmid1, NULL, 0);
-    if(shm1 == (void *)-1) {
-        printf("ERROR: %d\n", errno);
-        fflush(NULL);
-        perror("shmat");
-        exit(1);
+        sleep(10);
+        // Should fail bc already destroy
+        if(shmctl(shmid1, IPC_STAT, NULL) == -1) {
+            printf("ERROR: %d\n", errno);
+            fflush(NULL);
+            perror("shmctl2");
+            exit(1);
+        }
+        if(shmdt(shm1) == -1) {
+            printf("ERROR: %d\n", errno);
+            fflush(NULL);
+            perror("shmdt");
+            exit(1);
+        }
+    } else { // Parent
+        int shmid2 = shmget(key1, 0, 0666);
+        if(shmid2 == -1) {
+            printf("ERROR: %d\n", errno);
+            fflush(NULL);
+            perror("shmget[p]");
+            exit(1);
+        }
+        if(shmctl(shmid2, IPC_RMID, (struct shmid_ds *) NULL) == -1) {
+            printf("ERROR: %d\n", errno);
+            fflush(NULL);
+            perror("shmctl1");
+            exit(1);
+        }
     }
+  
     
-    if(shmctl(shmid1, IPC_RMID, (struct shmid_ds *) NULL) == -1) {
-        printf("ERROR: %d\n", errno);
-        fflush(NULL);
-        perror("shmctl1");
-        exit(1);
-    }
     
-    if(shmctl(shmid1, IPC_STAT, &buf1) == -1) {
-        printf("ERROR: %d\n", errno);
-        fflush(NULL);
-        perror("shmctl2");
-        exit(1);
-    }
-    if(shmdt(shm1) == -1) {
-        printf("ERROR: %d\n", errno);
-        fflush(NULL);
-        perror("shmdt");
-        exit(1);
-    }
+    
+    
+    
     printf("Success\n");
     return 0;
 }
