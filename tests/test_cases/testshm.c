@@ -15,18 +15,13 @@
 int main() {
     int shmid;
     key_t key = 2000;
-    if ((shmid = shmget(key, SHM_SIZE, IPC_CREAT | 0666)) == -1) {
+    if ((shmid = shmget(key, -1, IPC_CREAT | 0666)) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
         perror("shmget");
         exit(1);
     }
-    if ((shmid = shmget(key, SHM_SIZE, IPC_CREAT | IPC_EXCL | 0666)) == -1) {
-        printf("ERROR: %d\n", errno);
-        fflush(NULL);
-        perror("shmget");
-        exit(1);
-    }
+    
     printf("Success\n");
     fflush(NULL);
     return 0;
