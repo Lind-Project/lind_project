@@ -28,7 +28,7 @@ int main() {
 
         sleep(10);
         // Should fail bc already destroy
-        if(shmctl(shmid1, IPC_STAT, NULL) == -1) {
+        if(shmctl(shmid1, IPC_STAT, &buf1) == -1) {
             printf("ERROR: %d\n", errno);
             fflush(NULL);
             perror("shmctl2");
@@ -58,7 +58,6 @@ int main() {
         }
     }
     wait(NULL);
-    printf("Success\n");
     return 0;
 }
 /* errno = 14 */
