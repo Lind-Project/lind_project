@@ -18,7 +18,7 @@ int main() {
         perror("shmget");
         exit(1);
     }
-    if ((shmid = shmget(key, SHM_SIZE, IPC_CREAT | 0666)) == -1) {
+    if ((shmid = shmget(key, SHM_SIZE, IPC_CREAT | IPC_EXCL | 0666)) == -1) {
         perror("shmget");
         exit(1);
     }
