@@ -8,6 +8,7 @@
 #include <wait.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <errno.h>
 
 #define SHM_SIZE 1024
 
@@ -15,10 +16,14 @@ int main() {
     int shmid;
     key_t key = 2000;
     if ((shmid = shmget(key, SHM_SIZE, IPC_CREAT | 0666)) == -1) {
+        printf("ERROR: %d\n", errno);
+        fflush(NULL);
         perror("shmget");
         exit(1);
     }
     if ((shmid = shmget(key, SHM_SIZE, IPC_CREAT | IPC_EXCL | 0666)) == -1) {
+        printf("ERROR: %d\n", errno);
+        fflush(NULL);
         perror("shmget");
         exit(1);
     }
