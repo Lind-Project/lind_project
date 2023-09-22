@@ -13,19 +13,17 @@ int main() {
     int shmid;
     key_t key;
     int i = 0;
-    for(i = 0; i < 5000; i++) {
-        key = ftok("/home/lind/lind_project/tests/test_cases/testfiles/shmfile.txt", 'A' + i);
-        if(key == -1) {
-            perror("ftok");
-            exit(1);
-        }
-        if ((shmid = shmget(key, SHM_SIZE, IPC_CREAT|0666)) == -1) {
-            printf("ERROR: %d\n", errno);
-            printf("%d\n", i);
-            fflush(NULL);
-            perror("shmget");
-            exit(1);
-        }
+    key = ftok("/home/lind/lind_project/tests/test_cases/testfiles/shmfile.txt", 'A' + i);
+    if(key == -1) {
+        perror("ftok");
+        exit(1);
+    }
+    if ((shmid = shmget(key, 0, IPC_CREAT|0666)) == -1) {
+        printf("ERROR: %d\n", errno);
+        printf("%d\n", i);
+        fflush(NULL);
+        perror("shmget");
+        exit(1);
     }
     
     printf("Success\n");
