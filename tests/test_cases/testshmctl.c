@@ -31,13 +31,19 @@ int main() {
         perror("shmctl1");
         exit(1);
     }
+    if(shmdt(shm1) == -1) {
+        printf("ERROR: %d\n", errno);
+        fflush(NULL);
+        perror("shmdt");
+        exit(1);
+    }
     if(shmctl(shmid1, IPC_RMID, (struct shmid_ds *) NULL) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
         perror("shmctl2");
         exit(1);
     }
-    shmdt(shm1);
+    
     printf("Success\n");
     return 0;
 }
