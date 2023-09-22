@@ -10,8 +10,20 @@ int main() {
     key_t key1 = 2000;
   
     int shmid1 = shmget(key1, 2048, 0666 | IPC_CREAT);
+    if(shmid1 == -1) {
+        printf("ERROR: %d\n", errno);
+        fflush(NULL);
+        perror("shmget");
+        exit(1);
+    }
 
     void *shm1 = (char*) shmat(shmid1, NULL, 0);
+    if(shm1 == (void *)-1) {
+        printf("ERROR: %d\n", errno);
+        fflush(NULL);
+        perror("shmat");
+        exit(1);
+    }
     
     if(shmctl(shmid1, IPC_RMID, (struct shmid_ds *) NULL) == -1) {
         printf("ERROR: %d\n", errno);
