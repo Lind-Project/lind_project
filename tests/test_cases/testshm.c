@@ -12,7 +12,8 @@
 int main() {
     int shmid;
     key_t key;
-    for(int i = 0; i < 4097; i++) {
+    int i = 0;
+    for(i = 0; i < 5000; i++) {
         key = ftok("/home/lind/lind_project/tests/test_cases/testfiles/shmfile.txt", 'A' + i);
         if(key == -1) {
             perror("ftok");
