@@ -16,8 +16,12 @@ int main() {
         perror("shmget");
         exit(1);
     }
-    void *shm = (char*) shmat(1, NULL, 0);
-
+    if (shmat(key, NULL, 0) == (void*)-1) {
+        printf("ERROR: %d\n", errno);
+        fflush(NULL);
+        perror("shmat");
+        exit(1);
+    }
     printf("Success\n");
     fflush(NULL);
     return 0;
