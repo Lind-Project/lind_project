@@ -10,11 +10,11 @@
 
 #define SHM_SIZE 1024
 int main() {
-    int shmid;
-    if ((shmid = shmdt(shmid)) == -1) {
+    const void *shmaddr;
+    if (shmdt(shmaddr) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
-        perror("shmget");
+        perror("shmdt");
         exit(1);
     }
     
