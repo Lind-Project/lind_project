@@ -31,7 +31,6 @@
 //     return 0;
 // }
 
-/* errno = 2 */
 int main() {
     int shmid;
     key_t key = 2000;
