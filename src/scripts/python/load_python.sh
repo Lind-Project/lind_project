@@ -31,6 +31,7 @@ lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/_ssl.so /u
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/_hashlib.so /usr/local/lib/python2.7/lib-dynload/_hashlib.so
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/_ctypes.so /usr/local/lib/python2.7/lib-dynload/_ctypes.so
 lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/libffi.so /lib/glibc/libffi.so
+lindfs cp /home/lind/lind_project/tests/applications/python/build/lib/libffi.so /lib/glibc/libffi.so.5
 
 echo "Copying flask files:"
 lindfs cp /home/lind/lind_project/tests/applications/python-modules/site-packages/ /usr/local/lib/python2.7/site-packages/
