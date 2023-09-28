@@ -87,12 +87,12 @@ int main() {
         exit(1);
     }
     
-    // if(shmctl(shmid1, IPC_STAT, (struct shmid_ds *) NULL) == -1) {
-    //     printf("ERROR: %d\n", errno);
-    //     fflush(NULL);
-    //     perror("shmctl2");
-    //     exit(1);
-    // }
+    if(shmctl(shmid1, IPC_STAT, (struct shmid_ds *) NULL) == -1) {
+        printf("ERROR: %d\n", errno);
+        fflush(NULL);
+        perror("shmctl2");
+        exit(1);
+    }
     if(shmdt(shm1) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
