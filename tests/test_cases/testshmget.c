@@ -40,7 +40,7 @@ int main() {
         perror("shmget1");
         exit(1);
     }
-    if ((shmid = shmget(key, 2000, 0666)) == -1) {
+    if ((shmid = shmget(key, 2000, 0666|IPC_CREAT)) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
         perror("shmget2");
