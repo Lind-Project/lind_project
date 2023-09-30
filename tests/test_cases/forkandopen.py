@@ -7,9 +7,8 @@ import string
 
 # assert(int(fdlist[-4]) != -1) checks if the parent PID's return -1. This would be an error with parent processes, but not with child processes.
 def forkandopen(results):
-    pidlist = re.findall('[-\d]+', results)
-    # print pidlist
-    assert(int(pidlist[-4]) != -1)  # Checks if parent PID is not -1, which means failure.
+    pidlist = re.findall('Parent:.*fd [-\d]+', results)
+    assert(int(pidlist[0][-1]) != -1)  # Checks if parent PID is not -1, which means failure.
 
 lind_results = sys.argv[1]
 native_results = sys.argv[2]
