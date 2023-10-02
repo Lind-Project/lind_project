@@ -79,15 +79,16 @@ int main() {
         perror("shmat");
         exit(1);
     }
-    
-    if(shmctl(shmid1, IPC_RMID, (struct shmid_ds *) NULL) == -1) {
+    struct shmid_ds *buf = (struct shmid_ds *) NULL;
+
+    if(shmctl(shmid1, IPC_RMID, buf) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
         perror("shmctl1");
         exit(1);
     }
     
-    if(shmctl(shmid1, IPC_STAT, (struct shmid_ds *) NULL) == -1) {
+    if(shmctl(shmid1, IPC_STAT, buf) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
         perror("shmctl2");
