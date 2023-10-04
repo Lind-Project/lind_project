@@ -65,7 +65,7 @@ int main() {
         close(fd);
         exit(EXIT_FAILURE);
     }
-    printf("offset should be 0, actually: %lld\n", next_data);
+    printf("\noffset should be 0, actually: %lld\n", next_data);
     fflush(NULL);
 
     off_t next_hole = lseek(fd, 0, SEEK_HOLE);
@@ -74,9 +74,9 @@ int main() {
         close(fd);
         exit(EXIT_FAILURE);
     }
-    printf("offset should be 12, actually: %lld\n", next_hole);
+    printf("offset should be 661, actually: %lld\n", next_hole);
     fflush(NULL);
-    
+
     close(fd);
     return 0;
 }
