@@ -22,13 +22,7 @@ int main() {
         strcat(buffer, base_string);
     }
 
-    size_t bytes_written = fwrite(buffer, 1, buffer_size, file);
-
-    if (bytes_written != buffer_size) {
-        perror("Error writing to file");
-        fclose(file);
-        return 1;
-    }
+    fprintf(file, "%s", buffer);
 
     fclose(file);
 
