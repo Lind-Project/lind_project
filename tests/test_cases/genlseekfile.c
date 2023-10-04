@@ -3,7 +3,6 @@
 int main() {
     const char *filename = "testfile.txt";
 
-    // 打开文件以写入方式
     FILE *file = fopen(filename, "wb");
 
     if (file == NULL) {
@@ -11,7 +10,7 @@ int main() {
         return 1;
     }
 
-    const int buffer_size = 2048;
+    const int buffer_size = 8000;
     char buffer[buffer_size];
 
     for (int i = 0; i < buffer_size; ++i) {
@@ -25,7 +24,7 @@ int main() {
         fclose(file);
         return 1;
     }
-    
+
     fclose(file);
 
     printf("File created: %s\n", filename);
