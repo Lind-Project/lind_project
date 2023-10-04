@@ -59,18 +59,14 @@ int main() {
         exit(EXIT_FAILURE);
     }
     
-    // Check whether offset points to \0
-    printf("\n%s\n", &buf[11]);
-    if(buf[11] == '\0') {
-        off_t next_data = lseek(fd, 0, SEEK_DATA);
-        if(next_data < 0) {
-            perror("lseek");
-            close(fd);
-            exit(EXIT_FAILURE);
-        }
-        printf("offset should be 13, actually: %lld\n", next_data);
-        fflush(NULL);
+    off_t next_data = lseek(fd, 0, SEEK_DATA);
+    if(next_data < 0) {
+        perror("lseek");
+        close(fd);
+        exit(EXIT_FAILURE);
     }
+    printf("offset should be 13, actually: %lld\n", next_data);
+    fflush(NULL);
     close(fd);
     return 0;
 }
