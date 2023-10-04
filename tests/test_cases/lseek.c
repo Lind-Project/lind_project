@@ -60,6 +60,7 @@ int main() {
     }
     
     // Check whether offset points to \0
+    printf("\n%s\n", &buf[11]);
     if(buf[11] == '\0') {
         off_t next_data = lseek(fd, 0, SEEK_DATA);
         if(next_data < 0) {
