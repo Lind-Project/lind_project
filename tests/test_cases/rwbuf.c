@@ -16,7 +16,7 @@ int main(void)
     char buffer[2048];
     if(read(fd, buffer, 19) != 19)  return 1;
     printf("%s\n",buffer);
-
+    write(STDOUT_FILENO, "\n", 1);
 	
 	close(fd);
 
