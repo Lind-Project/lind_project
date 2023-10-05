@@ -15,7 +15,7 @@ int main(void)
 
     char buffer[2048];
     if(read(fd, buffer, 19) != 19)  return 1;
-    printf("%s\n",buffer);
+    // printf("%s\n",buffer);
     size_t count = sizeof buffer;
     for (size_t i = 0; i < 19; i++) {
 		int c = buffer[i];
