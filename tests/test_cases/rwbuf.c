@@ -8,7 +8,7 @@ int main(void)
 {
 	int fd;
 
-	if ((fd = open("/dev/urandom", O_RDONLY, S_IRWXU|S_IRWXG|S_IRWXO)) < 0) {
+	if ((fd = open("testfile.txt",O_RDONLY)) < 0) {
 		perror("open()");
 		exit(EXIT_FAILURE);
 	}
