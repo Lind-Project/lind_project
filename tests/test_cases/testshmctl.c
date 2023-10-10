@@ -5,7 +5,6 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <wait.h>
 
 // int main() {
 //     pid_t pid = fork();
@@ -87,7 +86,9 @@ int main() {
         perror("shmctl1");
         exit(1);
     }
-    
+    printf("%p:\n", buf);
+    // print buf
+
     if(shmctl(shmid1, IPC_STAT, buf) == -1) {
         printf("ERROR: %d\n", errno);
         fflush(NULL);
