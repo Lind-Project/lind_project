@@ -87,6 +87,7 @@ int main() {
         exit(1);
     }
     printf("%p:\n", buf);
+    fflush(NULL);
     // print buf
 
     if(shmctl(shmid1, IPC_STAT, buf) == -1) {
