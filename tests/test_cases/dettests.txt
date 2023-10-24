@@ -40,3 +40,9 @@ creat_access.c
 mkdir_rmdir.c
 poll.c
 sem_forks.c
+signal-simple.c
+signal-fork.c
+sigprocmask.c
+sigpipe.c
+sigchld.c
+sigalrm.c
