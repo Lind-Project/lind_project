@@ -11,4 +11,3 @@ x86_64-nacl-gcc scripts/read16var.c -o scripts/read16var.nexe -std=gnu99 -lpthre
 echo "Compiling user test binaries"
 cargo build --release --manifest-path=scripts/userpipe/Cargo.toml
 cp scripts/userpipe/target/release/userpipe scripts/userpipetest
-
