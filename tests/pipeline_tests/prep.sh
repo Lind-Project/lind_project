@@ -8,7 +8,7 @@ echo "Generating test content..."
 echo "Loading test files..."
 
 lindfs mkdir /pipeline_tests/
-lindfs cp /home/lind/lind_project/tests/pipeline_tests/ /pipeline_tests/
+lindfs cp /home/lind/lind_project/tests/pipeline_tests/scripts/ /pipeline_tests/
 
 # load test data
 echo "Loading test data..."

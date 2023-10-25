@@ -22,7 +22,7 @@ def execute_script(test_file):
 
 run_times = {}
 for test_file in test_files:
-    with open(test_file, "r") as f:
+    with open("scripts/" + test_file, "r") as f:
         print(f"Test: {f.read().strip()}")
 
     test = " | ".join(test_file.replace(".sh", "").split("_"))

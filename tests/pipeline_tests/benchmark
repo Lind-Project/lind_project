@@ -8,5 +8,6 @@ python3 native_pipelines.py
 echo -e "\nRunning pipeline tests on lind"
 python3 lind_pipelines.py
 
-echo -e "\nRemoving .out files"
+echo -e "\nRemoving test output files"
 rm *.out
+rm test_content/content.txt
