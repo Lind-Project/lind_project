@@ -3,6 +3,7 @@
 # generate test content
 echo "Generating test content..."
 ./gen_test_content.sh $1 content.txt
+mkdir -p data/
 
 # load test files
 echo "Loading test files..."

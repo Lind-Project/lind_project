@@ -1,1 +1,1 @@
-/bin/uniq ./test_content/content.txt > uniq_test.out
+/bin/uniq test_content/content.txt > test_content/uniq_test.out

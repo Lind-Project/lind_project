@@ -21,8 +21,9 @@ for test_file in test_files:
         print(f"Test: {f.read().strip()}")
 
     test = " | ".join(test_file.replace(".sh", "").split("_"))
+    run_times[test] = []
     for _ in range(args.count):
-        output = Popen(["lind", "-t", "/bin/bash", test_file], stdout=PIPE, stderr=PIPE)
+        output = Popen(["lind", "-t", "/bin/bash", "/pipeline_tests/" + test_file], stdout=PIPE, stderr=PIPE)
         stdout, stderr = output.communicate()
 
         try:
@@ -30,7 +31,7 @@ for test_file in test_files:
         except ValueError:
             continue
         run_times[test].append(run_time)
-    run_times[test] = sum(run_times[test]) / args.count
+    run_times[test] = round(sum(run_times[test]) / args.count, 1)
     print(f"Average runtime: {run_times[test]}\n")
 
 with open("data/lind_pipelines.json", "w") as f:

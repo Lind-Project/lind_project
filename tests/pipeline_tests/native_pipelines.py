@@ -27,12 +27,12 @@ for test_file in test_files:
 
     test = " | ".join(test_file.replace(".sh", "").split("_"))
     run_times[test] = timeit.timeit(
-        f'execute_script("{test_file}")',
+        f'execute_script("scripts/{test_file}")',
         setup="from __main__ import execute_script",
         number=args.count,
     )
     run_times[test] = round((run_times[test] / args.count) * 1000, 1)
-    print(f"Average runtime: {run_times[test]}")
+    print(f"Average runtime: {run_times[test]}\n")
 
 with open("data/native_pipelines.json", "w") as f:
     json.dump(run_times, f)
