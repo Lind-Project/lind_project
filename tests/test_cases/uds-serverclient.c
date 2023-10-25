@@ -138,7 +138,7 @@ void *server(void *v)
         exit(EXIT_FAILURE);
     }
 
-    sleep(0.01);
+    sleep(0.1);
     valread = recv(new_socket1, buffer, 1024, 0);
     printf("server -- %s\n", buffer);
     send(new_socket1, hello, strlen(hello), 0);

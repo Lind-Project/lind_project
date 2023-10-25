@@ -35,7 +35,7 @@ void *client(void *v)
     pthread_barrier_wait(&syncbarrier);
 
     connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    sleep(0.01);
+    sleep(0.1);
     send(sock, hello, strlen(hello), 0);
     printf("Hello message sent\n");
     valread = read(sock, buffer, 1024);
