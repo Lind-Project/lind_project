@@ -7,20 +7,22 @@
 
 #define GB (1 << 30)
 
-void parent(int socket, int buf_size) {
+void parent(int socket, int buf_size, int N) {
     char* send_buf = (char*) malloc(buf_size);
     char* recv_buf = (char*) malloc(buf_size);
 
     memset(send_buf, 'a', buf_size);
 
-    for (int i = 0; i < GB/buf_size; ++i) {
-        if (send(socket, send_buf, buf_size, 0) == -1) {
-            perror("Send");
-            exit(1);
-        }
-        if (recv(socket, recv_buf, buf_size, 0) == -1) {
-            perror("Recv");
-            exit(1);
+    for (int b = 0; b < N; ++b) {
+        for (int i = 0; i < GB/buf_size; ++i) {
+            if (send(socket, send_buf, buf_size, 0) == -1) {
+                perror("Send");
+                exit(1);
+            }
+            if (recv(socket, recv_buf, buf_size, 0) == -1) {
+                perror("Recv");
+                exit(1);
+            }
         }
     }
 
@@ -28,20 +30,22 @@ void parent(int socket, int buf_size) {
     free(recv_buf);
 }
 
-void child(int socket, int buf_size) {
+void child(int socket, int buf_size, int N) {
     char* send_buf = (char*) malloc(buf_size);
     char* recv_buf = (char*) malloc(buf_size);
 
     memset(send_buf, 'b', buf_size);
 
-    for(int i = 0; i < GB/buf_size; ++i) {
-        if (recv(socket, recv_buf, buf_size, 0) == -1) {
-            perror("Recv");
-            exit(1);
-        }
-        if (send(socket, send_buf, buf_size, 0) == -1) {
-            perror("Send");
-            exit(1);
+    for (int b = 0; b < N; ++b) {
+        for(int i = 0; i < GB/buf_size; ++i) {
+            if (recv(socket, recv_buf, buf_size, 0) == -1) {
+                perror("Recv");
+                exit(1);
+            }
+            if (send(socket, send_buf, buf_size, 0) == -1) {
+                perror("Send");
+                exit(1);
+            }
         }
     }
 
@@ -51,11 +55,12 @@ void child(int socket, int buf_size) {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        fprintf(stderr, "Usage: [executable] [send_recv_buf_size]\n");
+        fprintf(stderr, "Usage: [executable] [send_recv_buf_size] [total_size_in_gbs]\n");
         exit(1);
     }
 
     int buf_size = 1 << atoi(argv[1]);
+    int N = atoi(argv[2]);
 
     int sockets[2];
     pid_t pid;
@@ -74,11 +79,13 @@ int main(int argc, char *argv[]) {
     if (pid == 0) {
         // Child process
         close(sockets[1]);
-        child(sockets[0], buf_size);
+        child(sockets[0], buf_size, N);
+        close(sockets[0]);
     } else {
         // Parent process
         close(sockets[0]);
-        parent(sockets[1], buf_size);
+        parent(sockets[1], buf_size, N);
+        close(sockets[1]);
     }
-    return 0;
+    exit(0);
 }

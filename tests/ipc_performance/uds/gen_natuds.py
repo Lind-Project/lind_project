@@ -3,13 +3,14 @@ import json
 import subprocess
 import timeit
 
-parser = argparse.ArgumentParser(description="Script to benchmark sending 1GB across unix domain sockets with varying buffersize in native linux")
+parser = argparse.ArgumentParser(description="Script to benchmark sending n GBs across unix domain sockets with varying buffersize in native linux")
 parser.add_argument("-b", "--buffer", dest="buffer", type=str, default="x", help="Buffer size")
 parser.add_argument("-c", "--count", dest="count", type=int, default=10, help="Number of runs")
+parser.add_argument("-t", "--total", dest="total", type=int, default="1", help="Total size in GBs")
 args = parser.parse_args()
 
-def execute_script(buffer_size):
-    process = subprocess.call(["./uds", buffer_size], cwd="./scripts/")
+def execute_script(buffer_size, total_size=args.total):
+    process = subprocess.call(["./uds", buffer_size, total_size], cwd="./scripts/")
 
 run_times = {}
 

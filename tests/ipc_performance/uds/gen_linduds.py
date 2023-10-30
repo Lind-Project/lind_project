@@ -3,9 +3,10 @@ import json
 
 from subprocess import Popen, PIPE
 
-parser = argparse.ArgumentParser(description="Script to benchmark sending 1GB across Lind's unix domain socket implementation with varying buffersize")
+parser = argparse.ArgumentParser(description="Script to benchmark sending n GBs across Lind's unix domain socket implementation with varying buffersize")
 parser.add_argument("-w", "--buffer", dest="buffer", type=str, default="x", help="Buffer size")
 parser.add_argument("-c", "--count", dest="count", type=int, default=10, help="Number of runs")
+parser.add_argument("-t", "--total", dest="total", type=int, default="1", help="Total size in GBs")
 args = parser.parse_args()
 
 run_times = {}
@@ -15,7 +16,7 @@ for size in range(4, 17, 2):
     run_times[size] = []
     print(f"Buffer: {buffer_size}")
     for _ in range(args.count):
-        output = Popen(["lind", "-t", "/uds", buffer_size], stdout=PIPE, stderr=PIPE)
+        output = Popen(["lind", "-t", "/uds", buffer_size, str(args.total)], stdout=PIPE, stderr=PIPE)
         stdout, stderr = output.communicate()
         try:
             run_time = int(float(stderr.split()[-1]) * 1000)
