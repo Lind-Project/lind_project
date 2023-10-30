@@ -10,7 +10,7 @@ parser.add_argument("-t", "--total", dest="total", type=int, default="1", help="
 args = parser.parse_args()
 
 def execute_script(buffer_size, total_size=args.total):
-    process = subprocess.call(["./uds", buffer_size, total_size], cwd="./scripts/")
+    process = subprocess.call(["./uds", buffer_size, str(total_size)], cwd="./scripts/")
 
 run_times = {}
 
