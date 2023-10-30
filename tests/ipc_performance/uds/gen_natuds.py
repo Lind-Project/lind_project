@@ -9,7 +9,7 @@ parser.add_argument("-c", "--count", dest="count", type=int, default=10, help="N
 args = parser.parse_args()
 
 def execute_script(buffer_size):
-    process = subprocess.call(["./uds", buffer_size], cwd="./uds_scripts/")
+    process = subprocess.call(["./uds", buffer_size], cwd="./scripts/")
 
 run_times = {}
 
@@ -20,5 +20,5 @@ for size in range(4, 17, 2):
     run_times[size] = round((run_times[size] / args.count) * 1000, 1)
     print(f"Average runtime: {run_times[size]}")
 
-with open(f"data/uds/nat_{args.buffer}.json", "w") as fp:
+with open(f"data/nat_{args.buffer}.json", "w") as fp:
     json.dump(run_times, fp)

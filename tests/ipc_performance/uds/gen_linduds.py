@@ -15,7 +15,7 @@ for size in range(4, 17, 2):
     run_times[size] = []
     print(f"Buffer: {buffer_size}")
     for _ in range(args.count):
-        output = Popen(["lind", "-t", "uds.nexe", buffer_size], stdout=PIPE, stderr=PIPE)
+        output = Popen(["lind", "-t", "/uds", buffer_size], stdout=PIPE, stderr=PIPE)
         stdout, stderr = output.communicate()
         try:
             run_time = int(float(stderr.split()[-1]) * 1000)
@@ -25,6 +25,6 @@ for size in range(4, 17, 2):
     run_times[size] = sum(run_times[size]) / args.count
     print(f"Average runtime: {run_times[size]}")
 
-with open(f"data/uds/lind_{args.buffer}.json", "w") as fp:
+with open(f"data/lind_{args.buffer}.json", "w") as fp:
     json.dump(run_times, fp)
 
