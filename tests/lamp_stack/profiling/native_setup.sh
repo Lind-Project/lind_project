@@ -11,7 +11,5 @@ echo -e "\nSetting up NGINX\n"
 cd $CWD
 echo -e "\nNGINX setup complete\n"
 
-echo -e "\nSetting up Flask\n"
-./flask_setup.sh
-cd $CWD
-echo -e "\nFlask setup complete\n"
+echo -e "\nStarting LAMP\n"
+./run_lamp_native.sh

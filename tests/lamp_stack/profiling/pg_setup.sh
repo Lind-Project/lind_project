@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /home/lind/lind_projects/tests/applications/postgres/
+cd /home/lind/lind_project/tests/applications/postgres/
 
 ./configure
 make
