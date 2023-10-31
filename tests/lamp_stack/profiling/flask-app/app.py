@@ -34,24 +34,24 @@ def index():
         author = rand_generator()
         review = rand_generator()
         cur.execute(
-            "INSERT INTO np_table (title, author, pages_num, review)"
+            "INSERT INTO books (title, author, pages_num, review)"
             "VALUES (%s, %s, %s, %s)",
             (title, author, n, review),
         )
     conn.commit()
 
-    np_table = []
+    books = []
     for n in range(num_pages):
-        cur.execute("SELECT * FROM np_table WHERE pages_num = %s", (n,))
-        np_table.append(cur.fetchone())
+        cur.execute("SELECT * FROM books WHERE pages_num = %s", (n,))
+        books.append(cur.fetchone())
 
     for n in range(num_pages):
-        cur.execute("DELETE * FROM np_table WHERE pages_num = %s", (n,))
+        cur.execute("DELETE * FROM books WHERE pages_num = %s", (n,))
 
     cur.close()
     conn.commit()
     conn.close()
-    return render_template("index.html", np_table=np_table)
+    return render_template("index.html", books=books)
 
 
 if __name__ == "__main__":
