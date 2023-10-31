@@ -46,7 +46,7 @@ def index():
         books.append(cur.fetchone())
 
     for n in range(num_pages):
-        cur.execute("DELETE * FROM books WHERE pages_num = %s", (n,))
+        cur.execute("DELETE FROM books WHERE pages_num = %s", (n,))
 
     cur.close()
     conn.commit()
