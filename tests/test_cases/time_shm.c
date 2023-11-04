@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <semaphore.h>
 
 /*--------Timing functions--------*/
 long long execution_time = 0;
@@ -26,6 +27,7 @@ int shmid;
 
 typedef struct {
     int a[2];
+    sem_t sem;
 } SharedMemory;
 
 SharedMemory *shared_memory;
@@ -45,11 +47,20 @@ void init_shared_memory() {
         perror("shmat");
         exit(EXIT_FAILURE);
     }
+
+    if (sem_init(&shared_memory->sem, 0, 1) == -1) {
+        perror("sem_init");
+        exit(EXIT_FAILURE);
+    }
+
+    shared_memory->a[0] = 0;
+    shared_memory->a[1] = 0;
 }
 
 void destroy_shared_memory() {
     shmdt(shared_memory);
     shmctl(shmid, IPC_RMID, NULL);
+    sem_destroy(&shared_memory->sem);
 }
 
 /*--------Thread functions--------*/
@@ -57,7 +68,9 @@ void* thread1(int i) {
     int count = 0;
     long long start_time = gettimens();
     while(count <= i) {
+        sem_wait(&shared_memory->sem);
         shared_memory->a[0] = shared_memory->a[1] + 1;
+        sem_post(&shared_memory->sem);
         count++;
     }
     long long end_time = gettimens();
@@ -74,7 +87,9 @@ void* thread2(int i) {
     int count = 0;
     long long start_time = gettimens();
     while(count <= i) {
+        sem_wait(&shared_memory->sem);
         shared_memory->a[1] = shared_memory->a[0];
+        sem_post(&shared_memory->sem);
         count++;
     }
     long long end_time = gettimens();
