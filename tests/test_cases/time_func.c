@@ -30,6 +30,7 @@ int main(int argc, char *argv[]) {
     
     while(count <= i) {
         dummyFunc();
+        count++;
     }
     
     // Get sum of time
@@ -37,7 +38,7 @@ int main(int argc, char *argv[]) {
     long long total_time = end_time - start_time;
     // Average
     long long average_time = total_time/count;
-    fprintf("%d dummy function calls, average time %lld ns\n", count, average_time);
+    printf("%d dummy function calls, average time %lld ns\n", count, average_time);
     fflush(NULL);
     
 }
