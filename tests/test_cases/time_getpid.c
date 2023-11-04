@@ -4,10 +4,6 @@
 #include <unistd.h>
 #include <time.h>
 
-void dummyFunc() {
-
-}
-
 long long gettimens(void) {
   struct timespec tp;
 
@@ -27,7 +23,7 @@ int main(int argc, char *argv[]) {
     long long start_time = gettimens();
     
     while(count <= i) {
-        dummyFunc();
+        getpid();
         count++;
     }
     
