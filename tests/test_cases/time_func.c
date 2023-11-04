@@ -24,7 +24,8 @@ long long execution_time = 0;
 int main(int argc, char *argv[]) {
     int i = atoi(argv[1]);
     int count = 0;
-    
+    printf("i: %d\n", i);
+    fflush(NULL);
     long long start_time = gettimens();
     
     while(count <= i) {
@@ -36,8 +37,8 @@ int main(int argc, char *argv[]) {
     long long total_time = end_time - start_time;
     // Average
     long long average_time = total_time/count;
-    fprintf(stderr, "%d dummy function calls, average time %lld ns\n", count, average_time);
-    fflush(stderr);
+    fprintf("%d dummy function calls, average time %lld ns\n", count, average_time);
+    fflush(NULL);
     
 }
 
