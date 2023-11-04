@@ -97,6 +97,7 @@ int main(int argc, char *argv[]) {
     fflush(NULL);
     pthread_t t1, t2;
     pthread_create(&t1, NULL, thread1(i), NULL);
+    sleep(100);
     pthread_create(&t2, NULL, thread2(i), NULL);
     printf("%d\n", 3);
     fflush(NULL);
