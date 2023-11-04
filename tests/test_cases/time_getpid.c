@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     long long total_time = end_time - start_time;
     // Average
     long long average_time = total_time/count;
-    printf("%d dummy function calls, average time %lld ns\n", i, average_time);
+    printf("%d getpid function calls, average time %lld ns\n", i, average_time);
     fflush(NULL);
     
 }
