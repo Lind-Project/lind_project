@@ -27,7 +27,7 @@ int shmid;
 
 typedef struct {
     int a[2];
-    sem_t sem;
+    // sem_t sem;
 } SharedMemory;
 
 SharedMemory *shared_memory;
@@ -48,10 +48,10 @@ void init_shared_memory() {
         exit(EXIT_FAILURE);
     }
 
-    if (sem_init(&shared_memory->sem, 0, 1) == -1) {
-        perror("sem_init");
-        exit(EXIT_FAILURE);
-    }
+    // if (sem_init(&shared_memory->sem, 0, 1) == -1) {
+    //     perror("sem_init");
+    //     exit(EXIT_FAILURE);
+    // }
 
     shared_memory->a[0] = 0;
     shared_memory->a[1] = 0;
@@ -60,7 +60,7 @@ void init_shared_memory() {
 void destroy_shared_memory() {
     shmdt(shared_memory);
     shmctl(shmid, IPC_RMID, NULL);
-    sem_destroy(&shared_memory->sem);
+    // sem_destroy(&shared_memory->sem);
 }
 
 /*--------Thread functions--------*/
@@ -68,9 +68,9 @@ void* thread1() {
     int count = 0;
     long long start_time = gettimens();
     while(count <= 10) {
-        sem_wait(&shared_memory->sem);
+        // sem_wait(&shared_memory->sem);
         shared_memory->a[0] = shared_memory->a[1] + 1;
-        sem_post(&shared_memory->sem);
+        // sem_post(&shared_memory->sem);
         count++;
     }
     long long end_time = gettimens();
@@ -87,9 +87,9 @@ void* thread2() {
     int count = 0;
     long long start_time = gettimens();
     while(count <= 10) {
-        sem_wait(&shared_memory->sem);
+        // sem_wait(&shared_memory->sem);
         shared_memory->a[1] = shared_memory->a[0];
-        sem_post(&shared_memory->sem);
+        // sem_post(&shared_memory->sem);
         count++;
     }
     long long end_time = gettimens();
