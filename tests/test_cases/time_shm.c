@@ -104,23 +104,17 @@ void* thread2() {
 
 /*--------Main functions--------*/
 int main(int argc, char *argv[]) {
-    printf("%d\n", 1);
-    fflush(NULL);
     init_shared_memory();
-    printf("%d\n", 2);
-    fflush(NULL);
+    
     pthread_t t1, t2;
     pthread_create(&t1, NULL, thread1, NULL);
     pthread_create(&t2, NULL, thread2, NULL);
-    printf("%d\n", 3);
-    fflush(NULL);
+    
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);
-    printf("%d\n", 4);
-    fflush(NULL);
+    
     destroy_shared_memory();
-    printf("%d\n", 5);
-    fflush(NULL);
+    
     return 0;
 }
 
