@@ -35,8 +35,6 @@ static void sig_usr(int signum){
     fflush(NULL);
     if(signum == SIGUSR2) {
         // P2 is scheduled and receives the token
-        tr_end = gettimens();
-        tr = tr_end - td_end;
         write(pipe_fd[1], "r", 1);
     }
 }
@@ -52,7 +50,7 @@ void process1(int pid) {
     // 4. P1 attempts to read a response token from P2. This induces a context switch
     // 8. P1 is scheduled and receives the token
     char buffer[1];
-    close(pipe_fd[1]);
+    close(pipe_fd[1]); // Close write end
     read(pipe_fd[0], buffer, 1);
     // 9. P1 marks the ending time
     end = gettimens();
@@ -67,6 +65,8 @@ void process2() {
     // 1. Blocks awaiting data from P1
     pause();
     // 5. P2 is scheduled and receives the token
+    tr_end = gettimens();
+    tr = tr_end - td_end;
     // 6. P2 sends a response token to P1.
     // 7. P2 attempts to read a response token from P1
     _exit(EXIT_SUCCESS);
