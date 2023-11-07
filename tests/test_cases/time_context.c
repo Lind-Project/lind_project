@@ -54,6 +54,8 @@ void process1(int pid) {
     read(pipe_fd[0], buffer, sizeof(buffer));
     // 9. P1 marks the ending time
     end = gettimens();
+    printf("Start: %d, End: %d\n", start, end);
+    fflush(NULL);
 }
 
 void process2() {
@@ -67,8 +69,8 @@ void process2() {
     // 5. P2 is scheduled and receives the token
     // 6. P2 sends a response token to P1.
     // 7. P2 attempts to read a response token from P1
-    printf("[Process 2] End...\n");
-    fflush(NULL);
+    // printf("[Process 2] End...\n");
+    // fflush(NULL);
 }
 
 /*--------Main function--------*/
@@ -98,10 +100,10 @@ int main(int argc, char *argv[]) {
         close(pipe_fd[1]);
     }
 
-    int tc = (end-start)/2-start-tr;
+    // int tc = (end-start)/2-start-tr;
 
-    printf("Context switching time: %d\n", tc);
-    fflush(NULL);
+    // printf("Context switching time: %d\n", tc);
+    // fflush(NULL);
 
     return 0;
 }
