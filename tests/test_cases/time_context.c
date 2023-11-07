@@ -8,6 +8,7 @@
 #include <sys/shm.h>
 #include <semaphore.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 /*--------Timing functions--------*/
 long long execution_time = 0;
@@ -58,7 +59,6 @@ void process1(int pid) {
 void process2() {
     // Set signal handler
     struct sigaction sa_usr;
-    sa_usr.sa_flags = 0;
     sa_usr.sa_handler = sig_usr;   
 
     sigaction(SIGUSR2, &sa_usr, NULL);
@@ -67,7 +67,8 @@ void process2() {
     // 5. P2 is scheduled and receives the token
     // 6. P2 sends a response token to P1.
     // 7. P2 attempts to read a response token from P1
-    
+    printf("[Process 2] End...\n");
+    fflush(NULL);
 }
 
 /*--------Main function--------*/
