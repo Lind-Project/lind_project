@@ -35,7 +35,7 @@ SharedMemory *shared_memory;
 // Initialize shared memory
 void init_shared_memory() {
     // Create
-    shmid = shmget(IPC_PRIVATE, sizeof(SharedMemory), IPC_CREAT | 0666);
+    shmid = shmget(31337, sizeof(SharedMemory), IPC_CREAT | 0666);
     if (shmid == -1) {
         perror("shmget");
         exit(EXIT_FAILURE);
