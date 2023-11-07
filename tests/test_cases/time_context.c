@@ -41,6 +41,7 @@ static void sig_usr(int signum){
 /*--------Process functions--------*/
 void process1(int pid) {
     printf("[process 1] Starting...");
+    fflush(NULL);
     int count = 0;
     // 2. P1 marks the starting time
     start = gettimens();
