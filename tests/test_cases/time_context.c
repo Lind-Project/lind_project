@@ -52,7 +52,7 @@ void process1(int pid) {
     // 4. P1 attempts to read a response token from P2. This induces a context switch
     // 8. P1 is scheduled and receives the token
     char buffer[1];
-    // close(pipe_fd[1]);
+    close(pipe_fd[1]);
     read(pipe_fd[0], buffer, 1);
     // 9. P1 marks the ending time
     end = gettimens();
