@@ -8,14 +8,6 @@
 #include <sys/shm.h>
 #include <semaphore.h>
 #include <signal.h>
-// #include <ctype.h>
-// #include <errno.h>
-// #include <fcntl.h>
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <sys/stat.h>
-// #include <sys/types.h>
-// #include <unistd.h>
 
 /*--------Timing functions--------*/
 long long execution_time = 0;
@@ -80,6 +72,7 @@ void process2() {
 /*--------Main function--------*/
 int main(int argc, char *argv[]) {
     printf("Start");
+    fflush(NULL);
     if (pipe(pipe_fd) == -1) {
         perror("pipe");
         exit(EXIT_FAILURE);
