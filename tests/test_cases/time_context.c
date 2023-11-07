@@ -79,7 +79,7 @@ void process2() {
 
 /*--------Main function--------*/
 int main(int argc, char *argv[]) {
-
+    printf("Start");
     if (pipe(pipe_fd) == -1) {
         perror("pipe");
         exit(EXIT_FAILURE);
