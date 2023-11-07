@@ -7,6 +7,15 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <semaphore.h>
+#include <signal.h>
+// #include <ctype.h>
+// #include <errno.h>
+// #include <fcntl.h>
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <sys/stat.h>
+// #include <sys/types.h>
+// #include <unistd.h>
 
 /*--------Timing functions--------*/
 long long execution_time = 0;
@@ -23,35 +32,58 @@ long long gettimens(void) {
 }
 
 long long tr, start, end; // Timestamp
-int token = 0;
-int response = 0;
+
+int pipe_fd[2]; // Pipe fd
+
+/*--------Signal functions--------*/
+static void sig_usr(int signum){
+    printf("Received signal %d\n", signum);
+    fflush(NULL);
+    if(signum == SIGUSR2) {
+        // P2 is scheduled and receives the token
+        tr = gettimens();
+        write(pipe_fd[1], "received SIGUSR2", sizeof("received SIGUSR2"));
+    }
+}
 
 /*--------Process functions--------*/
-void process1() {
+void process1(int pid) {
     printf("[process 1] Starting...");
     int count = 0;
-    // P1 marks the starting time
+    // 2. P1 marks the starting time
     start = gettimens();
-    // P1 sends a token to P2
-    token = 1;
-    // P1 attempts to read a response token from P2. This induces a context switch
-    while(response == 0) {
-    }
-    // P1 marks the ending time
+    // 3. P1 sends a token to P2
+    kill(pid, SIGUSR2);
+    // 4. P1 attempts to read a response token from P2. This induces a context switch
+    // 8. P1 is scheduled and receives the token
+    char buffer[100];
+    read(pipe_fd[0], buffer, sizeof(buffer));
+    // 9. P1 marks the ending time
     end = gettimens();
 }
 
 void process2() {
-    // Blocks awaiting data from P1
-    while(token == 0) {
-    }
-    tr = gettimens();
-    // P2 sends a response token to P1.
-    response = 1;
+    // Set signal handler
+    struct sigaction sa_usr;
+    sa_usr.sa_flags = 0;
+    sa_usr.sa_handler = sig_usr;   
+
+    sigaction(SIGUSR2, &sa_usr, NULL);
+    // 1. Blocks awaiting data from P1
+    pause();
+    // 5. P2 is scheduled and receives the token
+    // 6. P2 sends a response token to P1.
+    // 7. P2 attempts to read a response token from P1
+    
 }
 
 /*--------Main function--------*/
 int main(int argc, char *argv[]) {
+
+    if (pipe(pipe_fd) == -1) {
+        perror("pipe");
+        exit(EXIT_FAILURE);
+    }
 
     pid_t pid = fork();
 
@@ -63,8 +95,10 @@ int main(int argc, char *argv[]) {
         process2();
     } else {
         // Parent process
-        process1();
+        process1(pid);
         wait(NULL); // Wait for the child process to finish
+        close(pipe_fd[0]);
+        close(pipe_fd[1]);
     }
 
     int tc = (end-start)/2-start-tr;
