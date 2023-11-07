@@ -41,8 +41,8 @@ static void sig_usr(int signum){
 
 /*--------Process functions--------*/
 void process1(int pid) {
-    printf("[process 1] Starting...");
-    fflush(NULL);
+    // printf("[process 1] Starting...\n");
+    // fflush(NULL);
     // 2. P1 marks the starting time
     start = gettimens();
     // 3. P1 sends a token to P2
@@ -54,8 +54,8 @@ void process1(int pid) {
     read(pipe_fd[0], buffer, 1);
     // 9. P1 marks the ending time
     end = gettimens();
-    printf("Start: %lld, End: %lld\n", start, end);
-    fflush(NULL);
+    // printf("Start: %lld, End: %lld\n", start, end);
+    // fflush(NULL);
 }
 
 void process2() {
@@ -69,8 +69,6 @@ void process2() {
     // 5. P2 is scheduled and receives the token
     // 6. P2 sends a response token to P1.
     // 7. P2 attempts to read a response token from P1
-    // printf("[Process 2] End...\n");
-    // fflush(NULL);
     _exit(EXIT_SUCCESS);
 }
 
@@ -91,8 +89,8 @@ int main(int argc, char *argv[]) {
     } else if (pid == 0) {
         // Child process
         process2();
-        printf("[Process 2] End...\n");
-        fflush(NULL);
+        // printf("[Process 2] End...\n");
+        // fflush(NULL);
     } else {
         // Parent process
         process1(pid);
@@ -101,8 +99,9 @@ int main(int argc, char *argv[]) {
         close(pipe_fd[1]);
     }
 
-    long long tc = (end-start)/2-start-tr;
 
+    long long tc = (end-start)/2-start-tr;
+    printf("tr: %lld\nstart: %lld\nend:%lld\n", tr, start, end);
     printf("Context switching time: %lld\n", tc);
     fflush(NULL);
 
