@@ -43,8 +43,6 @@ static void sig_usr(int signum){
 
 /*--------Process functions--------*/
 void process1(int pid) {
-    // printf("[process 1] Starting...\n");
-    // fflush(NULL);
     // 2. P1 marks the starting time
     start = gettimens();
     // 3. P1 sends a token to P2
@@ -54,12 +52,10 @@ void process1(int pid) {
     // 4. P1 attempts to read a response token from P2. This induces a context switch
     // 8. P1 is scheduled and receives the token
     char buffer[1];
-    close(pipe_fd[1]);
+    // close(pipe_fd[1]);
     read(pipe_fd[0], buffer, 1);
     // 9. P1 marks the ending time
     end = gettimens();
-    // printf("Start: %lld, End: %lld\n", start, end);
-    // fflush(NULL);
 }
 
 void process2() {
@@ -93,8 +89,6 @@ int main(int argc, char *argv[]) {
     } else if (pid == 0) {
         // Child process
         process2();
-        // printf("[Process 2] End...\n");
-        // fflush(NULL);
     } else {
         // Parent process
         process1(pid);
@@ -103,7 +97,6 @@ int main(int argc, char *argv[]) {
         close(pipe_fd[1]);
     }
 
-    long long td = 0;
     long long tc = (end-start)/2-td-tr;
     printf("tr: %lld\ntd: %lld\nstart: %lld\nend:%lld\n", tr, td, start, end);
     printf("Context switching time: %lld\n", tc);
