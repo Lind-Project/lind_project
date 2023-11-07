@@ -97,8 +97,9 @@ int main(int argc, char *argv[]) {
         close(pipe_fd[1]);
     }
 
-    long long tc = (end-start)/2-td-tr;
-    printf("tr: %lld\ntd: %lld\nstart: %lld\nend:%lld\n", tr, td, start, end);
+    long long t = end - start;
+    long long tc = t/2-td-tr;
+    printf("tr: %lld\ntd: %lld\nstart: %lld\nend:%lld\nt:%lld\n", tr, td, start, end, t);
     printf("Context switching time: %lld\n", tc);
     fflush(NULL);
 
