@@ -35,7 +35,7 @@ static void sig_usr(int signum){
     if(signum == SIGUSR2) {
         // P2 is scheduled and receives the token
         tr = gettimens();
-        write(pipe_fd[1], "received SIGUSR2", sizeof("received SIGUSR2"));
+        write(pipe_fd[1], "r", 1);
     }
 }
 
@@ -43,18 +43,18 @@ static void sig_usr(int signum){
 void process1(int pid) {
     printf("[process 1] Starting...");
     fflush(NULL);
-    int count = 0;
     // 2. P1 marks the starting time
     start = gettimens();
     // 3. P1 sends a token to P2
     kill(pid, SIGUSR2);
     // 4. P1 attempts to read a response token from P2. This induces a context switch
     // 8. P1 is scheduled and receives the token
-    char buffer[100];
-    read(pipe_fd[0], buffer, sizeof(buffer));
+    char buffer[1];
+    close(pipe_fd[1]);
+    read(pipe_fd[0], buffer, 1);
     // 9. P1 marks the ending time
     end = gettimens();
-    printf("Start: %d, End: %d\n", start, end);
+    printf("Start: %lld, End: %lld\n", start, end);
     fflush(NULL);
 }
 
@@ -71,6 +71,7 @@ void process2() {
     // 7. P2 attempts to read a response token from P1
     // printf("[Process 2] End...\n");
     // fflush(NULL);
+    _exit(EXIT_SUCCESS);
 }
 
 /*--------Main function--------*/
@@ -100,10 +101,10 @@ int main(int argc, char *argv[]) {
         close(pipe_fd[1]);
     }
 
-    // int tc = (end-start)/2-start-tr;
+    long long tc = (end-start)/2-start-tr;
 
-    // printf("Context switching time: %d\n", tc);
-    // fflush(NULL);
+    printf("Context switching time: %lld\n", tc);
+    fflush(NULL);
 
     return 0;
 }
