@@ -60,10 +60,10 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
         // Child process
-        process1();
+        process2();
     } else {
         // Parent process
-        process2();
+        process1();
         wait(NULL); // Wait for the child process to finish
     }
 
