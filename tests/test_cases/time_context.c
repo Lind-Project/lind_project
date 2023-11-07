@@ -72,7 +72,7 @@ void process2() {
 
 /*--------Main function--------*/
 int main(int argc, char *argv[]) {
-    printf("Start");
+    printf("Start\n");
     fflush(NULL);
     if (pipe(pipe_fd) == -1) {
         perror("pipe");
@@ -87,6 +87,8 @@ int main(int argc, char *argv[]) {
     } else if (pid == 0) {
         // Child process
         process2();
+        printf("[Process 2] End...\n");
+        fflush(NULL);
     } else {
         // Parent process
         process1(pid);
