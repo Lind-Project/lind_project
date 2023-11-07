@@ -24,7 +24,8 @@ long long gettimens(void) {
     return (tp.tv_sec * 1000000000) + tp.tv_nsec;
 }
 
-long long tr, start, end; // Timestamp
+long long tr, start, end, td; // Timestamp
+long long td_end, tr_end;
 
 int pipe_fd[2]; // Pipe fd
 
@@ -34,7 +35,8 @@ static void sig_usr(int signum){
     fflush(NULL);
     if(signum == SIGUSR2) {
         // P2 is scheduled and receives the token
-        tr = gettimens();
+        tr_end = gettimens();
+        tr = tr_end - td_end;
         write(pipe_fd[1], "r", 1);
     }
 }
@@ -47,6 +49,8 @@ void process1(int pid) {
     start = gettimens();
     // 3. P1 sends a token to P2
     kill(pid, SIGUSR2);
+    td_end = gettimens();
+    td = td_end - start;
     // 4. P1 attempts to read a response token from P2. This induces a context switch
     // 8. P1 is scheduled and receives the token
     char buffer[1];
@@ -99,9 +103,9 @@ int main(int argc, char *argv[]) {
         close(pipe_fd[1]);
     }
 
-
-    long long tc = (end-start)/2-start-tr;
-    printf("tr: %lld\nstart: %lld\nend:%lld\n", tr, start, end);
+    long long td = 0;
+    long long tc = (end-start)/2-td-tr;
+    printf("tr: %lld\ntd: %lld\nstart: %lld\nend:%lld\n", tr, td, start, end);
     printf("Context switching time: %lld\n", tc);
     fflush(NULL);
 
