@@ -5,8 +5,6 @@
 #include <time.h>
 #include <pthread.h>
 #include <sys/ipc.h>
-#include <sys/shm.h>
-#include <semaphore.h>
 #include <signal.h>
 #include <sys/wait.h>
 
