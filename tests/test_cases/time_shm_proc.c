@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include <semaphore.h>
+#include <sys/wait.h>
 
 /*--------Timing functions--------*/
 long long execution_time = 0;
