@@ -1,1 +1,1 @@
-/bin/cat test_content/content.txt | /bin/grep -Eo '[+-]?[0-9]+([.][0-9]+)?' > test_content/cat_grep.out
+/bin/cat test_content/content.txt | /bin/grep -i "the" > test_content/cat_grep.out
