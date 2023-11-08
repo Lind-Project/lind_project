@@ -63,6 +63,7 @@ void process1() {
         shared_memory->a[0] = shared_memory->a[1] + 1;
         count++;
     }
+    _exit(EXIT_SUCCESS);
 }
 
 void process2() {
@@ -75,7 +76,7 @@ void process2() {
 }
 
 /*--------Main function--------*/
-int main(int argc, char *argv[]) {
+int main() {
     init_shared_memory();
 
     pid_t pid = fork();
