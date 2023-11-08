@@ -91,8 +91,8 @@ int main(int argc, char *argv[]) {
     } else {
         // Parent process
         process2();
-        wait(NULL); // Wait for the child process to finish
     }
+    wait(NULL); // Wait for the child process to finish
     long long end_time = gettimens();
     long long total_time = end_time - start_time;
     // Average
