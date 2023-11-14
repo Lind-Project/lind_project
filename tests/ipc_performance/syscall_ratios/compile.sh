@@ -1,8 +1,10 @@
 #!/bin/bash
+export CC=/home/lind/gcc_build/bin/gcc
+export CXX=/home/lind/gcc_build/bin/g++
 
 echo "Compiling native test binaries"
-gcc scripts/write_var_time.c -o scripts/write_var_time -lpthread -O3
-gcc scripts/read_var_time.c -o scripts/read_var_time -lpthread -O3
+gcc scripts/write_var_time.c -o scripts/write_var_time -std=gnu99 -lpthread -O3
+gcc scripts/read_var_time.c -o scripts/read_var_time -std=gnu99 -lpthread -O3
 
 echo "Compiling lind test binaries"
 x86_64-nacl-gcc scripts/write_var_time.c -o scripts/write_var_time.nexe -std=gnu99 -lpthread -lrt -O3
