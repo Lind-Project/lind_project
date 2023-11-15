@@ -41,6 +41,7 @@ void process1(int pid) {
     
     // 9. P1 marks the ending time
     end = gettimens();
+    close(pipe_fd[0]);
 }
 
 void process2() {
@@ -76,10 +77,10 @@ int main(int argc, char *argv[]) {
         process2();
     } else {
         // Parent process
-        close(pipe_fd[1]);
+        close(pipe_fd[0]);
         process1(pid);
         wait(NULL); // Wait for the child process to finish
-        close(pipe_fd[0]);
+        
         close(pipe_fd[1]);
     }
 
