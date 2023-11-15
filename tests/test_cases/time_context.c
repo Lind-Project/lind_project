@@ -76,6 +76,7 @@ int main(int argc, char *argv[]) {
         process2();
     } else {
         // Parent process
+        close(pipe_fd[1]);
         process1(pid);
         wait(NULL); // Wait for the child process to finish
         close(pipe_fd[0]);
