@@ -11,17 +11,26 @@
 /*--------Timing functions--------*/
 long long execution_time = 0;
 
-long long gettimens(void) {
-  struct timespec tp;
+// long long gettimens(void) {
+//   struct timespec tp;
 
-  if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
-    perror( "clock gettime" );
-    exit( EXIT_FAILURE );
-  }
+//   if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
+//     perror( "clock gettime" );
+//     exit( EXIT_FAILURE );
+//   }
 
-  return (tp.tv_sec * 1000000000) + tp.tv_nsec;
+//   return (tp.tv_sec * 1000000000) + tp.tv_nsec;
+// }
+long long gettimems(void) {
+    struct timespec tp;
+
+    if(clock_gettime(CLOCK_MONOTONIC, &tp) == -1) {
+        perror("clock gettime");
+        exit(EXIT_FAILURE);
+    }
+
+    return (tp.tv_sec * 1000) + (tp.tv_nsec / 1000000);
 }
-
 /*--------Shared Memory--------*/
 int shmid;
 
@@ -61,8 +70,8 @@ void destroy_shared_memory() {
 
 /*--------Thread functions--------*/
 void* thread1() {
-    int count = 0;
-    while(count <= 1000000) {
+    long long count = 0;
+    while(count <= 1073741824) {
         shared_memory->a[0] = shared_memory->a[1] + 1;
         count++;
     }
@@ -70,8 +79,8 @@ void* thread1() {
 }
 
 void* thread2() {
-    int count = 0;
-    while(count <= 1000000) {
+    long long count = 0;
+    while(count <= 1073741824) {
         shared_memory->a[1] = shared_memory->a[0];
         count++;
     }
@@ -84,7 +93,7 @@ int main(int argc, char *argv[]) {
     
     pthread_t t1, t2;
 
-    long long start_time = gettimens();
+    long long start_time = gettimems();
 
     pthread_create(&t1, NULL, thread1, NULL);
     pthread_create(&t2, NULL, thread2, NULL);
@@ -92,10 +101,10 @@ int main(int argc, char *argv[]) {
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);
     
-    long long end_time = gettimens();
+    long long end_time = gettimems();
     long long total_time = end_time - start_time;
-    long long average_time = total_time/1000000;
-    printf("%d shared memory calls, average time %lld ns\n", 1000000, average_time);
+    long long average_time = total_time/1073741824;
+    printf("%d shared memory calls, average time %lld ns\n", 1073741824, average_time);
     fflush(NULL);
 
     destroy_shared_memory();
