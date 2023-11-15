@@ -26,16 +26,7 @@ long long tr, start, end, td; // Timestamp
 long long td_end, tr_end;
 
 int pipe_fd[2]; // Pipe fd
-
-/*--------Signal functions--------*/
-// static void sig_usr(int signum){
-//     printf("Received signal %d\n", signum);
-//     fflush(NULL);
-//     if(signum == SIGUSR2) {
-//         // P2 is scheduled and receives the token
-//         write(pipe_fd[1], "r", 1);
-//     }
-// }
+char buffer[1];
 
 /*--------Process functions--------*/
 void process1(int pid) {
@@ -54,9 +45,9 @@ void process1(int pid) {
 
 void process2() {
     // 1. Blocks awaiting data from P1
-    char buffer[1];
-    close(pipe_fd[1]); // Close write end
-    read(pipe_fd[0], buffer, 1);
+    while(read(pipe_fd[0], buffer, 1) != 1) {
+        
+    }
     // 5. P2 is scheduled and receives the token
     tr_end = gettimens();
     tr = tr_end - td_end;
@@ -81,6 +72,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
         // Child process
+        close(pipe_fd[1]); // Close write end
         process2();
     } else {
         // Parent process
