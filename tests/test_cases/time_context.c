@@ -46,7 +46,7 @@ void process1(int pid) {
 void process2() {
     // 1. Blocks awaiting data from P1
     while(read(pipe_fd[0], buffer, 1) != 1) {
-        
+
     }
     // 5. P2 is scheduled and receives the token
     tr_end = gettimens();
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
 
     long long t = end - start;
     long long tc = t/2-td-tr;
-    printf("tr: %lld\ntd: %lld\nstart: %lld\nend:%lld\nt:%lld\n", tr, td, start, end, t);
+    printf("tr: %lld\ntd: %lld\nstart: %lld\nend:%lld\nt:%lld\ntr_end:%lld\n", tr, td, start, end, t, tr_end);
     printf("Context switching time: %lld\n", tc);
     fflush(NULL);
 
