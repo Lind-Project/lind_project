@@ -28,40 +28,35 @@ long long td_end, tr_end;
 int pipe_fd[2]; // Pipe fd
 
 /*--------Signal functions--------*/
-static void sig_usr(int signum){
-    printf("Received signal %d\n", signum);
-    fflush(NULL);
-    if(signum == SIGUSR2) {
-        // P2 is scheduled and receives the token
-        write(pipe_fd[1], "r", 1);
-    }
-}
+// static void sig_usr(int signum){
+//     printf("Received signal %d\n", signum);
+//     fflush(NULL);
+//     if(signum == SIGUSR2) {
+//         // P2 is scheduled and receives the token
+//         write(pipe_fd[1], "r", 1);
+//     }
+// }
 
 /*--------Process functions--------*/
 void process1(int pid) {
     // 2. P1 marks the starting time
     start = gettimens();
     // 3. P1 sends a token to P2
-    kill(pid, SIGUSR2);
+    write(pipe_fd[1], "r", 1);
     td_end = gettimens();
     td = td_end - start;
     // 4. P1 attempts to read a response token from P2. This induces a context switch
     // 8. P1 is scheduled and receives the token
-    char buffer[1];
-    close(pipe_fd[1]); // Close write end
-    read(pipe_fd[0], buffer, 1);
+    
     // 9. P1 marks the ending time
     end = gettimens();
 }
 
 void process2() {
-    // Set signal handler
-    struct sigaction sa_usr;
-    sa_usr.sa_handler = sig_usr;   
-
-    sigaction(SIGUSR2, &sa_usr, NULL);
     // 1. Blocks awaiting data from P1
-    pause();
+    char buffer[1];
+    close(pipe_fd[1]); // Close write end
+    read(pipe_fd[0], buffer, 1);
     // 5. P2 is scheduled and receives the token
     tr_end = gettimens();
     tr = tr_end - td_end;
@@ -92,6 +87,7 @@ int main(int argc, char *argv[]) {
         process1(pid);
         wait(NULL); // Wait for the child process to finish
         close(pipe_fd[0]);
+        close(pipe_fd[1]);
     }
 
     long long t = end - start;
