@@ -26,10 +26,13 @@ long long tr, start, end, td; // Timestamp
 long long td_end, tr_end;
 
 int pipe_fd[2]; // Pipe fd
+int pipe_fd_2[2];
 char buffer[1];
+char buffer2[1];
 
 /*--------Process functions--------*/
 void process1(int pid) {
+    close(pipe_fd[0]);
     // 2. P1 marks the starting time
     start = gettimens();
     // 3. P1 sends a token to P2
@@ -37,22 +40,25 @@ void process1(int pid) {
     td_end = gettimens();
     td = td_end - start;
     // 4. P1 attempts to read a response token from P2. This induces a context switch
+    close(pipe_fd_2[1]);
     // 8. P1 is scheduled and receives the token
-    
+    read(pipe_fd_2[0], buffer2, 1);
     // 9. P1 marks the ending time
     end = gettimens();
     close(pipe_fd[0]);
+    close(pipe_fd_2[1]);
 }
 
 void process2() {
     // 1. Blocks awaiting data from P1
-    while(read(pipe_fd[0], buffer, 1) != 1) {
-
-    }
+    close(pipe_fd[1]); // Close write end
+    read(pipe_fd[0], buffer, 1);
     // 5. P2 is scheduled and receives the token
     tr_end = gettimens();
     tr = tr_end - td_end;
     // 6. P2 sends a response token to P1.
+    close(pipe_fd_2[0]);
+    write(pipe_fd_2[1], "r", 1);
     // 7. P2 attempts to read a response token from P1
     _exit(EXIT_SUCCESS);
 }
@@ -65,6 +71,11 @@ int main(int argc, char *argv[]) {
         perror("pipe");
         exit(EXIT_FAILURE);
     }
+    if (pipe(pipe_fd_2) == -1) {
+        perror("pipe");
+        exit(EXIT_FAILURE);
+    }
+    
 
     pid_t pid = fork();
 
@@ -73,15 +84,12 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
         // Child process
-        close(pipe_fd[1]); // Close write end
         process2();
     } else {
         // Parent process
-        close(pipe_fd[0]);
         process1(pid);
         wait(NULL); // Wait for the child process to finish
         
-        close(pipe_fd[1]);
     }
 
     long long t = end - start;
