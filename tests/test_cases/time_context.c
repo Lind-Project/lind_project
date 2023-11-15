@@ -92,7 +92,6 @@ int main(int argc, char *argv[]) {
         process1(pid);
         wait(NULL); // Wait for the child process to finish
         close(pipe_fd[0]);
-        close(pipe_fd[1]);
     }
 
     long long t = end - start;
