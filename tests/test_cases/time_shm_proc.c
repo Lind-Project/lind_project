@@ -59,7 +59,7 @@ void destroy_shared_memory() {
 /*--------Process functions--------*/
 void process1() {
     int count = 0;
-    while (count <= 1000000) {
+    while (count <= 1073741824) {
         shared_memory->a[0] = shared_memory->a[1] + 1;
         count++;
     }
@@ -69,7 +69,7 @@ void process1() {
 void process2() {
     int count = 0;
     long long start_time = gettimens();
-    while (count <= 1000000) {
+    while (count <= 1073741824) {
         shared_memory->a[1] = shared_memory->a[0];
         count++;
     }
@@ -97,8 +97,8 @@ int main() {
     long long end_time = gettimens();
     long long total_time = end_time - start_time;
     // Average
-    long long average_time = total_time / 1000000;
-    printf("%d shared memory calls, average time %lld ns\n", 1000000, average_time);
+    long long average_time = total_time / 1073741824;
+    printf("%d shared memory calls, average time %lld ns\n", 1073741824, average_time);
     fflush(NULL);
     destroy_shared_memory();
 
