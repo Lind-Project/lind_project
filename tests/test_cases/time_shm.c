@@ -104,7 +104,8 @@ int main(int argc, char *argv[]) {
     long long end_time = gettimems();
     long long total_time = end_time - start_time;
     long long average_time = total_time/1073741824;
-    printf("%d shared memory calls, average time %lld ns\n", 1073741824, average_time);
+    printf("t1: %lld\nt2: %lld\n", t1, t2);
+    printf("%d shared memory calls, average time %lld ms\n", 1073741824, average_time);
     fflush(NULL);
 
     destroy_shared_memory();
