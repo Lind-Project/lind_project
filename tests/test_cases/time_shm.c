@@ -89,6 +89,7 @@ void* thread2() {
 
 /*--------Main functions--------*/
 int main(int argc, char *argv[]) {
+    destroy_shared_memory();
     init_shared_memory();
     
     pthread_t t1, t2;
