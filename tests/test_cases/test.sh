@@ -1,6 +1,11 @@
 #!/bin/bash
 
-COMMAND="./t"
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <command>"
+    exit 1
+fi
+
+COMMAND=$1
 
 max_time=0
 min_time=-1
