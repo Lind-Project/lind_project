@@ -71,7 +71,7 @@ void destroy_shared_memory() {
 /*--------Thread functions--------*/
 void* thread1() {
     long long count = 0;
-    while(count <= 1099511627776) {
+    while(count <= 1073741824) {
         shared_memory->a[0] = shared_memory->a[1] + 1;
         count++;
     }
@@ -80,7 +80,7 @@ void* thread1() {
 
 void* thread2() {
     long long count = 0;
-    while(count <= 1099511627776) {
+    while(count <= 1073741824) {
         shared_memory->a[1] = shared_memory->a[0];
         count++;
     }
