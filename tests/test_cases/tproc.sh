@@ -1,16 +1,27 @@
 #!/bin/bash
 
-total_runs=50
-total_time=0
+total_time_native=0
+total_time_lind=0
+iterations=50
 
-for i in $(seq 1 $total_runs)
-do
-    output=$(./tproc) 
-    avg_time=$(echo $output | grep -oP '(?<=average time )[0-9]+')
-    
-    total_time=$((total_time + avg_time))
-    echo "Run $i: $avg_time ns"
+# Run Native
+for i in $(seq 1 $iterations); do
+    output=$(./tproc)
+    avg_time=$(echo $output | grep -oP '\d+ shared memory calls, average time \K\d+')
+    total_time_native=$((total_time_native + avg_time))
 done
 
-average=$((total_time / total_runs))
-echo "Average time over $total_runs runs: $average ns"
+# Run Lind 
+for i in $(seq 1 $iterations); do
+    output=$(lind /tproc.nexe)
+    avg_time=$(echo $output | grep -oP '\d+ shared memory calls, average time \K\d+')
+    total_time_lind=$((total_time_lind + avg_time))
+done
+
+# Native average time
+average_native=$((total_time_native / iterations))
+echo "Average time for native: $average_native ns"
+
+# Lind average time
+average_lind=$((total_time_lind / iterations))
+echo "Average time for lind: $average_lind ns"
