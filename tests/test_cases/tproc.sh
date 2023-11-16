@@ -11,16 +11,16 @@ for i in $(seq 1 $iterations); do
     total_time_native=$((total_time_native + avg_time))
 done
 
+# Native average time
+average_native=$((total_time_native / iterations))
+echo "Average time for native: $average_native ns"
+
 # Run Lind 
 for i in $(seq 1 $iterations); do
     output=$(lind /tproc.nexe)
     avg_time=$(echo $output | grep -oP '\d+ shared memory calls, average time \K\d+')
     total_time_lind=$((total_time_lind + avg_time))
 done
-
-# Native average time
-average_native=$((total_time_native / iterations))
-echo "Average time for native: $average_native ns"
 
 # Lind average time
 average_lind=$((total_time_lind / iterations))
