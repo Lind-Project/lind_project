@@ -11,26 +11,26 @@
 /*--------Timing functions--------*/
 long long execution_time = 0;
 
-// long long gettimens(void) {
-//   struct timespec tp;
+long long gettimens(void) {
+  struct timespec tp;
 
-//   if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
-//     perror( "clock gettime" );
-//     exit( EXIT_FAILURE );
-//   }
+  if( clock_gettime(CLOCK_MONOTONIC, &tp) == -1 ) {
+    perror( "clock gettime" );
+    exit( EXIT_FAILURE );
+  }
 
-//   return (tp.tv_sec * 1000000000) + tp.tv_nsec;
-// }
-long long gettimems(void) {
-    struct timespec tp;
-
-    if(clock_gettime(CLOCK_MONOTONIC, &tp) == -1) {
-        perror("clock gettime");
-        exit(EXIT_FAILURE);
-    }
-
-    return (tp.tv_sec * 1000) + (tp.tv_nsec / 1000000);
+  return (tp.tv_sec * 1000000000) + tp.tv_nsec;
 }
+// long long gettimems(void) {
+//     struct timespec tp;
+
+//     if(clock_gettime(CLOCK_MONOTONIC, &tp) == -1) {
+//         perror("clock gettime");
+//         exit(EXIT_FAILURE);
+//     }
+
+//     return (tp.tv_sec * 1000) + (tp.tv_nsec / 1000000);
+// }
 /*--------Shared Memory--------*/
 int shmid;
 
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
     
     pthread_t t1, t2;
 
-    long long start_time = gettimems();
+    long long start_time = gettimens();
 
     pthread_create(&t1, NULL, thread1, NULL);
     pthread_create(&t2, NULL, thread2, NULL);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);
     
-    long long end_time = gettimems();
+    long long end_time = gettimens();
     long long total_time = end_time - start_time;
     long long average_time = total_time/1073741824;
     printf("start: %lld\nend: %lld\n", start_time, end_time);
