@@ -48,7 +48,7 @@ void* client(void* v) {
     fflush(stdout);
     close(sock);
     pthread_barrier_wait(&closebarrier);
-    printf("exiting the server location [1]\n");
+    printf("exiting the client location [3]\n");
     return NULL; 
 } 
 
