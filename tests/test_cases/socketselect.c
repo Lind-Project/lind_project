@@ -42,15 +42,14 @@ void* client(void* v) {
     pthread_barrier_wait(&syncbarrier);
    
     connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    send(sock , hello , strlen(hello) , 0 ); 
     pthread_barrier_wait(&syncbarrier2);
+    send(sock , hello , strlen(hello) , 0 ); 
     printf("Hello message sent\n"); 
     valread = read( sock , buffer, 1024); 
     printf("%s\n",buffer ); 
     fflush(stdout);
     close(sock);
     pthread_barrier_wait(&closebarrier);
-    printf("exiting the client location [3]\n");
     return NULL; 
 } 
 
@@ -321,7 +320,6 @@ void* server(void* v) {
 
    } while (end_server == FALSE);
 
-   printf("exiting the server location [1]\n");
    
    /* Clean up all of the sockets that are open                 */
    
@@ -330,7 +328,6 @@ void* server(void* v) {
       if (FD_ISSET(i, &master_set))
          close(i);
    }
-   printf("exiting the server location [2]\n");
 }
 
 
