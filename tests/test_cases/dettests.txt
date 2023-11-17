@@ -40,3 +40,5 @@ creat_access.c
 mkdir_rmdir.c
 poll.c
 sem_forks.c
+fsync.c
+fdatasync.c
