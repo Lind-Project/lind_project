@@ -333,7 +333,6 @@ int main() {
     pthread_t serverthread, clientthread1;
     
     pthread_barrier_init(&syncbarrier, NULL, 2);
-    pthread_barrier_init(&syncbarrier2, NULL, 2);
     pthread_create(&serverthread, NULL, server, NULL);
     pthread_create(&clientthread1, NULL, client, NULL);
     pthread_join(clientthread1, NULL);
