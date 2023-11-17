@@ -41,9 +41,9 @@ void* client(void* v) {
     // Convert IPv4 and IPv6 addresses from text to binary form 
     inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
 
-    pthread_barrier_wait(&syncbarrier);
-
     connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    pthread_barrier_wait(&syncbarrier);
+    
     send(sock , hello , strlen(hello) , 0 );
     printf("CLIENT: Hello message sent\n"); 
     valread = read( sock , buffer, 1024); 
