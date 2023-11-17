@@ -335,7 +335,9 @@ int main() {
     pthread_create(&serverthread, NULL, server, NULL);
     pthread_create(&clientthread1, NULL, client, NULL);
     pthread_join(clientthread1, NULL);
+    printf("client jointed\n");
     pthread_join(serverthread, NULL);
+    printf("server jointed\n");
     pthread_barrier_destroy(&syncbarrier);
     pthread_barrier_destroy(&closebarrier);
     return 0;
