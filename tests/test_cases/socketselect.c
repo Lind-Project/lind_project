@@ -48,6 +48,7 @@ void* client(void* v) {
     fflush(stdout);
     close(sock);
     pthread_barrier_wait(&closebarrier);
+    printf("exiting the server location [1]\n");
     return NULL; 
 } 
 
@@ -317,6 +318,7 @@ void* server(void* v) {
 
    } while (end_server == FALSE);
 
+   printf("exiting the server location [1]\n");
    
    /* Clean up all of the sockets that are open                 */
    
@@ -325,6 +327,7 @@ void* server(void* v) {
       if (FD_ISSET(i, &master_set))
          close(i);
    }
+   printf("exiting the server location [2]\n");
 }
 
 
