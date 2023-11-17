@@ -20,6 +20,7 @@
 
 pthread_barrier_t closebarrier;
 pthread_barrier_t syncbarrier;
+pthread_barrier_t syncbarrier2;
 
 void* client(void* v) { 
     int sock = 0, valread; 
@@ -42,6 +43,7 @@ void* client(void* v) {
    
     connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     send(sock , hello , strlen(hello) , 0 ); 
+    pthread_barrier_wait(&syncbarrier2);
     printf("Hello message sent\n"); 
     valread = read( sock , buffer, 1024); 
     printf("%s\n",buffer ); 
@@ -137,6 +139,7 @@ void* server(void* v) {
    timeout.tv_usec = 0;
 
    pthread_barrier_wait(&syncbarrier);
+   pthread_barrier_wait(&syncbarrier2);
 
    /* Loop waiting for incoming connects or for incoming data   */
    /* on any of the connected sockets.                          */
@@ -335,6 +338,7 @@ int main() {
     pthread_t serverthread, clientthread1;
     
     pthread_barrier_init(&syncbarrier, NULL, 2);
+    pthread_barrier_init(&syncbarrier2, NULL, 2);
     pthread_create(&serverthread, NULL, server, NULL);
     pthread_create(&clientthread1, NULL, client, NULL);
     pthread_join(clientthread1, NULL);
@@ -342,6 +346,7 @@ int main() {
     pthread_join(serverthread, NULL);
     printf("server jointed\n");
     pthread_barrier_destroy(&syncbarrier);
+    pthread_barrier_destroy(&syncbarrier2);
     pthread_barrier_destroy(&closebarrier);
     return 0;
 }
