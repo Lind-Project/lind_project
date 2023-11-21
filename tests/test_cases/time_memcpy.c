@@ -46,13 +46,14 @@ int main() {
     long long end_time = gettimens();
     long long total_time = end_time - start_time;
     // Average
+    count--;
     long long average_time = total_time/count;
     long long average_speed = average_time/data_size_1M;
 
     free(src);
     free(dest);
 
-    printf("%d memcpy function calls, average time %lld ns, average speed %lld\n", --count, average_time, average_speed);
+    printf("%d memcpy function calls, average time %lld ns, average speed %lld\n", count, average_time, average_speed);
     fflush(NULL);
     
 }
