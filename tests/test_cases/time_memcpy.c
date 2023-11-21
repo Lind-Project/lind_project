@@ -36,7 +36,7 @@ int main() {
     int data_size_1M = 1024*1024;
 
     while(count <= 1073741824) {
-        memcpy(dest, src, 4096);
+        memcpy(dest, src, data_size_1M);
         count++;
     }
     
