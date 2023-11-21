@@ -5,7 +5,7 @@
 #include <time.h>
 #include <string.h>
 
-#define DATA_SIZE (4*1024*1024)  // 4K
+#define DATA_SIZE (4*1024*1024) 
 
 
 long long gettimens(void) {
@@ -37,9 +37,10 @@ int main() {
     int count = 0;
     
     long long start_time = gettimens();
+    int data_size_1M = 1024*1024;
 
     while(count <= 1073741824) {
-        memcpy(dest, src, 4096);
+        memcpy(dest, src, data_size_1M);
         count++;
     }
     
@@ -52,7 +53,7 @@ int main() {
     free(src);
     free(dest);
 
-    printf("%d dummy function calls, average time %lld ns\n", --count, average_time);
+    printf("%d memcpy function calls, average time %lld ns\n", --count, average_time);
     fflush(NULL);
     
 }
