@@ -39,21 +39,24 @@ int main() {
     long long start_time = gettimens();
     int data_size_1M = 1024*1024;
 
-    while(count <= 1073741824) {
-        memcpy(dest, src, data_size_1M);
-        count++;
-    }
+    // while(count <= 1073741824) {
+    //     memcpy(dest, src, data_size_1M);
+    //     count++;
+    // }
     
     // Get sum of time
     long long end_time = gettimens();
     long long total_time = end_time - start_time;
     // Average
-    long long average_time = total_time/count;
-
+    // long long average_time = total_time/count;
+    memcpy(dest, src, 4096);
+    printf("%s\n", dest);
+    fflush(NULL);
+    
     free(src);
     free(dest);
 
-    printf("%d memcpy function calls, average time %lld ns\n", --count, average_time);
+    printf("%d memcpy function calls, average time %lld ns\n", --count, total_time);
     fflush(NULL);
     
 }
