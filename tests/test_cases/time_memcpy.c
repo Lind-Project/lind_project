@@ -25,14 +25,14 @@ int main() {
     char *src = malloc(DATA_SIZE);
     char *dest = malloc(DATA_SIZE);
 
-    // if(!src || !dest) {
-    //     perror("malloc");
-    //     exit(EXIT_FAILURE);
-    // }
+    if(!src || !dest) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
 
-    // for(int i = 0; i < DATA_SIZE; i++) {
-    //     src[i] = (char)(i%256);
-    // }
+    for(int i = 0; i < DATA_SIZE; i++) {
+        src[i] = (char)(i%256);
+    }
 
     // int count = 0;
     
