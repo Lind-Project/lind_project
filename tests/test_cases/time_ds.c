@@ -27,7 +27,8 @@ long long td_end, tr_end;
 
 
 int sockets[2], child;
-char buf[1024];
+char buffer[1];
+char buffer2[1];
 
 /*--------Process functions--------*/
 void process1(int pid) {
