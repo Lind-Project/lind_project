@@ -30,29 +30,22 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    for(int i = 0; i < DATA_SIZE; i++) {
-        src[i] = (char)(i%256);
-    }
-
     int count = 0;
     
     long long start_time = gettimens();
     int data_size_1M = 1024*1024;
 
-    // while(count <= 1073741824) {
-    //     memcpy(dest, src, data_size_1M);
-    //     count++;
-    // }
+    while(count <= 1073741824) {
+        memcpy(dest, src, data_size_1M);
+        count++;
+    }
     
     // Get sum of time
     long long end_time = gettimens();
     long long total_time = end_time - start_time;
     // Average
-    // long long average_time = total_time/count;
-    memcpy(dest, src, 4096);
-    printf("%s\n", dest);
-    fflush(NULL);
-    
+    long long average_time = total_time/count;
+
     free(src);
     free(dest);
 
