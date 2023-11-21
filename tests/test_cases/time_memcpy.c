@@ -25,29 +25,29 @@ int main() {
     char *src = malloc(DATA_SIZE);
     char *dest = malloc(DATA_SIZE);
 
-    if(!src || !dest) {
-        perror("malloc");
-        exit(EXIT_FAILURE);
-    }
+    // if(!src || !dest) {
+    //     perror("malloc");
+    //     exit(EXIT_FAILURE);
+    // }
 
-    for(int i = 0; i < DATA_SIZE; i++) {
-        src[i] = (char)(i%256);
-    }
+    // for(int i = 0; i < DATA_SIZE; i++) {
+    //     src[i] = (char)(i%256);
+    // }
 
-    int count = 0;
+    // int count = 0;
     
-    long long start_time = gettimens();
+    // long long start_time = gettimens();
 
-    while(count <= 2 << 30) {
-        // memcpy(dest, src, 4096);
-        count++;
-    }
+    // while(count <= 2 << 30) {
+    //     memcpy(dest, src, 4096);
+    //     count++;
+    // }
     
-    // Get sum of time
-    long long end_time = gettimens();
-    long long total_time = end_time - start_time;
-    // Average
-    long long average_time = total_time/count;
+    // // Get sum of time
+    // long long end_time = gettimens();
+    // long long total_time = end_time - start_time;
+    // // Average
+    // long long average_time = total_time/count;
 
     free(src);
     free(dest);
