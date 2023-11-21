@@ -46,7 +46,7 @@ int main() {
     long long end_time = gettimens();
     long long total_time = end_time - start_time;
     // Average
-    count--;
+    // count--;
     long long average_time = total_time/count;
     long long average_speed = average_time/data_size_1M;
 
