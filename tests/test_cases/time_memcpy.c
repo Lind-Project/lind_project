@@ -52,7 +52,7 @@ int main() {
     free(src);
     free(dest);
 
-    printf("%d dummy function calls, average time %lld ns\n", --count, average_time);
+    // printf("%d dummy function calls, average time %lld ns\n", --count, average_time);
     fflush(NULL);
     
 }
