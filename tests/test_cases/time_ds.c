@@ -25,6 +25,10 @@ long long gettimens(void) {
 long long tr, start, end, td; // Timestamp
 long long td_end, tr_end;
 
+
+int sockets[2], child;
+char buf[1024];
+
 /*--------Process functions--------*/
 void process1(int pid) {
     close(sockets[1]);
@@ -60,15 +64,11 @@ void process2() {
 /*--------Main function--------*/
 int main(int argc, char *argv[]) {
 
-    int sockets[2], child;
-    char buf[1024];
 
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) < 0) {
         perror("opening stream socket pair");
         exit(1);
     }
-
-
 
     pid_t pid = fork();
 
