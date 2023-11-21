@@ -17,7 +17,7 @@ do
     output=$($COMMAND)
 
     # Get time
-    time=$(echo $output | grep -oP 'total time \K\d+')
+    time=$(echo $output | grep -oP ' time \K\d+')
 
     # Calculate max and min
     if [ "$time" -gt "$max_time" ]; then
