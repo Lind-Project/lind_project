@@ -34,7 +34,7 @@ int main() {
         src[i] = (char)(i%256);
     }
 
-    long long count = 0;
+    int count = 0;
     
     long long start_time = gettimens();
 
@@ -52,7 +52,7 @@ int main() {
     free(src);
     free(dest);
 
-    printf("%lld dummy function calls, average time %lld ns\n", --count, average_time);
+    printf("%d dummy function calls, average time %lld ns\n", --count, average_time);
     fflush(NULL);
     
 }
