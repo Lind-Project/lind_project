@@ -36,11 +36,11 @@ int main() {
     
     long long start_time = gettimens();
 
-    // while(count < 1073741824) {
-    //     memcpy(dest, src, data_size_1M);
-    //     count++;
-    // }
-    memcpy(dest, src, data_size_1M);
+    while(count < 100000) {
+        memcpy(dest, src, data_size_4K);
+        count++;
+    }
+    // memcpy(dest, src, data_size_1M);
 
     // Get sum of time
     long long end_time = gettimens();
