@@ -36,7 +36,7 @@ int main() {
     
     long long start_time = gettimens();
 
-    while(count < 100000000) {
+    while(count < 1000000) {
         memcpy(dest, src, data_size_1M);
         count++;
     }
