@@ -13,23 +13,23 @@ args = parser.parse_args()
 
 
 def generate_script(num):
-    script = "/bin/cat ./test_content/1GB.txt "
+    script = "/bin/cat ./test_content/content.txt "
     cats = ["| /bin/cat" for _ in range(num - 1)]
     script += " ".join(cats)
     script += " > cat_cat.out"
     print(script)
-    with open("cat_cat.sh", "w") as f:
+    with open("scripts/cat_cat.sh", "w") as f:
         f.write(script)
 
 
 def execute_script():
-    process = subprocess.call(["/bin/bash", f"cat_cat.sh"])
+    process = subprocess.call(["/bin/bash", f"scripts/cat_cat.sh"])
 
 
 run_times = {}
 lind_run_times = {}
 
-for num in [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32]:
+for num in [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 32]:
     print(f"\n#cat: {num}")
     generate_script(num)
 
@@ -47,7 +47,7 @@ for num in [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32]:
         [
             "lindfs",
             "cp",
-            "/home/lind/lind_project/tests/pipeline_tests/cat_cat.sh",
+            "/home/lind/lind_project/tests/pipeline_tests/scripts/cat_cat.sh",
             "/pipeline_tests/cat_cat.sh",
         ]
     )
@@ -61,7 +61,6 @@ for num in [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 28, 32]:
 
         try:
             run_time = int(float(stderr.split()[-1]) * 1000)
-            print(run_time)
         except ValueError:
             continue
         lind_run_times[num].append(run_time)
