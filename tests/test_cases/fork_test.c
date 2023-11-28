@@ -7,13 +7,13 @@
 int main() {
     pid_t pid;
 
-    pid = fork(); // Create a child process
+    pid = vfork(); // Create a child process
 
     if (pid < 0) {
         // Error occurred
         perror("vfork failed");
         exit(EXIT_FAILURE);
-    } else if (pid == 0) {
+    } else if (pid != 0) {
         // Child process
         printf("Child process, PID = %d\n", getpid());
         _exit(EXIT_SUCCESS); // Use _exit to exit the child process
