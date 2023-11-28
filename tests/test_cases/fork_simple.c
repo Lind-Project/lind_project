@@ -6,7 +6,7 @@
 int main()
 {
     pid_t cpid;
-    cpid = vfork();
+    cpid = fork();
     if (cpid == 0)
         exit(0);           /* terminate child */
     else
