@@ -7,7 +7,7 @@
 int main() {
     pid_t pid;
 
-    pid = vfork(); // Create a child process
+    pid = fork(); // Create a child process
 
     if (pid < 0) {
         // Error occurred
