@@ -13,7 +13,7 @@ export CXXFLAGS='-g -fno-pie'
 export LDFLAGS='-g -fno-pie'
 export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 
-./gcc-9.5.0/configure \ 
+./configure \ 
     --enable-languages=c,c++ \ 
     --disable-multilib \ 
     --disable-stage1-checking \ 
