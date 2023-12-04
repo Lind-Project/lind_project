@@ -35,7 +35,7 @@ int main() {
     long long total_time = end_time - start_time;
     // Average
     long long average_time = total_time/count;
-    printf("%d dummy function calls, average time %lld ns\n", i, average_time);
+    printf("%d dummy function calls, average time %lld ns\n", count, average_time);
     fflush(NULL);
     
 }
