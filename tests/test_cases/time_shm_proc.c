@@ -81,7 +81,6 @@ int main() {
             shared_memory->a[1] = shared_memory->a[0];
             count++;
         }
-        wait(NULL);
     }
     wait(NULL); // Wait for the child process to finish
     long long end_time = gettimens();
