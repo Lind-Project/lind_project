@@ -56,25 +56,6 @@ void destroy_shared_memory() {
     shmctl(shmid, IPC_RMID, NULL);
 }
 
-/*--------Process functions--------*/
-void process1() {
-    long long count = 0;
-    while (count < 100000000) {
-        shared_memory->a[0] = shared_memory->a[1] + 1;
-        count++;
-    }
-    _exit(EXIT_SUCCESS);
-}
-
-void process2() {
-    long long count = 0;
-    while (count < 100000000) {
-        shared_memory->a[1] = shared_memory->a[0];
-        count++;
-    }
-    return NULL;
-}
-
 /*--------Main function--------*/
 int main() {
     init_shared_memory();
@@ -88,10 +69,18 @@ int main() {
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
         // Child process
-        process1();
+        long long count = 0;
+        while (count < 100000000) {
+            shared_memory->a[0] = shared_memory->a[1] + 1;
+            count++;
+        }
     } else {
         // Parent process
-        process2();
+        long long count = 0;
+        while (count < 100000000) {
+            shared_memory->a[1] = shared_memory->a[0];
+            count++;
+        }
         wait(NULL);
     }
     wait(NULL); // Wait for the child process to finish
