@@ -17,12 +17,11 @@ long long gettimens(void) {
 
 long long execution_time = 0;
 
-int main(int argc, char *argv[]) {
-    int i = atoi(argv[1]);
+int main() {
     int count = 0;
     long long start_time = gettimens();
     
-    while(count <= i) {
+    while(count < 50) {
         getpid();
         count++;
     }
@@ -32,7 +31,7 @@ int main(int argc, char *argv[]) {
     long long total_time = end_time - start_time;
     // Average
     long long average_time = total_time/count;
-    printf("%d getpid function calls, average time %lld ns\n", i, average_time);
+    printf("%d getpid function calls, average time %lld ns\n", count, average_time);
     fflush(NULL);
     
 }
