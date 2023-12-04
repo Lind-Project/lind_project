@@ -21,12 +21,11 @@ long long gettimens(void) {
 
 long long execution_time = 0;
 
-int main(int argc, char *argv[]) {
-    int i = atoi(argv[1]);
+int main() {
     int count = 0;
     long long start_time = gettimens();
     
-    while(count <= i) {
+    while(count <= 50) {
         dummyFunc();
         count++;
     }
