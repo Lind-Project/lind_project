@@ -24,8 +24,7 @@ long long execution_time = 0;
 int main() {
     int count = 0;
     long long start_time = gettimens();
-    int max = 1 << 31;
-    while(count < max) {
+    while(count < 100000000) {
         dummyFunc();
         count++;
     }
