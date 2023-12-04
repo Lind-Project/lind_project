@@ -68,11 +68,11 @@ void process1() {
 
 void process2() {
     long long count = 0;
-    long long start_time = gettimens();
     while (count < 100000000) {
         shared_memory->a[1] = shared_memory->a[0];
         count++;
     }
+    return NULL;
 }
 
 /*--------Main function--------*/
