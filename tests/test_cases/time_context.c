@@ -64,9 +64,7 @@ void process2() {
 }
 
 /*--------Main function--------*/
-int main(int argc, char *argv[]) {
-    printf("Start\n");
-    fflush(NULL);
+int main() {
     if (pipe(pipe_fd) == -1) {
         perror("pipe");
         exit(EXIT_FAILURE);
@@ -75,7 +73,6 @@ int main(int argc, char *argv[]) {
         perror("pipe");
         exit(EXIT_FAILURE);
     }
-    
 
     pid_t pid = fork();
 
