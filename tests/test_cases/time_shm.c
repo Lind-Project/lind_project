@@ -71,7 +71,7 @@ void destroy_shared_memory() {
 /*--------Thread functions--------*/
 void* thread1() {
     long long count = 0;
-    while(count <= 2000000000) {
+    while(count < 100000000) {
         shared_memory->a[0] = shared_memory->a[1] + 1;
         count++;
     }
@@ -80,7 +80,7 @@ void* thread1() {
 
 void* thread2() {
     long long count = 0;
-    while(count <= 2000000000) {
+    while(count < 100000000) {
         shared_memory->a[1] = shared_memory->a[0];
         count++;
     }
@@ -104,9 +104,9 @@ int main(int argc, char *argv[]) {
     
     long long end_time = gettimens();
     long long total_time = end_time - start_time;
-    long long average_time = total_time/2000000000;
+    long long average_time = total_time/100000000;
     printf("start: %lld\nend: %lld\n", start_time, end_time);
-    printf("%d shared memory calls, average time %lld ms\n", 2000000000, average_time);
+    printf("%d shared memory calls, average time %lld ms\n", 100000000, average_time);
     fflush(NULL);
 
     destroy_shared_memory();
