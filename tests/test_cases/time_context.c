@@ -91,8 +91,8 @@ int main() {
 
     long long t = end - start;
     long long tc = t/2-td-tr;
-    printf("tr: %lld\ntd: %lld\nstart: %lld\nend:%lld\nt:%lld\ntr_end:%lld\n", tr, td, start, end, t, tr_end);
-    printf("Context switching time: %lld\n", tc);
+    // printf("tr: %lld\ntd: %lld\nstart: %lld\nend:%lld\nt:%lld\ntr_end:%lld\n", tr, td, start, end, t, tr_end);
+    printf("Context switching time %lld ns\n", tc);
     fflush(NULL);
 
     return 0;
