@@ -21,16 +21,7 @@ long long gettimens(void) {
 
   return (tp.tv_sec * 1000000000) + tp.tv_nsec;
 }
-// long long gettimems(void) {
-//     struct timespec tp;
 
-//     if(clock_gettime(CLOCK_MONOTONIC, &tp) == -1) {
-//         perror("clock gettime");
-//         exit(EXIT_FAILURE);
-//     }
-
-//     return (tp.tv_sec * 1000) + (tp.tv_nsec / 1000000);
-// }
 /*--------Shared Memory--------*/
 int shmid;
 
@@ -105,8 +96,8 @@ int main(int argc, char *argv[]) {
     long long end_time = gettimens();
     long long total_time = end_time - start_time;
     long long average_time = total_time/100000000;
-    printf("start: %lld\nend: %lld\n", start_time, end_time);
-    printf("%d shared memory calls, average time %lld ms\n", 100000000, average_time);
+    // printf("start: %lld\nend: %lld\n", start_time, end_time);
+    printf("%d shared memory calls, average time %lld ns\n", 100000000, average_time);
     fflush(NULL);
 
     destroy_shared_memory();
