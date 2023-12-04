@@ -74,6 +74,7 @@ int main() {
             shared_memory->a[0] = shared_memory->a[1] + 1;
             count++;
         }
+        exit(EXIT_SUCCESS);
     } else {
         // Parent process
         long long count = 0;
