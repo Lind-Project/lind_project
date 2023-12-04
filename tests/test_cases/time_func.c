@@ -25,7 +25,7 @@ int main() {
     int count = 0;
     long long start_time = gettimens();
     
-    while(count <= 50) {
+    while(count < 50) {
         dummyFunc();
         count++;
     }
