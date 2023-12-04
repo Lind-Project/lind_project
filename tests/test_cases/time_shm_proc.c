@@ -92,6 +92,7 @@ int main() {
     } else {
         // Parent process
         process2();
+        wait(NULL);
     }
     wait(NULL); // Wait for the child process to finish
     long long end_time = gettimens();
