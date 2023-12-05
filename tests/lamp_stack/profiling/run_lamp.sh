@@ -1,7 +1,7 @@
 #!/bin/bash
 
-/usr/local/pgsql/bin/postgres -F -d 0 -c listen_addresses='' -D /usr/local/pgsql/data/ &
-sleep 90
+/usr/local/pgsql/bin/postgres -F -c listen_addresses='' -D /usr/local/pgsql/data/ &
+sleep 15
 echo "postgres ready"
 /bin/python /init_table.py
 sleep 3
