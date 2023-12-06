@@ -22,8 +22,11 @@ long long gettimens(void) {
 long long execution_time = 0;
 
 int main() {
+  
+    // calloc
     char *src = malloc(DATA_SIZE);
     char *dest = malloc(DATA_SIZE);
+    // set mem
 
     if(!src || !dest) {
         perror("malloc");

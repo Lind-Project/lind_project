@@ -4,8 +4,10 @@
 #include <unistd.h>
 #include <time.h>
 
-void dummyFunc() {
+volatile int count = 0;
 
+void dummyFunc() {
+  count++;
 }
 
 long long gettimens(void) {
@@ -22,11 +24,9 @@ long long gettimens(void) {
 long long execution_time = 0;
 
 int main() {
-    int count = 0;
     long long start_time = gettimens();
     while(count < 100000000) {
         dummyFunc();
-        count++;
     }
     
     // Get sum of time

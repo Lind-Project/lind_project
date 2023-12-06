@@ -64,7 +64,7 @@ void* thread1() {
     long long count = 0;
     while(count < 100000000) {
         shared_memory->a[0] = shared_memory->a[1] + 1;
-        count++;
+        count++; //global 
     }
     return NULL;
 }
