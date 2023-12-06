@@ -65,7 +65,7 @@ void destroy_shared_memory() {
 void* thread1() {
     while(count1 < 100000000) {
         shared_memory->a[0] = shared_memory->a[1] + 1;
-        count++; //global 
+        count1++; //global 
     }
     return NULL;
 }
@@ -73,7 +73,7 @@ void* thread1() {
 void* thread2() {
     while(count2 < 100000000) {
         shared_memory->a[1] = shared_memory->a[0];
-        count++;
+        count2++;
     }
     return NULL;
 }

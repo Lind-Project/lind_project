@@ -8,6 +8,9 @@
 #include <sys/shm.h>
 #include <sys/wait.h>
 
+volatile long long count1 = 0;
+volatile long long count2 = 0;
+
 /*--------Timing functions--------*/
 long long execution_time = 0;
 
@@ -69,18 +72,16 @@ int main() {
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
         // Child process
-        long long count = 0;
-        while (count < 100000000) {
+        while (count1 < 100000000) {
             shared_memory->a[0] = shared_memory->a[1] + 1;
-            count++;
+            count1++;
         }
         exit(EXIT_SUCCESS);
     } else {
         // Parent process
-        long long count = 0;
-        while (count < 100000000) {
+        while (count2 < 100000000) {
             shared_memory->a[1] = shared_memory->a[0];
-            count++;
+            count2++;
         }
     }
     wait(NULL); // Wait for the child process to finish
