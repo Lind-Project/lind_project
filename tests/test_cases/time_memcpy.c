@@ -7,6 +7,7 @@
 
 #define DATA_SIZE (4*1024*1024) 
 
+volatile int count = 0;
 
 long long gettimens(void) {
   struct timespec tp;
@@ -22,42 +23,42 @@ long long gettimens(void) {
 long long execution_time = 0;
 
 int main() {
+
+  // calloc
+  char *src = (char *)calloc(DATA_SIZE, sizeof(char));
+  char *dest = (char *)calloc(DATA_SIZE, sizeof(char));
+  // set mem
+  memset(src, 'A', DATA_SIZE);
+
+  if(!src || !dest) {
+      perror("calloc");
+      exit(EXIT_FAILURE);
+  }
+
+  int data_size_4K = 1024*4;
+  int data_size_1M = 1024*1024;
   
-    // calloc
-    char *src = malloc(DATA_SIZE);
-    char *dest = malloc(DATA_SIZE);
-    // set mem
+  long long start_time = gettimens();
 
-    if(!src || !dest) {
-        perror("malloc");
-        exit(EXIT_FAILURE);
-    }
+  while(count < 1000000) {
+      memcpy(dest, src, data_size_4K);
+      count++;
+  }
+  // memcpy(dest, src, data_size_1M);
 
-    int count = 1; // Need change
-    int data_size_4K = 1024*4;
-    int data_size_1M = 1024*1024;
-    
-    long long start_time = gettimens();
+  // Get sum of time
+  long long end_time = gettimens();
+  long long total_time = end_time - start_time;
+  // Average
+  // count--;
+  long long average_time = total_time/count;
+  long long average_speed = average_time/data_size_1M;
 
-    while(count < 1000000) {
-        memcpy(dest, src, data_size_4K);
-        count++;
-    }
-    // memcpy(dest, src, data_size_1M);
+  free(src);
+  free(dest);
 
-    // Get sum of time
-    long long end_time = gettimens();
-    long long total_time = end_time - start_time;
-    // Average
-    // count--;
-    long long average_time = total_time/count;
-    long long average_speed = average_time/data_size_1M;
-
-    free(src);
-    free(dest);
-
-    printf("average time %lld ns, average speed %lld\n", average_time, average_speed);
-    fflush(NULL);
-    
+  printf("average time %lld ns, average speed %lld\n", average_time, average_speed);
+  fflush(NULL);
+  
 }
 
