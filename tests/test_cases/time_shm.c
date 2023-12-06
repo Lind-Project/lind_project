@@ -6,7 +6,9 @@
 #include <pthread.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include <semaphore.h>
+
+volatile long long count1 = 0;
+volatile long long count2 = 0;
 
 /*--------Timing functions--------*/
 long long execution_time = 0;
@@ -61,8 +63,7 @@ void destroy_shared_memory() {
 
 /*--------Thread functions--------*/
 void* thread1() {
-    long long count = 0;
-    while(count < 100000000) {
+    while(count1 < 100000000) {
         shared_memory->a[0] = shared_memory->a[1] + 1;
         count++; //global 
     }
@@ -70,8 +71,7 @@ void* thread1() {
 }
 
 void* thread2() {
-    long long count = 0;
-    while(count < 100000000) {
+    while(count2 < 100000000) {
         shared_memory->a[1] = shared_memory->a[0];
         count++;
     }
