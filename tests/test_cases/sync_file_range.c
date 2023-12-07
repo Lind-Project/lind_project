@@ -39,5 +39,6 @@ int main() {
     // Close the file
     close(fd);
     printf("sync_file_range test completed successfully.\n");
+    fflush(stdout);
     return 0;
 }
