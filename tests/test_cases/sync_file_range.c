@@ -5,15 +5,15 @@
 #include <errno.h>
 
 #define SYNC_FILE_RANGE_WRITE 2
+#define PATH    "foo.txt"
 
 int main() {
-    int fd;
     ssize_t ret;
     char *data = "This is a test data for sync_file_range.\n";
     size_t length = strlen(data);
 
     // Open a file
-    fd = open("foo.txt", O_WRONLY | O_CREAT, 0644);
+    int fd = open(PATH, O_WRONLY | O_CREAT, 0644);
     if (fd == -1) {
         perror("Error opening file");
         return 1;
