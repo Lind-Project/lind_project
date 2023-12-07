@@ -42,3 +42,4 @@ poll.c
 sem_forks.c
 fsync.c
 fdatasync.c
+sync_file_range.c
