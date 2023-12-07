@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -40,4 +41,3 @@ int main() {
     printf("sync_file_range test completed successfully.\n");
     return 0;
 }
-
