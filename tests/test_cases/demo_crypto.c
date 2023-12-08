@@ -15,6 +15,9 @@ int main() {
         return -1;
     }
 
+    // Write column names
+    fprintf(fp, "NetID,Price,Outcome,Income,Score\n");
+
     srand(time(NULL)); // Seed for random number generation
 
     // Keep writing until file size is approximately 1MB
