@@ -9,7 +9,7 @@ int main() {
     const int targetSize = 1024 * 1024; // 1MB in bytes
 
     // Open a file in write mode
-    fp = fopen("output.csv", "w");
+    fp = fopen("1M.csv", "w");
     if (fp == NULL) {
         printf("Cannot open file.\n");
         return -1;
