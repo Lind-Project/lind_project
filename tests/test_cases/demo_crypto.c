@@ -6,7 +6,7 @@ int main() {
     FILE *fp;
     int row, col;
     long fileSize = 0;
-    const int targetSize = 10; 
+    const int targetSize = 10*1024; 
 
     // Open a file in write mode
     fp = fopen("10K.csv", "w");
