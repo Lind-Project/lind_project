@@ -6,10 +6,10 @@ int main() {
     FILE *fp;
     int row, col;
     long fileSize = 0;
-    const int targetSize = 1024 * 1024; // 1MB in bytes
+    const int targetSize = 500; // 1MB in bytes
 
     // Open a file in write mode
-    fp = fopen("1M.csv", "w");
+    fp = fopen("500K.csv", "w");
     if (fp == NULL) {
         printf("Cannot open file.\n");
         return -1;
