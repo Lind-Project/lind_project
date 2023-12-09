@@ -6,7 +6,7 @@ int main() {
     FILE *fp;
     int row, col;
     long fileSize = 0;
-    const int targetSize = 10*1024; 
+    const int targetSize = 10 * 1024; 
 
     // Open a file in write mode
     fp = fopen("10K.csv", "w");
@@ -16,24 +16,23 @@ int main() {
     }
 
     // Write column names
-    fprintf(fp, "NetID,Price,Outcome,Income,Score\n");
+    fprintf(fp, "ID,Age,Income,Score\n");
 
     srand(time(NULL)); // Seed for random number generation
 
-    // Keep writing until file size is approximately 1MB
     while (fileSize < targetSize) {
-        for (col = 0; col < 5; col++) {
-            int num = rand() % 1000; // Generate a random number (you can adjust the range)
+        for (col = 0; col < 4; col++) { // Change to 4 columns
+            int num = rand() % 1000; // Generate a random number between 0 and 999
             fprintf(fp, "%d", num);
 
-            if (col < 4) {
+            if (col < 3) {
                 fputc(',', fp); // Add a comma after each number except the last one in a row
             }
         }
         fputc('\n', fp); // Newline after each row
 
         // Update the estimated file size (approximation)
-        fileSize += 5 * 4 + 1; // 4 characters per number and 1 for newline
+        fileSize += 4 * 4 + 1; // 4 characters per number and 1 for newline
     }
 
     // Close the file
