@@ -24,12 +24,12 @@ long long execution_time = 0;
 
 int main(int argc, char *argv[]) {
   int loop = atoi(argv[1]);
-  int data_size = atoi(argv[2]);
+  int test_data_size = atoi(argv[2]);
   // calloc
-  char *src = (char *)calloc(data_size, sizeof(char));
-  char *dest = (char *)calloc(data_size, sizeof(char));
+  char *src = (char *)calloc(DATA_SIZE, sizeof(char));
+  char *dest = (char *)calloc(DATA_SIZE, sizeof(char));
   // set mem
-  memset(src, 'A', data_size);
+  memset(src, 'A', DATA_SIZE);
 
   if(!src || !dest) {
       perror("calloc");
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
   long long start_time = gettimens();
 
   while(count < loop) {
-      memcpy(dest, src, data_size_1M);
+      memcpy(dest, src, test_data_size);
       count++;
   }
   // memcpy(dest, src, data_size_1M);
