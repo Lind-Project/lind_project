@@ -22,8 +22,9 @@ long long gettimens(void) {
 
 long long execution_time = 0;
 
-int main() {
-
+int main(int argc, char *argv[]) {
+  int loop = atoi(argv[1]);
+  int data_size = atoi(argv[2]);
   // calloc
   char *src = (char *)calloc(DATA_SIZE, sizeof(char));
   char *dest = (char *)calloc(DATA_SIZE, sizeof(char));
@@ -40,7 +41,7 @@ int main() {
   
   long long start_time = gettimens();
 
-  while(count < 1000000) {
+  while(count < loop) {
       memcpy(dest, src, data_size_1M);
       count++;
   }
