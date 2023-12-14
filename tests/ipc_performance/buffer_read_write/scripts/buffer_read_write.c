@@ -42,7 +42,13 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < file_size / buffer_size; i++)
     {
-        read(test_fd, buffer, buffer_size);
+        read(test_fd, read_buffer, buffer_size);
+    }
+
+    if (strcmp(buffer, read_buffer) != 0)
+    {
+        perror("Failed to read/write file");
+        exit(1);
     }
 
     close(test_fd);

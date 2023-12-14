@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &read_start);
     for (int i = 0; i < file_size / buffer_size; i++)
     {
-        read(test_fd, buffer, buffer_size);
+        read(test_fd, read_buffer, buffer_size);
     }
     clock_gettime(CLOCK_MONOTONIC, &read_end);
 
