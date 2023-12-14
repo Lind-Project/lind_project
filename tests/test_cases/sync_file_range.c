@@ -15,14 +15,14 @@ int main() {
 
     // Open a file
     int fd = open(PATH, O_WRONLY | O_CREAT, 0644);
-    if (fd == -1) {
+    if (fd < 0) {
         perror("Error opening file");
         return 1;
     }
 
     // Write data to the file
     ret = write(fd, data, length);
-    if (ret == -1) {
+    if (ret < 0) {
         perror("Error writing to file");
         close(fd);
         return 1;
@@ -30,7 +30,7 @@ int main() {
 
     // Synchronize a range of the file
     ret = sync_file_range(fd, 0, length, SYNC_FILE_RANGE_WRITE);
-    if (ret == -1) {
+    if (ret != 0) {
         perror("Error in sync_file_range");
         close(fd);
         return 1;
