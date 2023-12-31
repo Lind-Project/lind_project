@@ -29,7 +29,8 @@ int main() {
     } else if (pid == 0) {
         // child: pinger process
         close(fds[0]); // close the reading end
-        for (int i = 0; i < ROUNDS; i++) {
+        int i;
+        for (i = 0; i < ROUNDS; i++) {
             write(fds[1], MSG, strlen(MSG));
             read(fds[1], buffer, sizeof(buffer));
             printf("Pinger received: %s\n", buffer);
@@ -44,7 +45,8 @@ int main() {
         pfd.events = POLLIN;
 
         // use poll for waiting the message from pinger
-        for (int i = 0; i < ROUNDS; i++) {
+        int i;
+        for (i = 0; i < ROUNDS; i++) {
             ret = poll(&pfd, 1, -1);
             if (ret > 0) {
                 if (pfd.revents & POLLIN) {
