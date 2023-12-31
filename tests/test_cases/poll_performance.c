@@ -8,6 +8,7 @@
 
 #define MSG "ping"
 #define ACK "pong"
+#define ROUNDS 100
 
 int main() {
     int fds[2];
@@ -28,9 +29,11 @@ int main() {
     } else if (pid == 0) {
         // child: pinger process
         close(fds[0]); // close the reading end
-        write(fds[1], MSG, strlen(MSG));
-        read(fds[1], buffer, sizeof(buffer));
-        printf("Pinger received: %s\n", buffer);
+        for (int i = 0; i < ROUNDS; i++) {
+            write(fds[1], MSG, strlen(MSG));
+            read(fds[1], buffer, sizeof(buffer));
+            printf("Pinger received: %s\n", buffer);
+        }
         close(fds[1]);
     } else {
         // parent: ponger process
@@ -41,15 +44,17 @@ int main() {
         pfd.events = POLLIN;
 
         // use poll for waiting the message from pinger
-        ret = poll(&pfd, 1, -1);
-        if (ret > 0) {
-            if (pfd.revents & POLLIN) {
-                read(fds[0], buffer, sizeof(buffer));
-                printf("Ponger received: %s\n", buffer);
-                write(fds[0], ACK, strlen(ACK)); // reply to pinger
+        for (int i = 0; i < ROUNDS; i++) {
+            ret = poll(&pfd, 1, -1);
+            if (ret > 0) {
+                if (pfd.revents & POLLIN) {
+                    read(fds[0], buffer, sizeof(buffer));
+                    printf("Ponger received: %s\n", buffer);
+                    write(fds[0], ACK, strlen(ACK)); // reply to pinger
+                }
+            } else {
+                perror("poll");
             }
-        } else {
-            perror("poll");
         }
 
         close(fds[0]);
