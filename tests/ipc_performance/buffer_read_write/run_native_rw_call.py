@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 run_times = {}
 
-for size in range(8, 17, 2):
+for size in range(8, 17, 1):
     buffer_size = str(size)
     total_time = 0
     rw_time = 0

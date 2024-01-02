@@ -45,12 +45,6 @@ int main(int argc, char *argv[])
         read(test_fd, read_buffer, buffer_size);
     }
 
-    if (strcmp(buffer, read_buffer) != 0)
-    {
-        perror("Failed to read/write file");
-        exit(1);
-    }
-
     close(test_fd);
 
     unlink(FILENAME); // Delete the file

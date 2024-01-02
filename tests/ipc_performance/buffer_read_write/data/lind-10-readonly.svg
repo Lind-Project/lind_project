@@ -1,0 +1,1501 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="1494" onload="init(evt)" viewBox="0 0 1200 1494" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
+<!-- NOTES:  -->
+<defs>
+	<linearGradient id="background" y1="0" y2="1" x1="0" x2="0" >
+		<stop stop-color="#eeeeee" offset="5%" />
+		<stop stop-color="#eeeeb0" offset="95%" />
+	</linearGradient>
+</defs>
+<style type="text/css">
+	text { font-family:Verdana; font-size:12px; fill:rgb(0,0,0); }
+	#search, #ignorecase { opacity:0.1; cursor:pointer; }
+	#search:hover, #search.show, #ignorecase:hover, #ignorecase.show { opacity:1; }
+	#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+	#title { text-anchor:middle; font-size:17px}
+	#unzoom { cursor:pointer; }
+	#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+	.hide { display:none; }
+	.parent { opacity:0.5; }
+</style>
+<script type="text/ecmascript">
+<![CDATA[
+	"use strict";
+	var details, searchbtn, unzoombtn, matchedtxt, svg, searching, currentSearchTerm, ignorecase, ignorecaseBtn;
+	function init(evt) {
+		details = document.getElementById("details").firstChild;
+		searchbtn = document.getElementById("search");
+		ignorecaseBtn = document.getElementById("ignorecase");
+		unzoombtn = document.getElementById("unzoom");
+		matchedtxt = document.getElementById("matched");
+		svg = document.getElementsByTagName("svg")[0];
+		searching = 0;
+		currentSearchTerm = null;
+
+		// use GET parameters to restore a flamegraphs state.
+		var params = get_params();
+		if (params.x && params.y)
+			zoom(find_group(document.querySelector('[x="' + params.x + '"][y="' + params.y + '"]')));
+                if (params.s) search(params.s);
+	}
+
+	// event listeners
+	window.addEventListener("click", function(e) {
+		var target = find_group(e.target);
+		if (target) {
+			if (target.nodeName == "a") {
+				if (e.ctrlKey === false) return;
+				e.preventDefault();
+			}
+			if (target.classList.contains("parent")) unzoom(true);
+			zoom(target);
+			if (!document.querySelector('.parent')) {
+				// we have basically done a clearzoom so clear the url
+				var params = get_params();
+				if (params.x) delete params.x;
+				if (params.y) delete params.y;
+				history.replaceState(null, null, parse_params(params));
+				unzoombtn.classList.add("hide");
+				return;
+			}
+
+			// set parameters for zoom state
+			var el = target.querySelector("rect");
+			if (el && el.attributes && el.attributes.y && el.attributes._orig_x) {
+				var params = get_params()
+				params.x = el.attributes._orig_x.value;
+				params.y = el.attributes.y.value;
+				history.replaceState(null, null, parse_params(params));
+			}
+		}
+		else if (e.target.id == "unzoom") clearzoom();
+		else if (e.target.id == "search") search_prompt();
+		else if (e.target.id == "ignorecase") toggle_ignorecase();
+	}, false)
+
+	// mouse-over for info
+	// show
+	window.addEventListener("mouseover", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = "Function: " + g_to_text(target);
+	}, false)
+
+	// clear
+	window.addEventListener("mouseout", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = ' ';
+	}, false)
+
+	// ctrl-F for search
+	// ctrl-I to toggle case-sensitive search
+	window.addEventListener("keydown",function (e) {
+		if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+			e.preventDefault();
+			search_prompt();
+		}
+		else if (e.ctrlKey && e.keyCode === 73) {
+			e.preventDefault();
+			toggle_ignorecase();
+		}
+	}, false)
+
+	// functions
+	function get_params() {
+		var params = {};
+		var paramsarr = window.location.search.substr(1).split('&');
+		for (var i = 0; i < paramsarr.length; ++i) {
+			var tmp = paramsarr[i].split("=");
+			if (!tmp[0] || !tmp[1]) continue;
+			params[tmp[0]]  = decodeURIComponent(tmp[1]);
+		}
+		return params;
+	}
+	function parse_params(params) {
+		var uri = "?";
+		for (var key in params) {
+			uri += key + '=' + encodeURIComponent(params[key]) + '&';
+		}
+		if (uri.slice(-1) == "&")
+			uri = uri.substring(0, uri.length - 1);
+		if (uri == '?')
+			uri = window.location.href.split('?')[0];
+		return uri;
+	}
+	function find_child(node, selector) {
+		var children = node.querySelectorAll(selector);
+		if (children.length) return children[0];
+	}
+	function find_group(node) {
+		var parent = node.parentElement;
+		if (!parent) return;
+		if (parent.id == "frames") return node;
+		return find_group(parent);
+	}
+	function orig_save(e, attr, val) {
+		if (e.attributes["_orig_" + attr] != undefined) return;
+		if (e.attributes[attr] == undefined) return;
+		if (val == undefined) val = e.attributes[attr].value;
+		e.setAttribute("_orig_" + attr, val);
+	}
+	function orig_load(e, attr) {
+		if (e.attributes["_orig_"+attr] == undefined) return;
+		e.attributes[attr].value = e.attributes["_orig_" + attr].value;
+		e.removeAttribute("_orig_"+attr);
+	}
+	function g_to_text(e) {
+		var text = find_child(e, "title").firstChild.nodeValue;
+		return (text)
+	}
+	function g_to_func(e) {
+		var func = g_to_text(e);
+		// if there's any manipulation we want to do to the function
+		// name before it's searched, do it here before returning.
+		return (func);
+	}
+	function update_text(e) {
+		var r = find_child(e, "rect");
+		var t = find_child(e, "text");
+		var w = parseFloat(r.attributes.width.value) -3;
+		var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+		t.attributes.x.value = parseFloat(r.attributes.x.value) + 3;
+
+		// Smaller than this size won't fit anything
+		if (w < 2 * 12 * 0.59) {
+			t.textContent = "";
+			return;
+		}
+
+		t.textContent = txt;
+		var sl = t.getSubStringLength(0, txt.length);
+		// check if only whitespace or if we can fit the entire string into width w
+		if (/^ *$/.test(txt) || sl < w)
+			return;
+
+		// this isn't perfect, but gives a good starting point
+		// and avoids calling getSubStringLength too often
+		var start = Math.floor((w/sl) * txt.length);
+		for (var x = start; x > 0; x = x-2) {
+			if (t.getSubStringLength(0, x + 2) <= w) {
+				t.textContent = txt.substring(0, x) + "..";
+				return;
+			}
+		}
+		t.textContent = "";
+	}
+
+	// zoom
+	function zoom_reset(e) {
+		if (e.attributes != undefined) {
+			orig_load(e, "x");
+			orig_load(e, "width");
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_reset(c[i]);
+		}
+	}
+	function zoom_child(e, x, ratio) {
+		if (e.attributes != undefined) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = (parseFloat(e.attributes.x.value) - x - 10) * ratio + 10;
+				if (e.tagName == "text")
+					e.attributes.x.value = find_child(e.parentNode, "rect[x]").attributes.x.value + 3;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseFloat(e.attributes.width.value) * ratio;
+			}
+		}
+
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_child(c[i], x - 10, ratio);
+		}
+	}
+	function zoom_parent(e) {
+		if (e.attributes) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = 10;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseInt(svg.width.baseVal.value) - (10 * 2);
+			}
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_parent(c[i]);
+		}
+	}
+	function zoom(node) {
+		var attr = find_child(node, "rect").attributes;
+		var width = parseFloat(attr.width.value);
+		var xmin = parseFloat(attr.x.value);
+		var xmax = parseFloat(xmin + width);
+		var ymin = parseFloat(attr.y.value);
+		var ratio = (svg.width.baseVal.value - 2 * 10) / width;
+
+		// XXX: Workaround for JavaScript float issues (fix me)
+		var fudge = 0.0001;
+
+		unzoombtn.classList.remove("hide");
+
+		var el = document.getElementById("frames").children;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var a = find_child(e, "rect").attributes;
+			var ex = parseFloat(a.x.value);
+			var ew = parseFloat(a.width.value);
+			var upstack;
+			// Is it an ancestor
+			if (0 == 0) {
+				upstack = parseFloat(a.y.value) > ymin;
+			} else {
+				upstack = parseFloat(a.y.value) < ymin;
+			}
+			if (upstack) {
+				// Direct ancestor
+				if (ex <= xmin && (ex+ew+fudge) >= xmax) {
+					e.classList.add("parent");
+					zoom_parent(e);
+					update_text(e);
+				}
+				// not in current path
+				else
+					e.classList.add("hide");
+			}
+			// Children maybe
+			else {
+				// no common path
+				if (ex < xmin || ex + fudge >= xmax) {
+					e.classList.add("hide");
+				}
+				else {
+					zoom_child(e, xmin, ratio);
+					update_text(e);
+				}
+			}
+		}
+		search();
+	}
+	function unzoom(dont_update_text) {
+		unzoombtn.classList.add("hide");
+		var el = document.getElementById("frames").children;
+		for(var i = 0; i < el.length; i++) {
+			el[i].classList.remove("parent");
+			el[i].classList.remove("hide");
+			zoom_reset(el[i]);
+			if(!dont_update_text) update_text(el[i]);
+		}
+		search();
+	}
+	function clearzoom() {
+		unzoom();
+
+		// remove zoom state
+		var params = get_params();
+		if (params.x) delete params.x;
+		if (params.y) delete params.y;
+		history.replaceState(null, null, parse_params(params));
+	}
+
+	// search
+	function toggle_ignorecase() {
+		ignorecase = !ignorecase;
+		if (ignorecase) {
+			ignorecaseBtn.classList.add("show");
+		} else {
+			ignorecaseBtn.classList.remove("show");
+		}
+		reset_search();
+		search();
+	}
+	function reset_search() {
+		var el = document.querySelectorAll("#frames rect");
+		for (var i = 0; i < el.length; i++) {
+			orig_load(el[i], "fill")
+		}
+		var params = get_params();
+		delete params.s;
+		history.replaceState(null, null, parse_params(params));
+	}
+	function search_prompt() {
+		if (!searching) {
+			var term = prompt("Enter a search term (regexp " +
+			    "allowed, eg: ^ext4_)"
+			    + (ignorecase ? ", ignoring case" : "")
+			    + "\nPress Ctrl-i to toggle case sensitivity", "");
+			if (term != null) search(term);
+		} else {
+			reset_search();
+			searching = 0;
+			currentSearchTerm = null;
+			searchbtn.classList.remove("show");
+			searchbtn.firstChild.nodeValue = "Search"
+			matchedtxt.classList.add("hide");
+			matchedtxt.firstChild.nodeValue = ""
+		}
+	}
+	function search(term) {
+		if (term) currentSearchTerm = term;
+
+		var re = new RegExp(currentSearchTerm, ignorecase ? 'i' : '');
+		var el = document.getElementById("frames").children;
+		var matches = new Object();
+		var maxwidth = 0;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var func = g_to_func(e);
+			var rect = find_child(e, "rect");
+			if (func == null || rect == null)
+				continue;
+
+			// Save max width. Only works as we have a root frame
+			var w = parseFloat(rect.attributes.width.value);
+			if (w > maxwidth)
+				maxwidth = w;
+
+			if (func.match(re)) {
+				// highlight
+				var x = parseFloat(rect.attributes.x.value);
+				orig_save(rect, "fill");
+				rect.attributes.fill.value = "rgb(230,0,230)";
+
+				// remember matches
+				if (matches[x] == undefined) {
+					matches[x] = w;
+				} else {
+					if (w > matches[x]) {
+						// overwrite with parent
+						matches[x] = w;
+					}
+				}
+				searching = 1;
+			}
+		}
+		if (!searching)
+			return;
+		var params = get_params();
+		params.s = currentSearchTerm;
+		history.replaceState(null, null, parse_params(params));
+
+		searchbtn.classList.add("show");
+		searchbtn.firstChild.nodeValue = "Reset Search";
+
+		// calculate percent matched, excluding vertical overlap
+		var count = 0;
+		var lastx = -1;
+		var lastw = 0;
+		var keys = Array();
+		for (k in matches) {
+			if (matches.hasOwnProperty(k))
+				keys.push(k);
+		}
+		// sort the matched frames by their x location
+		// ascending, then width descending
+		keys.sort(function(a, b){
+			return a - b;
+		});
+		// Step through frames saving only the biggest bottom-up frames
+		// thanks to the sort order. This relies on the tree property
+		// where children are always smaller than their parents.
+		var fudge = 0.0001;	// JavaScript floating point
+		for (var k in keys) {
+			var x = parseFloat(keys[k]);
+			var w = matches[keys[k]];
+			if (x >= lastx + lastw - fudge) {
+				count += w;
+				lastx = x;
+				lastw = w;
+			}
+		}
+		// display matched percent
+		matchedtxt.classList.remove("hide");
+		var pct = 100 * count / maxwidth;
+		if (pct != 100) pct = pct.toFixed(1)
+		matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+	}
+]]>
+</script>
+<rect x="0.0" y="0" width="1200.0" height="1494.0" fill="url(#background)"  />
+<text id="title" x="600.00" y="24" >Flame Graph</text>
+<text id="details" x="10.00" y="1477" > </text>
+<text id="unzoom" x="10.00" y="24" class="hide">Reset Zoom</text>
+<text id="search" x="1090.00" y="24" >Search</text>
+<text id="ignorecase" x="1174.00" y="24" >ic</text>
+<text id="matched" x="1090.00" y="1477" > </text>
+<g id="frames">
+<g >
+<title>search_binary_handler (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1301" width="118.3" height="15.0" fill="rgb(208,14,3)" rx="2" ry="2" />
+<text  x="737.81" y="1311.5" >search_binary_..</text>
+</g>
+<g >
+<title>Builtins_ArrayPrototypePush (591,471,705 samples, 9.95%)</title><rect x="390.2" y="1397" width="117.4" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="393.19" y="1407.5" >Builtins_Array..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="469" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="479.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>[sleep] (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1365" width="11.1" height="15.0" fill="rgb(205,4,1)" rx="2" ry="2" />
+<text  x="977.54" y="1375.5" ></text>
+</g>
+<g >
+<title>[libc.so.6] (92,688,382 samples, 1.56%)</title><rect x="937.5" y="1317" width="18.3" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="940.45" y="1327.5" ></text>
+</g>
+<g >
+<title>__getdelim (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1253" width="11.1" height="15.0" fill="rgb(240,163,39)" rx="2" ry="2" />
+<text  x="977.54" y="1263.5" ></text>
+</g>
+<g >
+<title>InotifyBackend::handleEvents (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1397" width="227.2" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="510.59" y="1407.5" >InotifyBackend::handleEvents</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="501" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="511.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (553,373,510 samples, 9.31%)</title><rect x="507.6" y="181" width="109.8" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="191.5" >std::__detail..</text>
+</g>
+<g >
+<title>cpuidle_enter (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1333" width="63.5" height="15.0" fill="rgb(205,1,0)" rx="2" ry="2" />
+<text  x="989.33" y="1343.5" >cpuidl..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="261" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="271.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>[libc.so.6] (557,175,929 samples, 9.37%)</title><rect x="279.6" y="1253" width="110.6" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="282.60" y="1263.5" >[libc.so.6]</text>
+</g>
+<g >
+<title>search_binary_handler (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1141" width="123.8" height="15.0" fill="rgb(208,14,3)" rx="2" ry="2" />
+<text  x="158.76" y="1151.5" >search_binary_h..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1029" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1039.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>NaClSysReadDecoder (315,097,670 samples, 5.30%)</title><rect x="893.3" y="1381" width="62.5" height="15.0" fill="rgb(253,225,53)" rx="2" ry="2" />
+<text  x="896.31" y="1391.5" >NaClSy..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (553,373,510 samples, 9.31%)</title><rect x="507.6" y="229" width="109.8" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="239.5" >std::__detail..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1269" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1279.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>exit_mmap (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1205" width="118.3" height="15.0" fill="rgb(236,143,34)" rx="2" ry="2" />
+<text  x="737.81" y="1215.5" >exit_mmap</text>
+</g>
+<g >
+<title>zap_pmd_range.isra.0 (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1141" width="118.3" height="15.0" fill="rgb(244,180,43)" rx="2" ry="2" />
+<text  x="737.81" y="1151.5" >zap_pmd_range...</text>
+</g>
+<g >
+<title>tick_sched_timer (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1221" width="63.5" height="15.0" fill="rgb(254,227,54)" rx="2" ry="2" />
+<text  x="989.33" y="1231.5" >tick_s..</text>
+</g>
+<g >
+<title>[libc.so.6] (557,175,929 samples, 9.37%)</title><rect x="279.6" y="1237" width="110.6" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="282.60" y="1247.5" >[libc.so.6]</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1285" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1295.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>futex_wake (176,923,635 samples, 2.98%)</title><rect x="90.0" y="1333" width="35.1" height="15.0" fill="rgb(219,65,15)" rx="2" ry="2" />
+<text  x="93.00" y="1343.5" >fu..</text>
+</g>
+<g >
+<title>HandleStackContext (50,135,023 samples, 0.84%)</title><rect x="853.1" y="1381" width="9.9" height="15.0" fill="rgb(235,140,33)" rx="2" ry="2" />
+<text  x="856.07" y="1391.5" ></text>
+</g>
+<g >
+<title>exec_binprm (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1317" width="118.3" height="15.0" fill="rgb(244,180,43)" rx="2" ry="2" />
+<text  x="737.81" y="1327.5" >exec_binprm</text>
+</g>
+<g >
+<title>unmap_single_vma (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1173" width="118.3" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="737.81" y="1183.5" >unmap_single_vma</text>
+</g>
+<g >
+<title>do_syscall_64 (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1237" width="123.8" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="158.76" y="1247.5" >do_syscall_64</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1221" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1231.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>[libc.so.6] (557,175,929 samples, 9.37%)</title><rect x="279.6" y="1317" width="110.6" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="282.60" y="1327.5" >[libc.so.6]</text>
+</g>
+<g >
+<title>InotifyBackend::handleSubscription (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1365" width="227.2" height="15.0" fill="rgb(247,197,47)" rx="2" ry="2" />
+<text  x="510.59" y="1375.5" >InotifyBackend::handleSubscrip..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="661" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="671.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>page_remove_rmap (51,668,691 samples, 0.87%)</title><rect x="872.8" y="1061" width="10.2" height="15.0" fill="rgb(252,219,52)" rx="2" ry="2" />
+<text  x="875.77" y="1071.5" ></text>
+</g>
+<g >
+<title>process_one_work (154,376,517 samples, 2.60%)</title><rect x="125.1" y="1365" width="30.7" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="128.12" y="1375.5" >pr..</text>
+</g>
+<g >
+<title>[libc.so.6] (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1317" width="11.1" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="977.54" y="1327.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="325" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="335.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (553,373,510 samples, 9.31%)</title><rect x="507.6" y="213" width="109.8" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="223.5" >std::__detail..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="373" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="383.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>__munmap (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1269" width="20.5" height="15.0" fill="rgb(211,29,7)" rx="2" ry="2" />
+<text  x="875.77" y="1279.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1141" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1151.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="949" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="959.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>perf-exec (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1429" width="118.3" height="15.0" fill="rgb(231,123,29)" rx="2" ry="2" />
+<text  x="737.81" y="1439.5" >perf-exec</text>
+</g>
+<g >
+<title>[perf-3932766.map] (591,471,705 samples, 9.95%)</title><rect x="390.2" y="1413" width="117.4" height="15.0" fill="rgb(208,15,3)" rx="2" ry="2" />
+<text  x="393.19" y="1423.5" >[perf-3932766...</text>
+</g>
+<g >
+<title>lind (1,181,094,845 samples, 19.87%)</title><rect x="155.8" y="1429" width="234.4" height="15.0" fill="rgb(231,119,28)" rx="2" ry="2" />
+<text  x="158.76" y="1439.5" >lind</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1173" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="1183.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1061" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1071.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="629" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="639.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (553,373,510 samples, 9.31%)</title><rect x="507.6" y="245" width="109.8" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="255.5" >std::__detail..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (553,373,510 samples, 9.31%)</title><rect x="507.6" y="117" width="109.8" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="127.5" >std::__detail..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="597" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="607.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>__x64_sys_read (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1173" width="11.1" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="977.54" y="1183.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1237" width="20.5" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="875.77" y="1247.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="613" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="623.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1045" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="1055.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>rustposix::safeposix::syscalls::fs_calls::&lt;impl rustposix::safeposix::cage::Cage&gt;::_close_helper_inner (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1301" width="20.5" height="15.0" fill="rgb(225,96,23)" rx="2" ry="2" />
+<text  x="875.77" y="1311.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="453" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="463.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>ksys_read (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1157" width="11.1" height="15.0" fill="rgb(229,113,27)" rx="2" ry="2" />
+<text  x="977.54" y="1167.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_lookahead (553,373,510 samples, 9.31%)</title><rect x="507.6" y="53" width="109.8" height="15.0" fill="rgb(244,180,43)" rx="2" ry="2" />
+<text  x="510.59" y="63.5" >std::__detail..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1013" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1023.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>n_tty_receive_buf_common (154,376,517 samples, 2.60%)</title><rect x="125.1" y="1285" width="30.7" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="128.12" y="1295.5" >n_..</text>
+</g>
+<g >
+<title>[unknown] (43,027,220 samples, 0.72%)</title><rect x="966.0" y="1413" width="8.5" height="15.0" fill="rgb(210,24,5)" rx="2" ry="2" />
+<text  x="969.00" y="1423.5" ></text>
+</g>
+<g >
+<title>rustposix::interface::file::EmulatedFile::readat (92,688,382 samples, 1.56%)</title><rect x="937.5" y="1333" width="18.3" height="15.0" fill="rgb(207,9,2)" rx="2" ry="2" />
+<text  x="940.45" y="1343.5" ></text>
+</g>
+<g >
+<title>do_syscall_64 (579,975,455 samples, 9.76%)</title><rect x="10.0" y="1381" width="115.1" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="13.00" y="1391.5" >do_syscall_64</text>
+</g>
+<g >
+<title>NaClSysClose (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1365" width="20.5" height="15.0" fill="rgb(249,202,48)" rx="2" ry="2" />
+<text  x="875.77" y="1375.5" ></text>
+</g>
+<g >
+<title>free_pages_and_swap_cache (51,798,788 samples, 0.87%)</title><rect x="883.0" y="1029" width="10.3" height="15.0" fill="rgb(222,82,19)" rx="2" ry="2" />
+<text  x="886.02" y="1039.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1237" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="1247.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>rustposix::safeposix::syscalls::fs_calls::&lt;impl rustposix::safeposix::cage::Cage&gt;::read_syscall (264,471,745 samples, 4.45%)</title><rect x="903.4" y="1349" width="52.4" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="906.35" y="1359.5" >rustp..</text>
+</g>
+<g >
+<title>bprm_execve (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1349" width="118.3" height="15.0" fill="rgb(218,61,14)" rx="2" ry="2" />
+<text  x="737.81" y="1359.5" >bprm_execve</text>
+</g>
+<g >
+<title>do_execveat_common.isra.0 (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1205" width="123.8" height="15.0" fill="rgb(231,123,29)" rx="2" ry="2" />
+<text  x="158.76" y="1215.5" >do_execveat_com..</text>
+</g>
+<g >
+<title>NaClSyscallCSegHook (517,809,502 samples, 8.71%)</title><rect x="853.1" y="1397" width="102.7" height="15.0" fill="rgb(253,221,53)" rx="2" ry="2" />
+<text  x="856.07" y="1407.5" >NaClSyscallC..</text>
+</g>
+<g >
+<title>setlocale (557,175,929 samples, 9.37%)</title><rect x="279.6" y="1333" width="110.6" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="282.60" y="1343.5" >setlocale</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="773" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="783.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>start_secondary (1,026,129,019 samples, 17.26%)</title><rect x="986.3" y="1397" width="203.7" height="15.0" fill="rgb(242,170,40)" rx="2" ry="2" />
+<text  x="989.33" y="1407.5" >start_secondary</text>
+</g>
+<g >
+<title>bprm_execve.part.0 (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1173" width="123.8" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="158.76" y="1183.5" >bprm_execve.par..</text>
+</g>
+<g >
+<title>sel_ldr (611,993,559 samples, 10.29%)</title><rect x="853.1" y="1429" width="121.4" height="15.0" fill="rgb(226,100,23)" rx="2" ry="2" />
+<text  x="856.07" y="1439.5" >sel_ldr</text>
+</g>
+<g >
+<title>unlock_page_memcg (51,668,691 samples, 0.87%)</title><rect x="872.8" y="1045" width="10.2" height="15.0" fill="rgb(240,164,39)" rx="2" ry="2" />
+<text  x="875.77" y="1055.5" ></text>
+</g>
+<g >
+<title>InotifyBackend::handleEvent (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1381" width="227.2" height="15.0" fill="rgb(228,108,25)" rx="2" ry="2" />
+<text  x="510.59" y="1391.5" >InotifyBackend::handleEvent</text>
+</g>
+<g >
+<title>[unknown] (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1413" width="227.2" height="15.0" fill="rgb(210,24,5)" rx="2" ry="2" />
+<text  x="510.59" y="1423.5" >[unknown]</text>
+</g>
+<g >
+<title>select_idle_sibling (176,923,635 samples, 2.98%)</title><rect x="90.0" y="1269" width="35.1" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="93.00" y="1279.5" >se..</text>
+</g>
+<g >
+<title>unmap_vmas (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1189" width="118.3" height="15.0" fill="rgb(243,176,42)" rx="2" ry="2" />
+<text  x="737.81" y="1199.5" >unmap_vmas</text>
+</g>
+<g >
+<title>sleep (1,085,488,855 samples, 18.26%)</title><rect x="974.5" y="1429" width="215.5" height="15.0" fill="rgb(244,182,43)" rx="2" ry="2" />
+<text  x="977.54" y="1439.5" >sleep</text>
+</g>
+<g >
+<title>__x64_sys_munmap (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1221" width="20.5" height="15.0" fill="rgb(206,7,1)" rx="2" ry="2" />
+<text  x="875.77" y="1231.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="293" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="303.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>node (1,736,217,088 samples, 29.20%)</title><rect x="390.2" y="1429" width="344.6" height="15.0" fill="rgb(237,149,35)" rx="2" ry="2" />
+<text  x="393.19" y="1439.5" >node</text>
+</g>
+<g >
+<title>unmap_page_range (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1157" width="118.3" height="15.0" fill="rgb(206,5,1)" rx="2" ry="2" />
+<text  x="737.81" y="1167.5" >unmap_page_range</text>
+</g>
+<g >
+<title>psi_group_change (706,573,879 samples, 11.89%)</title><rect x="1049.8" y="1301" width="140.2" height="15.0" fill="rgb(226,101,24)" rx="2" ry="2" />
+<text  x="1052.75" y="1311.5" >psi_group_change</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="549" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="559.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>select_task_rq_fair (176,923,635 samples, 2.98%)</title><rect x="90.0" y="1285" width="35.1" height="15.0" fill="rgb(211,29,7)" rx="2" ry="2" />
+<text  x="93.00" y="1295.5" >se..</text>
+</g>
+<g >
+<title>_start (1,181,094,845 samples, 19.87%)</title><rect x="155.8" y="1413" width="234.4" height="15.0" fill="rgb(245,185,44)" rx="2" ry="2" />
+<text  x="158.76" y="1423.5" >_start</text>
+</g>
+<g >
+<title>__read_nocancel (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1221" width="11.1" height="15.0" fill="rgb(216,55,13)" rx="2" ry="2" />
+<text  x="977.54" y="1231.5" ></text>
+</g>
+<g >
+<title>do_futex (579,975,455 samples, 9.76%)</title><rect x="10.0" y="1349" width="115.1" height="15.0" fill="rgb(245,184,44)" rx="2" ry="2" />
+<text  x="13.00" y="1359.5" >do_futex</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (553,373,510 samples, 9.31%)</title><rect x="507.6" y="85" width="109.8" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="95.5" >std::__detail..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="421" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="431.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="885" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="895.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="565" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="575.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1301" width="63.5" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="989.33" y="1311.5" >asm_sy..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="581" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="591.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (553,373,510 samples, 9.31%)</title><rect x="507.6" y="165" width="109.8" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="175.5" >std::__detail..</text>
+</g>
+<g >
+<title>wake_up_q (176,923,635 samples, 2.98%)</title><rect x="90.0" y="1317" width="35.1" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="93.00" y="1327.5" >wa..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1093" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1103.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (553,373,510 samples, 9.31%)</title><rect x="507.6" y="69" width="109.8" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="79.5" >std::__detail..</text>
+</g>
+<g >
+<title>bprm_execve (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1189" width="123.8" height="15.0" fill="rgb(218,61,14)" rx="2" ry="2" />
+<text  x="158.76" y="1199.5" >bprm_execve</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="341" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="351.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (579,975,455 samples, 9.76%)</title><rect x="10.0" y="1397" width="115.1" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="13.00" y="1407.5" >entry_SYSCALL_..</text>
+</g>
+<g >
+<title>unmap_single_vma (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1125" width="20.5" height="15.0" fill="rgb(225,93,22)" rx="2" ry="2" />
+<text  x="875.77" y="1135.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="437" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="447.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>ovl_xattr_get (623,918,916 samples, 10.49%)</title><rect x="155.8" y="997" width="123.8" height="15.0" fill="rgb(205,0,0)" rx="2" ry="2" />
+<text  x="158.76" y="1007.5" >ovl_xattr_get</text>
+</g>
+<g >
+<title>execute_command_internal (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1317" width="123.8" height="15.0" fill="rgb(248,202,48)" rx="2" ry="2" />
+<text  x="158.76" y="1327.5" >execute_command..</text>
+</g>
+<g >
+<title>futex_wait (403,051,820 samples, 6.78%)</title><rect x="10.0" y="1333" width="80.0" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="13.00" y="1343.5" >futex_wait</text>
+</g>
+<g >
+<title>do_mas_munmap (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1189" width="20.5" height="15.0" fill="rgb(224,90,21)" rx="2" ry="2" />
+<text  x="875.77" y="1199.5" ></text>
+</g>
+<g >
+<title>all (5,944,937,566 samples, 100%)</title><rect x="10.0" y="1445" width="1180.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="13.00" y="1455.5" ></text>
+</g>
+<g >
+<title>Builtins_RecordWriteEmitRememberedSetSaveFP (591,471,705 samples, 9.95%)</title><rect x="390.2" y="1381" width="117.4" height="15.0" fill="rgb(235,141,33)" rx="2" ry="2" />
+<text  x="393.19" y="1391.5" >Builtins_Recor..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="997" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1007.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="709" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="719.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::__regex_algo_impl&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, char, std::regex_traits&lt;char&gt;,  (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1317" width="227.2" height="15.0" fill="rgb(232,125,29)" rx="2" ry="2" />
+<text  x="510.59" y="1327.5" >std::__detail::__regex_algo_im..</text>
+</g>
+<g >
+<title>_IO_file_underflow (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1237" width="11.1" height="15.0" fill="rgb(209,21,5)" rx="2" ry="2" />
+<text  x="977.54" y="1247.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (553,373,510 samples, 9.31%)</title><rect x="507.6" y="197" width="109.8" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="207.5" >std::__detail..</text>
+</g>
+<g >
+<title>__vm_munmap (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1205" width="20.5" height="15.0" fill="rgb(231,121,28)" rx="2" ry="2" />
+<text  x="875.77" y="1215.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="805" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="815.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>[libc.so.6] (557,175,929 samples, 9.37%)</title><rect x="279.6" y="1221" width="110.6" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="282.60" y="1231.5" >[libc.so.6]</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1205" width="11.1" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="977.54" y="1215.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1253" width="63.5" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="989.33" y="1263.5" >hrtime..</text>
+</g>
+<g >
+<title>hashbrown::map::make_hash (51,405,220 samples, 0.86%)</title><rect x="927.2" y="1317" width="10.3" height="15.0" fill="rgb(230,116,27)" rx="2" ry="2" />
+<text  x="930.25" y="1327.5" ></text>
+</g>
+<g >
+<title>__vfs_getxattr (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1029" width="123.8" height="15.0" fill="rgb(254,226,54)" rx="2" ry="2" />
+<text  x="158.76" y="1039.5" >__vfs_getxattr</text>
+</g>
+<g >
+<title>do_syscall_64 (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1397" width="118.3" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="737.81" y="1407.5" >do_syscall_64</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="485" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="495.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>dispatcher (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1333" width="20.5" height="15.0" fill="rgb(246,191,45)" rx="2" ry="2" />
+<text  x="875.77" y="1343.5" ></text>
+</g>
+<g >
+<title>[unknown] (579,975,455 samples, 9.76%)</title><rect x="10.0" y="1413" width="115.1" height="15.0" fill="rgb(210,24,5)" rx="2" ry="2" />
+<text  x="13.00" y="1423.5" >[unknown]</text>
+</g>
+<g >
+<title>__hrtimer_run_queues (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1237" width="63.5" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="989.33" y="1247.5" >__hrti..</text>
+</g>
+<g >
+<title>NaClSysCloseDecoder (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1381" width="20.5" height="15.0" fill="rgb(215,49,11)" rx="2" ry="2" />
+<text  x="875.77" y="1391.5" ></text>
+</g>
+<g >
+<title>zap_pmd_range.isra.0 (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1093" width="20.5" height="15.0" fill="rgb(244,180,43)" rx="2" ry="2" />
+<text  x="875.77" y="1103.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1301" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1311.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="917" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="927.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>execve (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1269" width="123.8" height="15.0" fill="rgb(229,111,26)" rx="2" ry="2" />
+<text  x="158.76" y="1279.5" >execve</text>
+</g>
+<g >
+<title>__rcu_read_unlock (51,668,691 samples, 0.87%)</title><rect x="872.8" y="1029" width="10.2" height="15.0" fill="rgb(253,224,53)" rx="2" ry="2" />
+<text  x="875.77" y="1039.5" ></text>
+</g>
+<g >
+<title>psi_task_switch (706,573,879 samples, 11.89%)</title><rect x="1049.8" y="1317" width="140.2" height="15.0" fill="rgb(230,118,28)" rx="2" ry="2" />
+<text  x="1052.75" y="1327.5" >psi_task_switch</text>
+</g>
+<g >
+<title>schedule_idle (706,573,879 samples, 11.89%)</title><rect x="1049.8" y="1349" width="140.2" height="15.0" fill="rgb(216,54,13)" rx="2" ry="2" />
+<text  x="1052.75" y="1359.5" >schedule_idle</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="981" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="991.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>account_process_tick (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1173" width="63.5" height="15.0" fill="rgb(234,136,32)" rx="2" ry="2" />
+<text  x="989.33" y="1183.5" >accoun..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="837" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="847.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="741" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="751.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (553,373,510 samples, 9.31%)</title><rect x="507.6" y="101" width="109.8" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="111.5" >std::__detail..</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1413" width="118.3" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="737.81" y="1423.5" >entry_SYSCALL_..</text>
+</g>
+<g >
+<title>cap_bprm_creds_from_file (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1077" width="123.8" height="15.0" fill="rgb(250,211,50)" rx="2" ry="2" />
+<text  x="158.76" y="1087.5" >cap_bprm_creds_..</text>
+</g>
+<g >
+<title>__schedule (706,573,879 samples, 11.89%)</title><rect x="1049.8" y="1333" width="140.2" height="15.0" fill="rgb(227,103,24)" rx="2" ry="2" />
+<text  x="1052.75" y="1343.5" >__schedule</text>
+</g>
+<g >
+<title>vfs_read (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1141" width="11.1" height="15.0" fill="rgb(224,88,21)" rx="2" ry="2" />
+<text  x="977.54" y="1151.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="533" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="543.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>[libc.so.6] (557,175,929 samples, 9.37%)</title><rect x="279.6" y="1269" width="110.6" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="282.60" y="1279.5" >[libc.so.6]</text>
+</g>
+<g >
+<title>ret_from_fork (154,376,517 samples, 2.60%)</title><rect x="125.1" y="1413" width="30.7" height="15.0" fill="rgb(227,105,25)" rx="2" ry="2" />
+<text  x="128.12" y="1423.5" >re..</text>
+</g>
+<g >
+<title>Watcher::isIgnored (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1349" width="227.2" height="15.0" fill="rgb(205,1,0)" rx="2" ry="2" />
+<text  x="510.59" y="1359.5" >Watcher::isIgnored</text>
+</g>
+<g >
+<title>do_idle (1,026,129,019 samples, 17.26%)</title><rect x="986.3" y="1365" width="203.7" height="15.0" fill="rgb(212,34,8)" rx="2" ry="2" />
+<text  x="989.33" y="1375.5" >do_idle</text>
+</g>
+<g >
+<title>xattr_getsecurity (623,918,916 samples, 10.49%)</title><rect x="155.8" y="981" width="123.8" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="158.76" y="991.5" >xattr_getsecurity</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="517" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="527.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>__x64_sys_execve (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1381" width="118.3" height="15.0" fill="rgb(247,193,46)" rx="2" ry="2" />
+<text  x="737.81" y="1391.5" >__x64_sys_execve</text>
+</g>
+<g >
+<title>zap_pte_range (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1077" width="20.5" height="15.0" fill="rgb(231,120,28)" rx="2" ry="2" />
+<text  x="875.77" y="1087.5" ></text>
+</g>
+<g >
+<title>execute_command (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1333" width="123.8" height="15.0" fill="rgb(224,90,21)" rx="2" ry="2" />
+<text  x="158.76" y="1343.5" >execute_command</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (553,373,510 samples, 9.31%)</title><rect x="507.6" y="37" width="109.8" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="47.5" >std::__detail..</text>
+</g>
+<g >
+<title>Glob::isIgnored (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1333" width="227.2" height="15.0" fill="rgb(237,147,35)" rx="2" ry="2" />
+<text  x="510.59" y="1343.5" >Glob::isIgnored</text>
+</g>
+<g >
+<title>[libc.so.6] (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1381" width="11.1" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="977.54" y="1391.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="277" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="287.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>shell_execve (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1285" width="123.8" height="15.0" fill="rgb(253,220,52)" rx="2" ry="2" />
+<text  x="158.76" y="1295.5" >shell_execve</text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1269" width="63.5" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="989.33" y="1279.5" >__sysv..</text>
+</g>
+<g >
+<title>begin_new_exec (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1269" width="118.3" height="15.0" fill="rgb(245,184,44)" rx="2" ry="2" />
+<text  x="737.81" y="1279.5" >begin_new_exec</text>
+</g>
+<g >
+<title>release_pages (51,798,788 samples, 0.87%)</title><rect x="883.0" y="1013" width="10.3" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="886.02" y="1023.5" ></text>
+</g>
+<g >
+<title>worker_thread (154,376,517 samples, 2.60%)</title><rect x="125.1" y="1381" width="30.7" height="15.0" fill="rgb(214,45,10)" rx="2" ry="2" />
+<text  x="128.12" y="1391.5" >wo..</text>
+</g>
+<g >
+<title>rustposix::interface::file::EmulatedFile::close (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1285" width="20.5" height="15.0" fill="rgb(244,183,43)" rx="2" ry="2" />
+<text  x="875.77" y="1295.5" ></text>
+</g>
+<g >
+<title>tick_sched_handle (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1205" width="63.5" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="989.33" y="1215.5" >tick_s..</text>
+</g>
+<g >
+<title>[libc.so.6] (1,181,094,845 samples, 19.87%)</title><rect x="155.8" y="1381" width="234.4" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="158.76" y="1391.5" >[libc.so.6]</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (553,373,510 samples, 9.31%)</title><rect x="507.6" y="133" width="109.8" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="143.5" >std::__detail..</text>
+</g>
+<g >
+<title>unmap_page_range (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1109" width="20.5" height="15.0" fill="rgb(206,5,1)" rx="2" ry="2" />
+<text  x="875.77" y="1119.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="389" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="399.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>mmput (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1237" width="118.3" height="15.0" fill="rgb(226,99,23)" rx="2" ry="2" />
+<text  x="737.81" y="1247.5" >mmput</text>
+</g>
+<g >
+<title>[unknown] (3,629,430 samples, 0.06%)</title><rect x="985.6" y="1413" width="0.7" height="15.0" fill="rgb(210,24,5)" rx="2" ry="2" />
+<text  x="988.61" y="1423.5" ></text>
+</g>
+<g >
+<title>secondary_startup_64_no_verify (1,026,129,019 samples, 17.26%)</title><rect x="986.3" y="1413" width="203.7" height="15.0" fill="rgb(239,157,37)" rx="2" ry="2" />
+<text  x="989.33" y="1423.5" >secondary_startup_64_no_ve..</text>
+</g>
+<g >
+<title>tty_port_default_receive_buf (154,376,517 samples, 2.60%)</title><rect x="125.1" y="1333" width="30.7" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="128.12" y="1343.5" >tt..</text>
+</g>
+<g >
+<title>security_bprm_creds_from_file (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1093" width="123.8" height="15.0" fill="rgb(254,226,54)" rx="2" ry="2" />
+<text  x="158.76" y="1103.5" >security_bprm_c..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="869" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="879.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="405" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="415.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>[libc.so.6] (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1301" width="11.1" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="977.54" y="1311.5" ></text>
+</g>
+<g >
+<title>[sel_ldr] (51,156,837 samples, 0.86%)</title><rect x="955.8" y="1397" width="10.2" height="15.0" fill="rgb(238,152,36)" rx="2" ry="2" />
+<text  x="958.85" y="1407.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="853" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="863.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1205" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1215.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>fsnotify_perm.part.0 (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1093" width="11.1" height="15.0" fill="rgb(245,186,44)" rx="2" ry="2" />
+<text  x="977.54" y="1103.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="933" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="943.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>[libc.so.6] (557,175,929 samples, 9.37%)</title><rect x="279.6" y="1301" width="110.6" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="282.60" y="1311.5" >[libc.so.6]</text>
+</g>
+<g >
+<title>security_file_permission (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1109" width="11.1" height="15.0" fill="rgb(225,96,23)" rx="2" ry="2" />
+<text  x="977.54" y="1119.5" ></text>
+</g>
+<g >
+<title>rw_verify_area (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1125" width="11.1" height="15.0" fill="rgb(218,64,15)" rx="2" ry="2" />
+<text  x="977.54" y="1135.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (591,371,873 samples, 9.95%)</title><rect x="617.4" y="213" width="117.4" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="620.43" y="223.5" >std::__detail:..</text>
+</g>
+<g >
+<title>main (1,181,094,845 samples, 19.87%)</title><rect x="155.8" y="1365" width="234.4" height="15.0" fill="rgb(243,179,42)" rx="2" ry="2" />
+<text  x="158.76" y="1375.5" >main</text>
+</g>
+<g >
+<title>do_syscall_64 (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1189" width="11.1" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="977.54" y="1199.5" ></text>
+</g>
+<g >
+<title>load_elf_binary (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1285" width="118.3" height="15.0" fill="rgb(223,83,20)" rx="2" ry="2" />
+<text  x="737.81" y="1295.5" >load_elf_binary</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="789" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="799.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>set_default_locale (557,175,929 samples, 9.37%)</title><rect x="279.6" y="1349" width="110.6" height="15.0" fill="rgb(223,86,20)" rx="2" ry="2" />
+<text  x="282.60" y="1359.5" >set_default_l..</text>
+</g>
+<g >
+<title>[libc.so.6] (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1269" width="11.1" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="977.54" y="1279.5" ></text>
+</g>
+<g >
+<title>ovl_other_xattr_get (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1013" width="123.8" height="15.0" fill="rgb(214,42,10)" rx="2" ry="2" />
+<text  x="158.76" y="1023.5" >ovl_other_xattr..</text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1253" width="123.8" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="158.76" y="1263.5" >entry_SYSCALL_6..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1109" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="1119.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>n_tty_receive_buf2 (154,376,517 samples, 2.60%)</title><rect x="125.1" y="1301" width="30.7" height="15.0" fill="rgb(236,146,35)" rx="2" ry="2" />
+<text  x="128.12" y="1311.5" >n_..</text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1285" width="63.5" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="989.33" y="1295.5" >sysvec..</text>
+</g>
+<g >
+<title>NaClVmmapCheckAddrMapping (50,625,925 samples, 0.85%)</title><rect x="893.3" y="1333" width="10.1" height="15.0" fill="rgb(227,102,24)" rx="2" ry="2" />
+<text  x="896.31" y="1343.5" ></text>
+</g>
+<g >
+<title>tlb_batch_pages_flush (51,798,788 samples, 0.87%)</title><rect x="883.0" y="1045" width="10.3" height="15.0" fill="rgb(234,133,32)" rx="2" ry="2" />
+<text  x="886.02" y="1055.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="677" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="687.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="757" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="767.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>lind_close (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1349" width="20.5" height="15.0" fill="rgb(217,58,14)" rx="2" ry="2" />
+<text  x="875.77" y="1359.5" ></text>
+</g>
+<g >
+<title>reader_loop (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1349" width="123.8" height="15.0" fill="rgb(244,180,43)" rx="2" ry="2" />
+<text  x="158.76" y="1359.5" >reader_loop</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="725" width="227.2" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="735.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>[sel_ldr] (517,809,502 samples, 8.71%)</title><rect x="853.1" y="1413" width="102.7" height="15.0" fill="rgb(238,152,36)" rx="2" ry="2" />
+<text  x="856.07" y="1423.5" >[sel_ldr]</text>
+</g>
+<g >
+<title>[sleep] (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1413" width="11.1" height="15.0" fill="rgb(205,4,1)" rx="2" ry="2" />
+<text  x="977.54" y="1423.5" ></text>
+</g>
+<g >
+<title>get_file_caps.constprop.0 (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1061" width="123.8" height="15.0" fill="rgb(234,137,32)" rx="2" ry="2" />
+<text  x="158.76" y="1071.5" >get_file_caps.c..</text>
+</g>
+<g >
+<title>rustposix::safeposix::syscalls::fs_calls::&lt;impl rustposix::safeposix::cage::Cage&gt;::read_syscall (43,027,220 samples, 0.72%)</title><rect x="966.0" y="1397" width="8.5" height="15.0" fill="rgb(235,138,33)" rx="2" ry="2" />
+<text  x="969.00" y="1407.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="693" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="703.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>kthread (154,376,517 samples, 2.60%)</title><rect x="125.1" y="1397" width="30.7" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="128.12" y="1407.5" >kt..</text>
+</g>
+<g >
+<title>cpuidle_idle_call (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1349" width="63.5" height="15.0" fill="rgb(207,9,2)" rx="2" ry="2" />
+<text  x="989.33" y="1359.5" >cpuidl..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1189" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1199.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>unmap_region (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1157" width="20.5" height="15.0" fill="rgb(219,64,15)" rx="2" ry="2" />
+<text  x="875.77" y="1167.5" ></text>
+</g>
+<g >
+<title>[libc.so.6] (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1285" width="11.1" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="977.54" y="1295.5" ></text>
+</g>
+<g >
+<title>setlocale (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1349" width="11.1" height="15.0" fill="rgb(237,151,36)" rx="2" ry="2" />
+<text  x="977.54" y="1359.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="357" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="367.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>unmap_vmas (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1141" width="20.5" height="15.0" fill="rgb(243,176,42)" rx="2" ry="2" />
+<text  x="875.77" y="1151.5" ></text>
+</g>
+<g >
+<title>zap_pte_range (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1125" width="118.3" height="15.0" fill="rgb(231,120,28)" rx="2" ry="2" />
+<text  x="737.81" y="1135.5" >zap_pte_range</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="965" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="975.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>futex_wait_queue (403,051,820 samples, 6.78%)</title><rect x="10.0" y="1317" width="80.0" height="15.0" fill="rgb(225,92,22)" rx="2" ry="2" />
+<text  x="13.00" y="1327.5" >futex_wai..</text>
+</g>
+<g >
+<title>__mmput (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1221" width="118.3" height="15.0" fill="rgb(249,203,48)" rx="2" ry="2" />
+<text  x="737.81" y="1231.5" >__mmput</text>
+</g>
+<g >
+<title>update_process_times (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1189" width="63.5" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="989.33" y="1199.5" >update..</text>
+</g>
+<g >
+<title>[bash] (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1301" width="123.8" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="158.76" y="1311.5" >[bash]</text>
+</g>
+<g >
+<title>NaClUserToSysAddrRangeProt (50,625,925 samples, 0.85%)</title><rect x="893.3" y="1349" width="10.1" height="15.0" fill="rgb(248,201,48)" rx="2" ry="2" />
+<text  x="896.31" y="1359.5" ></text>
+</g>
+<g >
+<title>load_elf_binary (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1125" width="123.8" height="15.0" fill="rgb(223,83,20)" rx="2" ry="2" />
+<text  x="158.76" y="1135.5" >load_elf_binary</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (591,371,873 samples, 9.95%)</title><rect x="617.4" y="229" width="117.4" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="620.43" y="239.5" >std::__detail:..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1253" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1263.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>cpuidle_enter_state (319,555,140 samples, 5.38%)</title><rect x="986.3" y="1317" width="63.5" height="15.0" fill="rgb(221,73,17)" rx="2" ry="2" />
+<text  x="989.33" y="1327.5" >cpuidl..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="309" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="319.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>__libc_start_main (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1397" width="11.1" height="15.0" fill="rgb(236,142,34)" rx="2" ry="2" />
+<text  x="977.54" y="1407.5" ></text>
+</g>
+<g >
+<title>exec_mmap (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1253" width="118.3" height="15.0" fill="rgb(221,77,18)" rx="2" ry="2" />
+<text  x="737.81" y="1263.5" >exec_mmap</text>
+</g>
+<g >
+<title>do_execveat_common.isra.0 (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1365" width="118.3" height="15.0" fill="rgb(231,123,29)" rx="2" ry="2" />
+<text  x="737.81" y="1375.5" >do_execveat_co..</text>
+</g>
+<g >
+<title>[libc.so.6] (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1333" width="11.1" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="977.54" y="1343.5" ></text>
+</g>
+<g >
+<title>bprm_execve.part.0 (595,791,231 samples, 10.02%)</title><rect x="734.8" y="1333" width="118.3" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="737.81" y="1343.5" >bprm_execve.pa..</text>
+</g>
+<g >
+<title>NaClLog (49,109,330 samples, 0.83%)</title><rect x="863.0" y="1381" width="9.8" height="15.0" fill="rgb(229,111,26)" rx="2" ry="2" />
+<text  x="866.02" y="1391.5" ></text>
+</g>
+<g >
+<title>begin_new_exec (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1109" width="123.8" height="15.0" fill="rgb(245,184,44)" rx="2" ry="2" />
+<text  x="158.76" y="1119.5" >begin_new_exec</text>
+</g>
+<g >
+<title>kworker/dying (734,351,972 samples, 12.35%)</title><rect x="10.0" y="1429" width="145.8" height="15.0" fill="rgb(234,135,32)" rx="2" ry="2" />
+<text  x="13.00" y="1439.5" >kworker/dying</text>
+</g>
+<g >
+<title>flush_to_ldisc (154,376,517 samples, 2.60%)</title><rect x="125.1" y="1349" width="30.7" height="15.0" fill="rgb(238,153,36)" rx="2" ry="2" />
+<text  x="128.12" y="1359.5" >fl..</text>
+</g>
+<g >
+<title>__fsnotify_parent (55,730,406 samples, 0.94%)</title><rect x="974.5" y="1077" width="11.1" height="15.0" fill="rgb(225,96,23)" rx="2" ry="2" />
+<text  x="977.54" y="1087.5" ></text>
+</g>
+<g >
+<title>entry_SYSCALL_64_after_hwframe (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1253" width="20.5" height="15.0" fill="rgb(218,63,15)" rx="2" ry="2" />
+<text  x="875.77" y="1263.5" ></text>
+</g>
+<g >
+<title>cpu_startup_entry (1,026,129,019 samples, 17.26%)</title><rect x="986.3" y="1381" width="203.7" height="15.0" fill="rgb(252,220,52)" rx="2" ry="2" />
+<text  x="989.33" y="1391.5" >cpu_startup_entry</text>
+</g>
+<g >
+<title>tlb_flush_mmu (51,798,788 samples, 0.87%)</title><rect x="883.0" y="1061" width="10.3" height="15.0" fill="rgb(214,45,10)" rx="2" ry="2" />
+<text  x="886.02" y="1071.5" ></text>
+</g>
+<g >
+<title>do_mas_align_munmap (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1173" width="20.5" height="15.0" fill="rgb(232,126,30)" rx="2" ry="2" />
+<text  x="875.77" y="1183.5" ></text>
+</g>
+<g >
+<title>NaClSysRead (315,097,670 samples, 5.30%)</title><rect x="893.3" y="1365" width="62.5" height="15.0" fill="rgb(237,147,35)" rx="2" ry="2" />
+<text  x="896.31" y="1375.5" >NaClSy..</text>
+</g>
+<g >
+<title>rustposix::safeposix::syscalls::fs_calls::&lt;impl rustposix::safeposix::cage::Cage&gt;::_close_helper (103,467,479 samples, 1.74%)</title><rect x="872.8" y="1317" width="20.5" height="15.0" fill="rgb(227,105,25)" rx="2" ry="2" />
+<text  x="875.77" y="1327.5" ></text>
+</g>
+<g >
+<title>try_to_wake_up (176,923,635 samples, 2.98%)</title><rect x="90.0" y="1301" width="35.1" height="15.0" fill="rgb(220,70,16)" rx="2" ry="2" />
+<text  x="93.00" y="1311.5" >tr..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_lookahead (591,371,873 samples, 9.95%)</title><rect x="617.4" y="245" width="117.4" height="15.0" fill="rgb(244,180,43)" rx="2" ry="2" />
+<text  x="620.43" y="255.5" >std::__detail:..</text>
+</g>
+<g >
+<title>plist_add (403,051,820 samples, 6.78%)</title><rect x="10.0" y="1301" width="80.0" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="13.00" y="1311.5" >plist_add</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="645" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="655.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>tty_ldisc_receive_buf (154,376,517 samples, 2.60%)</title><rect x="125.1" y="1317" width="30.7" height="15.0" fill="rgb(216,51,12)" rx="2" ry="2" />
+<text  x="128.12" y="1327.5" >tt..</text>
+</g>
+<g >
+<title>[libc.so.6] (557,175,929 samples, 9.37%)</title><rect x="279.6" y="1205" width="110.6" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="282.60" y="1215.5" >[libc.so.6]</text>
+</g>
+<g >
+<title>__libc_start_main (1,181,094,845 samples, 19.87%)</title><rect x="155.8" y="1397" width="234.4" height="15.0" fill="rgb(236,142,34)" rx="2" ry="2" />
+<text  x="158.76" y="1407.5" >__libc_start_main</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_rep_once_more (553,373,510 samples, 9.31%)</title><rect x="507.6" y="149" width="109.8" height="15.0" fill="rgb(221,74,17)" rx="2" ry="2" />
+<text  x="510.59" y="159.5" >std::__detail..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1157" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1167.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1125" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1135.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>exec_binprm (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1157" width="123.8" height="15.0" fill="rgb(244,180,43)" rx="2" ry="2" />
+<text  x="158.76" y="1167.5" >exec_binprm</text>
+</g>
+<g >
+<title>__x64_sys_execve (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1221" width="123.8" height="15.0" fill="rgb(247,193,46)" rx="2" ry="2" />
+<text  x="158.76" y="1231.5" >__x64_sys_execve</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="1077" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="1087.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>get_vfs_caps_from_disk (623,918,916 samples, 10.49%)</title><rect x="155.8" y="1045" width="123.8" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="158.76" y="1055.5" >get_vfs_caps_fr..</text>
+</g>
+<g >
+<title>[libc.so.6] (557,175,929 samples, 9.37%)</title><rect x="279.6" y="1285" width="110.6" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="282.60" y="1295.5" >[libc.so.6]</text>
+</g>
+<g >
+<title>[unknown]  (51,156,837 samples, 0.86%)</title><rect x="955.8" y="1413" width="10.2" height="15.0" fill="rgb(253,223,53)" rx="2" ry="2" />
+<text  x="958.85" y="1423.5" ></text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="901" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="911.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (591,371,873 samples, 9.95%)</title><rect x="617.4" y="197" width="117.4" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="620.43" y="207.5" >std::__detail:..</text>
+</g>
+<g >
+<title>std::__detail::_Executor&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt;, std::allocator&lt;std::sub_match&lt;__gnu_cxx::__normal_iterator&lt;char const*, std::string&gt; &gt; &gt;, std::regex_traits&lt;char&gt;, true&gt;::_M_dfs (1,144,745,383 samples, 19.26%)</title><rect x="507.6" y="821" width="227.2" height="15.0" fill="rgb(242,174,41)" rx="2" ry="2" />
+<text  x="510.59" y="831.5" >std::__detail::_Executor&lt;__gnu..</text>
+</g>
+<g >
+<title>dashmap::DashMap&lt;K,V,S&gt;::get (51,405,220 samples, 0.86%)</title><rect x="927.2" y="1333" width="10.3" height="15.0" fill="rgb(245,185,44)" rx="2" ry="2" />
+<text  x="930.25" y="1343.5" ></text>
+</g>
+<g >
+<title>__x64_sys_futex (579,975,455 samples, 9.76%)</title><rect x="10.0" y="1365" width="115.1" height="15.0" fill="rgb(239,159,38)" rx="2" ry="2" />
+<text  x="13.00" y="1375.5" >__x64_sys_futex</text>
+</g>
+</g>
+</svg>

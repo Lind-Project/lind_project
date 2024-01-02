@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     double total_elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1000000000.0;
     double rw_elapsed_time = (rw_end.tv_sec - rw_start.tv_sec) + (rw_end.tv_nsec - rw_start.tv_nsec) / 1000000000.0;
 
-    printf("Total time taken: %f\n", total_elapsed_time);
+    printf("Toztal time taken: %f\n", total_elapsed_time);
     printf("Read-Write time taken: %f\n", rw_elapsed_time);
 
     return 0;
