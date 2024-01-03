@@ -31,9 +31,14 @@ int main() {
         close(fds[0]); // close the reading end
         int i;
         for (i = 0; i < ROUNDS; i++) {
-            write(fds[1], MSG, strlen(MSG));
-            read(fds[1], buffer, sizeof(buffer));
-            printf("Pinger received: %s\n", buffer);
+            ret = poll(&pfd, 1, -1);
+            if (ret > 0) {
+                write(fds[1], MSG, strlen(MSG));
+                read(fds[1], buffer, sizeof(buffer));
+                printf("Pinger received: %s\n", buffer);
+            } else {
+                perror("poll");
+            }
         }
         close(fds[1]);
     } else {
