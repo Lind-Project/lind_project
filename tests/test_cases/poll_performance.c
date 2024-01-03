@@ -29,6 +29,9 @@ int main() {
     } else if (pid == 0) {
         // child: pinger process
         close(fds[0]); // close the reading end
+        // setup pollfd
+        pfd.fd = fds[1];
+        pfd.events = POLLIN;
         int i;
         for (i = 0; i < ROUNDS; i++) {
             write(fds[1], MSG, strlen(MSG));
