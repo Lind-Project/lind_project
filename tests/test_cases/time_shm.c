@@ -62,16 +62,18 @@ void destroy_shared_memory() {
 }
 
 /*--------Thread functions--------*/
-void* thread1() {
-    while(count1 < 100000000) {
+void* thread1(void* arg) {
+    int loop = *((int*)arg);
+    while(count1 < loop) {
         shared_memory->a[0] = shared_memory->a[1] + 1;
-        count1++; //global 
+        count1++; 
     }
     return NULL;
 }
 
-void* thread2() {
-    while(count2 < 100000000) {
+void* thread2(void* arg) {
+    int loop = *((int*)arg);
+    while(count2 < loop) {
         shared_memory->a[1] = shared_memory->a[0];
         count2++;
     }
@@ -81,14 +83,15 @@ void* thread2() {
 /*--------Main functions--------*/
 int main(int argc, char *argv[]) {
     // destroy_shared_memory();
+    int loop = atoi(argv[1]);
     init_shared_memory();
     
     pthread_t t1, t2;
 
     long long start_time = gettimens();
 
-    pthread_create(&t1, NULL, thread1, NULL);
-    pthread_create(&t2, NULL, thread2, NULL);
+    pthread_create(&t1, NULL, thread1, &loop);
+    pthread_create(&t2, NULL, thread2, &loop);
     
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);
