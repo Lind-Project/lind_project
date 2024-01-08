@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
+#include <time.h>
+#include <stdlib.h>
 
 #define DATA_SIZE (4*1024*1024) 
 
@@ -26,10 +28,10 @@ int main(int argc, char *argv[]) {
   int loop = atoi(argv[1]);
   int test_data_size = atoi(argv[2]);
   // calloc
-  char *src = (char *)calloc(DATA_SIZE, sizeof(char));
-  char *dest = (char *)calloc(DATA_SIZE, sizeof(char));
+  char *src = (char *)calloc(test_data_size, sizeof(char));
+  char *dest = (char *)calloc(test_data_size, sizeof(char));
   // set mem
-  memset(src, 'A', DATA_SIZE);
+  memset(src, 'A', test_data_size);
 
   if(!src || !dest) {
       perror("calloc");
@@ -38,11 +40,15 @@ int main(int argc, char *argv[]) {
 
   int data_size_4K = 1024*4;
   int data_size_1M = 1024*1024;
+
+  srand(time(NULL));
   
   long long start_time = gettimens();
 
   while(count < loop) {
+      int r = rand() % 2 + 1;
       memcpy(dest, src, test_data_size);
+      test_data_size = r + test_data_size;
       count++;
   }
   // memcpy(dest, src, data_size_1M);
@@ -58,8 +64,7 @@ int main(int argc, char *argv[]) {
   free(src);
   free(dest);
 
-  printf("average time %lld ns, average speed %lld\n", average_time, average_speed);
+  printf("average time %lld ns, average speed %lld\n", total_time, average_speed);
   fflush(NULL);
   
 }
-
