@@ -60,9 +60,9 @@ void destroy_shared_memory() {
 }
 
 /*--------Main function--------*/
-int main() {
+int main(int argc, char *argv[]) {
     init_shared_memory();
-
+    int loop = atoi(argv[1]);
     pid_t pid = fork();
 
     long long start_time = gettimens();
@@ -72,14 +72,14 @@ int main() {
         exit(EXIT_FAILURE);
     } else if (pid == 0) {
         // Child process
-        while (count1 < 100000000) {
+        while (count1 < loop) {
             shared_memory->a[0] = shared_memory->a[1] + 1;
             count1++;
         }
         exit(EXIT_SUCCESS);
     } else {
         // Parent process
-        while (count2 < 100000000) {
+        while (count2 < loop) {
             shared_memory->a[1] = shared_memory->a[0];
             count2++;
         }
