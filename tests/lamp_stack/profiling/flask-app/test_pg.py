@@ -13,27 +13,29 @@ def rand_generator(size=size, chars=string.ascii_uppercase + string.digits):
 
 
 def test():
+    books = []
+    for n in range(num_pages):
+        title = rand_generator()
+        author = rand_generator()
+        review = rand_generator()
+        books.append((title, author, n, review))
+
     start_time = time.time()
     cur = conn.cursor()
 
     insert_start_time = time.time()
     for n in range(num_pages):
-        title = rand_generator()
-        author = rand_generator()
-        review = rand_generator()
         cur.execute(
             "INSERT INTO books (title, author, pages_num, review)"
             "VALUES (%s, %s, %s, %s)",
-            (title, author, n, review),
+            books[n],
         )
     conn.commit()
     insert_end_time = time.time()
 
-    books = []
     select_start_time = time.time()
     for n in range(num_pages):
         cur.execute("SELECT * FROM books WHERE pages_num = %s", (n,))
-        books.append(cur.fetchone())
     select_end_time = time.time()
 
     delete_start_time = time.time()
