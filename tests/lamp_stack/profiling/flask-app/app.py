@@ -13,18 +13,23 @@ def rand_generator(size=size, chars=string.ascii_uppercase + string.digits):
     return "".join(random.choice(chars) for _ in range(size))
 
 
+data = []
+for n in range(num_pages):
+    title = rand_generator()
+    author = rand_generator()
+    review = rand_generator()
+    data.append((title, author, n, review))
+
+
 @app.route("/")
 def index():
     cur = conn.cursor()
 
     for n in range(num_pages):
-        title = rand_generator()
-        author = rand_generator()
-        review = rand_generator()
         cur.execute(
             "INSERT INTO books (title, author, pages_num, review)"
             "VALUES (%s, %s, %s, %s)",
-            (title, author, n, review),
+            data[n],
         )
     conn.commit()
 
