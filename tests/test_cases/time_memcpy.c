@@ -21,8 +21,14 @@ long long gettimens(void) {
 
   return (tp.tv_sec * 1000000000) + tp.tv_nsec;
 }
-
-long long execution_time = 0;
+int compare_memory(const char *src, const char *dest, size_t size) {
+    for(size_t i = 0; i < size; i++) {
+        if(src[i] != dest[i]) {
+            return 0; // Memory differs
+        }
+    }
+    return 1; // Memory is identical
+}
 
 int main(int argc, char *argv[]) {
   int loop = atoi(argv[1]);
@@ -31,7 +37,10 @@ int main(int argc, char *argv[]) {
   char *src = (char *)calloc(test_data_size, sizeof(char));
   char *dest = (char *)calloc(test_data_size, sizeof(char));
   // set mem
-  memset(src, 'A', test_data_size);
+  srand(time(NULL));
+  for(int i = 0; i < test_data_size; ++i) {
+      src[i] = 'A' + rand() % 26; // Random character from A to Z
+  }
 
   if(!src || !dest) {
       perror("calloc");
@@ -48,6 +57,10 @@ int main(int argc, char *argv[]) {
   while(count < loop) {
       int r = rand() % 2 + 1;
       memcpy(dest, src, test_data_size);
+      if(!compare_memory(src, dest, test_data_size)) {
+          printf("Memory comparison failed at iteration %d\n", count);
+          break;
+      }
       test_data_size = r + test_data_size;
       count++;
   }
