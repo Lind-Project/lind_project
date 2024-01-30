@@ -34,11 +34,12 @@ int main(int argc, char *argv[]) {
   int loop = atoi(argv[1]);
   int test_data_size = atoi(argv[2]);
   // calloc
-  char *src = (char *)calloc(test_data_size, sizeof(char));
-  char *dest = (char *)calloc(test_data_size, sizeof(char));
-  // set mem
+  size_t size = 2ULL * 1024 * 1024 * 1024;
+  char *src = (char *)calloc(size, sizeof(char));
+  char *dest = (char *)calloc(size, sizeof(char));
+  // set mem randomly
   srand(time(NULL));
-  for(int i = 0; i < test_data_size; ++i) {
+  for(int i = 0; i < size; ++i) {
       src[i] = 'A' + rand() % 26; // Random character from A to Z
   }
 
@@ -46,17 +47,12 @@ int main(int argc, char *argv[]) {
       perror("calloc");
       exit(EXIT_FAILURE);
   }
-
-  int data_size_4K = 1024*4;
-  int data_size_1M = 1024*1024;
-
-  srand(time(NULL));
   
   long long start_time = gettimens();
-
+  // only do 2 loops, so count = 0 or 1
   while(count < loop) {
       int r = rand() % 2 + 1;
-      memcpy(dest, src, test_data_size);
+      memcpy(dest, src+count, test_data_size);
       if(!compare_memory(src, dest, test_data_size)) {
           printf("Memory comparison failed at iteration %d\n", count);
           break;
@@ -72,7 +68,7 @@ int main(int argc, char *argv[]) {
   // Average
   // count--;
   long long average_time = total_time/count;
-  long long average_speed = average_time/data_size_1M;
+  long long average_speed = average_time/test_data_size;
 
   free(src);
   free(dest);
