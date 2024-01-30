@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   char *dest = (char *)calloc(size, sizeof(char));
   // set mem randomly
   srand(time(NULL));
-  for(int i = 0; i < size; ++i) {
+  for(int i = 0; i < size; i++) {
       src[i] = 'A' + rand() % 26; // Random character from A to Z
   }
 
