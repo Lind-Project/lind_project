@@ -52,8 +52,8 @@ int main(int argc, char *argv[]) {
   // only do 2 loops, so count = 0 or 1
   while(count < loop) {
       int r = rand() % 2 + 1;
-      memcpy(dest, src+count, test_data_size);
-      if(!compare_memory(src, dest, test_data_size)) {
+      memcpy(dest+count, src+count, test_data_size);
+      if(!compare_memory(src+count, dest+count, test_data_size)) {
           printf("Memory comparison failed at iteration %d\n", count);
           break;
       }
