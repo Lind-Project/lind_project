@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
-#include <time.h>
 #include <stdlib.h>
 
 #define DATA_SIZE (4*1024*1024) 
@@ -35,7 +34,7 @@ int main(int argc, char *argv[]) {
   int loop = atoi(argv[1]);
   int test_data_size = atoi(argv[2]);
   // calloc
-  size_t size = 2ULL * 1024 * 1024 * 1024;
+  size_t size = 1024 * 1024 * 1024;
   char *src = (char *)calloc(size, sizeof(char));
   char *dest = (char *)calloc(size, sizeof(char));
   // set mem randomly
