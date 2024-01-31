@@ -1,0 +1,7 @@
+context
+ds
+func
+getpid
+shm 1000000
+shm_proc 100000000
+memcpy 1 1048576
