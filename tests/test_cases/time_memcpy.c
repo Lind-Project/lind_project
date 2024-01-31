@@ -21,6 +21,7 @@ long long gettimens(void) {
 
   return (tp.tv_sec * 1000000000) + tp.tv_nsec;
 }
+
 int compare_memory(const char *src, const char *dest, size_t size) {
     for(size_t i = 0; i < size; i++) {
         if(src[i] != dest[i]) {
