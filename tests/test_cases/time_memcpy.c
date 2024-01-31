@@ -10,7 +10,7 @@
 #define DATA_SIZE (4*1024*1024) 
 
 volatile int count = 0;
-
+long long execution_time = 0;
 long long gettimens(void) {
   struct timespec tp;
 
