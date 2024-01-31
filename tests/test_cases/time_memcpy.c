@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 
   // Get sum of time
   long long end_time = gettimens();
-  if(!compare_memory(src+count, dest+count, test_data_size)) {
+  if(!compare_memory(src, dest, test_data_size*count)) {
           printf("Memory comparison failed at iteration %d\n", count);
           exit(EXIT_FAILURE);
   }
