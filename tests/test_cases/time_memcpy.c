@@ -51,19 +51,17 @@ int main(int argc, char *argv[]) {
   long long start_time = gettimens();
   // only do 2 loops, so count = 0 or 1
   while(count < loop) {
-      int r = rand() % 2 + 1;
-      memcpy(dest+count, src+count, test_data_size);
-      if(!compare_memory(src+count, dest+count, test_data_size)) {
-          printf("Memory comparison failed at iteration %d\n", count);
-          break;
-      }
-      test_data_size = r + test_data_size;
+      memcpy(dest+test_data_size*count, src+test_data_size*count, test_data_size);
       count++;
   }
   // memcpy(dest, src, data_size_1M);
 
   // Get sum of time
   long long end_time = gettimens();
+  if(!compare_memory(src+count, dest+count, test_data_size)) {
+          printf("Memory comparison failed at iteration %d\n", count);
+          exit(EXIT_FAILURE);
+  }
   long long total_time = end_time - start_time;
   // Average
   // count--;
