@@ -10,7 +10,7 @@
 
 #define MSG "ping"
 #define ACK "pong"
-#define ROUNDS 1e5
+#define ROUNDS 1e6
 
 int main()
 {
