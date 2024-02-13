@@ -387,7 +387,11 @@ function build_rustposix() {
 
 	print "Building RustPOSIX"
     cd "$LIND_BASE/src/safeposix-rust"
-    if [[ "$DEBUG_RUSTPOSIX" == "true" ]]; then 
+	if [[ "$DEBUG_RUSTPOSIX" == "true" ]]; then 
+        cargo build
+        cp "target/debug/librustposix.so"  "$LIND_ENV_PATH/librustposix.so"
+        cp "target/debug/lind_fs_utils"  "$LIND_ENV_PATH_BIN/lind_fs_utils"
+    elif [[ "$DEBUG_RUSTPOSIX" == "fast" ]]; then 
         RUSTFLAGS="-g" cargo build --release
         cp "target/release/librustposix.so"  "$LIND_ENV_PATH/librustposix.so"
         cp "target/release/lind_fs_utils"  "$LIND_ENV_PATH_BIN/lind_fs_utils"
