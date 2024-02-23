@@ -16,3 +16,6 @@ lind /bin/bash init_postgres.sh > /dev/null
 
 echo -e "\nRunning pgbench"
 lind /bin/bash run_pgbench.sh
+
+echo -e "\nRunning pgbench"
+lind /bin/bash run_pgbench.sh
