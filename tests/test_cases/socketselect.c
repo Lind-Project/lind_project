@@ -37,7 +37,7 @@ void* client(void* v) {
        
     // Convert IPv4 and IPv6 addresses from text to binary form 
     inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
-
+    printf("before syncbarrier\n");
     pthread_barrier_wait(&syncbarrier);
     printf("after syncbarrier\n");
     connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
