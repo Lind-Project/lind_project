@@ -42,6 +42,8 @@ void* client(void* v) {
     printf("after syncbarrier\n");
     fflush(stdout);
     connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    printf("client connected");
+    fflush(stdout);
     send(sock , hello , strlen(hello) , 0 ); 
     printf("Hello message sent\n"); 
     valread = read( sock , buffer, 1024); 
@@ -162,6 +164,7 @@ void* server(void* v) {
       if (rc == 0)
       {
          printf("  select() timed out.  End program.\n");
+         fflush(stdout);
          break;
       }
 
