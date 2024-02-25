@@ -39,7 +39,7 @@ void* client(void* v) {
     inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
 
     pthread_barrier_wait(&syncbarrier);
-   
+    printf("after syncbarrier\n");
     connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     send(sock , hello , strlen(hello) , 0 ); 
     printf("Hello message sent\n"); 
@@ -121,6 +121,8 @@ void* server(void* v) {
       close(listen_sd);
       exit(-1);
    }
+   printf("listened successfully on %d\n", listen_sd);
+   pthread_barrier_wait(&syncbarrier);
 
    
    /* Initialize the master fd_set                              */
@@ -134,8 +136,6 @@ void* server(void* v) {
    
    timeout.tv_sec  = 2;
    timeout.tv_usec = 0;
-
-   pthread_barrier_wait(&syncbarrier);
 
    /* Loop waiting for incoming connects or for incoming data   */
    /* on any of the connected sockets.                          */
