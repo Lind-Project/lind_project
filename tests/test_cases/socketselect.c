@@ -40,6 +40,7 @@ void* client(void* v) {
     printf("before syncbarrier\n");
     pthread_barrier_wait(&syncbarrier);
     printf("after syncbarrier\n");
+    fflush(stdout);
     connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     send(sock , hello , strlen(hello) , 0 ); 
     printf("Hello message sent\n"); 
