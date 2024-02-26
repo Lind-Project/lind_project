@@ -192,7 +192,7 @@ readonly -a PYSED=(sed '-r' 's_(^|[\s'"'"'"/-])(python)(\.exe|\b)_\1\22\3_g')
 readonly -a PNACLGREPL=(grep '-RIFwl' -- 'PNACLPYTHON' './')
 readonly -a PNACLGREPV=(grep '-Pv' -- '\.(git|.?html|cc?|h|exp|so\.old|so)\b')
 readonly -a PNACLSED=(sed -r 's_$\{?PNACLPYTHON\}?_python2_g')
-readonly -a RSYNC=(rsync '--progress=status2,stats2' '-ahhkpvA')
+readonly -a RSYNC=(rsync '--progress=status2' '-ahhkpvA')
 
 # clean downloaded sources
 #

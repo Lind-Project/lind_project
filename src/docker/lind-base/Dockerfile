@@ -16,6 +16,8 @@ RUN useradd -Um -s/bin/bash -u1000 lind
 RUN mkdir -pv "/root/.local/etc/" "/home/lind/.local/etc/"
 RUN chown -LR lind:lind "/home/lind/"
 RUN chown -LR root:root "/etc/" "/root/"
+RUN pacman-key --init
+RUN pacman -Sy archlinux-keyring --noconfirm
 RUN pacman -Syu --needed --noconfirm base-devel \
 	git mercurial rsync make perl clang lynx ltrace \
 	w3m gawk procps-ng ruby strace gdb reptyr ed \
@@ -24,19 +26,22 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 	gnu-netcat zsh zsh-completions htop bc ctags sudo \
 	ncurses gcc-libs lib32-gcc-libs gperf diffutils fzf \
 	gperftools texinfo fortune-mod gnupg highlight fasd \
-	python2 python2-setuptools p7zip fuse3 ack \
+	pyenv p7zip fuse3 ack \
 	pkgfile dhcpcd iputils python iproute2 \
 	net-tools openresolv openssh subversion pacman-contrib \
-	tree psmisc lsof wget pinfo asp unrar expac inetutils \
+	tree psmisc lsof wget unrar expac inetutils \
 	tmux screen bash-completion mlocate shadow ncdu \
 	bind-tools cowsay filesystem linux-headers \
 	grml-zsh-config linux-docs man-pages man-db \
 	util-linux help2man rlwrap cmake ninja capnproto \
-    glibc lib32-glibc libxcrypt perf rustup
+    glibc lib32-glibc libxcrypt perf rustup libpng
 RUN pkgfile --update
 
-WORKDIR /usr/bin
-RUN ln -sf python2 python
+
+# RUN pyenv install 2.7.18
+
+# WORKDIR /usr/bin
+# RUN ln -sf python2 python
 
 USER lind
 WORKDIR /home/lind/
@@ -61,12 +66,24 @@ WORKDIR /root/build/
 
 USER lind
 
+WORKDIR /home/lind/build/
+RUN git clone https://aur.archlinux.org/yay.git
+WORKDIR yay
+RUN makepkg --noconfirm -sci 
+
+RUN yay --version
+RUN yes | yay -S python2 --mflags "--nocheck"
+RUN yes | yay -S python2-setuptools --mflags "--nocheck"
+RUN yes | yay -S python-setuptools --mflags "--nocheck"
+RUN yes | yay -S python2-pip --mflags "--nocheck"
+
 WORKDIR /home/lind/build/make-3.82/
 RUN makepkg --noconfirm -sci
 WORKDIR /home/lind/build/texinfo-4.13/
 RUN ./configure --prefix="/home/lind/.local" && make install
 WORKDIR /home/lind/build/pip2
-RUN python get-pip.py
+RUN python --version
+RUN python2 get-pip.py
 WORKDIR /home/lind/build/
 RUN git clone https://aur.archlinux.org/rr.git
 WORKDIR rr
@@ -74,9 +91,14 @@ RUN makepkg --noconfirm -sci
 
 USER root
 
+WORKDIR /usr/sbin
+RUN ln -sf python2 python
+RUN ln -sf make-3.82 make
+
 WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/" "/var/cache/pacman/pkg/"
 RUN chown -Rc lind:lind .
+
 
 USER lind
 
@@ -99,3 +121,4 @@ ENV PNACLPYTHON="python2"
 ENV LD_LIBRARY_PATH="/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
 
 CMD bash
+
