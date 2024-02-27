@@ -2,8 +2,8 @@ echo "Starting...";
 
 mkdir -p /home/lind/lind_project/tests/applications/python/build/lib
 
-modulesarray=('_collectionsmodule' 'operator' 'itertoolsmodule' '_struct' 'mathmodule' 'binascii' 'timemodule' 'cStringIO' '_randommodule' 'arraymodule' 'socketmodule' '_functoolsmodule' 'cPickle' '_struct' 'selectmodule' 'arraymodule' 'unicodedata' 'fcntlmodule')
-libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata' 'fcntl')
+modulesarray=('_collectionsmodule' 'operator' 'itertoolsmodule' '_struct' 'mathmodule' 'binascii' 'timemodule' 'cStringIO' '_randommodule' 'arraymodule' 'socketmodule' '_functoolsmodule' 'cPickle' '_struct' 'selectmodule' 'arraymodule' 'unicodedata' 'fcntlmodule' 'grpmodule')
+libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata' 'fcntl' 'grp')
 
 echo Compiling...
 for var in "${modulesarray[@]}"
@@ -30,6 +30,18 @@ do
     x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -IModules/_io -c Modules/_io/$iomodule.c -o build/$iomodule.o
 done
 x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/bufferedio.o build/bytesio.o build/fileio.o build/iobase.o build/_iomodule.o build/stringio.o build/textio.o -L. -lpython2.7 -o build/lib/_io.so
+
+echo _ctypes...
+ctypesarray=('_ctypes' 'callbacks'  'callproc'  'cfield' 'malloc_closure' 'stgdict')
+cd /home/lind/lind_project/tests/applications/python/Modules/_ctypes/libffi/
+./bootstrap_nacl
+cd /home/lind/lind_project/tests/applications/python/
+for ctypesmodule in "${ctypesarray[@]}"
+do
+    x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -IModules/_ctypes -IModules/_ctypes/libffi/include/ -c Modules/_ctypes/$ctypesmodule.c -o build/$ctypesmodule.o
+done
+cp Modules/_ctypes/libffi/libffi.so build/lib/libffi.so
+x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/_ctypes.o build/callbacks.o  build/callproc.o  build/cfield.o build/malloc_closure.o build/stgdict.o -L. -Lbuild/lib -lpython2.7 -lffi -o build/lib/_ctypes.so
 
 echo zlib...
 cd /home/lind/lind_project/tests/applications/python/Modules/zlib

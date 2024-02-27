@@ -4,3 +4,5 @@ cat_t.sh
 mkdir_t.sh
 date_t.sh
 popen_t.sh
+shm_t.sh
+shm_sem_t.sh

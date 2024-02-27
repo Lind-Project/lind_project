@@ -10,7 +10,7 @@
 
 int main(int argc, char **argv)
 {
-	char file_name[100] = "testfile.txt";
+	char file_name[100] = "testfiles/chmodfile.txt";
 	if(chmod(file_name, S_IRUSR | S_IXUSR) != 0) //change from 700 to 500
 	{
 		perror("ERROR with CHMOD");
@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 	mode_t file_per = ((S_IRWXU | S_IRWXG | S_IRWXO) & st.st_mode); //isolate file permissions
 	if ((file_per & (S_IRUSR | S_IXUSR)) != file_per)
 	{
-		fprintf (stderr, "Expected testfile.txt to have access mode 500 but was %03o\n", (unsigned int) file_per);
+		fprintf(stderr, "Expected %s to have access mode 500 but was %03o\n", file_name, (unsigned int) file_per);
 		exit(1);
 	}
 	if(chmod(file_name, S_IRWXU) != 0) //change file permissions back to original
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 	file_per = ((S_IRWXU | S_IRWXG | S_IRWXO) & st.st_mode);
 	if((file_per & S_IRWXU) != file_per)
 	{
-		fprintf(stderr, "Expected testfile.txt to have access mode 700 but was %03o\n", (unsigned int) file_per);
+		fprintf(stderr, "Expected %s to have access mode 700 but was %03o\n", file_name, (unsigned int) file_per);
 		exit(1);
 	}
 	printf("Mode changed successfully\n");	

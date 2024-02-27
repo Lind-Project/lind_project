@@ -10,6 +10,8 @@
 
 extern char **environ;
 
+const char* FILENAME = "testfiles/statfile.txt";
+
 int main(int argc, char **argv)
 {
 	FILE *fp = stdout;
@@ -45,8 +47,8 @@ int main(int argc, char **argv)
 		struct stat st = {0};
 		//printf("usage: %s <files>\n", argv[0]); //-causes a silly error on dettest - 
 		//usage: /automated_tests/stat.NEXE <files> and usage: ./automated_tests/stat <files> do not match.
-		printf("running stat(\"testfile.txt\")\n"); //argv[0] to specify any file
-		if (stat("testfile.txt", &st) < 0) {
+		printf("running stat(\"%s\")\n", FILENAME); //argv[0] to specify any file
+		if (stat(FILENAME, &st) < 0) {
 			perror("stat");
 			printf("errno: %d\n", errno);
 			exit(1);
