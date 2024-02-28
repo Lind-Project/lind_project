@@ -1,6 +1,6 @@
 # Buffer Read-Write tests
 
-These tests perform writes and reads between the file descriptor and character buffers. The test runs on pretty large files (GBs in size) and benchmarks the time taken in reads and writes.
+These tests perform writes and reads between the file descriptor and character buffers. The test runs on pretty large files (GBs in size) and benchmarks the time taken in reads and writes on both lind and native.
 
 ## Instructions to run test
 
