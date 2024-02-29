@@ -9,5 +9,5 @@ echo -e "Loading LAMP stack\n"
 lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/run_lamp_nginx_only.sh /run_lamp_nginx_only.sh
 lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/out.html /out.html
 
-# echo -e "\nSetting up LAMP stack"
-# lind /bin/bash run_lamp_nginx_only.sh
+echo -e "\nSetting up LAMP stack"
+lind /bin/bash run_lamp_nginx_only.sh
