@@ -1,0 +1,59 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import json
+import sys
+
+
+dataset = dict()
+dataset["relative_time"] = list()
+dataset["platform"] = list()
+dataset["time"] = list()
+dataset["pipeline"] = list()
+
+with open(sys.argv[1], "r") as fp:
+    nativedata = json.load(fp)
+with open(sys.argv[2], "r") as fp:
+    linddata = json.load(fp)
+
+for key in nativedata:
+    if nativedata[key] == 0:
+        dataset["relative_time"].append(0)
+    else:
+        dataset["relative_time"].append(nativedata[key] / nativedata[key])
+    dataset["time"].append(nativedata[key])
+    dataset["platform"].append("Native")
+    dataset["pipeline"].append(key)
+
+for key in linddata:
+    if nativedata[key] == 0:
+        dataset["relative_time"].append(0)
+    else:
+        dataset["relative_time"].append(linddata[key] / nativedata[key])
+    dataset["time"].append(linddata[key])
+    dataset["platform"].append("Lind")
+    dataset["pipeline"].append(key)
+
+
+df = pd.DataFrame(data=dataset)
+pd.set_option("display.max_rows", None, "display.max_columns", None)
+plt.figure(figsize=(8, 4))
+sns.set(style="darkgrid")
+sns.set_palette("bright")
+fig = sns.barplot(x="relative_time", y="pipeline", hue="platform", data=df)
+sns.move_legend(
+    fig,
+    "lower center",
+    bbox_to_anchor=(0.5, 1),
+    ncol=3,
+    title="Platform",
+    frameon=False,
+)
+
+plt.xlabel("Relative lind runtime w.r.t Native runtime")
+plt.ylabel("Pipeline")
+# plt.title("Piping 16GB Varying Buffersize: " + sys.argv[4], y = -0.125, fontsize=16)
+plt.tight_layout(pad=1)
+
+plt.savefig(sys.argv[3], dpi=400)

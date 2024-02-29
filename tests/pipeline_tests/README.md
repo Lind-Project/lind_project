@@ -22,5 +22,10 @@ python3 cat_bench.py -c <number_of_runs>
 ## Instructions to plot graphs
 
 ```sh
-./plot_pipeline_tests.sh
+python3 gen_pipelin_plots.py data/native_pipelines.json data/lind_pipelines.json data/pipelines.png
+```
+
+To generate plots for the cat pipelines benchmark
+```sh
+python3 cat_bench.py data/cat_native.json data/cat_lind.json data/cat_bench.png
 ```
