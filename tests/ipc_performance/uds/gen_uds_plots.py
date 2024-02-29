@@ -49,6 +49,7 @@ sns.move_legend(
 
 plt.xlabel("log(buffersize)")
 plt.ylabel("Relative runtime w.r.t Native runtime")
+# plt.title("Piping 16GB Varying Buffersize: " + sys.argv[4], y = -0.125, fontsize=16)
 plt.tight_layout(pad=0.25)
 
 plt.savefig(sys.argv[3], dpi=400)
