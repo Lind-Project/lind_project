@@ -1,0 +1,11 @@
+{
+    "cat": 1677.6,
+    "grep": 1038.2,
+    "uniq": 3098.0,
+    "tr": 2934.1,
+    "cat | tr": 2698.2,
+    "cat | grep": 2196.9,
+    "grep | uniq": 2243.2,
+    "cat | grep | uniq": 2222.9,
+    "cat | tr | grep | uniq": 1104.4
+}
