@@ -1,3 +1,0 @@
-#!/bin/bash
-
-cat test-content/cast | grep "Lebowski" | wc
