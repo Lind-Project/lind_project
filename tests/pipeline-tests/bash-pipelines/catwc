@@ -1,3 +1,0 @@
-#!/bin/bash
-
-cat test-content/lebowski | wc

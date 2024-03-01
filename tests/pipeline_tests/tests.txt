@@ -1,0 +1,9 @@
+cat.sh
+grep.sh
+uniq.sh
+tr.sh
+cat_tr.sh
+cat_grep.sh
+grep_uniq.sh
+cat_grep_uniq.sh
+cat_tr_grep_uniq.sh
