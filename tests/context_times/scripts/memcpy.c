@@ -1,15 +1,10 @@
 #include <stdio.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
-#define DATA_SIZE (4 * 1024 * 1024)
+#define ITERS 4098
 
-volatile int count = 0;
-long long execution_time = 0;
 long long gettimens(void)
 {
     struct timespec tp;
@@ -23,64 +18,34 @@ long long gettimens(void)
     return (tp.tv_sec * 1000000000) + tp.tv_nsec;
 }
 
-int compare_memory(const char *src, const char *dest, size_t size)
-{
-    for (size_t i = 0; i < size; i++)
-    {
-        if (src[i] != dest[i])
-        {
-            return 0; // Memory differs
-        }
-    }
-    return 1; // Memory is identical
-}
-
 int main(int argc, char *argv[])
 {
-    int loop = atoi(argv[1]);
-    int test_data_size = atoi(argv[2]);
-    // calloc
-    size_t size = 1024 * 1024 * 1024;
-    char *src = (char *)calloc(size, sizeof(char));
-    char *dest = (char *)calloc(size, sizeof(char));
-    // set mem randomly
-    srand(time(NULL));
-    for (size_t i = 0; i < size; i++)
-    {
-        src[i] = 'A' + rand() % 26; // Random character from A to Z
-    }
 
-    if (!src || !dest)
-    {
-        perror("calloc");
-        exit(EXIT_FAILURE);
-    }
+    int i = atoi(argv[1]);
+
+    unsigned long long size = 1UL << i;
+
+    char *src = (char *)malloc(sizeof(char) * size);
+    char *dest = (char *)malloc(sizeof(char) * size);
 
     long long start_time = gettimens();
-    // only do 2 loops, so count = 0 or 1
-    while (count < loop)
-    {
-        memcpy(dest + test_data_size * count, src + test_data_size * count, test_data_size);
-        count++;
-    }
-    // memcpy(dest, src, data_size_1M);
 
-    // Get sum of time
-    long long end_time = gettimens();
-    if (!compare_memory(src, dest, test_data_size * count))
+    for (int i = 0; i < ITERS; i++)
     {
-        printf("Memory comparison failed at iteration %d\n", count);
-        exit(EXIT_FAILURE);
+        memcpy(dest, src, size);
     }
-    long long total_time = end_time - start_time;
-    // Average
-    // count--;
-    long long average_time = total_time / count;
-    long long average_speed = average_time / test_data_size;
+
+    long long end_time = gettimens();
+
+    long long total_time = (end_time - start_time);
+    double time_per_iter = (double)total_time / ITERS;
+    double bpns = size / time_per_iter;
+    double gbps = bpns / 0.931; // gbps conversion factor of 1000000000/1,073,741,824
+
+    printf("average time %f \n", gbps);
 
     free(src);
     free(dest);
 
-    printf("average time %lld ns, average speed %lld\n", total_time, average_speed);
-    fflush(NULL);
+    return (0);
 }

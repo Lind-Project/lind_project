@@ -34,6 +34,7 @@ for test in tests:
     for _ in range(args.count):
         output = Popen(["lind", f"/{test_name}", *test_args], stdout=PIPE, stderr=PIPE)
         stdout, stderr = output.communicate()
+        print(stdout)
         try:
             run_time = int(re.findall(r"time (\d+)", stdout.decode())[0])
         except IndexError:

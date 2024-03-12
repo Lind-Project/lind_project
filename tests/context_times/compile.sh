@@ -6,7 +6,7 @@ gcc scripts/context_pipe.c -o scripts/context_pipe -O2 -lpthread -lrt
 gcc scripts/ds.c -o scripts/ds -O2 -lpthread -lrt
 gcc scripts/func.c -o scripts/func -O2 -lpthread -lrt
 gcc scripts/getpid.c -o scripts/getpid -O2 -lpthread -lrt
-gcc scripts/memcpy.c -o scripts/memcpy -O2 -lpthread -lrt
+gcc scripts/memcpy.c -o scripts/memcpy -lpthread -lrt
 gcc scripts/shm_proc.c -o scripts/shm_proc -O2 -lpthread -lrt
 gcc scripts/shm.c -o scripts/shm -O2 -lpthread -lrt
 
@@ -16,7 +16,7 @@ x86_64-nacl-gcc scripts/context_pipe.c -o scripts/context_pipe.nexe -O2 -std=gnu
 x86_64-nacl-gcc scripts/ds.c -o scripts/ds.nexe -O2 -std=gnu99 -lpthread -lrt
 x86_64-nacl-gcc scripts/func.c -o scripts/func.nexe -O2 -std=gnu99 -lpthread -lrt
 x86_64-nacl-gcc scripts/getpid.c -o scripts/getpid.nexe -O2 -std=gnu99 -lpthread -lrt
-x86_64-nacl-gcc scripts/memcpy.c -o scripts/memcpy.nexe -O2 -std=gnu99 -lpthread -lrt
+x86_64-nacl-gcc scripts/memcpy.c -o scripts/memcpy.nexe -std=gnu99 -lpthread -lrt
 x86_64-nacl-gcc scripts/shm_proc.c -o scripts/shm_proc.nexe -O2 -std=gnu99 -lpthread -lrt
 x86_64-nacl-gcc scripts/shm.c -o scripts/shm.nexe -O2 -std=gnu99 -lpthread -lrt
 
