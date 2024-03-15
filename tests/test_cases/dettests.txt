@@ -42,7 +42,6 @@ poll.c
 sem_forks.c
 uds-getsockname.c
 uds-nb-select.c
-uds-serverclient.c
 signal-simple.c
 signal-fork.c
 sigprocmask.c
