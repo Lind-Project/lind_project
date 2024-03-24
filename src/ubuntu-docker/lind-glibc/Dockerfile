@@ -1,4 +1,4 @@
-FROM securesystemslab/lind:lind-base
+FROM securesystemslab/lind_ubuntu:lind-base
 LABEL lind "v2.0-rc1"
 LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
@@ -8,7 +8,7 @@ ARG BRANCH
 USER lind
 
 ENV PATH="/root/bin:/home/lind/bin:$PATH"
-ENV PATH="/root/.local/bin:/home/lind/.local/bin:$PATH"
+ENV PATH="/root/.local/bin:/root/.cargo/env:/home/lind/.local/bin:$PATH"
 ENV PATH="/home/lind/lind_project:$PATH"
 ENV PATH="/home/lind/lind_project/lind/lindenv/bin:$PATH"
 ENV PATH="/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin:$PATH"
@@ -28,17 +28,19 @@ ENV LC_COLLATE="C"
 
 WORKDIR /home/lind/lind_project
 RUN pip2 install -r requirements.txt
-RUN git checkout develop
+RUN git checkout main
 
-RUN ./src/mklind download
 
-RUN echo "Lind download complete."
 
-RUN fortune
+# RUN ./src/mklind download
 
-WORKDIR /home/lind/lind_project
-RUN ./src/mklind glibc
+# RUN echo "Lind download complete."
 
-RUN echo "Glibc installed."
+# RUN fortune
+
+# WORKDIR /home/lind/lind_project
+# RUN ./src/mklind glibc
+
+# RUN echo "Glibc installed."
 
 

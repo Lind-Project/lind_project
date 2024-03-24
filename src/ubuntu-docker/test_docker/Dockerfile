@@ -1,7 +1,9 @@
-FROM amd64/ubuntu:18.04
+FROM amd64/ubuntu:20.04
 LABEL lind "v1.0-lind-base-ubuntu-18.04"
 LABEL description "Lind Toolchain (Base)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 ADD etc/ /etc/
 ADD home/ /home/
@@ -13,44 +15,57 @@ WORKDIR /
 RUN useradd -Um -s/bin/bash -u1000 lind
 RUN mkdir -pv "/root/.local/etc/" "/home/lind/.local/etc/"
 RUN chown -LR lind:lind "/home/lind/"
-
+RUN chown -LR root:root "/etc/" "/root/"
 
 ADD make-3.82/ /home/make-3.82
 
 RUN apt update
 RUN apt install build-essential -y
 RUN apt install -y software-properties-common wget
-RUN apt install -y gcc-4.8
-RUN wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-RUN add-apt-repository 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main'
-RUN echo "deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic main" >> /etc/apt/sources.list
+RUN apt install -y gcc-7
+# RUN wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+# RUN add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal main'
+# RUN echo "deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal main" >> /etc/apt/sources.list
 RUN apt-get update -y
+# RUN wget https://apt.llvm.org/llvm.sh
+# RUN chmod +x llvm.sh
+# RUN ./llvm.sh 19
+# RUN apt-get install clang lldb -y
+# RUN apt-get install clang-format clang-tidy clang-tools clang clangd libc++-dev libc++1 libc++abi-dev libc++abi1 libclang-dev libclang1 libllvm-ocaml-dev libomp-dev libomp5 lld lldb llvm-dev llvm-runtime llvm -y
 RUN apt-get update && apt-get install -y \
     build-essential \
-    git mercurial rsync make perl clang lynx ltrace \
+    git mercurial rsync perl lynx ltrace \
 	w3m gawk procps ruby strace gdb reptyr ed \
-  	llvm-7 llvm-7-dev clang-7 llvm-7-tools vim \
-  	libomp-7-dev elfutils libelf-dev gdb less \
-  	netcat htop bc ctags \ 
+  	vim elfutils libelf-dev gdb less \
+  	netcat htop bc ctags \
  	libncurses-dev gcc-multilib gperf diffutils \
 	google-perftools texinfo fortune-mod gnupg highlight fasd \
- 	python2.7 p7zip fuse ack \
+	python2.7 p7zip fuse ack \
 	isc-dhcp-client iputils-ping iproute2 \
  	net-tools openresolv openssh-server subversion \
  	tree psmisc lsof wget pinfo asp unrar inetutils-tools \
  	tmux screen bash-completion mlocate ncdu \
  	bind9 bind9utils bind9-doc dnsutils cowsay \
  	util-linux help2man rlwrap cmake ninja-build capnproto \
-    glibc-source libxcrypt-dev linux-tools-generic autoconf autotools-dev automake
+    glibc-source libcrypt-dev linux-tools-generic autoconf autotools-dev automake
 RUN apt update
 
 WORKDIR /usr/bin
 RUN ln -sf python2 python
 
-RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+# WORKDIR /
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain 1.61.0 -y
+# WORKDIR /root/.cargo/bin/
+# RUN ./rustup default nightly
+
+# # #RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER lind
 WORKDIR /home/lind/
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain 1.61.0 -y
+ENV PATH="/home/lind/.cargo/bin:$PATH"
+RUN rustup default nightly
 
 RUN git config --global user.name "lind"
 RUN git config --global user.email "lind@nyu.edu"
@@ -71,9 +86,9 @@ WORKDIR /root/build/
 USER root
 
 WORKDIR /home/make-3.82
-RUN export CC=gcc-4.8
+RUN export CC=gcc-7
 RUN ./configure
-RUN make CC=gcc-4.8
+RUN make CC=gcc-7
 RUN make install
 
 WORKDIR /home/lind/build/texinfo-4.13/
@@ -89,7 +104,7 @@ WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/"
 RUN chown -Rc lind:lind .
 
-USER lind
+USER root
 
 ENV PATH="/root/bin:/home/lind/bin:$PATH"
 ENV PATH="/root/.local/bin:/home/lind/.local/bin:$PATH"
