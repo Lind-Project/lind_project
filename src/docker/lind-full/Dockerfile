@@ -27,14 +27,14 @@ USER lind
 
 WORKDIR /home/lind/lind_project
 
-# finish install
-RUN git pull -t -j8
-RUN ./src/mklind rustposix
-RUN ./src/mklind nacl
-RUN ./src/mklind install
+# # finish install
+# RUN git pull -t -j8
+# RUN ./src/mklind rustposix
+# RUN ./src/mklind nacl
+# RUN ./src/mklind install
 
-RUN ./src/scripts/base/load_bash.sh
-RUN ./src/scripts/base/load_coreutils.sh
+# RUN ./src/scripts/load_bash.sh
+# RUN ./src/scripts/load_coreutils.sh
 
-WORKDIR /home/lind/lind_project/
+# WORKDIR /home/lind/lind_project/
 
