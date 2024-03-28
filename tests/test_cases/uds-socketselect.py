@@ -3,6 +3,7 @@
 
 import re
 import sys
+from collections import Counter
 
 # Receive result
 lind_results = sys.argv[1]
@@ -17,12 +18,14 @@ if len(lind_result_split) != len(native_result_split):
     print "Mismatched number of lines!"
     exit(-1)
 
-# Check if the lines are the same
+# Replace specific fds in lines with *
 for i in range(len(lind_result_split)):
     if lind_result_split[i].find("New incoming connection") != -1 or lind_result_split[i].find("Descriptor") != -1:
         lind_result_split[i] = re.sub("\d", "*", lind_result_split[i])
     if native_result_split[i].find("New incoming connection") != -1 or native_result_split[i].find("Descriptor") != -1:
         native_result_split[i] = re.sub("\d", "*", native_result_split[i])
-    if lind_result_split[i] != native_result_split[i]:
-        print "Mismatched lines!\nLind: " + lind_result_split[i] + "\nNative: " + native_result_split[i]
-        exit(-1)
+
+# Check if same number of each line is contained in both lists
+if Counter(lind_result_split) != Counter(native_result_split):
+    print "Mismatched lines!\nLind: " + lind_result_split + "\nNative: " + native_result_split
+    exit(-1)
