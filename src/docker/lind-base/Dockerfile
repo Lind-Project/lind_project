@@ -37,17 +37,10 @@ RUN pacman -Syu --needed --noconfirm base-devel \
     glibc lib32-glibc libxcrypt perf rustup libpng
 RUN pkgfile --update
 
-
-# RUN pyenv install 2.7.18
-
-# WORKDIR /usr/bin
-# RUN ln -sf python2 python
-
 USER lind
 WORKDIR /home/lind/
 
 RUN rustup default nightly
-
 
 RUN git config --global user.name "lind"
 RUN git config --global user.email "lind@nyu.edu"
@@ -98,7 +91,6 @@ RUN ln -sf make-3.82 make
 WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/" "/var/cache/pacman/pkg/"
 RUN chown -Rc lind:lind .
-
 
 USER lind
 
