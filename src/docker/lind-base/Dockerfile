@@ -34,7 +34,7 @@ RUN pacman -Syu --needed --noconfirm base-devel \
 	bind-tools cowsay filesystem linux-headers \
 	grml-zsh-config linux-docs man-pages man-db \
 	util-linux help2man rlwrap cmake ninja capnproto \
-    glibc lib32-glibc libxcrypt perf rustup libpng
+    glibc lib32-glibc libxcrypt perf rustup libpng time
 RUN pkgfile --update
 
 USER lind
