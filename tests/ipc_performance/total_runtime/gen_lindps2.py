@@ -29,7 +29,7 @@ args = parser.parse_args()
 
 run_times = {}
 
-for size in range(4, 17, 2):
+for size in range(4, 17, 1):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     run_times[size] = []
@@ -54,8 +54,7 @@ for size in range(4, 17, 2):
         except ValueError:
             continue
         run_times[size].append(run_time)
-    run_times[size] = sum(run_times[size]) / args.count
-    print(f"Average runtime: {run_times[size]}")
+    print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
 with open(f"data/lind_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
     json.dump(run_times, fp)
