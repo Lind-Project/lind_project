@@ -29,7 +29,7 @@ args = parser.parse_args()
 
 run_times = {}
 
-for size in range(4, 17, 1):
+for size in range(24, 3, -2):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     run_times[size] = []
@@ -40,7 +40,7 @@ for size in range(4, 17, 1):
                 "lind",
                 "-t",
                 "/bin/bash",
-                "ps16var2.sh",
+                "ps32var2.sh",
                 write_buffer_size,
                 read_buffer_size,
             ],
@@ -56,5 +56,5 @@ for size in range(4, 17, 1):
         run_times[size].append(run_time)
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
-with open(f"data/lind_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
-    json.dump(run_times, fp)
+    with open(f"data/lind_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
+        json.dump(run_times, fp)
