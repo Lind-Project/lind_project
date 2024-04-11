@@ -11,6 +11,7 @@ dataset["relative_time"] = list()
 dataset["platform"] = list()
 dataset["time"] = list()
 dataset["bufsize"] = list()
+dataset["std"] = list()
 
 nativeavgs = dict()
 
@@ -21,28 +22,61 @@ with open(sys.argv[2], "r") as fp:
 with open(sys.argv[3], "r") as fp:
     userdata = json.load(fp)
 
-for key in userdata:
-    dataset["relative_time"].append(userdata[key] / nativedata[key])
-    dataset["time"].append(userdata[key])
+
+for key in range(4, 25, 2):
+    key = str(key)
+    dataset["relative_time"].append(np.mean(userdata[key]) / np.mean(nativedata[key]))
+    dataset["time"].append(np.mean(userdata[key]))
     dataset["platform"].append("User (unsafe)")
     dataset["bufsize"].append(int(key))
+    dataset["std"].append(
+        np.std(
+            [
+                userdata[key][i] / np.mean(nativedata[key])
+                for i in range(len(userdata[key]))
+            ]
+        )
+    )
 
-for key in linddata:
-    dataset["relative_time"].append(linddata[key] / nativedata[key])
-    dataset["time"].append(linddata[key])
+for key in range(4, 25, 2):
+    key = str(key)
+    dataset["relative_time"].append(np.mean(linddata[key]) / np.mean(nativedata[key]))
+    dataset["time"].append(np.mean(linddata[key]))
     dataset["platform"].append("Lind")
     dataset["bufsize"].append(int(key))
+    dataset["std"].append(
+        np.std(
+            [
+                linddata[key][i] / np.mean(nativedata[key])
+                for i in range(len(linddata[key]))
+            ]
+        )
+    )
 
-for key in nativedata:
-    dataset["relative_time"].append(nativedata[key] / nativedata[key])
-    dataset["time"].append(nativedata[key])
+for key in range(4, 25, 2):
+    key = str(key)
+    dataset["relative_time"].append(np.mean(nativedata[key]) / np.mean(nativedata[key]))
+    dataset["time"].append(np.mean(nativedata[key]))
     dataset["platform"].append("Native")
     dataset["bufsize"].append(int(key))
+    dataset["std"].append(
+        np.std(
+            [
+                nativedata[key][i] / np.mean(nativedata[key])
+                for i in range(len(nativedata[key]))
+            ]
+        )
+    )
 
 
+plt.rcParams["errorbar.capsize"] = 10
 df = pd.DataFrame(data=dataset)
+df["ymin"] = df["relative_time"] - df["std"]
+df["ymax"] = df["relative_time"] + df["std"]
+yerr = df[["ymin", "ymax"]].T.to_numpy()
+
 pd.set_option("display.max_rows", None, "display.max_columns", None)
-plt.figure(figsize=(5, 4))
+plt.figure(figsize=(10, 6))
 sns.set(style="darkgrid")
 sns.set_palette("bright")
 fig = sns.barplot(x="bufsize", y="relative_time", hue="platform", data=df)
@@ -52,13 +86,21 @@ sns.move_legend(
     bbox_to_anchor=(0.5, 1),
     ncol=3,
     title="Platform",
-    fontsize=10, 
+    fontsize=10,
     frameon=False,
 )
 
-plt.xlabel("log(buffersize)", fontsize=10)
+for i, p in enumerate(fig.patches):
+    x = p.get_x()  # get the bottom left x corner of the bar
+    w = p.get_width()  # get width of bar
+    h = p.get_height()  # get height of bar
+    min_y = df["ymin"][i]  # use h to get min from dict z
+    max_y = df["ymax"][i]  # use h to get max from dict z
+    plt.vlines(x + w / 2, min_y, max_y, color="k")
+
+plt.xlabel("$log_2 (buffersize)$", fontsize=10)
 plt.ylabel("Relative runtime w.r.t Native runtime", fontsize=10)
-plt.title("Piping 32GB Varying Buffersize: " + sys.argv[4], y = -0.275, fontsize=12)
+plt.title("Piping 32GB Varying Buffersize: " + sys.argv[4], y=-0.2, fontsize=12)
 plt.tight_layout(pad=0.25)
 
 plt.savefig(sys.argv[5], dpi=400)
