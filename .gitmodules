@@ -21,9 +21,3 @@
 [submodule "src/safeposix-rust"]
 	path = src/safeposix-rust
 	url = https://github.com/Lind-Project/safeposix-rust.git
-[submodule "tests/ipc_performance/total_runtime/scripts/native-rustposix"]
-	path = tests/ipc_performance/total_runtime/scripts/native-rustposix
-	url = https://github.com/Lind-Project/native-rustposix.git
-[submodule "tests/ipc_performance/read_write_vcs/scripts/native-rustposix"]
-	path = tests/ipc_performance/read_write_vcs/scripts/native-rustposix
-	url = https://github.com/Lind-Project/native-rustposix.git
