@@ -41,7 +41,7 @@ for size in range(2, 17):
                 "/bin/time",
                 "-f",
                 "%e wall clock, %w context switches",
-                "./scripts/native-rustposix/pipe-cages",
+                "/home/lind/lind_project/tests/native-rustposix/tests/pipe-cages",
                 write_buffer_size,
                 read_buffer_size,
             ],

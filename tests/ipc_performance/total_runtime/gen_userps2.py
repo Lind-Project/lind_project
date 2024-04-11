@@ -30,7 +30,11 @@ args = parser.parse_args()
 
 def execute_script(write_buffer_size, read_buffer_size):
     _ = subprocess.call(
-        ["./scripts/native-rustposix/tests/pipe-cages", write_buffer_size, read_buffer_size]
+        [
+            "/home/lind/lind_project/tests/native-rustposix/tests/pipe-cages",
+            write_buffer_size,
+            read_buffer_size,
+        ]
     )
 
 
@@ -40,7 +44,7 @@ for size in range(2, 17):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
-    
+
     timer = timeit.Timer(
         f'execute_script("{write_buffer_size}", "{read_buffer_size}")',
         setup="from __main__ import execute_script",
