@@ -30,7 +30,7 @@ args = parser.parse_args()
 
 def execute_script(write_buffer_size, read_buffer_size):
     _ = subprocess.call(
-        ["./scripts/native-rustposix/pipe-cages", write_buffer_size, read_buffer_size]
+        ["./scripts/native-rustposix/tests/pipe-cages", write_buffer_size, read_buffer_size]
     )
 
 
