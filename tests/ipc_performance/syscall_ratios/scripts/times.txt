@@ -1,4 +1,0 @@
-16384 write calls, average time 22995 ns
-16384 read calls, average time 23002 ns
-[ perf record: Woken up 21 times to write data ]
-[ perf record: Captured and wrote 7.820 MB perf.data (851 samples) ]
