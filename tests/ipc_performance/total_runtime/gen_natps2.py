@@ -36,7 +36,7 @@ def execute_script(write_buffer_size, read_buffer_size):
 
 run_times = {}
 
-for size in range(2, 17):
+for size in range(1, 17):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
@@ -48,5 +48,5 @@ for size in range(2, 17):
     run_times[size] = [t * 1000 for t in timer.repeat(args.count, 1)]
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
-    with open(f"data/nat_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
+    with open(f"data/nat_{args.write_buffer}_{args.read_buffer}_256.json", "w") as fp:
         json.dump(run_times, fp)

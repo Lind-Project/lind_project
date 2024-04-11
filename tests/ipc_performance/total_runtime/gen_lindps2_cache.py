@@ -1,5 +1,6 @@
 import argparse
 import json
+import re
 
 from subprocess import Popen, PIPE
 
@@ -27,18 +28,22 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-run_times = {}
+cache_misses = {}
 
 for size in range(1, 17):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
-    run_times[size] = []
+    cache_misses[size] = []
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
     for _ in range(args.count):
         output = Popen(
             [
+                "perf",
+                "stat",
+                "-B",
+                "-e",
+                "cache-misses",
                 "lind",
-                "-t",
                 "/bin/bash",
                 "ps32var2.sh",
                 write_buffer_size,
@@ -48,13 +53,13 @@ for size in range(1, 17):
             stderr=PIPE,
         )
         stdout, stderr = output.communicate()
-
         try:
-            run_time = int(float(stderr.split()[-1]) * 1000)
+            stderr = stderr.decode()
+            cache_miss = int(re.findall(r"(\d+)[ ]+cpu_core", stderr)[0])
         except ValueError:
             continue
-        run_times[size].append(run_time)
-    print(f"Average runtime: {sum(run_times[size]) / args.count}")
+        cache_misses[size].append(cache_miss)
+    print(f"Average cache misses: {sum(cache_misses[size]) / args.count}")
 
-    with open(f"data/lind_{args.write_buffer}_{args.read_buffer}_256.json", "w") as fp:
-        json.dump(run_times, fp)
+    with open(f"data/lind_{args.write_buffer}_{args.read_buffer}_cache_misses_256.json", "w") as fp:
+        json.dump(cache_misses, fp)

@@ -40,7 +40,7 @@ def execute_script(write_buffer_size, read_buffer_size):
 
 run_times = {}
 
-for size in range(2, 17):
+for size in range(1, 17):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
