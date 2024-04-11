@@ -33,12 +33,16 @@ for size in range(2, 17):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     run_times[size] = []
+    vol_ctx_switches = 0
+    wall_clock_time = 0
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
     for _ in range(args.count):
         output = Popen(
             [
+                "/bin/time",
+                "-f",
+                "%e wall clock, %w context switches",
                 "lind",
-                "-t",
                 "/bin/bash",
                 "ps32var2.sh",
                 write_buffer_size,
@@ -50,11 +54,17 @@ for size in range(2, 17):
         stdout, stderr = output.communicate()
 
         try:
-            run_time = int(float(stderr.split()[-1]) * 1000)
-        except ValueError:
+            times = stderr.decode().split("\n")[-2].split(",")
+            wall_clock_time += float(times[0].split()[0])
+            vol_ctx_switches += int(times[1].split()[0])
+        except IndexError:
             continue
-        run_times[size].append(run_time)
-    print(f"Average runtime: {sum(run_times[size]) / args.count}")
+
+    run_times[size] = {
+        "switches": round(vol_ctx_switches / args.count, 3),
+        "time": round(wall_clock_time / args.count, 3),
+        "switches/time": round(vol_ctx_switches / wall_clock_time, 3),
+    }
 
     with open(f"data/lind_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
         json.dump(run_times, fp)

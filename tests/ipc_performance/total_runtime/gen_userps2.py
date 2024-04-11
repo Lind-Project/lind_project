@@ -29,24 +29,28 @@ args = parser.parse_args()
 
 
 def execute_script(write_buffer_size, read_buffer_size):
-    process = subprocess.call(
-        ["./scripts/userpipetest", write_buffer_size, read_buffer_size]
+    _ = subprocess.call(
+        [
+            "/home/lind/lind_project/tests/native-rustposix/tests/pipe-cages",
+            write_buffer_size,
+            read_buffer_size,
+        ]
     )
 
 
 run_times = {}
 
-for size in range(4, 17, 2):
+for size in range(2, 17):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
-    run_times[size] = timeit.timeit(
+
+    timer = timeit.Timer(
         f'execute_script("{write_buffer_size}", "{read_buffer_size}")',
         setup="from __main__ import execute_script",
-        number=args.count,
     )
-    run_times[size] = round((run_times[size] / args.count) * 1000, 1)
-    print(f"Average runtime: {run_times[size]}")
+    run_times[size] = [t * 1000 for t in timer.repeat(args.count, 1)]
+    print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
-with open(f"data/user_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
-    json.dump(run_times, fp)
+    with open(f"data/user_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
+        json.dump(run_times, fp)
