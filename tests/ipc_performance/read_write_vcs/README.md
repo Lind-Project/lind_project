@@ -24,7 +24,7 @@ python3 gen_<platform>ps2.py -w 16 -r x -c <number_of_runs>
 ## Instructions to plot graphs
 
 ```sh
-./plot_runtimes.sh
+./plot_vcs.sh
 ```
 
 It generates the bar charts for all the 3 configurations - `N-N`, `16-N`, `N-16`.
