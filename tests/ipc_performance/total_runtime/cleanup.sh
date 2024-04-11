@@ -1,4 +1,4 @@
 #!/bin/bash
 
-rm scripts/read16var scripts/write16var
-rm scripts/read16var.nexe scripts/write16var.nexe
+rm scripts/read*var scripts/write*var
+rm scripts/read*var.nexe scripts/write*var.nexe

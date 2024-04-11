@@ -29,7 +29,7 @@ args = parser.parse_args()
 
 run_times = {}
 
-for size in range(24, 3, -2):
+for size in range(2, 17):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     run_times[size] = []
