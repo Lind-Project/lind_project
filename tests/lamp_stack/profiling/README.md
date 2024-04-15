@@ -32,5 +32,5 @@ To benchmark Flask application served using an Nginx server (without Postgres)
 
 To benchmark Nginx serving a static output HTML (without Flask and Postgres)
 ```sh
-./lind_setup_nginx_only.sh
+./lind_setup_nginx_only.sh -s static_html_file_size_in_mbs
 ```

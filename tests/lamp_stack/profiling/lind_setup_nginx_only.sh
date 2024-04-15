@@ -7,7 +7,10 @@ rm *
 echo -e "Loading LAMP stack\n"
 /home/lind/lind_project/src/scripts/lamp/load_lamp.sh > /dev/null
 lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/run_lamp_nginx_only.sh /run_lamp_nginx_only.sh
-lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/out.html /out.html
+
+echo -e "\nGenerating static.html\n"
+/bin/python /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/gen_static_html.py $1 $2
+lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/static.html /static.html
 
 echo -e "\nSetting up LAMP stack"
-lind /bin/bash run_lamp_nginx_only.sh
+lind -p /bin/bash run_lamp_nginx_only.sh
