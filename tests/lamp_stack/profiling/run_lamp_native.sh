@@ -1,17 +1,15 @@
 #!/bin/bash
 
-cd /home/lind/lind_project/lind/lindenv/fs
-rm *
-/home/lind/lind_project/src/mklind install &> /dev/null
-
-echo -e "Loading LAMP stack\n"
-/home/lind/lind_project/src/scripts/lamp/load_lamp.sh > /dev/null
-/home/lind/lind_project/tests/lamp_stack/profiling/flask_app/load.sh > /dev/null
-
-echo -e "Initializing Postgres"
-lind /bin/bash init_postgres.sh > /dev/null
-
-echo -e "\nSetting up LAMP stack"
-lind /bin/bash run_lamp.sh
+/usr/local/pgsql/bin/postgres -F -d 0 -c listen_addresses='' -D /usr/local/pgsql/data/ &
+sleep 15
+echo "postgres ready"
+/bin/python init_table.py
+sleep 3
+echo "table ready"
+/home/lind/nginx/usr/local/nginx/sbin/nginx -c /home/lind/nginx/usr/local/nginx/conf/nginx.conf -p /home/lind/nginx/usr/local/nginx/
+sleep 5
+echo "nginx ready"
+cd flask-app/
+/bin/python gunicornexec.py --bind 0.0.0.0:8000 wsgi:app 2>&1
 sleep 5
 echo "system ready"

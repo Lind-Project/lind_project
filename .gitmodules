@@ -21,3 +21,6 @@
 [submodule "src/safeposix-rust"]
 	path = src/safeposix-rust
 	url = https://github.com/Lind-Project/safeposix-rust.git
+[submodule "tests/native-rustposix"]
+	path = tests/native-rustposix
+	url = https://github.com/Lind-Project/native-rustposix.git

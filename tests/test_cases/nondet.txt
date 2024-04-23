@@ -28,3 +28,4 @@ statfs.c
 pipe2.c
 getifaddrs.c
 uds-socketselect.c
+uds-serverclient.c

@@ -1,4 +1,4 @@
-# Lind [![Build Status](https://github.com/Lind-Project/lind_project/actions/workflows/lind-selfhost.yml/badge.svg?branch=develop)](https://github.com/Lind-Project/lind_project/actions/workflows/lind-selfhost.yml) [![Build Status](https://github.com/Lind-Project/lind_project/actions/workflows/daily-builds.yml/badge.svg?branch=develop)](https://github.com/Lind-Project/lind_project/actions/workflows/daily-builds.yml)
+# Lind [![Build Status](https://github.com/Lind-Project/lind_project/actions/workflows/lind-selfhost.yml/badge.svg?branch=develop)](https://github.com/Lind-Project/lind_project/actions/workflows/lind-selfhost.yml) [![Build Status](https://github.com/Lind-Project/lind_project/actions/workflows/daily-builds.yml/badge.svg?branch=master)](https://github.com/Lind-Project/lind_project/actions/workflows/daily-builds.yml)
 
 Lind is a single-process sandbox that provides an option to safely execute
 programs and control its resource (network, file, memory, cpu, etc.) usage
@@ -17,7 +17,7 @@ You can either `make run` or start the container yourself using:
 
 ```bash
 docker pull securesystemslab/lind
-docker run --privileged --ipc=host --cap-add=SYS_PTRACE -it securesystemslab/lind /bin/bash
+docker run --privileged --ipc=host --init --cap-add=SYS_PTRACE -it securesystemslab/lind /bin/bash
 ```
 
 The `--privileged` option is so that /proc is writable, the `--ipc=host` option

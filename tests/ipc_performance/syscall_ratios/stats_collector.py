@@ -79,7 +79,6 @@ for i in range(0, len(lind_report), num_stats):
     base_percent = 1 - kern_percent - pipe_percent - copy_percent
 
     lind_ratio = float(run_time) / native_times[i // num_stats]
-
     lind_data[index].append(
         (
             run_time,
