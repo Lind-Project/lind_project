@@ -17,9 +17,8 @@ def index():
 
     for n in range(num_pages):
         title = rand_generator()
-        author = rand_generator()
         review = rand_generator()
-        books.append((title, author, n, review))
+        books.append((title, n, review))
 
     return render_template("index.html", books=books)
 

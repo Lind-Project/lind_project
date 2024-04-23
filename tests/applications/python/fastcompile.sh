@@ -8,14 +8,14 @@ libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'ti
 echo Compiling...
 for var in "${modulesarray[@]}"
 do
-        x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -c Modules/$var.c -o build/$var.o
+    x86_64-nacl-gcc -DPY_FORMAT_LONG_LONG=ll -std=c99 -fPIC -fno-strict-aliasing -march=x86-64 -mtune=generic -O2 -pipe -DNDEBUG -I. -IInclude -I./Include -c Modules/$var.c -o build/$var.o
 done
 
 echo Building libraries...
 length=${#libsarray[@]}
 for (( i = 0; i < length; i++ ));
 do
-        x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/${modulesarray[i]}.o -L. -lpython2.7 -o build/lib/${libsarray[i]}.so
+    x86_64-nacl-gcc -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -std=c99 build/${modulesarray[i]}.o -L. -lpython2.7 -o build/lib/${libsarray[i]}.so
 done
 
 echo Compiling special cases:

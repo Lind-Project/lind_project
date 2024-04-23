@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd scripts/
-for SIZE in {4..5..2}
+for SIZE in {4..16..2}
 do
     for COUNT in $( seq 0 $2 )
     do

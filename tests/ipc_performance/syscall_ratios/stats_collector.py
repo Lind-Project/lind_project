@@ -1,5 +1,4 @@
 import json
-import numpy as np
 import sys
 
 native_stats = {}
@@ -80,7 +79,6 @@ for i in range(0, len(lind_report), num_stats):
     base_percent = 1 - kern_percent - pipe_percent - copy_percent
 
     lind_ratio = float(run_time) / native_times[i // num_stats]
-    
     lind_data[index].append(
         (
             run_time,
@@ -97,7 +95,6 @@ for key in lind_data:
         [lind_data[key][i][j] for i in range(len(lind_data[key]))]
         for j in range(len(lind_data[key][0]))
     ]
-    print(data)
     data = [sum(stat) / len(stat) for stat in data]
     lind_stats["index"].append(f"{key}\n{data[0]}ns")
     lind_stats["data"].append(data[1:])
