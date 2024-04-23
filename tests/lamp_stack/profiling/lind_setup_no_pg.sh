@@ -6,7 +6,4 @@ rm *
 
 echo -e "Loading LAMP stack\n"
 /home/lind/lind_project/src/scripts/lamp/load_lamp.sh > /dev/null
-/home/lind/lind_project/tests/lamp_stack/profiling/flask-app/load.sh > /dev/null
-
-echo -e "\nSetting up LAMP stack"
-lind /bin/bash run_lamp_no_pg.sh
+/home/lind/lind_project/tests/lamp_stack/profiling/flask_app/load.sh > /dev/null

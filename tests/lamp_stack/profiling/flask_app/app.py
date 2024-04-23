@@ -1,24 +1,25 @@
 import psycopg2
-from flask import Flask, render_template
 import string
 import random
 
+from flask import Flask, render_template
+
 app = Flask(__name__)
-size = 65535
-num_pages = 5
+html_size_128KBs = 2 ** 4
+size = 2 ** 11
+num_pages = int((html_size_128KBs * (2 ** 17)) / (2 * size)) # size * num_pages = html_size_128KBs
 conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
 
 def rand_generator(size=size, chars=string.ascii_uppercase + string.digits):
-    return "".join(random.choice(chars) for _ in range(size))
+    return "".join(random.choice(chars) for _ in range(size - 1))
 
 
 data = []
 for n in range(num_pages):
     title = rand_generator()
-    author = rand_generator()
     review = rand_generator()
-    data.append((title, author, n, review))
+    data.append((title, n, review))
 
 
 @app.route("/")
@@ -27,10 +28,12 @@ def index():
 
     for n in range(num_pages):
         cur.execute(
-            "INSERT INTO books (title, author, pages_num, review)"
-            "VALUES (%s, %s, %s, %s)",
+            "INSERT INTO books (title, pages_num, review)"
+            "VALUES (%s, %s, %s)",
             data[n],
         )
+        if n % 5 == 0:
+            conn.commit()
     conn.commit()
 
     books = []
@@ -40,9 +43,11 @@ def index():
 
     for n in range(num_pages):
         cur.execute("DELETE FROM books WHERE pages_num = %s", (n,))
+        if n % 5 == 0:
+            conn.commit()
+    conn.commit()
 
     cur.close()
-    conn.commit()
     return render_template("index.html", books=books)
 
 

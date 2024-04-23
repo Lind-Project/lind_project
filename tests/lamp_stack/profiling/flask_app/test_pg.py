@@ -16,9 +16,8 @@ def test():
     books = []
     for n in range(num_pages):
         title = rand_generator()
-        author = rand_generator()
         review = rand_generator()
-        books.append((title, author, n, review))
+        books.append((title, n, review))
 
     start_time = time.time()
     cur = conn.cursor()
@@ -26,8 +25,8 @@ def test():
     insert_start_time = time.time()
     for n in range(num_pages):
         cur.execute(
-            "INSERT INTO books (title, author, pages_num, review)"
-            "VALUES (%s, %s, %s, %s)",
+            "INSERT INTO books (title, pages_num, review)"
+            "VALUES (%s, %s, %s)",
             books[n],
         )
     conn.commit()
