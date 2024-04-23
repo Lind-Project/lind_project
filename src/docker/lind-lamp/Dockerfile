@@ -28,5 +28,6 @@ USER lind
 WORKDIR /home/lind/lind_project
 
 RUN ./src/scripts/lamp/compile_lamp.sh
+RUN ./tests/lamp_stack/profiling/lind_setup.sh
 
-ENTRYPOINT [ "./tests/lamp_stack/profiling/lind_setup.sh" ]
+ENTRYPOINT [ "./src/scripts/lamp/flask-app/run_lamp.sh" ]
