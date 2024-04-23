@@ -10,8 +10,3 @@ echo -e "Loading LAMP stack\n"
 
 echo -e "Initializing Postgres"
 lind /bin/bash init_postgres.sh > /dev/null
-
-echo -e "\nSetting up LAMP stack"
-lind /bin/bash run_lamp.sh
-echo -e "\nSetting up LAMP stack"
-lind /bin/bash run_lamp_no_flask.sh
