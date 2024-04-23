@@ -34,6 +34,9 @@ list show:
 	@echo
 	docker container list -f label=lind -a
 
+lamp: | lind-full
+	docker build --cache-from=securesystemslab/lind:latest -t securesystemslab/lind-lamp:latest ./src/docker/lind-lamp
+
 latest: | lind-full
 	docker build --cache-from=securesystemslab/lind:$| -t securesystemslab/lind:$@ ./src/docker/$|
 
