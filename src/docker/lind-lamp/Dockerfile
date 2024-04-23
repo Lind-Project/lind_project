@@ -28,4 +28,5 @@ USER lind
 WORKDIR /home/lind/lind_project
 
 RUN ./src/scripts/lamp/compile_lamp.sh
+
 ENTRYPOINT [ "./tests/lamp_stack/profiling/lind_setup.sh" ]
