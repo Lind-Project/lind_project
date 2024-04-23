@@ -23,7 +23,7 @@ with open(sys.argv[3], "r") as fp:
     userdata = json.load(fp)
 
 
-for key in range(4, 25, 2):
+for key in range(2, 17):
     key = str(key)
     dataset["relative_time"].append(np.mean(userdata[key]) / np.mean(nativedata[key]))
     dataset["time"].append(np.mean(userdata[key]))
@@ -38,7 +38,7 @@ for key in range(4, 25, 2):
         )
     )
 
-for key in range(4, 25, 2):
+for key in range(2, 17):
     key = str(key)
     dataset["relative_time"].append(np.mean(linddata[key]) / np.mean(nativedata[key]))
     dataset["time"].append(np.mean(linddata[key]))
@@ -53,7 +53,7 @@ for key in range(4, 25, 2):
         )
     )
 
-for key in range(4, 25, 2):
+for key in range(2, 17):
     key = str(key)
     dataset["relative_time"].append(np.mean(nativedata[key]) / np.mean(nativedata[key]))
     dataset["time"].append(np.mean(nativedata[key]))
