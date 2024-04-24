@@ -1,4 +1,6 @@
-FROM securesystemslab/lind:latest
+# syntax=docker/dockerfile:experimental
+
+FROM securesystemslab/lind:lind-full
 LABEL lind "v2.0-rc1"
 LABEL description "Lind LAMP Stack (Pre-built)"
 LABEL author "Yashaswi Makula ym3144@nyu.edu"
@@ -28,6 +30,6 @@ USER lind
 WORKDIR /home/lind/lind_project
 
 RUN ./src/scripts/lamp/compile_lamp.sh
-RUN ./tests/lamp_stack/profiling/lind_setup.sh
+RUN --mount=type=tmpfs,target=/dev/shm,rw ./tests/lamp_stack/profiling/lind_setup.sh
 
-ENTRYPOINT [ "./src/scripts/lamp/flask-app/run_lamp.sh" ]
+ENTRYPOINT ["lind", "/bin/bash", "run_lamp.sh" ]
