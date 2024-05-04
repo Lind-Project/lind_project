@@ -6,6 +6,8 @@ at the process granularity. Lind executes applications in an isolated
 environment from the rest of the applications in the system, and thus
 limits the damage of bugs or security flaws in the application.
 
+For high level documentation, please go to the [main documentation](https://github.com/Lind-Project/lind-docs) for the project.
+
 ##### Lind is currently a work in progress, please bear with us while features are being implemented.
 
 ## Building with Docker
