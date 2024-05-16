@@ -21,7 +21,7 @@ To run pgbench only
 ./run_pgbench_2.sh
 ```
 
-To plot the charts have a look at all the `gen_X_plots.py` scripts. To know how to run all these plotting scripts have a look at `plot.sh`
+To plot the charts have a look at all the `gen_X_plots.py` scripts. To know how to run all these plotting scripts have a look at `plot.sh`. Rename the files `data/sample_X.json` to `data/X.json` and change the values according to the tests before running the plotting scripts.
 ```sh
 ./plot.sh
 ```
