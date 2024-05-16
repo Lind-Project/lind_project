@@ -18,6 +18,7 @@ sysconf.c
 template.c
 gethostname.c
 serverclient.c
+sc-writev.c
 socketselect.c
 fork_simple.c
 socketepoll.c
