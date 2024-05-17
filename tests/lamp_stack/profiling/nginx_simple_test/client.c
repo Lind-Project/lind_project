@@ -59,6 +59,10 @@ int main()
             perror("Error receiving filesize");
             exit(EXIT_FAILURE);
         }
+        fileSize = (fileSize / BUFFER_SIZE) * (32768 + 256);
+
+        // printf("client fileSize: %ld\n", fileSize);
+        // fflush(stdout);
 
         off_t totalBytesRead = 0;
 
@@ -68,7 +72,11 @@ int main()
         while (totalBytesRead < fileSize)
         {
             off_t bytesRead = recv(clientSocket, buffer, sizeof(buffer), 0);
+
             totalBytesRead += bytesRead;
+
+            // printf("bytesRead: %ld, totalBytesRead: %ld\n", bytesRead, totalBytesRead);
+            // fflush(stdout);
         }
     }
 

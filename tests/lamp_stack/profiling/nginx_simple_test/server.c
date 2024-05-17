@@ -12,6 +12,7 @@
 
 #define MAX_BUFFER_SIZE 32768
 #define NUM_REQUESTS 100000
+#define HEADER_SIZE 256
 
 long long gettimens(void)
 {
@@ -150,6 +151,8 @@ int main()
                 exit(EXIT_FAILURE);
             }
             off_t fileSize = fileStat.st_size;
+            // printf("server fileSize: %ld\n", fileSize);
+            // fflush(stdout);
             
             // Send file size
             ssize_t bytesWritten = write(clientSocket, &fileSize, sizeof(fileSize));
@@ -160,7 +163,7 @@ int main()
             }
 
             // Read and write file in chunks
-            char fileBuffer[MAX_BUFFER_SIZE];
+            char fileBuffer[MAX_BUFFER_SIZE + HEADER_SIZE];
             ssize_t totalBytesWritten = 0;
             long long start = gettimens();
             
@@ -173,14 +176,29 @@ int main()
                     exit(EXIT_FAILURE);
                 }
                 
-                ssize_t bytesWritten = write(clientSocket, fileBuffer, bytesRead);
+                struct iovec iov[2];
+                iov[0].iov_base = fileBuffer;
+                iov[0].iov_len = HEADER_SIZE;
+                iov[1].iov_base = fileBuffer + 256;
+                iov[1].iov_len = MAX_BUFFER_SIZE;
+                
+                ssize_t bytesWritten = writev(clientSocket, iov, 2);
                 if (bytesWritten == -1)
                 {
                     perror("Failed to write data");
                     exit(EXIT_FAILURE);
                 }
+                // ssize_t bytesWritten = write(clientSocket, fileBuffer, bytesRead);
+                // if (bytesWritten == -1)
+                // {
+                //     perror("Failed to write data");
+                //     exit(EXIT_FAILURE);
+                // }
 
                 totalBytesWritten += bytesWritten;
+                
+                // printf("bytesWritten: %ld, totalBytesWritten: %ld\n", bytesWritten, totalBytesWritten);
+                // fflush(stdout);
             }
             long long end = gettimens();
             total_rw_time += end - start;
