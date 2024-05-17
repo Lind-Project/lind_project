@@ -38,3 +38,8 @@ To benchmark Nginx serving a static output HTML (without Flask and Postgres)
 ./lind_setup_nginx_only.sh -s static_html_file_size_in_mbs
 lind /bin/bash run_lamp_nginx_only.sh
 ```
+
+To plot the charts have a look at all the `gen_X_plots.py` scripts. To know how to run all these plotting scripts have a look at `plot.sh`
+```sh
+./plot.sh
+```

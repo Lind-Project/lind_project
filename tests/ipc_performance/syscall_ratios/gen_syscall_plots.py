@@ -69,19 +69,24 @@ for i in range(0, len(raw_nativedata["index"]), 4):
 nativedf = pd.DataFrame(
     nativedata["data"],
     index=nativedata["index"],
-    columns=["base_func", "kernel_func", "pipe_func", "copy_func"],
+    columns=["base_func", "kernel_func", "pipe_func", "copy_func", "std_dev"],
 )
 linddf = pd.DataFrame(
     linddata["data"],
     index=linddata["index"],
-    columns=["base_func", "kernel_func", "pipe_func", "copy_func"],
+    columns=["base_func", "kernel_func", "pipe_func", "copy_func", "std_dev"],
 )
+native_std_devs = nativedf["std_dev"].values
+lind_std_devs = linddf["std_dev"].values
+
+nativedf = nativedf.drop(columns=["std_dev"])
+linddf = linddf.drop(columns=["std_dev"])
 
 plt.figure(figsize=(7, 5))
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 sns.set(style="darkgrid")
 sns.set_palette("muted")
-fig = plot_clustered_stacked([nativedf, linddf], ["native", "lind"])
+fig = plot_clustered_stacked([linddf, nativedf], ["lind", "native"])
 sns.move_legend(
     fig,
     "lower center",
@@ -92,9 +97,30 @@ sns.move_legend(
     frameon=False,
 )
 
-plt.xlabel("Buffer Exponents (r/w call)\nNative Time")
+bars = [0 for i in range(8)]
+for i, p in enumerate(fig.patches[:32]):
+    x = p.get_x()  # get the bottom left x corner of the bar
+    w = p.get_width()  # get width of bar
+    h = p.get_height()  # get height of bar
+    bars[i % 8] += h
+    if 32 - i <= 8:
+        min_y = bars[i % 8] - native_std_devs[i % 8]
+        max_y = bars[i % 8] + native_std_devs[i % 8]
+        plt.vlines(x + w / 2, min_y, max_y, color="k")
+
+bars = [0 for i in range(8)]
+for i, p in enumerate(fig.patches[32:64]):
+    x = p.get_x()  # get the bottom left x corner of the bar
+    w = p.get_width()  # get width of bar
+    h = p.get_height()  # get height of bar
+    bars[i % 8] += h
+    if 32 - i <= 8:
+        min_y = bars[i % 8] - lind_std_devs[i % 8]
+        max_y = bars[i % 8] + lind_std_devs[i % 8]
+        plt.vlines(x + w / 2, min_y, max_y, color="k")
+
+plt.xlabel("Buffer Exponents (write-read)\nNative Time")
 plt.ylabel("Lind/Native Time Ratio")
-# plt.title(f"Stacked Syscall Ratios for Buffers: {sys.argv[2]}", y=-0.175, fontsize=16)
 plt.tight_layout(pad=0.25)
 
 plt.savefig(sys.argv[3], dpi=200)

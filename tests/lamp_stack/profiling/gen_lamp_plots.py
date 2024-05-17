@@ -7,10 +7,10 @@ import sys
 
 
 dataset = dict()
-dataset["relative_time"] = list()
 dataset["platform"] = list()
-dataset["time"] = list()
-dataset["bufsize"] = list()
+dataset["req/sec"] = list()
+dataset["relative"] = list()
+dataset["bytes"] = list()
 
 nativeavgs = dict()
 
@@ -20,16 +20,16 @@ with open(sys.argv[2], "r") as fp:
     linddata = json.load(fp)
 
 for key in linddata:
-    dataset["relative_time"].append(linddata[key] / nativedata[key])
-    dataset["time"].append(linddata[key])
+    dataset["req/sec"].append(linddata[key])
+    dataset["relative"].append(linddata[key]/nativedata[key])
     dataset["platform"].append("Lind")
-    dataset["bufsize"].append(int(key))
+    dataset["bytes"].append(key)
 
 for key in nativedata:
-    dataset["relative_time"].append(nativedata[key] / nativedata[key])
-    dataset["time"].append(nativedata[key])
+    dataset["req/sec"].append(nativedata[key])
+    dataset["relative"].append(nativedata[key]/nativedata[key])
     dataset["platform"].append("Native")
-    dataset["bufsize"].append(int(key))
+    dataset["bytes"].append(key)
 
 
 df = pd.DataFrame(data=dataset)
@@ -37,7 +37,7 @@ pd.set_option("display.max_rows", None, "display.max_columns", None)
 plt.figure(figsize=(8, 4))
 sns.set(style="darkgrid")
 sns.set_palette("bright")
-fig = sns.barplot(x="bufsize", y="relative_time", hue="platform", data=df, width=0.7)
+fig = sns.barplot(x="bytes", y="relative", hue="platform", data=df, width=0.7)
 sns.move_legend(
     fig,
     "lower center",
@@ -47,8 +47,8 @@ sns.move_legend(
     frameon=False,
 )
 
-plt.xlabel("$log_2 (buffersize)$", fontsize=15)
-plt.ylabel("Relative runtime w.r.t Native runtime", fontsize=15)
+plt.xlabel("Filesize", fontsize=15)
+plt.ylabel("Normalized Request Rate", fontsize=15)
+plt.xticks(df["bytes"])
 plt.tight_layout()
-
 plt.savefig(sys.argv[3])

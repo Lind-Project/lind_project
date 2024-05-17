@@ -23,11 +23,11 @@ with open(sys.argv[3], "r") as fp:
     userdata = json.load(fp)
 
 
-for key in range(2, 17):
+for key in range(4, 21, 2):
     key = str(key)
     dataset["relative_time"].append(np.mean(userdata[key]) / np.mean(nativedata[key]))
     dataset["time"].append(np.mean(userdata[key]))
-    dataset["platform"].append("User (unsafe)")
+    dataset["platform"].append("Unsafe")
     dataset["bufsize"].append(int(key))
     dataset["std"].append(
         np.std(
@@ -38,7 +38,7 @@ for key in range(2, 17):
         )
     )
 
-for key in range(2, 17):
+for key in range(4, 21, 2):
     key = str(key)
     dataset["relative_time"].append(np.mean(linddata[key]) / np.mean(nativedata[key]))
     dataset["time"].append(np.mean(linddata[key]))
@@ -53,7 +53,7 @@ for key in range(2, 17):
         )
     )
 
-for key in range(2, 17):
+for key in range(4, 21, 2):
     key = str(key)
     dataset["relative_time"].append(np.mean(nativedata[key]) / np.mean(nativedata[key]))
     dataset["time"].append(np.mean(nativedata[key]))
@@ -79,18 +79,20 @@ pd.set_option("display.max_rows", None, "display.max_columns", None)
 plt.figure(figsize=(10, 6))
 sns.set(style="darkgrid")
 sns.set_palette("bright")
-fig = sns.barplot(x="bufsize", y="relative_time", hue="platform", data=df)
+fig = sns.barplot(x="bufsize", y="relative_time", hue="platform", data=df, palette=["C3", "C0", "C1"])
 sns.move_legend(
     fig,
     "lower center",
-    bbox_to_anchor=(0.5, 1),
+    bbox_to_anchor=(0.5, -0.2),
     ncol=3,
-    title="Platform",
+    title="",
     fontsize=10,
     frameon=False,
 )
 
 for i, p in enumerate(fig.patches):
+    if i >= len(df["ymin"]):
+        break
     x = p.get_x()  # get the bottom left x corner of the bar
     w = p.get_width()  # get width of bar
     h = p.get_height()  # get height of bar
@@ -99,8 +101,7 @@ for i, p in enumerate(fig.patches):
     plt.vlines(x + w / 2, min_y, max_y, color="k")
 
 plt.xlabel("$log_2 (buffersize)$", fontsize=10)
-plt.ylabel("Relative runtime w.r.t Native runtime", fontsize=10)
-plt.title("Piping 32GB Varying Buffersize: " + sys.argv[4], y=-0.2, fontsize=12)
-plt.tight_layout(pad=0.25)
-
+plt.ylabel("Normalized Runtime", fontsize=10)
+plt.tight_layout(pad=2)
+plt.title(f"Normalized Total Runtime {sys.argv[4]}")
 plt.savefig(sys.argv[5], dpi=400)
