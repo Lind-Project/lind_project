@@ -22,6 +22,10 @@ jobs:
           git --git-dir /home/lind/lind_project/.git remote update origin --prune;
           git --git-dir /home/lind/lind_project/.git checkout --force remotes/origin/develop;
 
+      - name: Clean up filesystem (temperory fix)
+        run: |
+          rm -rf lind_project/lind/lindenv
+
       - name: In the land of RUSTPOSIX where the shadows lie
         run: | 
          git --git-dir /home/lind/lind_project/src/safeposix-rust/.git remote update origin --prune;
