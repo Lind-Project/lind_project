@@ -33,28 +33,22 @@ for key in nativedata:
     dataset["bufsize"].append(int(key))
 
 
-# dataset["relative_time"] = [100 * (1 - t) for t in dataset["relative_time"]]
 df = pd.DataFrame(data=dataset)
 pd.set_option("display.max_rows", None, "display.max_columns", None)
-plt.figure(figsize=(8, 5))
+plt.figure(figsize=(8, 4))
 sns.set(style="darkgrid")
 sns.set_palette("bright")
-fig = sns.barplot(x="bufsize", y="relative_time", hue="platform", data=df)
+fig = sns.barplot(x="bufsize", y="relative_time", hue="platform", data=df, width=0.7)
 sns.move_legend(
     fig,
     "lower center",
-    bbox_to_anchor=(0.5, -0.2),
+    bbox_to_anchor=(0.5, 1),
     ncol=3,
     title="Platform",
     frameon=False,
 )
-fig.legend_.set_title(None)
-# sns.lineplot(x="bufsize", y="time", hue="platform", data=df)
-# plt.yscale("log")
-plt.xlabel("# of cat stages", fontsize=10)
-# plt.ylabel("Performance Improvement over Native Linux")
-plt.ylabel("Relative runtime w.r.t Native runtime", fontsize=10)
-plt.title("Pipeline Performance of N-Consecutive 'cat' Applications for a 2GB File")
-plt.tight_layout(pad=0.25)
+plt.xlabel("Number of cat stages", fontsize=15)
+plt.ylabel("Relative runtime w.r.t Native runtime", fontsize=15)
+plt.tight_layout()
 
-plt.savefig(sys.argv[3], dpi=800)
+plt.savefig(sys.argv[3])
