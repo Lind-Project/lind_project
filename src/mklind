@@ -343,7 +343,7 @@ function install_to_path() {
 
 	# Copy files into the designed location (replace original lindfs)
 	mkdir -p "${RAWPOSIX_PATH}/lib/glibc"
-	cp -r "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/*" "${RAWPOSIX_PATH}/lib/glibc/"
+	cp -r "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"* "${RAWPOSIX_PATH}/lib/glibc/"
 
 	print "Done."
 }
