@@ -20,7 +20,7 @@ filetest1000.c
 mmaptest.c
 fstat.c
 stat.c
-forkexecv.c
+
 socket.c
 getuid.c
 forkexecuid.c
