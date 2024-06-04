@@ -39,9 +39,16 @@ for var in "${totalarray[@]}"; do
     gcc $var -o automated_tests/$varnonexe -lpthread
 done
 echo "Copying test cases..."
-lindfs cp $PWD/lind_tests/ /automated_tests/ &> /dev/null
-lindfs cp $PWD/testfiles/ /testfiles/ &> /dev/null
-lindfs cp $PWD/testfile.txt /testfile.txt &> /dev/null # Copies the text file to be used in several test files.
+# lindfs cp $PWD/lind_tests/ /automated_tests/ &> /dev/null
+# lindfs cp $PWD/testfiles/ /testfiles/ &> /dev/null
+# lindfs cp $PWD/testfile.txt /testfile.txt &> /dev/null # Copies the text file to be used in several test files.
+
+LIND_ROOT="/home/lind/lind_project/src/safeposix-rust/tmp"
+
+# Replace the location with desired one
+cp -r $PWD/lind_tests/ ${LIND_ROOT}/automated_tests/ &> /dev/null
+cp -r $PWD/testfiles/ ${LIND_ROOT}/testfiles/ &> /dev/null
+cp -r $PWD/testfile.txt ${LIND_ROOT}/testfile.txt &> /dev/null
 
 echo "Executing deterministic test cases"
 for var in "${deterministicinput[@]}"; do
