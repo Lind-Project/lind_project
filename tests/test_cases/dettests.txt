@@ -33,7 +33,7 @@ rename.c
 fchmod.c
 truncate.c
 mutex.c
-socketpair.c
+
 flock.c
 getppid.c
 creat_access.c
