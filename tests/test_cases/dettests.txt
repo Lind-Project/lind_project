@@ -4,7 +4,7 @@ dup2.c
 dupwrite.c
 
 write.c
-forknodup.c
+
 pipepong.c
 exit.c
 readbytes.c

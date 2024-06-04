@@ -120,9 +120,12 @@ done
 rm ./automated_tests/* &> /dev/null
 rm ./lind_tests/* &> /dev/null
 rm -f foo.txt &> /dev/null
-lindfs deltree "/automated_tests/" &> /dev/null
-lindfs deltree "/testfiles/" &> /dev/null
-lindfs rm "/testfile.txt" &> /dev/null
+# lindfs deltree "/automated_tests/" &> /dev/null
+# lindfs deltree "/testfiles/" &> /dev/null
+# lindfs rm "/testfile.txt" &> /dev/null
+rm -r ${LIND_ROOT}/automated_tests/ &> /dev/null
+rm -r ${LIND_ROOT}/testfiles/ &> /dev/null
+rm -r ${LIND_ROOT}/testfile.txt &> /dev/null
 
 echo "******************************************************************"
 
