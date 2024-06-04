@@ -5,7 +5,7 @@ dupwrite.c
 
 write.c
 
-pipepong.c
+
 exit.c
 readbytes.c
 writeloop.c
