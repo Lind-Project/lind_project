@@ -43,7 +43,7 @@ poll.c
 uds-getsockname.c
 uds-nb-select.c
 signal-simple.c
-signal-fork.c
+
 sigprocmask.c
 sigpipe.c
 sigchld.c
