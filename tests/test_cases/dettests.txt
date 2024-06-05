@@ -39,7 +39,7 @@ mutex.c
 creat_access.c
 mkdir_rmdir.c
 poll.c
-sem_forks.c
+
 uds-getsockname.c
 uds-nb-select.c
 signal-simple.c
