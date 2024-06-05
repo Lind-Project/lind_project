@@ -35,7 +35,7 @@ truncate.c
 mutex.c
 
 
-getppid.c
+
 creat_access.c
 mkdir_rmdir.c
 poll.c
