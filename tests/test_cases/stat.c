@@ -47,6 +47,7 @@ int main(int argc, char **argv)
 		struct stat st = {0};
 		//printf("usage: %s <files>\n", argv[0]); //-causes a silly error on dettest - 
 		//usage: /automated_tests/stat.NEXE <files> and usage: ./automated_tests/stat <files> do not match.
+		sleep(0);
 		printf("running stat(\"%s\")\n", FILENAME); //argv[0] to specify any file
 		if (stat(FILENAME, &st) < 0) {
 			perror("stat");
