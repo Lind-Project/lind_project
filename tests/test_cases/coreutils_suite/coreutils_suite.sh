@@ -1,26 +1,26 @@
 #TODO ideal: Check if Lind has coreutils/bash by file checks, if they're present; already installed, skip installing part.
 
 
-binoutput=$(lindfs ls bin/)
-if [[ ${binoutput} != *"bin/bash"* ]];then
-   echo "Installing bash..."
-   cd /home/lind/lind_project/src/scripts/base
-   ./compile_bash.sh
-   ./load_bash.sh
-fi
-if [[ ${binoutput} != *"bin/ls"* ]];then
-   echo "Installing coreutils..."
-   cd /home/lind/lind_project/src/scripts/base
-   ./compile_coreutils.sh
-   ./load_coreutils.sh
-fi
+# binoutput=$(lindfs ls bin/)
+# if [[ ${binoutput} != *"bin/bash"* ]];then
+#    echo "Installing bash..."
+#    cd /home/lind/lind_project/src/scripts/base
+#    ./compile_bash.sh
+#    ./load_bash.sh
+# fi
+# if [[ ${binoutput} != *"bin/ls"* ]];then
+#    echo "Installing coreutils..."
+#    cd /home/lind/lind_project/src/scripts/base
+#    ./compile_coreutils.sh
+#    ./load_coreutils.sh
+# fi
 
 cd /home/lind/lind_project/tests/test_cases/coreutils_suite
 
 # lindfs deltree "/script_tests/" &> /dev/null
 
 # Replaced (AW)
-rm -rf /home/lind/lind_project/src/safeposix-rust/tmp/script_tests/
+# rm -rf /home/lind/lind_project/src/safeposix-rust/tmp/script_tests/
 
 deterministicinput=()
 nondeterministicinput=()
@@ -56,7 +56,8 @@ totalarray=( "${deterministicinput[@]}" "${nondeterministicinput[@]}" )
 
 echo "Copying test cases..." #change
 
-lindfs cp $PWD /script_tests/ &> /dev/null
+# lindfs cp $PWD /script_tests/ &> /dev/null
+cp -r $PWD /home/lind/lind_project/src/safeposix-rust/tmp/script_tests/
 
 mkdir tempfolder
 ./prep.sh
