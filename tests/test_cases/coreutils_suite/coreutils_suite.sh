@@ -17,7 +17,10 @@ fi
 
 cd /home/lind/lind_project/tests/test_cases/coreutils_suite
 
-lindfs deltree "/script_tests/" &> /dev/null
+# lindfs deltree "/script_tests/" &> /dev/null
+
+# Replaced (AW)
+rm -rf /home/lind/lind_project/src/safeposix-rust/tmp/script_tests/
 
 deterministicinput=()
 nondeterministicinput=()
