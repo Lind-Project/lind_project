@@ -9,7 +9,7 @@
 # lindfs cp /home/lind/lind_project/src/scripts/lamp/flask-app/templates/create.html /templates/create.html
 # lindfs cp /home/lind/lind_project/src/scripts/lamp/flask-app/templates/index.html /templates/index.html
 # lindfs cp /home/lind/lind_project/src/scripts/lamp/flask-app/run_lamp.sh /run_lamp.sh
-mkdir /templates
+mkdir /home/lind/lind_project/src/safeposix-rust/tmp/templates
 cp /home/lind/lind_project/src/scripts/lamp/flask-app/gunicornexec.py /home/lind/lind_project/src/safeposix-rust/tmp/gunicornexec.py
 cp /home/lind/lind_project/src/scripts/lamp/flask-app/wsgi.py /home/lind/lind_project/src/safeposix-rust/tmp/wsgi.py
 cp /home/lind/lind_project/src/scripts/lamp/flask-app/myproject.py /home/lind/lind_project/src/safeposix-rust/tmp/myproject.py

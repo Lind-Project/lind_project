@@ -7,7 +7,8 @@
 # lindfs cp /home/lind/lind_project/src/scripts/nginx/sites/sites-available/myproject /etc/nginx/sites-available/myproject
 # lindfs cp /home/lind/lind_project/src/scripts/nginx/sites/sites-enabled/myproject /etc/nginx/sites-enabled/myproject
 
-cp /home/lind/lind_project/lind/tmp/usr/local/nginx/ /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/nginx
+mkdir /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/nginx
+cp -r /home/lind/lind_project/lind/tmp/usr/local/nginx/ /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/nginx
 cp /home/lind/lind_project/lind/tmp/usr/local/nginx/sbin/nginx /home/lind/lind_project/src/safeposix-rust/tmp/bin/nginx
 cp /home/lind/lind_project/src/scripts/nginx/nginx-conf/nginx.conf /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/nginx/conf/nginx.conf
 cp /home/lind/lind_project/src/scripts/nginx/nginx-conf/nginx_static.conf /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/nginx/conf/nginx_static.conf

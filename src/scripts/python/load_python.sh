@@ -12,7 +12,9 @@ cp /home/lind/lind_project/tests/applications/python/python /home/lind/lind_proj
 # lindfs cp /home/lind/lind_project/src/scripts/includes/passwd /etc/passwd
 cp /home/lind/lind_project/tests/applications/python/libpython2.7.so.1.0 /home/lind/lind_project/src/safeposix-rust/tmp/lib/glibc/libpython2.7.so.1.0
 cp /home/lind/lind_project/tests/applications/python/Lib /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7
+mkdir /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7
 cp /home/lind/lind_project/tests/applications/python/Makefile /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7/config/Makefile
+mkdir /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/include/python2.7
 cp /home/lind/lind_project/tests/applications/python/pyconfig.h /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/include/python2.7/pyconfig.h
 cp /home/lind/lind_project/src/scripts/includes/passwd /home/lind/lind_project/src/safeposix-rust/tmp/etc/passwd
 
@@ -25,6 +27,7 @@ cp /home/lind/lind_project/tests/applications/openssl/libssl.so.1.0.0 /home/lind
 
 # Copies 
 echo Copying files...
+mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7/lib-dynload
 libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata' 'fcntl' 'grp')
 for lib in "${libsarray[@]}"
 do
@@ -53,4 +56,4 @@ cp /home/lind/lind_project/tests/applications/python/build/lib/libffi.so /home/l
 
 echo "Copying flask files:"
 # lindfs cp /home/lind/lind_project/tests/applications/python-modules/site-packages/ /usr/local/lib/python2.7/site-packages/
-cp /home/lind/lind_project/tests/applications/python-modules/site-packages/ /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7/site-packages/
+cp -r /home/lind/lind_project/tests/applications/python-modules/site-packages/ /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7/site-packages/
