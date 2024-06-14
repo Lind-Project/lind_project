@@ -11,10 +11,10 @@ cp /home/lind/lind_project/tests/applications/python/python /home/lind/lind_proj
 # lindfs cp /home/lind/lind_project/tests/applications/python/pyconfig.h /usr/local/include/python2.7/pyconfig.h
 # lindfs cp /home/lind/lind_project/src/scripts/includes/passwd /etc/passwd
 cp /home/lind/lind_project/tests/applications/python/libpython2.7.so.1.0 /home/lind/lind_project/src/safeposix-rust/tmp/lib/glibc/libpython2.7.so.1.0
-cp /home/lind/lind_project/tests/applications/python/Lib /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7
-mkdir /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7
+cp -r /home/lind/lind_project/tests/applications/python/Lib /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7
+mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7
 cp /home/lind/lind_project/tests/applications/python/Makefile /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7/config/Makefile
-mkdir /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/include/python2.7
+mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/include/python2.7
 cp /home/lind/lind_project/tests/applications/python/pyconfig.h /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/include/python2.7/pyconfig.h
 cp /home/lind/lind_project/src/scripts/includes/passwd /home/lind/lind_project/src/safeposix-rust/tmp/etc/passwd
 
