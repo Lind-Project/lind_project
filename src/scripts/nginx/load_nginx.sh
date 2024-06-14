@@ -9,7 +9,8 @@
 
 cp -r /home/lind/lind_project/lind/tmp/usr/local/nginx/ /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/nginx
 cp /home/lind/lind_project/lind/tmp/usr/local/nginx/sbin/nginx /home/lind/lind_project/src/safeposix-rust/tmp/bin/nginx
-mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/nginx/conf/
+
+mkdir /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/nginx/conf/
 cp /home/lind/lind_project/src/scripts/nginx/nginx-conf/nginx.conf /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/nginx/conf/nginx.conf
 cp /home/lind/lind_project/src/scripts/nginx/nginx-conf/nginx_static.conf /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/nginx/conf/nginx_static.conf
 mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/etc/nginx/sites-available/
