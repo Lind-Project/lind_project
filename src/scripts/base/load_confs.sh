@@ -11,6 +11,8 @@ rm /home/lind/lind_project/hosts
 # lindfs cp /etc/nsswitch.conf /etc/nsswitch.conf
 # lindfs cp /etc/host.conf /etc/host.conf
 # lindfs cp /usr/share/zoneinfo/America/New_York /etc/localtime # As we don't have /etc/localtime default in lind.
+echo "confs starting..."
+mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/etc
 sudo cp /etc/resolv.conf /home/lind/lind_project/src/safeposix-rust/tmp/etc/resolv.conf
 sudo cp /etc/nsswitch.conf /home/lind/lind_project/src/safeposix-rust/tmp/etc/nsswitch.conf
 sudo cp /etc/host.conf /home/lind/lind_project/src/safeposix-rust/tmp/etc/host.conf
