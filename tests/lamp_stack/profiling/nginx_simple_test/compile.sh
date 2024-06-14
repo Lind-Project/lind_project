@@ -5,10 +5,8 @@ gcc server.c -o server -std=gnu99 -lpthread -lrt
 gcc client.c -o client -std=gnu99 -lpthread -lrt
 
 echo "Compiling lind test binaries"
-# x86_64-nacl-gcc server.c -o server.nexe -std=gnu99 -lpthread -lrt
-# x86_64-nacl-gcc client.c -o client.nexe -std=gnu99 -lpthread -lrt
-x86_64-nacl-gcc server.c -o /home/lind/lind_project/src/safeposix-rust/tmp/server.nexe -std=gnu99 -lpthread -lrt
-x86_64-nacl-gcc client.c -o /home/lind/lind_project/src/safeposix-rust/tmp/client.nexe -std=gnu99 -lpthread -lrt
+x86_64-nacl-gcc server.c -o server.nexe -std=gnu99 -lpthread -lrt
+x86_64-nacl-gcc client.c -o client.nexe -std=gnu99 -lpthread -lrt
 
 cd /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/
 python2 gen_static_html.py -s 17
@@ -18,3 +16,6 @@ cp ../flask_app/static.html /home/lind/lind_project/src/safeposix-rust/tmp/stati
 # lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/nginx_simple_test/server.nexe /server
 # lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/nginx_simple_test/client.nexe /client
 # lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/nginx_simple_test/static.html /static.html
+
+cp /home/lind/lind_project/tests/lamp_stack/profiling/nginx_simple_test/server.nexe /home/lind/lind_project/src/safeposix-rust/tmp/server
+cp /home/lind/lind_project/tests/lamp_stack/profiling/nginx_simple_test/client.nexe /home/lind/lind_project/src/safeposix-rust/tmp/client
