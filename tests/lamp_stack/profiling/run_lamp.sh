@@ -1,6 +1,6 @@
 #!/bin/bash
 export PYTHONHOME=/usr/local/
-export PYTHONPATH=/usr/local/lib/python2.7/Lib:/usr/local/lib/python2.7/lib-dynload/
+export PYTHONPATH=/usr/local/lib/python2.7/Lib:/usr/local/lib/python2.7/lib-dynload
 
 /usr/local/pgsql/bin/postgres -F -c listen_addresses='' -D /usr/local/pgsql/data/ &
 sleep 15
