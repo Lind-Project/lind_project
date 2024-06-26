@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <pthread.h>
 
-#define PORT 8080
+#define PORT 9994
 #define BUFFER_SIZE 1024
 
 void error(const char *msg) {
@@ -93,15 +93,17 @@ void run_client() {
 }
 
 int main() {
-    pthread_t serverthread, clientthread1;
-    
-    pthread_barrier_init(&syncbarrier, NULL, 2);
-    pthread_create(&serverthread, NULL, run_server, NULL);
-    pthread_create(&clientthread1, NULL, run_client, NULL);
-    pthread_join(clientthread1, NULL);
-    pthread_join(serverthread, NULL);
-    pthread_barrier_destroy(&syncbarrier);
-    pthread_barrier_destroy(&closebarrier);
+    pthread_t server_thread;
+
+    if (pthread_create(&server_thread, NULL, run_server, NULL) != 0) {
+        error("Failed to create server thread");
+    }
+
+    sleep(1);
+
+    run_client();
+
+    pthread_join(server_thread, NULL);
 
     return 0;
 }
