@@ -3,10 +3,7 @@ import sys
 lindoutput = sys.argv[1].split('\n')
 hostoutput = sys.argv[2].split('\n')
 
-def parse_output(output):
-    # Split the output into lines
-    lines = output.split('\n')
-    
+def parse_output(lines):
     # Extract the parts of interest
     server_status = lines[0]
     server_connection = lines[1]
