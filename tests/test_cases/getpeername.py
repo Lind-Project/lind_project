@@ -20,7 +20,6 @@ def compare_outputs(output1, output2):
     # Compare the parsed outputs
     return parsed_output1 == parsed_output2
 
-print(lindoutput)
 # Compare the outputs
 if compare_outputs(lindoutput, hostoutput) == False:
     print("The outputs are different.")
