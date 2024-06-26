@@ -82,6 +82,8 @@ void run_client() {
         error("Invalid address or address not supported");
     }
 
+    sleep(60);
+
     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         error("Connection failed");
     }
