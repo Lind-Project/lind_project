@@ -51,4 +51,3 @@ sigalrm.c
 fsync.c
 fdatasync.c
 sync_file_range.c
-getpeername.c
