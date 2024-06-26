@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <pthread.h>
 
-#define PORT 9994
+#define PORT 2000
 #define BUFFER_SIZE 1024
 
 void error(const char *msg) {
