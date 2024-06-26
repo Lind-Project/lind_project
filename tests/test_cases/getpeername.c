@@ -93,17 +93,15 @@ void run_client() {
 }
 
 int main() {
-    pthread_t server_thread;
-
-    if (pthread_create(&server_thread, NULL, run_server, NULL) != 0) {
-        error("Failed to create server thread");
-    }
-
-    sleep(1);
-
-    run_client();
-
-    pthread_join(server_thread, NULL);
+    pthread_t serverthread, clientthread1;
+    
+    pthread_barrier_init(&syncbarrier, NULL, 2);
+    pthread_create(&serverthread, NULL, run_server, NULL);
+    pthread_create(&clientthread1, NULL, run_client, NULL);
+    pthread_join(clientthread1, NULL);
+    pthread_join(serverthread, NULL);
+    pthread_barrier_destroy(&syncbarrier);
+    pthread_barrier_destroy(&closebarrier);
 
     return 0;
 }
