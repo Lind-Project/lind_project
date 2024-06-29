@@ -6,7 +6,7 @@
 #include <sys/un.h>
 #include <pthread.h>
 
-#define SOCKET_PATH "/tmp/test_socket"
+#define SOCKET_PATH "unix_sock.tmp"
 #define BUFFER_SIZE 1024
 
 void error(const char *msg) {
