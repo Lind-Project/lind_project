@@ -103,6 +103,7 @@ void run_client() {
 }
 
 int main() {
+    // Just in case this didnt get unlinked last time
     unlink(SERVER_SOCKET_PATH);
     unlink(CLIENT_SOCKET_PATH);
     pthread_t server_thread;
