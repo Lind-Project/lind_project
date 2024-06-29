@@ -103,6 +103,8 @@ void run_client() {
 }
 
 int main() {
+    unlink(SERVER_SOCKET_PATH);
+    unlink(CLIENT_SOCKET_PATH);
     pthread_t server_thread;
 
     if (pthread_create(&server_thread, NULL, run_server, NULL) != 0) {
