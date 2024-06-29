@@ -18,6 +18,8 @@ with open(sys.argv[1], "r") as fp:
     nativedata = json.load(fp)
 with open(sys.argv[2], "r") as fp:
     linddata = json.load(fp)
+with open(sys.argv[3], "r") as fp:
+    rawdata = json.load(fp)
 
 for key in linddata:
     dataset["req/sec"].append(linddata[key])
@@ -25,12 +27,17 @@ for key in linddata:
     dataset["platform"].append("Lind")
     dataset["bytes"].append(key)
 
+for key in rawdata:
+    dataset["req/sec"].append(rawdata[key])
+    dataset["relative"].append(rawdata[key]/rawdata[key])
+    dataset["platform"].append("RawPOSIX")
+    dataset["bytes"].append(key)
+
 for key in nativedata:
     dataset["req/sec"].append(nativedata[key])
     dataset["relative"].append(nativedata[key]/nativedata[key])
     dataset["platform"].append("Native")
     dataset["bytes"].append(key)
-
 
 df = pd.DataFrame(data=dataset)
 pd.set_option("display.max_rows", None, "display.max_columns", None)
@@ -51,4 +58,4 @@ plt.xlabel("Filesize", fontsize=15)
 plt.ylabel("Normalized Request Rate", fontsize=15)
 plt.xticks(df["bytes"])
 plt.tight_layout()
-plt.savefig(sys.argv[3])
+plt.savefig(sys.argv[4])
