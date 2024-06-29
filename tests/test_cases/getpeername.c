@@ -6,7 +6,8 @@
 #include <sys/un.h>
 #include <pthread.h>
 
-#define SOCKET_PATH "unix_sock.tmp"
+#define SERVER_SOCKET_PATH "unix_sock.server"
+#define CLIENT_SOCKET_PATH "unix_sock.client"
 #define BUFFER_SIZE 1024
 
 void error(const char *msg) {
@@ -26,7 +27,7 @@ void *run_server(void *arg) {
     // Set server sockaddr structure
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sun_family = AF_UNIX;
-    strncpy(server_addr.sun_path, SOCKET_PATH, sizeof(server_addr.sun_path) - 1);
+    strncpy(server_addr.sun_path, SERVER_SOCKET_PATH, sizeof(server_addr.sun_path) - 1);
 
     if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         error("Bind failed");
@@ -36,7 +37,7 @@ void *run_server(void *arg) {
         error("Listen failed");
     }
 
-    printf("Server is listening on %s\n", SOCKET_PATH);
+    printf("Server is listening on %s\n", SERVER_SOCKET_PATH);
     fflush(stdout);
 
     if ((client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addr_len)) < 0) {
@@ -57,22 +58,31 @@ void *run_server(void *arg) {
 
     close(client_fd);
     close(server_fd);
-    unlink(SOCKET_PATH);
+    unlink(SERVER_SOCKET_PATH);
+    unlink(CLIENT_SOCKET_PATH);
 
     return NULL;
 }
 
 void run_client() {
     int sock = 0;
-    struct sockaddr_un server_addr;
+    struct sockaddr_un server_addr, client_addr;
 
     if ((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
         error("Socket creation error");
     }
 
+    memset(&client_addr, 0, sizeof(client_addr));
+    client_addr.sun_family = AF_UNIX;
+    strncpy(client_addr.sun_path, CLIENT_SOCKET_PATH, sizeof(client_addr.sun_path) - 1);
+
+    if (bind(sock, (struct sockaddr *)&client_addr, sizeof(client_addr)) < 0) {
+        error("Client bind failed");
+    }
+
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sun_family = AF_UNIX;
-    strncpy(server_addr.sun_path, SOCKET_PATH, sizeof(server_addr.sun_path) - 1);
+    strncpy(server_addr.sun_path, SERVER_SOCKET_PATH, sizeof(server_addr.sun_path) - 1);
 
     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         error("Connection failed");
