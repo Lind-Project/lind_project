@@ -6,6 +6,14 @@
 #include <sys/un.h>
 #include <pthread.h>
 
+/* 
+*   In this test case, we choose to use Unix Domain Sockets (UDS) instead of IPv4/IPv6. 
+*   While running individual tests with IPv4/IPv6 works fine, we encounter "connection in 
+*   use" issues when running them as part of a larger test suite. The purpose of this test 
+*   is solely to verify that the getpeername function works as expected. Therefore, we 
+*   opted to use UDS for this test.
+*/
+
 #define SERVER_SOCKET_PATH "unix_sock.server"
 #define CLIENT_SOCKET_PATH "unix_sock.client"
 #define BUFFER_SIZE 1024
