@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
     char *filename = FILE_PATH;
 
     // Create the test file
-    fd = open(filename, O_CREAT | O_WRONLY, 0644);
+    fd = open(filename, O_CREAT | O_WRONLY, 0777);
     if (fd == -1) {
         perror("Failed to create test file");
         exit(EXIT_FAILURE);
