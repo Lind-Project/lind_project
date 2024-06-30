@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h> 
 
 #define FILE_PATH "testfiles/close.txt"
 #define ITERATIONS 2000
