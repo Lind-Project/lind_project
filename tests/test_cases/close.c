@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include <errno.h> 
 
-#define FILE_PATH "testfiles/close.txt"
+#define FILE_PATH "close.txt"
 #define ITERATIONS 2000
 
 int main(int argc, char **argv) {
