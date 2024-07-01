@@ -29,7 +29,7 @@ for key in linddata:
 
 for key in rawdata:
     dataset["req/sec"].append(rawdata[key])
-    dataset["relative"].append(rawdata[key]/rawdata[key])
+    dataset["relative"].append(rawdata[key]/nativedata[key])
     dataset["platform"].append("RawPOSIX")
     dataset["bytes"].append(key)
 
