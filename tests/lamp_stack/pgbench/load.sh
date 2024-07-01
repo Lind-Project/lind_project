@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mkdir -r /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/pgsql
+mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/pgsql
 /home/lind/lind_project/src/scripts/base/load_confs.sh
 /home/lind/lind_project/src/scripts/base/load_bash.sh
 /home/lind/lind_project/src/scripts/base/load_coreutils.sh
