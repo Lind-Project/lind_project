@@ -18,7 +18,6 @@ host_init_cwd = host_result[0].split('::')[1] # Initial cwd
 host_res_cwd = host_result[1].split('::')[1] # Result cwd
 
 # The difference between them should be equal to regularoutput's. 
-# We add an extra / to lind, because as it's on the root directory, it will omit the first /.
 if lind_res_cwd.replace(lind_init_cwd,"/") != host_res_cwd.replace(host_init_cwd,""):
     print "The cwd's do not match!"
     exit(-1)
