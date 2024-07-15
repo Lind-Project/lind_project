@@ -1,4 +1,4 @@
-FROM securesystemslab/lind:lind-glibc
+FROM securesystemslab/lind_ubuntu:lind-glibc
 LABEL lind "v2.0-rc1"
 LABEL description "Lind Toolchain Full (Pre-built)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
@@ -29,12 +29,13 @@ WORKDIR /home/lind/lind_project
 
 # finish install
 RUN git pull -t -j8
+
 RUN ./src/mklind rustposix
 RUN ./src/mklind nacl
 RUN ./src/mklind install
 
-RUN ./src/scripts/load_bash.sh
-RUN ./src/scripts/load_coreutils.sh
+RUN ./src/scripts/base/load_bash.sh
+RUN ./src/scripts/base/load_coreutils.sh
 
 WORKDIR /home/lind/lind_project/
 

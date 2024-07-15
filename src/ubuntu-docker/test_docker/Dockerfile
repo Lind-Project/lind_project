@@ -22,7 +22,7 @@ ADD make-3.82/ /home/make-3.82
 RUN apt update
 RUN apt install build-essential -y
 RUN apt install -y software-properties-common wget
-RUN apt install -y gcc-7
+RUN apt install -y gcc-7 g++
 # RUN wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
 # RUN add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal main'
 # RUN echo "deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal main" >> /etc/apt/sources.list
@@ -40,14 +40,15 @@ RUN apt-get update && apt-get install -y \
   	netcat htop bc ctags \
  	libncurses-dev gcc-multilib gperf diffutils \
 	google-perftools texinfo fortune-mod gnupg highlight fasd \
-	python2.7 p7zip fuse ack \
+	python2.7 python2.7-dev p7zip fuse ack \
 	isc-dhcp-client iputils-ping iproute2 \
  	net-tools openresolv openssh-server subversion \
  	tree psmisc lsof wget pinfo asp unrar inetutils-tools \
  	tmux screen bash-completion mlocate ncdu \
  	bind9 bind9utils bind9-doc dnsutils cowsay \
  	util-linux help2man rlwrap cmake ninja-build capnproto \
-    glibc-source libcrypt-dev linux-tools-generic autoconf autotools-dev automake
+    glibc-source libcrypt-dev linux-tools-generic autoconf autotools-dev automake clang libncurses-dev libncurses5-dev libncursesw5-dev \
+	lib32ncurses5-dev
 RUN apt update
 
 WORKDIR /usr/bin
@@ -99,6 +100,9 @@ RUN python get-pip.py
 RUN apt-get -y install rr
 
 USER root
+
+WORKDIR /usr/bin
+RUN ln -sf make-3.82 make
 
 WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/"
