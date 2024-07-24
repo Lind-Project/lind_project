@@ -48,7 +48,7 @@ RUN apt-get update && apt-get install -y \
  	bind9 bind9utils bind9-doc dnsutils cowsay \
  	util-linux help2man rlwrap cmake ninja-build capnproto \
     glibc-source libcrypt-dev linux-tools-generic autoconf autotools-dev automake clang libncurses-dev libncurses5-dev libncursesw5-dev \
-	lib32ncurses5-dev
+	lib32ncurses5-dev docker.io
 RUN apt update
 
 WORKDIR /usr/bin

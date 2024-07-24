@@ -4,6 +4,8 @@ LABEL description "Lind Toolchain Full (Pre-built)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
 
 ARG BRANCH
+ARG ENV
+ARG docker_gid
 
 ENV PATH="/root/bin:/home/lind/bin:$PATH"
 ENV PATH="/root/.local/bin:/home/lind/.local/bin:$PATH"
@@ -23,7 +25,20 @@ ENV PYTHON="python2"
 ENV PNACLPYTHON="python2"
 ENV LD_LIBRARY_PATH="/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
 
+# Giving the user the ability to use host docker, this is a security risk and should be used with caution
+# This is needed for the docker in docker setup, and is not recommended for general use. production contains shouldnt mount
+# the docker socket.
+USER root
+
+RUN if [ "$ENV" = "ci" ]; then \
+    addgroup --gid ${docker_gid} dockerhost && \
+    usermod --append --groups ${docker_gid} lind && \
+    sg dockerhost -c 'newgrp dockerhost'; \
+fi
+
 USER lind
+
+ENV DOCKER_BUILDKIT=0
 
 WORKDIR /home/lind/lind_project
 
