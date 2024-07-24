@@ -42,8 +42,11 @@ ENV DOCKER_BUILDKIT=0
 
 WORKDIR /home/lind/lind_project
 
+RUN ./src/mklind download
+
 # finish install
-RUN git pull -t -j8
+RUN git pull --recurse-submodules -t -j8
+
 
 RUN ./src/mklind rustposix
 RUN ./src/mklind nacl
