@@ -23,15 +23,6 @@ RUN apt update
 RUN apt install build-essential -y
 RUN apt install -y software-properties-common wget
 RUN apt install -y gcc-7 g++
-# RUN wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-# RUN add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal main'
-# RUN echo "deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal main" >> /etc/apt/sources.list
-RUN apt-get update -y
-# RUN wget https://apt.llvm.org/llvm.sh
-# RUN chmod +x llvm.sh
-# RUN ./llvm.sh 19
-# RUN apt-get install clang lldb -y
-# RUN apt-get install clang-format clang-tidy clang-tools clang clangd libc++-dev libc++1 libc++abi-dev libc++abi1 libclang-dev libclang1 libllvm-ocaml-dev libomp-dev libomp5 lld lldb llvm-dev llvm-runtime llvm -y
 RUN apt-get update && apt-get install -y \
     build-essential \
     git mercurial rsync perl lynx ltrace \
@@ -47,19 +38,13 @@ RUN apt-get update && apt-get install -y \
  	tmux screen bash-completion mlocate ncdu \
  	bind9 bind9utils bind9-doc dnsutils cowsay \
  	util-linux help2man rlwrap cmake ninja-build capnproto \
-    glibc-source libcrypt-dev linux-tools-generic autoconf autotools-dev automake clang libncurses-dev libncurses5-dev libncursesw5-dev \
+    glibc-source libcrypt-dev linux-tools-generic autoconf autotools-dev \
+	automake clang libncurses-dev libncurses5-dev libncursesw5-dev \
 	lib32ncurses5-dev docker.io
 RUN apt update
 
 WORKDIR /usr/bin
 RUN ln -sf python2 python
-
-# WORKDIR /
-# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain 1.61.0 -y
-# WORKDIR /root/.cargo/bin/
-# RUN ./rustup default nightly
-
-# # #RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER lind
 WORKDIR /home/lind/
@@ -82,7 +67,6 @@ RUN git config --global user.email "root@nyu.edu"
 RUN git config --global core.excludesFile "/root/.cvsignore"
 RUN ln -rsv "/home/lind/lind_project" "./"
 WORKDIR /root/build/
-
 
 USER root
 

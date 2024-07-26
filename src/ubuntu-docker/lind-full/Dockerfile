@@ -47,7 +47,6 @@ RUN ./src/mklind download
 # finish install
 RUN git pull --recurse-submodules -t -j8
 
-
 RUN ./src/mklind rustposix
 RUN ./src/mklind nacl
 RUN ./src/mklind install
