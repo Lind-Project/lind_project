@@ -92,7 +92,6 @@ WORKDIR /home/lind/
 RUN rm -rf "/home/lind/build/" "/root/build/" "/var/cache/pacman/pkg/"
 RUN chown -Rc lind:lind .
 
-
 USER lind
 
 ENV PATH="/root/bin:/home/lind/bin:$PATH"
@@ -114,4 +113,3 @@ ENV PNACLPYTHON="python2"
 ENV LD_LIBRARY_PATH="/home/lind/lind_project/lind/lindenv/:/lib/glibc:"
 
 CMD bash
-
