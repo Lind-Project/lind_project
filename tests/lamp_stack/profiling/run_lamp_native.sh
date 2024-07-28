@@ -10,6 +10,6 @@ echo "table ready"
 sleep 5
 echo "nginx ready"
 cd flask_app/
-/bin/python gunicornexec.py --bind 0.0.0.0:8000 wsgi:app 2>&1
+/bin/python2.7 gunicornexec.py --bind=unix:/tmp/gunicorn.sock wsgi:app
 sleep 5
 echo "system ready"
