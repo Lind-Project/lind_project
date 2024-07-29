@@ -6,10 +6,10 @@ echo "postgres ready"
 /bin/python flask_app/init_table.py
 sleep 3
 echo "table ready"
-/home/lind/nginx/usr/local/nginx/sbin/nginx -c /home/lind/nginx/usr/local/nginx/conf/nginx.conf -p /home/lind/nginx/usr/local/nginx/
+sudo /usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx_static.conf -p /usr/local/nginx/
 sleep 5
 echo "nginx ready"
 cd flask_app/
-/bin/python gunicornexec.py --bind 0.0.0.0:8000 wsgi:app 2>&1
+/bin/python gunicornexec.py --bind=unix:/tmp/gunicorn.sock wsgi:app
 sleep 5
 echo "system ready"
