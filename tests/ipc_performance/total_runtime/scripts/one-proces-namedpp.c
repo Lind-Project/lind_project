@@ -34,7 +34,7 @@ int main(int argc, char**argv)
     }
 
     if(pid > 0) {
-        if((fd = open(fd, O_WRONLY)) < 0) {
+        if((fd = open(FIFO_NAME, O_WRONLY)) < 0) {
             printf("Open failed.\n");
             exit(1);
         }
@@ -49,7 +49,7 @@ int main(int argc, char**argv)
     }
 
     if(pid == 0) {
-        if((fd = open(fd, O_RDONLY)) < 0) {
+        if((fd = open(FIFO_NAME, O_RDONLY)) < 0) {
             printf("Open failed.\n");
             exit(1);
         }
