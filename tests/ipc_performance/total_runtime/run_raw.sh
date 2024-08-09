@@ -1,9 +1,9 @@
 #!/bin/bash
 
 echo "Compile"
-x86_64-nacl-gcc /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/two-process-write-namedpp.c -o /home/lind/lind_project/src/safeposix-rust/tmp/two-process-write-namedpp.nexe -lpthread -O3
-x86_64-nacl-gcc /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/two-process-read-namedpp.c -o /home/lind/lind_project/src/safeposix-rust/tmp/two-process-read-namedpp.nexe -lpthread -O3
-x86_64-nacl-gcc /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/one-proces-namedpp.c -o /home/lind/lind_project/src/safeposix-rust/tmp/one-proces-namedpp.nexe -lpthread -O3
+x86_64-nacl-gcc /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/two-process-write-namedpp.c -o /home/lind/lind_project/src/safeposix-rust/tmp/two-process-write-namedpp.nexe -lpthread -O3 -std=gnu99
+x86_64-nacl-gcc /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/two-process-read-namedpp.c -o /home/lind/lind_project/src/safeposix-rust/tmp/two-process-read-namedpp.nexe -lpthread -O3 -std=gnu99
+x86_64-nacl-gcc /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/one-proces-namedpp.c -o /home/lind/lind_project/src/safeposix-rust/tmp/one-proces-namedpp.nexe -lpthread -O3 -std=gnu99
 
 echo "Copying scripts to lindfs"
 cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/raw2proc.sh /home/lind/lind_project/src/safeposix-rust/tmp/raw2proc.sh
