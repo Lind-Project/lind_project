@@ -40,7 +40,7 @@ for size in range(4, 17):
                 "lind",
                 "-t",
                 "/bin/bash",
-                "raw2proc.sh",
+                "raw1proc.sh",
                 write_buffer_size,
                 read_buffer_size,
             ],
@@ -56,5 +56,5 @@ for size in range(4, 17):
         run_times[size].append(run_time)
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
-    with open(f"data/raw2_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
+    with open(f"data/raw1_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
         json.dump(run_times, fp)

@@ -10,7 +10,6 @@
 int main(int argc, char **argv) {
 
     int fd;
-    char msg[1024];
     int i = atoi(argv[1]);
 
     if ((fd = open(FIFO_NAME, O_RDONLY)) < 0) {
