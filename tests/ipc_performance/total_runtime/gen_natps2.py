@@ -30,13 +30,13 @@ args = parser.parse_args()
 
 def execute_script(write_buffer_size, read_buffer_size):
     _ = subprocess.call(
-        ["/bin/bash", "ps32var2.sh", write_buffer_size, read_buffer_size], cwd="./scripts/"
+        ["/bin/bash", "ps16var2.sh", write_buffer_size, read_buffer_size], cwd="./scripts/"
     )
 
 
 run_times = {}
 
-for size in range(2, 17):
+for size in range(4, 17, 2):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")

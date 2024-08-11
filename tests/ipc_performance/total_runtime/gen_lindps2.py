@@ -29,7 +29,7 @@ args = parser.parse_args()
 
 run_times = {}
 
-for size in range(2, 17):
+for size in range(4, 17, 2):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     run_times[size] = []
@@ -40,7 +40,7 @@ for size in range(2, 17):
                 "lind",
                 "-t",
                 "/bin/bash",
-                "ps32var2.sh",
+                "ps16var2.sh",
                 write_buffer_size,
                 read_buffer_size,
             ],
