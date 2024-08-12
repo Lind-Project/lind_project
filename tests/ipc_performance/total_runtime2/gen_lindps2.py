@@ -50,7 +50,7 @@ for size in range(4, 17, 2):
             [
                 "lind",
                 "/bin/bash",
-                "ps32var2.sh",
+                "pipescript.sh",
                 write_buffer_size,
                 read_buffer_size,
             ],
