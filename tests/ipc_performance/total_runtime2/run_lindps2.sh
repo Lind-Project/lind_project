@@ -1,12 +1,9 @@
 #!/bin/bash
 
 echo "Copying scripts to lindfs"
-lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/ps16var2.sh /ps16var2.sh
-lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/write16var.nexe /write16var
-lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/read16var.nexe /read16var
-lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/ps32var2.sh /ps32var2.sh
-lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/write32var.nexe /write32var
-lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/read32var.nexe /read32var
+lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/lindscript.sh /lindscript.sh
+lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/writepipe.nexe /writepipe
+lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /readpipe
 
 echo "Varying write and read buffers"
 python3 gen_lindps2.py -w x -r x -c $1

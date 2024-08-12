@@ -7,7 +7,6 @@ def extract_times(output):
     # Extract numbers from the 'write-start' and 'read-end' lines
     write_start_match = re.search(r'write-start: (\d+)', output)
     read_end_match = re.search(r'read-end: (\d+)', output)
-    
     if write_start_match and read_end_match:
         write_start = int(write_start_match.group(1))
         read_end = int(read_end_match.group(1))
@@ -51,7 +50,7 @@ for size in range(4, 17, 2):
         output = Popen(
             [
                 "/bin/bash",
-                "pipescript.sh",
+                "scripts/pipescript.sh",
                 write_buffer_size,
                 read_buffer_size,
             ],
