@@ -1,7 +1,19 @@
 import argparse
 import json
-import subprocess
-import timeit
+import re
+from subprocess import Popen, PIPE
+
+def extract_times(output):
+    # Extract numbers from the 'write-start' and 'read-end' lines
+    write_start_match = re.search(r'write-start: (\d+)', output)
+    read_end_match = re.search(r'read-end: (\d+)', output)
+    
+    if write_start_match and read_end_match:
+        write_start = int(write_start_match.group(1))
+        read_end = int(read_end_match.group(1))
+        return read_end - write_start
+    else:
+        return None
 
 parser = argparse.ArgumentParser(
     description="Script to benchmark piping 16GB varying buffersize in native linux"
@@ -28,24 +40,32 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def execute_script(write_buffer_size, read_buffer_size):
-    _ = subprocess.call(
-        ["/bin/bash", "ps32var2.sh", write_buffer_size, read_buffer_size], cwd="./scripts/"
-    )
-
-
 run_times = {}
 
-for size in range(2, 17):
+for size in range(4, 17, 2):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
+    run_times[size] = []
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
-    
-    timer = timeit.Timer(
-        f'execute_script("{write_buffer_size}", "{read_buffer_size}")',
-        setup="from __main__ import execute_script",
-    )
-    run_times[size] = [t * 1000 for t in timer.repeat(args.count, 1)]
+    for _ in range(args.count):
+        output = Popen(
+            [
+                "/bin/bash",
+                "pipescript.sh",
+                write_buffer_size,
+                read_buffer_size,
+            ],
+            stdout=PIPE,
+            stderr=PIPE,
+        )
+        stdout, stderr = output.communicate()
+
+        try:
+            run_time = extract_times(stdout)
+            if run_time is not None:
+                run_times[size].append(run_time)
+        except ValueError:
+            continue
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
     with open(f"data/nat_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
