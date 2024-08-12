@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Copying scripts to lindfs"
-lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/lindscript.sh /lindscript.sh
+lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/pipescript.sh /pipescript.sh
 lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/writepipe.nexe /writepipe
 lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /readpipe
 
