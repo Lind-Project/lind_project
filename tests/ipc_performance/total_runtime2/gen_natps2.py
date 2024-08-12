@@ -61,7 +61,7 @@ for size in range(4, 17, 2):
         stdout, stderr = output.communicate()
 
         try:
-            run_time = extract_times(stdout)
+            run_time = extract_times(stderr)
             if run_time is not None:
                 run_times[size].append(run_time)
         except ValueError:
