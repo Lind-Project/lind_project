@@ -12,5 +12,5 @@ echo -e "\nRunning on native linux"
 # echo -e "\nRunning in userspace"
 # ./run_userps2.sh $1
 
-echo -e "\nCleaning up"
-./cleanup.sh
+# echo -e "\nCleaning up"
+# ./cleanup.sh
