@@ -15,7 +15,7 @@ def extract_times(output):
         return None
 
 parser = argparse.ArgumentParser(
-    description="Script to benchmark piping 16GB varying buffersize in lind"
+    description="Script to benchmark piping 1GB varying buffersize in lind"
 )
 parser.add_argument(
     "-w",

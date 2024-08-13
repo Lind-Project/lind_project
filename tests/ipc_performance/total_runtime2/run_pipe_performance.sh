@@ -4,7 +4,7 @@ if [ "$2" = "raw" ]; then
     echo "Loading files into rawposix"
     cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/writepipe
     cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/readpipe
-    platforms=("lind")
+    platforms=("rawposix")
 elif [ "$2" = "other" ]; then
     echo "Loading files into file system of lind"
     lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/pipescript.sh /scripts/pipescript.sh
