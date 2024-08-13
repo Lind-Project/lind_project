@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH=/usr/local/gcc-4.4.3/bin:$PATH
 
 echo "Compiling native test binaries"
 gcc-4 scripts/read.c -o scripts/readpipe -O3
