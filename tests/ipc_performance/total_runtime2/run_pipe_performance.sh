@@ -14,15 +14,15 @@ cp scripts/writepipe .
 
 # platforms=("lind" "native" "rawposix" "unsafe")
 platforms=("lind" "native" "unsafe")
-write_buffer_sizes=(16 "x")
-read_buffer_sizes=(16 "x")
-count=5
+count=$1
 
 for platform in "${platforms[@]}"; do
-    for write_size in "${write_buffer_sizes[@]}"; do
-        for read_size in "${read_buffer_sizes[@]}"; do
-            echo -e "\nRunning with -p $platform -w $write_size -r $read_size -c $count"
-            python3 gen_ps2.py -w "$write_size" -r "$read_size" -p "$platform" -c "$count"
-        done
-    done
+    echo -e "\nRunning with: -p $platform -w 16 -r x -c $count"
+    python3 gen_runtimes_plots.py -w 16 -r x -p "$platform" -c "$count"
+
+    echo -e "\nRunning with: -p $platform -w x -r x -c $count"
+    python3 gen_runtimes_plots.py -w x -r x -p "$platform" -c "$count"
+
+    echo -e "\nRunning with: -p $platform -w x -r 16 -c $count"
+    python3 gen_runtimes_plots.py -w x -r 16 -p "$platform" -c "$count"
 done

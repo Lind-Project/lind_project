@@ -94,8 +94,8 @@ yerr = df[["ymin", "ymax"]].T.to_numpy()
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 plt.figure(figsize=(10, 6))
 sns.set(style="darkgrid")
-sns.set_palette("bright")
-fig = sns.barplot(x="bufsize", y="relative_time", hue="platform", data=df, palette=["C3", "C0", "C1"])
+# sns.set_palette("Blues_r")
+fig = sns.barplot(x="bufsize", y="relative_time", hue="platform", data=df, palette=sns.color_palette("Paired", 4))
 sns.move_legend(
     fig,
     "lower center",
