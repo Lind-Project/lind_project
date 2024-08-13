@@ -62,7 +62,7 @@ for size in range(4, 17, 2):
     run_times[size] = []
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
     
-    command = args.platform + [write_buffer_size + read_buffer_size]
+    command = args.platform + write_buffer_size + read_buffer_size
 
     for _ in range(args.count):
         output = Popen(
