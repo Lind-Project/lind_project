@@ -9,8 +9,8 @@ echo "Running on lind stack"
 echo -e "\nRunning on native linux"
 ./run_natps2.sh $1
 
-# echo -e "\nRunning in userspace"
-# ./run_userps2.sh $1
+echo -e "\nRunning in userspace"
+./run_userps2.sh $1
 
-# echo -e "\nCleaning up"
-# ./cleanup.sh
+echo -e "\nCleaning up"
+./cleanup.sh
