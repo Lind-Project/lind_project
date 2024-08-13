@@ -51,6 +51,8 @@ RUN ./src/mklind rustposix
 RUN ./src/mklind nacl
 RUN ./src/mklind install
 
+
+RUN ./src/scripts/base/compile_bash.sh
 RUN ./src/scripts/base/load_bash.sh
 RUN ./src/scripts/base/load_coreutils.sh
 

@@ -40,8 +40,12 @@ RUN apt-get update && apt-get install -y \
  	util-linux help2man rlwrap cmake ninja-build capnproto \
     glibc-source libcrypt-dev linux-tools-generic autoconf autotools-dev \
 	automake clang libncurses-dev libncurses5-dev libncursesw5-dev \
-	lib32ncurses5-dev docker.io
+	lib32ncurses5-dev docker.io autopoint bison gettext
 RUN apt update
+
+RUN apt-get update
+RUN printf "N\n" | apt-get install -y sudo
+
 
 WORKDIR /usr/bin
 RUN ln -sf python2 python
