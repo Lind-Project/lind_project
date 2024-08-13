@@ -2,8 +2,8 @@
 export PATH=/usr/local/gcc-4.4.3/bin:$PATH
 
 echo "Compiling native test binaries"
-/usr/local/gcc-4.4.3/bin/gcc scripts/read.c -o scripts/readpipe -O3
-/usr/local/gcc-4.4.3/bin/gcc scripts/write.c -o scripts/writepipe -O3
+/usr/local/gcc-4.4.3/bin/gcc scripts/read.c -o scripts/readpipe -std=gnu99 -O3
+/usr/local/gcc-4.4.3/bin/gcc scripts/write.c -o scripts/writepipe -std=gnu99 -O3
 
 echo "Compiling lind / rawposix test binaries"
 x86_64-nacl-gcc scripts/read.c -o scripts/readpipe.nexe -std=gnu99 -lrt -O3
