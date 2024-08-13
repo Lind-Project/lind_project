@@ -5,6 +5,10 @@ lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/p
 lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/writepipe.nexe /writepipe
 lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /readpipe
 
+echo -e "\nLoading files into native desired location"
+cp scripts/readpipe .
+cp scripts/writepipe .
+
 # cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/writepipe
 # cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/readpipe
 
@@ -17,7 +21,7 @@ count=5
 for platform in "${platforms[@]}"; do
     for write_size in "${write_buffer_sizes[@]}"; do
         for read_size in "${read_buffer_sizes[@]}"; do
-            echo "Running with -p $platform -w $write_size -r $read_size -c $count"
+            echo -e "\nRunning with -p $platform -w $write_size -r $read_size -c $count"
             python3 gen_ps2.py -w "$write_size" -r "$read_size" -p "$platform" -c "$count"
         done
     done
