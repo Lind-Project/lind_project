@@ -58,9 +58,9 @@ for size in range(4, 17, 2):
             stderr=PIPE,
         )
         stdout, stderr = output.communicate()
-        stdout = stdout.decode('utf-8') # Decode bytes to string
+        stderr = stderr.decode('utf-8') # Decode bytes to string
         try:
-            run_time = extract_times(stdout)
+            run_time = extract_times(stderr)
             if run_time is not None:
                 run_times[size].append(run_time)
         except ValueError:
