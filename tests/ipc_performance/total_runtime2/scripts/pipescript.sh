@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./writepipe $1 | ./readpipe $2
+.scripts/writepipe $1 | .scripts/readpipe $2
