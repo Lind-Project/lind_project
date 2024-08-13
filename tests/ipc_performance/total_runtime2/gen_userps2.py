@@ -1,10 +1,21 @@
 import argparse
 import json
-import subprocess
-import timeit
+import re
+from subprocess import Popen, PIPE
+
+def extract_times(output):
+    # Extract numbers from the 'write-start' and 'read-end' lines
+    write_start_match = re.search(r'write-start: (\d+)', output)
+    read_end_match = re.search(r'read-end: (\d+)', output)
+    if write_start_match and read_end_match:
+        write_start = int(write_start_match.group(1))
+        read_end = int(read_end_match.group(1))
+        return (read_end - write_start) / 1000000
+    else:
+        return None
 
 parser = argparse.ArgumentParser(
-    description="Script to benchmark piping 16GB varying buffersize in userspace"
+    description="Script to benchmark piping 16GB varying buffersize in native linux"
 )
 parser.add_argument(
     "-w",
@@ -28,29 +39,33 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def execute_script(write_buffer_size, read_buffer_size):
-    _ = subprocess.call(
-        [
-            "/home/lind/lind_project/tests/native-rustposix/tests/pipe-cages",
-            write_buffer_size,
-            read_buffer_size,
-        ]
-    )
-
-
 run_times = {}
 
-for size in range(2, 17):
+for size in range(4, 17, 2):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
+    run_times[size] = []
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
-
-    timer = timeit.Timer(
-        f'execute_script("{write_buffer_size}", "{read_buffer_size}")',
-        setup="from __main__ import execute_script",
-    )
-    run_times[size] = [t * 1000 for t in timer.repeat(args.count, 1)]
+    for _ in range(args.count):
+        output = Popen(
+            [
+                "/home/lind/lind_project/tests/native-rustposix/tests/pipe-cages",
+                write_buffer_size,
+                read_buffer_size,
+            ],
+            stdout=PIPE,
+            stderr=PIPE,
+        )
+        stdout, stderr = output.communicate()
+        stderr = stderr.decode('utf-8') # Decode bytes to string
+        try:
+            run_time = extract_times(stderr)
+            if run_time is not None:
+                run_times[size].append(run_time)
+        except ValueError:
+            continue
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
     with open(f"data/user_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
         json.dump(run_times, fp)
+
