@@ -1,7 +1,6 @@
 import argparse
 import json
 import re
-import sys
 from subprocess import Popen, PIPE, STDOUT
 
 def extract_times(output):
@@ -16,7 +15,7 @@ def extract_times(output):
         return None
 
 parser = argparse.ArgumentParser(
-    description="Script to benchmark piping 1GB varying buffersize"
+    description="Script to benchmark piping 16GB varying buffersize in lind"
 )
 parser.add_argument(
     "-w",
@@ -41,9 +40,9 @@ parser.add_argument(
     "-p",
     "--execution-platform",
     dest="platform",
-    type=str,
+    choices=["lind", "native", "unsafe", "rawposix"],
     required=True,
-    help="Execution command",
+    help="execution platform",
 )
 args = parser.parse_args()
 
@@ -54,9 +53,27 @@ for size in range(4, 17, 2):
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
     run_times[size] = []
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
-    
-    command = [args.platform, write_buffer_size, read_buffer_size]
-
+    if args.platform == "lind" or args.platform == "rawposix":
+        command = [
+            "lind",
+            "/bin/bash",
+            "/pipescript.sh",
+            write_buffer_size,
+            read_buffer_size,
+        ]
+    elif args.platform == "native":
+        command = [
+            "/bin/bash",
+            "scripts/pipescript.sh",
+            write_buffer_size,
+            read_buffer_size,
+        ]
+    else:
+        command = [
+            "scripts/unsafe-pipe",
+            write_buffer_size,
+            read_buffer_size,
+        ]
     for _ in range(args.count):
         output = Popen(
             command,
