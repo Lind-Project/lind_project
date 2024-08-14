@@ -8,10 +8,11 @@ if [ "$2" = "raw" ]; then
     platforms=("rawposix")
 elif [ "$2" = "other" ]; then
     echo "Loading files into file system of lind"
-    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/pipescript.sh /scripts/pipescript.sh
-    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/writepipe.nexe /scripts/writepipe
-    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /scripts/readpipe
+    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/pipescript.sh /pipescript.sh
+    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/writepipe.nexe /writepipe
+    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /readpipe
     echo -e "\nLoading files into native desired location"
+    # lind will require /scripts/readpipe to execute
     cp scripts/readpipe .
     cp scripts/writepipe .
     platforms=("lind /bin/bash /scripts/pipescript.sh" "/bin/bash scripts/pipescript.sh" "scripts/unsafe-pipe")
@@ -23,6 +24,9 @@ fi
 count=$1
 
 for platform in "${platforms[@]}"; do
+    echo -e "\nRunning with: -p $platform -w 16 -r 16 -c $count"
+    python3 gen_pipedata.py -w 16 -r 16 -p "$platform" -c "$count"
+
     echo -e "\nRunning with: -p $platform -w 16 -r x -c $count"
     python3 gen_pipedata.py -w 16 -r x -p "$platform" -c "$count"
 
