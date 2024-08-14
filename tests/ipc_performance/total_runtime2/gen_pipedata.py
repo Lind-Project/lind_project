@@ -72,17 +72,20 @@ for size in range(4, 17, 2):
             stdout=PIPE,
             stderr=STDOUT,
         )
-        stdout, _ = output.communicate()
-        stdout = stdout.decode('utf-8') # Decode bytes to string
+        stdout, stderr = output.communicate()
+        if args.execution == "lind /bin/bash /pipescript.sh":
+            output = stderr.decode('utf-8')
+        else:
+            output = stdout.decode('utf-8') # Decode bytes to string
         try:
-            run_time = extract_times(stdout)
+            run_time = extract_times(output)
             if run_time is not None:
                 run_times[size].append(run_time)
         except ValueError:
             continue
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
-    if args.execution == "lind /bin/bash /scripts/pipescript.sh":
+    if args.execution == "lind /bin/bash /pipescript.sh":
         platform = "lind"
     elif args.execution == "/bin/bash scripts/pipescript.sh":
         platform = "nat"
