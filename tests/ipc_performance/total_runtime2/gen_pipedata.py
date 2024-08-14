@@ -70,15 +70,15 @@ for size in range(4, 17, 2):
         output = Popen(
             command,
             stdout=PIPE,
-            stderr=STDOUT,
+            stderr=PIPE,
         )
         stdout, stderr = output.communicate()
         if args.execution == "lind /bin/bash /pipescript.sh":
-            output = stderr.decode('utf-8')
+            result = stderr.decode('utf-8')
         else:
-            output = stdout.decode('utf-8') # Decode bytes to string
+            result = stdout.decode('utf-8') # Decode bytes to string
         try:
-            run_time = extract_times(output)
+            run_time = extract_times(result)
             if run_time is not None:
                 run_times[size].append(run_time)
         except ValueError:
