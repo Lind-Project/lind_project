@@ -53,16 +53,14 @@ args = parser.parse_args()
 
 run_times = {}
 
-# Split the command string into a list
-command = args.execution.split()
-
-# Append the write buffer size as the last argument
-command.append(args.write_buffer)
-command.append(args.read_buffer)
-
 for size in range(4, 17, 2):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
+    # Split the command string into a list
+    command = args.execution.split()
+    # Append the write buffer size as the last argument
+    command.append(args.write_buffer_size)
+    command.append(args.read_buffer_size)
     run_times[size] = []
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
     
@@ -70,15 +68,12 @@ for size in range(4, 17, 2):
         output = Popen(
             command,
             stdout=PIPE,
-            stderr=PIPE,
+            stderr=STDOUT,
         )
-        stdout, stderr = output.communicate()
-        if args.execution == "lind /bin/bash /pipescript.sh":
-            result = stderr.decode('utf-8')
-        else:
-            result = stdout.decode('utf-8') # Decode bytes to string
+        stdout, _ = output.communicate()
+        stdout = stdout.decode('utf-8')
         try:
-            run_time = extract_times(result)
+            run_time = extract_times(stdout)
             if run_time is not None:
                 run_times[size].append(run_time)
         except ValueError:
