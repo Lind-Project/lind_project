@@ -59,8 +59,8 @@ for size in range(4, 17, 2):
     # Split the command string into a list
     command = args.execution.split()
     # Append the write buffer size as the last argument
-    command.append(args.write_buffer_size)
-    command.append(args.read_buffer_size)
+    command.append(write_buffer_size)
+    command.append(read_buffer_size)
     run_times[size] = []
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
     
