@@ -82,5 +82,11 @@ for size in range(4, 17, 2):
             continue
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
-    with open(f"data/{command[0]}_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
+    if args.execution == "lind /bin/bash /scripts/pipescript.sh":
+        platform = "lind"
+    elif args.execution == "/bin/bash scripts/pipescript.sh":
+        platform = "nat"
+    else:
+        platform = "unsafe"
+    with open(f"data/{platform}_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
         json.dump(run_times, fp)
