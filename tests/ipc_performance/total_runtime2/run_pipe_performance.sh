@@ -24,9 +24,6 @@ fi
 count=$1
 
 for platform in "${platforms[@]}"; do
-    echo -e "\nRunning with: -p $platform -w 16 -r 16 -c $count"
-    python3 gen_pipedata.py -w 16 -r 16 -p "$platform" -c "$count"
-
     echo -e "\nRunning with: -p $platform -w 16 -r x -c $count"
     python3 gen_pipedata.py -w 16 -r x -p "$platform" -c "$count"
 
