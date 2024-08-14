@@ -1,7 +1,6 @@
 import argparse
 import json
 import re
-import sys
 from subprocess import Popen, PIPE, STDOUT
 
 def extract_times(output):
@@ -35,18 +34,31 @@ parser.add_argument(
     help="Write buffer size",
 )
 parser.add_argument(
-    "-c", "--count", dest="count", type=int, default=10, help="Number of runs"
+    "-c", 
+    "--count", 
+    dest="count", 
+    type=int, 
+    default=10, 
+    help="Number of runs",
+)
+parser.add_argument(
+    "-p",
+    "--execution-command",
+    dest="execution",
+    type=str,
+    required=True,
+    help="Platform execution command",
 )
 args = parser.parse_args()
 
 run_times = {}
 
-p_index = sys.argv.index('-p') if '-p' in sys.argv else None
-if p_index is None or p_index + 1 >= len(sys.argv):
-    raise ValueError("You must specify a command after '-p'.")
+# Split the command string into a list
+command = args.execution.split()
 
-# Command to execute is everything after '-p'
-base_command = sys.argv[p_index + 1:]
+# Append the write buffer size as the last argument
+command.append(args.write_buffer)
+command.append(args.read_buffer)
 
 for size in range(4, 17, 2):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
@@ -54,8 +66,6 @@ for size in range(4, 17, 2):
     run_times[size] = []
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
     
-    command = base_command + [write_buffer_size + read_buffer_size]
-
     for _ in range(args.count):
         output = Popen(
             command,
@@ -72,5 +82,5 @@ for size in range(4, 17, 2):
             continue
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
-    with open(f"data/{args.platform}_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
+    with open(f"data/{command[0]}_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
         json.dump(run_times, fp)
