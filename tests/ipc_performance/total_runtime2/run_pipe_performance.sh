@@ -2,6 +2,7 @@
 
 if [ "$2" = "raw" ]; then
     echo "Loading files into rawposix"
+    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/pipescript.sh /home/lind/lind_project/src/safeposix-rust/tmp/pipescript.sh
     cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/writepipe
     cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/readpipe
     platforms=("rawposix")
