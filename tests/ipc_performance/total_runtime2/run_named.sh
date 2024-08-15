@@ -1,8 +1,7 @@
 #!/bin/bash
 
 echo "Compile"
-x86_64-nacl-gcc scripts/readnamed.c -o /home/lind/lind_project/src/safeposix-rust/tmp/readnamed.nexe -std=gnu99 -lpthread -O3
-x86_64-nacl-gcc scripts/writenamed.c -o /home/lind/lind_project/src/safeposix-rust/tmp/writenamed.nexe -std=gnu99 -lpthread -O3
+./compile.sh
 
 echo "Copying scripts to lindfs"
 cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/namedsingle.sh /home/lind/lind_project/src/safeposix-rust/tmp/namedsingle.sh
