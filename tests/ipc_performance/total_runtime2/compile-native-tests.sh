@@ -1,10 +1,10 @@
 #!/bin/bash
 
-echo "Compiling nolibc binaries"
-gcc scripts/read-nolibc.c -o scripts/readpipe-nolibc -O3
-gcc scripts/write-nolibc.c -o scripts/writepipe-nolibc -O3
+echo "Compiling native test binaries"
+/home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/compile-native.sh
 
-echo "Compiling nolibc binaries"
-gcc scripts/read.c -o scripts/readpipei32 -O3
-gcc scripts/write.c -o scripts/writepipe32 -O3
+echo "Compiling 32 bit binaries"
+/home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/compile-32.sh
 
+echo "Compiling no libc test binaries"
+/home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/compile-nolibc.sh
