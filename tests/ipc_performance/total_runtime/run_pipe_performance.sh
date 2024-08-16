@@ -2,15 +2,15 @@
 
 if [ "$2" = "raw" ]; then
     echo "Loading files into rawposix"
-    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/pipescript.sh /home/lind/lind_project/src/safeposix-rust/tmp/pipescript.sh
-    cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/writepipe
-    cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/readpipe
+    lindfs cp scripts/pipescript.sh /home/lind/lind_project/src/safeposix-rust/tmp/pipescript.sh
+    cp scripts/readpipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/writepipe
+    cp scripts/readpipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/readpipe
     platforms=("rawposix")
 elif [ "$2" = "other" ]; then
     echo "Loading files into file system of lind"
-    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/pipescript.sh /pipescript.sh
-    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/writepipe.nexe /writepipe
-    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime2/scripts/readpipe.nexe /readpipe
+    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/pipescript.sh /pipescript.sh
+    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/writepipe.nexe /writepipe
+    lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/readpipe.nexe /readpipe
     echo -e "\nLoading files into native desired location"
     # lind will require /scripts/readpipe to execute
     cp scripts/readpipe .

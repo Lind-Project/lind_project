@@ -29,4 +29,4 @@ chmod +x lind-script
 echo "alias gcc-4='/usr/local/gcc-4.4.3/bin/gcc'" >> "$HOME/.bashrc"
 source "$HOME/.bashrc"
 
-cd /home/lind/lind_project/tests/ipc_performance/total_runtime2
+cd /home/lind/lind_project/tests/ipc_performance/total_runtime
