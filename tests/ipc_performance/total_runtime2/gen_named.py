@@ -80,10 +80,10 @@ for size in range(4, 17, 2):
             continue
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
-    if args.execution == "/bin/bash scripts/namedsingle.sh":
+    if args.execution == "lind /bin/bash /namedsingle.sh":
         platform = "single"
     else:
         platform = "multi"
-        
+
     with open(f"data/{platform}_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
         json.dump(run_times, fp)
