@@ -21,9 +21,11 @@ with open(sys.argv[2], "r") as fp:
     linddata = json.load(fp)
 with open(sys.argv[3], "r") as fp:
     userdata = json.load(fp)
+with open(sys.argv[4], "r") as fp:
+    rawdata = json.load(fp)
 
 
-for key in range(4, 21, 2):
+for key in range(4, 17, 2):
     key = str(key)
     dataset["relative_time"].append(np.mean(userdata[key]) / np.mean(nativedata[key]))
     dataset["time"].append(np.mean(userdata[key]))
@@ -38,7 +40,7 @@ for key in range(4, 21, 2):
         )
     )
 
-for key in range(4, 21, 2):
+for key in range(4, 17, 2):
     key = str(key)
     dataset["relative_time"].append(np.mean(linddata[key]) / np.mean(nativedata[key]))
     dataset["time"].append(np.mean(linddata[key]))
@@ -53,7 +55,7 @@ for key in range(4, 21, 2):
         )
     )
 
-for key in range(4, 21, 2):
+for key in range(4, 17, 2):
     key = str(key)
     dataset["relative_time"].append(np.mean(nativedata[key]) / np.mean(nativedata[key]))
     dataset["time"].append(np.mean(nativedata[key]))
@@ -68,6 +70,20 @@ for key in range(4, 21, 2):
         )
     )
 
+for key in range(4, 17, 2):
+    key = str(key)
+    dataset["relative_time"].append(np.mean(rawdata[key]) / np.mean(nativedata[key]))
+    dataset["time"].append(np.mean(rawdata[key]))
+    dataset["platform"].append("RawPOSIX")
+    dataset["bufsize"].append(int(key))
+    dataset["std"].append(
+        np.std(
+            [
+                rawdata[key][i] / np.mean(nativedata[key])
+                for i in range(len(rawdata[key]))
+            ]
+        )
+    )
 
 plt.rcParams["errorbar.capsize"] = 10
 df = pd.DataFrame(data=dataset)
@@ -78,8 +94,8 @@ yerr = df[["ymin", "ymax"]].T.to_numpy()
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 plt.figure(figsize=(10, 6))
 sns.set(style="darkgrid")
-sns.set_palette("bright")
-fig = sns.barplot(x="bufsize", y="relative_time", hue="platform", data=df, palette=["C3", "C0", "C1"])
+# sns.set_palette("Blues_r")
+fig = sns.barplot(x="bufsize", y="relative_time", hue="platform", data=df, palette=sns.color_palette("Paired", 4))
 sns.move_legend(
     fig,
     "lower center",
@@ -103,5 +119,5 @@ for i, p in enumerate(fig.patches):
 plt.xlabel("$log_2 (buffersize)$", fontsize=10)
 plt.ylabel("Normalized Runtime", fontsize=10)
 plt.tight_layout(pad=2)
-plt.title(f"Normalized Total Runtime {sys.argv[4]}")
+plt.title(f"Normalized Total Runtime {sys.argv[5]}")
 plt.savefig(sys.argv[5], dpi=400)

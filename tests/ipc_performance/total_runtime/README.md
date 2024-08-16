@@ -4,21 +4,21 @@ The purpose of the test is to find out the total time taken for write and read. 
 
 ## Instructions to run test
 
-To run all 3 configurations - `N-N`, `16-N`, `N-16` of the read-write buffer sizes
+To run all 3 configurations - `X-X`, `16-X`, `X-16` of the read-write buffer sizes
 ```sh
-./benchmark.sh <number_of_runs>
+./run_pipe_performance.sh <count> <platform>
 ```
 
 Or run each configuration individually
 ```sh
 # Varying write and read buffers"
-python3 gen_<platform>ps2.py -w x -r x -c <number_of_runs>
+python3 gen_pipedata.py -w x -r x -c <number_of_runs>
 
 #\nVarying write buffers"
-python3 gen_<platform>ps2.py -w x -r 16 -c <number_of_runs>
+python3 gen_pipedata.py -w x -r 16 -c <number_of_runs>
 
 echo -e "\nVarying read buffers"
-python3 gen_<platform>ps2.py -w 16 -r x -c <number_of_runs>
+python3 gen_pipedata.py -w 16 -r x -c <number_of_runs>
 ```
 
 ## Instructions to plot graphs
@@ -27,4 +27,4 @@ python3 gen_<platform>ps2.py -w 16 -r x -c <number_of_runs>
 ./plot_runtimes.sh
 ```
 
-It generates the bar charts for all the 3 configurations - `N-N`, `16-N`, `N-16`.
+It generates the bar charts for all the 3 configurations - `X-X`, `16-X`, `X-16`.
