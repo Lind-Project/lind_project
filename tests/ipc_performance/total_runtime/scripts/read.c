@@ -2,6 +2,13 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
+
+long long gettimens() {
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC, &tp);
+    return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
+}
 
 int main(int argc, char *argv[])
 {
@@ -18,5 +25,7 @@ int main(int argc, char *argv[])
     {
     }
 
+    fprintf(stderr, "read-end: %lld\n", gettimens());
+    fflush(stderr);
     free(buffer);
 }

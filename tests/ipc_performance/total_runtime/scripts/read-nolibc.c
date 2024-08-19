@@ -2,6 +2,13 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
+
+long long gettimens() {
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC, &tp);
+    return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
+}
 
 int main(int argc, char *argv[])
 {
@@ -14,9 +21,11 @@ int main(int argc, char *argv[])
     int total_read = 0;
     int readlen = 0;
 
-    while ((readlen = read(STDIN_FILENO, buffer, READ_BUFFER_CHUNK)) > 0)
+    while ((readlen = syscall(0, STDIN_FILENO, buffer, READ_BUFFER_CHUNK)) > 0)
     {
     }
 
+    fprintf(stderr, "read-end: %lld\n", gettimens());
+    fflush(stderr);
     free(buffer);
 }

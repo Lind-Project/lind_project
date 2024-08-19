@@ -2,6 +2,13 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
+
+long long gettimens() {
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC, &tp);
+    return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
+}
 
 int main(int argc, char *argv[])
 {
@@ -16,12 +23,12 @@ int main(int argc, char *argv[])
     for (int i = 0; i < WRITE_BUFFER_SIZE; i++)
         buffer[i] = 'A';
 
-    for (int n = 0; n < OUTLOOP; n++)
+    fprintf(stderr, "write-start: %lld\n", gettimens());
+    fflush(stderr);    
+
+    for (int count = 0; count < NUMBER_OF_WRITES; count++)
     {
-        for (int count = 0; count < NUMBER_OF_WRITES; count++)
-        {
-            write(STDOUT_FILENO, buffer, WRITE_BUFFER_SIZE);
-        }
+        syscall(1, STDOUT_FILENO, buffer, WRITE_BUFFER_SIZE);
     }
     free(buffer);
 }
