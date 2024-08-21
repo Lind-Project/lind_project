@@ -15,20 +15,12 @@ def extract_times(output):
         return None
 
 parser = argparse.ArgumentParser(
-    description="Script to benchmark piping 1GB varying buffersize"
+    description="Script to benchmark sending n GBs unix domain socket implementation with varying buffersize"
 )
 parser.add_argument(
-    "-w",
-    "--write-buffer",
-    dest="write_buffer",
-    type=str,
-    default="x",
-    help="Write buffer size",
-)
-parser.add_argument(
-    "-r",
-    "--read-buffer",
-    dest="read_buffer",
+    "-b",
+    "--buffer",
+    dest="buffer",
     type=str,
     default="x",
     help="Read buffer size",
@@ -42,27 +34,36 @@ parser.add_argument(
     help="Number of runs",
 )
 parser.add_argument(
+    "-t",
+    "--total",
+    dest="total",
+    type=int,
+    default=1,
+    help="Total size in GBs",
+)
+parser.add_argument(
     "-p",
     "--execution-command",
     dest="execution",
     type=str,
     required=True,
-    help="Platform execution command",
+    help="Platform specific execution command",
 )
 args = parser.parse_args()
 
 run_times = {}
 
 for size in range(4, 17, 2):
-    write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
-    read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
+    buffer_size = str(size) if args.buffer == "x" else args.buffer
+
     # Split the command string into a list
     command = args.execution.split()
     # Append the write buffer size as the last argument
-    command.append(write_buffer_size)
-    command.append(read_buffer_size)
+    command.append(buffer_size)
+    command.append(str(args.total))
+
     run_times[size] = []
-    print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
+    print(f"Buffer: {buffer_size}")
     
     for _ in range(args.count):
         output = Popen(
@@ -80,12 +81,12 @@ for size in range(4, 17, 2):
             continue
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
 
-    if args.execution == "lind /bin/bash /pipescript.sh":
+    if args.execution == "lind /uds":
         platform = "lind"
-    elif args.execution == "/bin/bash scripts/pipescript.sh":
+    elif args.execution == "scripts/uds":
         platform = "nat"
     else:
         platform = "unsafe"
-    with open(f"data/{platform}_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
+    with open(f"data/{platform}_{args.buffer}.json", "w") as fp:
         json.dump(run_times, fp)
         
