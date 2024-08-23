@@ -1,5 +1,5 @@
 #TODO ideal: Check if Lind has coreutils/bash by file checks, if they're present; already installed, skip installing part.
-BASE_DIR=$LIND_NATIVE_HOME
+BASE_DIR=${LIND_NATIVE_HOME:-/home/lind/lind_project}
 
 binoutput=$(lindfs ls bin/)
 if [[ ${binoutput} != *"bin/bash"* ]];then
