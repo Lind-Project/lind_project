@@ -1,5 +1,5 @@
 
-BASE_DIR=$LIND_NATIVE_HOME
+BASE_DIR=${LIND_NATIVE_HOME:-/home/lind/lind_project}
 
 #popen
 gcc ../popen.c -o tempfolder/popen;
