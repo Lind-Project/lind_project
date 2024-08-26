@@ -7,10 +7,12 @@ def extract_times(output):
     # Extract numbers from the 'write-start' and 'read-end' lines
     write_start_match = re.search(r'write-start: (\d+)', output)
     read_end_match = re.search(r'read-end: (\d+)', output)
+    # Extract context switching times
+    context_switch = re.search(r'\n\s*(\d+)\s+context-switches', output)
     if write_start_match and read_end_match:
         write_start = int(write_start_match.group(1))
         read_end = int(read_end_match.group(1))
-        return (read_end - write_start) / 1000000
+        return ((read_end - write_start) / 1000000, context_switch)
     else:
         return None
 
@@ -52,6 +54,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 run_times = {}
+context_switch_times = {}
 
 for size in range(4, 17, 2):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
@@ -62,6 +65,7 @@ for size in range(4, 17, 2):
     command.append(write_buffer_size)
     command.append(read_buffer_size)
     run_times[size] = []
+    context_switch_times[size] = []
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
     
     for _ in range(args.count):
@@ -73,12 +77,14 @@ for size in range(4, 17, 2):
         stdout, _ = output.communicate()
         stdout = stdout.decode('utf-8')
         try:
-            run_time = extract_times(stdout)
+            (run_time, context_switch) = extract_times(stdout)
             if run_time is not None:
                 run_times[size].append(run_time)
+                context_switch_times[size].append(context_switch)
         except ValueError:
             continue
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
+    print(f"Context switching times: {context_switch_times[size]}")
 
     if args.execution == "lind /bin/bash /pipescript.sh":
         platform = "lind"

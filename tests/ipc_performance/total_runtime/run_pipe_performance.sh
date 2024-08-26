@@ -15,7 +15,7 @@ elif [ "$2" = "other" ]; then
     # lind will require /scripts/readpipe to execute
     cp scripts/readpipe .
     cp scripts/writepipe .
-    platforms=("lind /bin/bash /pipescript.sh" "/bin/bash scripts/pipescript.sh" "scripts/unsafe-pipe")
+    platforms=("perf stat lind /bin/bash /pipescript.sh" "perf stat /bin/bash scripts/pipescript.sh" "perf stat scripts/unsafe-pipe")
 else
     echo "Usage: ./run_pipe_performance.sh [count] [platform]"
     exit 1
