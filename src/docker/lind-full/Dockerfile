@@ -37,4 +37,3 @@ RUN ./src/scripts/base/load_bash.sh
 RUN ./src/scripts/base/load_coreutils.sh
 
 WORKDIR /home/lind/lind_project/
-
