@@ -87,12 +87,14 @@ for size in range(4, 17, 2):
     print(f"Average runtime: {sum(run_times[size]) / args.count}")
     print(f"Context switching times: {context_switch_times[size]}")
 
-    if args.execution == "lind /bin/bash /pipescript.sh":
+    if args.execution == "perf stat lind /bin/bash /pipescript.sh":
         platform = "lind"
-    elif args.execution == "/bin/bash scripts/pipescript.sh":
+    elif args.execution == "perf stat /bin/bash scripts/pipescript.sh":
         platform = "nat"
     else:
         platform = "unsafe"
     with open(f"data/{platform}_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
         json.dump(run_times, fp)
+    with open(f"data/ct_{platform}_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
+        json.dump(context_switch_times, fp)
         
