@@ -8,10 +8,11 @@ def extract_times(output):
     write_start_match = re.search(r'write-start: (\d+)', output)
     read_end_match = re.search(r'read-end: (\d+)', output)
     # Extract context switching times
-    context_switch = re.search(r'\n\s*(\d+)\s+context-switches', output)
+    context_switch_match = re.search(r'\n\s*(\d+)\s+context-switches', output)
     if write_start_match and read_end_match:
         write_start = int(write_start_match.group(1))
         read_end = int(read_end_match.group(1))
+        context_switch = int(context_switch_match.group(1))
         return ((read_end - write_start) / 1000000, context_switch)
     else:
         return None
