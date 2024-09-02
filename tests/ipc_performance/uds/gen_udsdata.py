@@ -5,8 +5,8 @@ from subprocess import Popen, PIPE, STDOUT
 
 def extract_times(output):
     # Extract numbers from the 'write-start' and 'read-end' lines
-    write_start_match = re.search(r'write-start: (\d+)', output)
-    read_end_match = re.search(r'read-end: (\d+)', output)
+    write_start_match = re.search(r'Starts sending: (\d+)', output)
+    read_end_match = re.search(r'Ends receiving: (\d+)', output)
     if write_start_match and read_end_match:
         write_start = int(write_start_match.group(1))
         read_end = int(read_end_match.group(1))

@@ -20,7 +20,7 @@ void parent(int socket, int buf_size, int N) {
 
     memset(send_buf, 'a', buf_size);
 
-    fprintf(stderr, "Parent starts sending: %lld\n", gettimens());
+    fprintf(stderr, "Starts sending: %lld\n", gettimens());
     fflush(stderr);
 
     for (int a = 0; a < N; ++a) {
@@ -44,7 +44,7 @@ void parent(int socket, int buf_size, int N) {
         }
     }
 
-    fprintf(stderr, "Parent ends receiving: %lld\n", gettimens());
+    fprintf(stderr, "Ends receiving: %lld\n", gettimens());
     fflush(stderr);
 
     free(send_buf);
