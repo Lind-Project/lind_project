@@ -11,5 +11,8 @@ echo -e "\nRunning on native linux"
 # python3 gen_natuds.py -c $1 -t $2
 python3 gen_udsdata.py -c $1 -t $2 -p "scripts/uds"
 
+echo -e "\nRunning on unsafe"
+python3 gen_udsdata.py -c $1 -t $2 -p "scripts/unsafe-uds"
+
 echo -e "\nCleaning up"
 ./cleanup.sh

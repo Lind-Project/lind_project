@@ -73,6 +73,7 @@ for size in range(4, 17, 2):
         )
         stdout, _ = output.communicate()
         stdout = stdout.decode('utf-8')
+        print(f"command: {command}")
         try:
             run_time = extract_times(stdout)
             if run_time is not None:
