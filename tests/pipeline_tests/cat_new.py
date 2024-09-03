@@ -13,10 +13,10 @@ args = parser.parse_args()
 
 
 def generate_script(num):
-    files = [f"./test_content/content_{i}.txt" for i in range(1, num + 1)]
-    script = f"/bin/cat {' '.join(files)}"
-    cats = ["| /bin/cat" for _ in range(num - 1)]
-    script += " ".join(cats)
+    script_parts = []
+    for i in range(1, num + 1):
+        script_parts.append(f"/bin/cat ./test_content/nums_{i}.txt")
+    script = " | ".join(script_parts)
     script += " > cat_cat.out"
     print(script)
     with open("scripts/cat_cat.sh", "w") as f:
