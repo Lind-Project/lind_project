@@ -69,7 +69,10 @@ void child(int socket, int buf_size) {
     fprintf(stderr, "before sem_post in child\n");
     fflush(stderr);
 
-    sem_post(&semaphore);
+    if (sem_post(&semaphore) < 0) {
+        perror("sem_post");
+        exit(1);
+    }
 
     fprintf(stderr, "after sem_post in child\n");
     fflush(stderr);
