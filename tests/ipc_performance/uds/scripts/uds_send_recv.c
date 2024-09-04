@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <semaphore.h>
+#include <sys/mman.h>
 
 #define GB (1 << 30)
 
@@ -15,7 +16,7 @@ long long gettimens() {
     return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
 }
 
-void parent(int socket, int buf_size, sem_t semaphore) {
+void parent(int socket, int buf_size, sem_t *semaphore) {
     char *send_buf = (char *)malloc(buf_size);
     char *recv_buf = (char *)malloc(buf_size);
 
@@ -24,7 +25,7 @@ void parent(int socket, int buf_size, sem_t semaphore) {
     fprintf(stderr, "Starts sending: %lld\n", gettimens());
     fflush(stderr);
     
-    sem_wait(&semaphore);
+    sem_wait(semaphore);
     
     fprintf(stderr, "after sem_wait in parent\n");
     fflush(stderr);
@@ -56,7 +57,7 @@ void parent(int socket, int buf_size, sem_t semaphore) {
     free(recv_buf);
 }
 
-void child(int socket, int buf_size, sem_t semaphore) {
+void child(int socket, int buf_size, sem_t *semaphore) {
     char *send_buf = (char *)malloc(buf_size);
     char *recv_buf = (char *)malloc(buf_size);
 
@@ -66,7 +67,7 @@ void child(int socket, int buf_size, sem_t semaphore) {
     fflush(stderr);
 
 
-    if (sem_post(&semaphore) < 0) {
+    if (sem_post(semaphore) < 0) {
         perror("sem_post");
         exit(1);
     }
@@ -112,8 +113,13 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    sem_t semaphore;
-    sem_init(&semaphore, 1, 0);
+    sem_t *semaphore = mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE,
+                      MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+    if (sem_init(semaphore, 1, 0) == -1) {
+        perror("sem_init");
+        exit(EXIT_FAILURE);
+    }
 
     pid = fork();
     if (pid == -1) {
@@ -133,7 +139,7 @@ int main(int argc, char *argv[]) {
         close(sockets[1]);
     }
 
-    sem_destroy(&semaphore);
+    sem_destroy(semaphore);
 
     return 0;
 }
