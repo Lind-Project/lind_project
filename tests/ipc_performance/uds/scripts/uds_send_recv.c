@@ -9,17 +9,13 @@
 
 #define GB (1 << 30)
 
-sem_t semaphore;
-
-int lock_count = 0;
-
 long long gettimens() {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
     return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
 }
 
-void parent(int socket, int buf_size) {
+void parent(int socket, int buf_size, sem_t semaphore) {
     char *send_buf = (char *)malloc(buf_size);
     char *recv_buf = (char *)malloc(buf_size);
 
@@ -60,7 +56,7 @@ void parent(int socket, int buf_size) {
     free(recv_buf);
 }
 
-void child(int socket, int buf_size) {
+void child(int socket, int buf_size, sem_t semaphore) {
     char *send_buf = (char *)malloc(buf_size);
     char *recv_buf = (char *)malloc(buf_size);
 
@@ -68,6 +64,7 @@ void child(int socket, int buf_size) {
 
     fprintf(stderr, "before sem_post in child\n");
     fflush(stderr);
+
 
     if (sem_post(&semaphore) < 0) {
         perror("sem_post");
@@ -115,6 +112,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    sem_t semaphore;
     sem_init(&semaphore, 1, 0);
 
     pid = fork();
@@ -126,12 +124,12 @@ int main(int argc, char *argv[]) {
     if (pid == 0) {
         // Child process
         close(sockets[1]);
-        child(sockets[0], buf_size);
+        child(sockets[0], buf_size, semaphore);
         close(sockets[0]);
     } else {
         // Parent process
         close(sockets[0]);
-        parent(sockets[1], buf_size);
+        parent(sockets[1], buf_size, semaphore);
         close(sockets[1]);
     }
 
