@@ -5,8 +5,11 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <time.h>
+#include <semaphore.h>
 
 #define GB (1 << 30)
+
+sem_t semaphore;
 
 int lock_count = 0;
 
@@ -25,13 +28,8 @@ void parent(int socket, int buf_size) {
     fprintf(stderr, "Starts sending: %lld\n", gettimens());
     fflush(stderr);
     
-    // Blocking to wait close() finishes 
-    while (lock_count != 2) {
-        if (lock_count == 2) {
-            break;
-        }
-    }
-    
+    sem_wait(&semaphore);
+
     for (int i = 0; i < GB / buf_size; ++i) {
         if (send(socket, send_buf, buf_size, 0) == -1) {
             perror("Send");
@@ -65,12 +63,7 @@ void child(int socket, int buf_size) {
 
     memset(send_buf, 'b', buf_size);
 
-    // Blocking to wait close() finishes 
-    while (lock_count != 2) {
-        if (lock_count == 2) {
-            break;
-        }
-    }
+    sem_post(&semaphore);
 
     for (int x = 0; x < GB / buf_size; ++x) {
         int total_received = 0;
@@ -110,6 +103,8 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    sem_init(&semaphore, 1, 0);
+
     pid = fork();
     if (pid == -1) {
         perror("Fork");
@@ -119,15 +114,16 @@ int main(int argc, char *argv[]) {
     if (pid == 0) {
         // Child process
         close(sockets[1]);
-        lock_count++;
         child(sockets[0], buf_size);
         close(sockets[0]);
     } else {
         // Parent process
         close(sockets[0]);
-        lock_count++;
         parent(sockets[1], buf_size);
         close(sockets[1]);
     }
+
+    sem_destroy(&semaphore);
+
     return 0;
 }
