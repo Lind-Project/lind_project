@@ -21,14 +21,8 @@ void parent(int socket, int buf_size, sem_t *semaphore) {
     char *recv_buf = (char *)malloc(buf_size);
 
     memset(send_buf, 'a', buf_size);
-
-    fprintf(stderr, "Starts sending: %lld\n", gettimens());
-    fflush(stderr);
     
     sem_wait(semaphore);
-    
-    fprintf(stderr, "after sem_wait in parent\n");
-    fflush(stderr);
 
     for (int i = 0; i < GB / buf_size; ++i) {
         if (send(socket, send_buf, buf_size, 0) == -1) {
@@ -63,17 +57,10 @@ void child(int socket, int buf_size, sem_t *semaphore) {
 
     memset(send_buf, 'b', buf_size);
 
-    fprintf(stderr, "before sem_post in child\n");
-    fflush(stderr);
-
-
     if (sem_post(semaphore) < 0) {
         perror("sem_post");
         exit(1);
     }
-
-    fprintf(stderr, "after sem_post in child\n");
-    fflush(stderr);
 
     for (int x = 0; x < GB / buf_size; ++x) {
         int total_received = 0;

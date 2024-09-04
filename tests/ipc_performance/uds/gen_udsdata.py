@@ -34,14 +34,6 @@ parser.add_argument(
     help="Number of runs",
 )
 parser.add_argument(
-    "-t",
-    "--total",
-    dest="total",
-    type=int,
-    default=1,
-    help="Total size in GBs",
-)
-parser.add_argument(
     "-p",
     "--execution-command",
     dest="execution",
@@ -60,7 +52,6 @@ for size in range(4, 17, 2):
     command = args.execution.split()
     # Append the write buffer size as the last argument
     command.append(buffer_size)
-    command.append(str(args.total))
 
     run_times[size] = []
     print(f"Buffer: {buffer_size}")
