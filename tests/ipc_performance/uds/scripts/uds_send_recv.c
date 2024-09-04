@@ -11,13 +11,21 @@
 
 pthread_barrier_t barrier;
 
+struct thread_args {
+    int socket;
+    int buf_size;
+};
+
 long long gettimens() {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
     return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
 }
 
-void parent(int socket, int buf_size) {
+void *parent(void *arg) {
+    struct thread_args *args = (struct thread_args *)arg;
+    int socket = args->socket;
+    int buf_size = args->buf_size; 
     char *send_buf = (char *)malloc(buf_size);
     char *recv_buf = (char *)malloc(buf_size);
 
@@ -29,8 +37,7 @@ void parent(int socket, int buf_size) {
     fflush(stderr);
 
     for (int i = 0; i < GB / buf_size; ++i) {
-        if (send(socket, send_buf, buf_size, 0) == -1)
-        {
+        if (send(socket, send_buf, buf_size, 0) == -1) {
             perror("Send");
             exit(1);
         }
@@ -52,9 +59,13 @@ void parent(int socket, int buf_size) {
 
     free(send_buf);
     free(recv_buf);
+    return NULL;
 }
 
-void child(int socket, int buf_size) {
+void *child(void *arg) {
+    struct thread_args *args = (struct thread_args *)arg;
+    int socket = args->socket;
+    int buf_size = args->buf_size; 
     char *send_buf = (char *)malloc(buf_size);
     char *recv_buf = (char *)malloc(buf_size);
 
@@ -66,8 +77,7 @@ void child(int socket, int buf_size) {
         int total_received = 0;
         while (total_received < buf_size) {
             int received = recv(socket, recv_buf + total_received, buf_size - total_received, 0);
-            if (received == -1)
-            {
+            if (received == -1) {
                 perror("Recv");
                 exit(1);
             }
@@ -83,6 +93,7 @@ void child(int socket, int buf_size) {
     }
     free(send_buf);
     free(recv_buf);
+    return NULL;
 }
 
 int main(int argc, char *argv[]) {
@@ -92,36 +103,26 @@ int main(int argc, char *argv[]) {
     }
 
     int buf_size = 1 << atoi(argv[1]);
+    struct thread_args parent_args = {sockets[1], buf_size};
+    struct thread_args child_args = {sockets[0], buf_size};
 
+    pthread_t parent_thread, child_thread;
     pthread_barrier_init(&barrier, NULL, 2);
 
     int sockets[2];
-    pid_t pid;
-
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) == -1) {
         perror("Socketpair");
         exit(1);
     }
+    
+    pthread_create(&child_thread, NULL, child, &child_args);
+    pthread_create(&parent_thread, NULL, parent, &parent_args);
 
-    pid = fork();
-    if (pid == -1) {
-        perror("Fork");
-        exit(1);
-    }
+    pthread_join(parent_thread, NULL);
+    pthread_join(child_thread, NULL);
 
-    if (pid == 0) {
-        // Child process
-        close(sockets[1]);
-        pthread_barrier_wait(&barrier);
-        child(sockets[0], buf_size);
-        close(sockets[0]);
-    } else {
-        // Parent process
-        close(sockets[0]);
-        pthread_barrier_wait(&barrier);
-        parent(sockets[1], buf_size);
-        close(sockets[1]);
-    }
+    close(sockets[0]);
+    close(sockets[1]);
 
     pthread_barrier_destroy(&barrier);
 
