@@ -24,6 +24,9 @@ void parent(int socket, int buf_size, sem_t *semaphore) {
     
     sem_wait(semaphore);
 
+    fprintf(stderr, "Starts sending: %lld\n", gettimens());
+    fflush(stderr);
+
     for (int i = 0; i < GB / buf_size; ++i) {
         if (send(socket, send_buf, buf_size, 0) == -1) {
             perror("Send");
