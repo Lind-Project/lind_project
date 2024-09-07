@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
         close(pipe_to_child[0]); // Close read end of parent-to-child pipe
         close(pipe_to_parent[1]); // Close write end of child-to-parent pipe
         parent(pipe_to_child, pipe_to_parent, buf_size, semaphore);
-        cclose(pipe_to_child[1]);
+        close(pipe_to_child[1]);
         close(pipe_to_parent[0]); 
     }
 
