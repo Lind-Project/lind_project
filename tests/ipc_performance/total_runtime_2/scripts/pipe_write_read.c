@@ -78,7 +78,7 @@ void child(int pipe_to_parent[2], int pipe_from_parent[2], int buf_size, sem_t *
         }
     }
     for (int y = 0; y < GB / buf_size; ++y) {
-        if (write(pipe_to_parent, send_buf, buf_size) == -1) {
+        if (write(pipe_to_parent[1], send_buf, buf_size) == -1) {
             perror("write");
             exit(1);
         }
