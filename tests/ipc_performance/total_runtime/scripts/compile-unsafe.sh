@@ -1,6 +1,11 @@
 #!/bin/bash
 
-export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
+if [ -f /etc/lsb-release ]; then
+    . /etc/lsb-release
+    if [ "$DISTRIB_ID" = "Ubuntu" ]; then
+        export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
+    fi
+fi
 
 export LD_LIBRARY_PATH=/home/lind/lind_project/tests/native-rustposix:$LD_LIBRARY_PATH
 /usr/local/gcc-4.4.3/bin/gcc -c /home/lind/lind_project/tests/native-rustposix/tests/lind_platform.c -o /home/lind/lind_project/tests/native-rustposix/tests/lind_platform.o -O3
