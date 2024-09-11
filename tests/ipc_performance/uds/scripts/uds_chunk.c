@@ -87,7 +87,10 @@ void child(int socket, int buf_size, sem_t *sem, sem_t *sem_parent, sem_t *sem_c
             }
 
             // Signal parent that child finished receiving
-            sem_post(sem_parent);
+            if (sem_post(sem_parent) < 0) {
+                perror("sem_post");
+                exit(1);
+            }
 
             // Child sends 2KB
             if (send(socket, send_buf + j, CHUNK_SIZE, 0) == -1) {
@@ -128,7 +131,7 @@ int main(int argc, char *argv[]) {
                       MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
     if (sem_init(sem, 1, 0) == -1 ||
-        (sem_parent, 1, 0) == -1 || 
+        sem_init(sem_parent, 1, 0) == -1 || 
         sem_init(sem_child, 1, 0) == -1) {
         perror("sem_init");
         exit(EXIT_FAILURE);
