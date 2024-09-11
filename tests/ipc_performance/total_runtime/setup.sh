@@ -23,7 +23,6 @@ echo "Coreutils has been installed. Usage: lind /bin/(anycoretuil)"
 echo "Compile GCC-4.4.3"
 
 cd /home/lind/lind_project/tests/applications/gcc-4.4.3
-chmod +x lind-script
 /home/lind/lind_project/tests/applications/gcc-4.4.3/lind-script
 
 echo "alias gcc-4='/usr/local/gcc-4.4.3/bin/gcc'" >> "$HOME/.bashrc"
