@@ -1,3 +1,8 @@
+export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/
+
+# Install required packages for lind-ubuntu
+sudo apt install gcc-multilib libmpfr-dev
+
 wget ftp://ftp.gnu.org/gnu/gmp/gmp-5.1.3.tar.gz
 wget ftp://ftp.gnu.org/gnu/mpfr/mpfr-3.1.2.tar.gz
 wget https://ftp.gnu.org/gnu/mpc/mpc-1.0.1.tar.gz
@@ -7,6 +12,7 @@ tar -zxvf mpc-1.0.1.tar.gz
 mv gmp-5.1.3 gmp
 mv mpc-1.0.1 mpc
 mv mpfr-3.1.2 mpfr
+
 cd ../
 mkdir build-gcc
 cd build-gcc/
