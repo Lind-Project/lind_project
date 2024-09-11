@@ -1,21 +1,21 @@
 #TODO ideal: Check if Lind has coreutils/bash by file checks, if they're present; already installed, skip installing part.
-
+BASE_DIR=${LIND_NATIVE_HOME:-/home/lind/lind_project}
 
 binoutput=$(lindfs ls bin/)
 if [[ ${binoutput} != *"bin/bash"* ]];then
    echo "Installing bash..."
-   cd /home/lind/lind_project/src/scripts/base
+   cd $BASE_DIR/src/scripts/base
    ./compile_bash.sh
    ./load_bash.sh
 fi
 if [[ ${binoutput} != *"bin/ls"* ]];then
    echo "Installing coreutils..."
-   cd /home/lind/lind_project/src/scripts/base
+   cd $BASE_DIR/src/scripts/base
    ./compile_coreutils.sh
    ./load_coreutils.sh
 fi
 
-cd /home/lind/lind_project/tests/test_cases/coreutils_suite
+cd $BASE_DIR/tests/test_cases/coreutils_suite
 
 lindfs deltree "/script_tests/" &> /dev/null
 
@@ -56,7 +56,7 @@ echo "Copying test cases..." #change
 lindfs cp $PWD /script_tests/ &> /dev/null
 
 mkdir tempfolder
-./prep.sh
+./prep.sh 
 
 mkdir script_tests
 cp * script_tests/

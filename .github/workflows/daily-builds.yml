@@ -5,6 +5,9 @@ on:
   schedule:
    - cron: '00 8 * * *'
   # 8 AM UTC Time, works at 3-4 AM EST each day.
+  # Triggers the workflow on push or pull request events but only for the develop branch
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
@@ -51,3 +54,12 @@ jobs:
       - name: And in darkness TEST them
         run: | 
           make test-verbose;
+
+      - name: Build New Docker Images
+        run: |
+          docker build -t securesystemslab/lind_ubuntu:lind-full src/ubuntu-docker/lind-full
+        
+      - name: Push Docker Images to Docker Hub
+        run: |
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker push securesystemslab/lind_ubuntu:lind-full
