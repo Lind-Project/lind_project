@@ -15,3 +15,22 @@ includes) for usage and porting information.  An online readable
 version of the manual is in the files gcc/doc/gcc.info*.
 
 See http://gcc.gnu.org/bugs.html for how to report bugs usefully.
+
+# Compilation in Lind-ArchLinux Environment
+
+## Steps to Compile and Configure GCC 4
+
+1. **Run the compilation script:**
+    Execute the provided script to begin the compilation process.
+    ```sh
+    ./lind-script
+    ```
+
+2. **Add GCC 4 to the global environment variables:**
+    After the compilation, set up an alias to use `gcc-4` in your terminal.
+    ```sh
+    echo "alias gcc-4='/usr/local/gcc-4.4.3/bin/gcc'" >> "$HOME/.bashrc"
+    source "$HOME/.bashrc"
+    ```
+
+After following these steps, you should be able to use `gcc-4` from any terminal session by typing `gcc-4`.
