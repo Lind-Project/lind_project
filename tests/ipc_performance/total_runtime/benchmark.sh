@@ -6,5 +6,7 @@
 # Compile binaries
 ./compile.sh
 
+mkdir data/ 
+
 # Run native tests
 ./run_pipe_performance.sh $1 other
