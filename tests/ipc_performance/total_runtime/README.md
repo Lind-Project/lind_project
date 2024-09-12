@@ -4,6 +4,14 @@ The purpose of the test is to find out the total time taken for write and read. 
 
 ## Instructions to run test
 
+### Run pipe test suite in unsafe / lind / native
+
+```sh
+./benchmark.sh <count>
+```
+
+### Detailed test suite usage guideline
+
 To run all 3 configurations - `X-X`, `16-X`, `X-16` of the read-write buffer sizes
 ```sh
 ./run_pipe_performance.sh <count> <platform>
