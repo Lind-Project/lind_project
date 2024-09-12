@@ -28,14 +28,14 @@ void parent(int socket, sem_t *semaphore) {
     fprintf(stderr, "Starts sending: %lld\n", gettimens());
     fflush(stderr);
 
-    for (int i = 0; i < GB / CHUNK_SIZE; ++i) {
+    for (int i = 0; i < GB / 2048; ++i) {
         if (send(socket, buf, CHUNK_SIZE, 0) == -1) {
             perror("Send");
             exit(1);
         }
     }
 
-    for (int j = 0; j < GB / CHUNK_SIZE; ++j) {
+    for (int j = 0; j < GB / 2048; ++j) {
         if (recv(socket, buf, CHUNK_SIZE, 0) == -1) {
             perror("Recv");
             exit(1);
@@ -58,14 +58,14 @@ void child(int socket, sem_t *semaphore) {
         exit(1);
     }
 
-    for (int x = 0; x < GB / CHUNK_SIZE; ++x) {
+    for (int x = 0; x < GB / 2048; ++x) {
         if (recv(socket, buf, CHUNK_SIZE, 0) == -1) {
             perror("Recv");
             exit(1);
         }
     }
 
-    for (int y = 0; y < GB / CHUNK_SIZE; ++y) {
+    for (int y = 0; y < GB / 2048; ++y) {
         if (send(socket, buf, CHUNK_SIZE, 0) == -1) {
             perror("Send");
             exit(1);
