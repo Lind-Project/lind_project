@@ -52,10 +52,10 @@ for _ in range(args.count):
     try:
         run_time = extract_times(stdout)
         if run_time is not None:
-            run_times.append(run_time)
+            run_times[1].append(run_time)
     except ValueError:
         continue
-print(f"Average runtime: {sum(run_times) / args.count}")
+print(f"Average runtime: {sum(run_times[1]) / args.count}")
 
 if args.execution == "lind /pipe":
     platform = "lind"
