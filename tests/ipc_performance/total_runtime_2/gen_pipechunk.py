@@ -35,7 +35,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-run_times = {}
+run_times = {1: []}  
 
 # Split the command string into a list
 command = args.execution.split()
