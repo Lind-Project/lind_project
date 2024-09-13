@@ -76,13 +76,6 @@ void child(int socket, sem_t *semaphore) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s [send_recv_buf_size]\n", argv[0]);
-        exit(1);
-    }
-
-    int buf_size = 1 << atoi(argv[1]);
-
     int sockets[2];
     pid_t pid;
 
