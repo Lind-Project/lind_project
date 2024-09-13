@@ -75,13 +75,6 @@ void child(int pipe_to_parent[2], int pipe_from_parent[2], sem_t *semaphore) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s [write_read_buf_size]\n", argv[0]);
-        exit(1);
-    }
-
-    int buf_size = 1 << atoi(argv[1]);
-
     int pipe_to_child[2], pipe_to_parent[2];
     pid_t pid;
 
