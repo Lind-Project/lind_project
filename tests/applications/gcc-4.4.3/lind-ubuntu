@@ -16,7 +16,8 @@ mv mpfr-3.1.2 mpfr
 cd ../
 mkdir build-gcc
 cd build-gcc/
-../gcc-4.4.3/configure CFLAGS='-fgnu89-inline -g -O2' CXXFLAGS='-fgnu89-inline -g -O2' --prefix=/usr/local/gcc-4.4.3/ --enable-checking=release --enable-languages=c,c++ --disable-multili
+../gcc-4.4.3/configure CC=gcc CFLAGS='-fgnu89-inline -g -O2' CXXFLAGS='-fgnu89-inline -g -O2' --prefix=/usr/local/gcc-4.4.3/ --enable-checking=release --enable-languages=c,c++ --disable-multili
+
 
 # Modify linux-unwind.h
 linuxfile="../gcc-4.4.3/gcc/config/i386/linux-unwind.h"
@@ -26,7 +27,7 @@ if [ ! -f "$linuxfile" ]; then
   exit 1
 fi
 
-temp_file2=$(mktemp)
+temp_file=$(mktemp)
 
 awk '{
   if (NR == 136) { print "siginfo_t *pinfo;" }
@@ -36,7 +37,7 @@ awk '{
   else { print $0 }
 }' "$linuxfile" > "$temp_file"
 
-mv "$temp_file2" "$linuxfile"
+mv "$temp_file" "$linuxfile"
 
 # Modify Makefile
 makefile_path="Makefile"
@@ -46,7 +47,7 @@ if [ ! -f "$makefile_path" ]; then
   exit 1
 fi
 
-temp_file=$(mktemp)
+temp_file2=$(mktemp)
 
 awk '{
   if ($1 == "CC" && $3 == "gcc") { print "CC = gcc -fgnu89-inline" }
