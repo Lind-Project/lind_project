@@ -9,7 +9,7 @@
 #include <sys/mman.h>
 
 #define GB (1 << 30)
-#define CHUNK_SIZE 2048
+#define CHUNK_SIZE 65536
 
 long long gettimens() {
     struct timespec tp;
@@ -27,13 +27,12 @@ void parent(int pipe_to_child[2], int pipe_from_child[2], sem_t *semaphore) {
     fprintf(stderr, "Starts writing: %lld\n", gettimens());
     fflush(stderr);
 
-    for (int i = 0; i < GB / 2048; ++i) {
+    for (int i = 0; i < GB / 65536; ++i) {
         if (write(pipe_to_child[1], buf, CHUNK_SIZE) == -1) {
             perror("write");
             exit(1);
         }
-    }
-    for (int j = 0; j < GB / 2048; ++j) {
+        
         int total_received = 0;
         if (read(pipe_from_child[0], buf, CHUNK_SIZE) == -1) {
             perror("read");
@@ -57,14 +56,12 @@ void child(int pipe_to_parent[2], int pipe_from_parent[2], sem_t *semaphore) {
         exit(1);
     }
 
-    for (int x = 0; x < GB / 2048; ++x) {
+    for (int x = 0; x < GB / 65536; ++x) {
         if (read(pipe_from_parent[0], buf, CHUNK_SIZE) == -1) {
             perror("read");
             exit(1);
         }
-    }
-
-    for (int y = 0; y < GB / 2048; ++y) {
+        
         if (write(pipe_to_parent[1], buf, CHUNK_SIZE) == -1) {
             perror("write");
             exit(1);
