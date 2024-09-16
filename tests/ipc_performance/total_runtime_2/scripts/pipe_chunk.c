@@ -17,7 +17,7 @@ long long gettimens() {
     return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
 }
 
-void parent(int pipe_to_child[2], int pipe_from_child[2], sem_t *semaphore) {
+void parent(int pipe_to_child[2], int pipe_to_parent[2], sem_t *semaphore) {
     char *buf = (char *)malloc(CHUNK_SIZE);
 
     memset(buf, 'a', CHUNK_SIZE);
@@ -34,7 +34,7 @@ void parent(int pipe_to_child[2], int pipe_from_child[2], sem_t *semaphore) {
         }
         
         int total_received = 0;
-        if (read(pipe_from_child[0], buf, CHUNK_SIZE) == -1) {
+        if (read(pipe_to_parent[0], buf, CHUNK_SIZE) == -1) {
             perror("read");
             exit(1);
         }
@@ -46,7 +46,7 @@ void parent(int pipe_to_child[2], int pipe_from_child[2], sem_t *semaphore) {
     free(buf);
 }
 
-void child(int pipe_to_parent[2], int pipe_from_parent[2], sem_t *semaphore) {
+void child(int pipe_to_parent[2], int pipe_to_child[2], sem_t *semaphore) {
     char *buf = (char *)malloc(CHUNK_SIZE);
 
     memset(buf, 'b', CHUNK_SIZE);
@@ -57,7 +57,7 @@ void child(int pipe_to_parent[2], int pipe_from_parent[2], sem_t *semaphore) {
     }
 
     for (int x = 0; x < GB / 2048; ++x) {
-        if (read(pipe_from_parent[0], buf, CHUNK_SIZE) == -1) {
+        if (read(pipe_to_child[0], buf, CHUNK_SIZE) == -1) {
             perror("read");
             exit(1);
         }
