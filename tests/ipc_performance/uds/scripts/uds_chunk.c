@@ -9,7 +9,7 @@
 #include <sys/mman.h>
 
 #define GB (1 << 30)
-#define CHUNK_SIZE 2048
+#define CHUNK_SIZE 65536
 
 long long gettimens() {
     struct timespec tp;
@@ -27,7 +27,7 @@ void parent(int socket, sem_t *semaphore) {
     fprintf(stderr, "Starts sending: %lld\n", gettimens());
     fflush(stderr);
 
-    for (int i = 0; i < GB / 2048; ++i) {
+    for (int i = 0; i < GB / 65536; ++i) {
         if (send(socket, buf, CHUNK_SIZE, 0) == -1) {
             perror("Send");
             exit(1);
@@ -55,7 +55,7 @@ void child(int socket, sem_t *semaphore) {
         exit(1);
     }
 
-    for (int x = 0; x < GB / 2048; ++x) {
+    for (int x = 0; x < GB / 65536; ++x) {
         if (recv(socket, buf, CHUNK_SIZE, 0) == -1) {
             perror("Recv");
             exit(1);
