@@ -10,3 +10,8 @@ mkdir data/
 
 # Run native tests
 ./run_pipe_performance.sh $1 other
+
+# Install RawPOSIX
+./rawposix_install.sh
+
+./run_pipe_performance.sh $1 raw
