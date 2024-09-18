@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$2" = "raw" ]; then
+if [ "$2" = "rawposix" ]; then
     echo "Loading files into rawposix"
     cp scripts/pipescript.sh /home/lind/lind_project/src/safeposix-rust/tmp/pipescript.sh
     cp scripts/writepipe.nexe /home/lind/lind_project/src/safeposix-rust/tmp/writepipe
