@@ -56,11 +56,18 @@ run_times = {}
 for size in range(4, 17, 2):
     write_buffer_size = str(size) if args.write_buffer == "x" else args.write_buffer
     read_buffer_size = str(size) if args.read_buffer == "x" else args.read_buffer
-    # Split the command string into a list
-    command = args.execution.split()
+
+    if args.execution == "rawposix":
+        raw_execution = "lind /bin/bash /pipescript.sh"
+        command = raw_execution.split()
+    else:
+        # Split the command string into a list
+        command = args.execution.split()
+    
     # Append the write buffer size as the last argument
     command.append(write_buffer_size)
     command.append(read_buffer_size)
+    
     run_times[size] = []
     print(f"Write buffer: {write_buffer_size}, Read buffer: {read_buffer_size}")
     
@@ -84,8 +91,11 @@ for size in range(4, 17, 2):
         platform = "lind"
     elif args.execution == "/bin/bash scripts/pipescript.sh":
         platform = "nat"
+    elif args.execution == "rawposix":
+        platform = "raw"
     else:
         platform = "unsafe"
+
     with open(f"data/{platform}_{args.write_buffer}_{args.read_buffer}.json", "w") as fp:
         json.dump(run_times, fp)
         
