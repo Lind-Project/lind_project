@@ -14,4 +14,6 @@ mkdir data/
 # Install RawPOSIX
 ./rawposix_install.sh
 
+./rawposix_base.sh
+
 ./run_pipe_performance.sh $1 raw
