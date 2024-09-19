@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ------ dev files ------
-mkdir /home/lind/lind_project/src/safeposix-rust/tmp/dev
+sudo mkdir /home/lind/lind_project/src/safeposix-rust/tmp/dev
 sudo mknod /home/lind/lind_project/src/safeposix-rust/tmp/dev/tty c 5 0
 sudo chmod 666 /home/lind/lind_project/src/safeposix-rust/tmp/dev/tty
 sudo mknod /home/lind/lind_project/src/safeposix-rust/tmp/dev/zero c 1 5
