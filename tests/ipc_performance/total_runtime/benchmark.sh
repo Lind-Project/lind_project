@@ -8,5 +8,13 @@
 
 mkdir data/ 
 
-# Run native tests
+# Run native / unsafe / lind tests
 ./run_pipe_performance.sh $1 other
+
+# Install RawPOSIX
+/home/lind/lind_project/src/scripts/rawposix/rawposix_install.sh
+
+# Loading lind binaries into RawPOSIX file system
+/home/lind/lind_project/src/scripts/rawposix/rawposix_base.sh
+
+./run_pipe_performance.sh $1 rawposix
