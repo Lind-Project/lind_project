@@ -317,30 +317,7 @@ function install_to_path() {
 	RAWPOSIX_PATH="/home/lind/lind_project/src/safeposix-rust/tmp"
 
 	trap -- 'args="$*" line="$LINENO" abort' "${err_signals[@]}"
-
-	print "** Sending NaCl files to $LIND_ENV_PATH **"
-
-	mkdir -p "$LIND_ENV_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
-	mkdir -p "$LIND_ENV_PATH_SDK/tools"
-
-	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/" "$LIND_ENV_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc"
-
-	"${RSYNC[@]}" "$NACL_BASE/scons-out/${MODE}-x86-64/staging/" "$LIND_ENV_PATH_BIN"
-
-	#install lind script
-	cp -pfv "$MISC_DIR/lind" "$LIND_ENV_PATH_BIN/lind"
-
-
-	# print "Copying glibc into lindenv virtual filesytem"
-	print "Copying glibc into local lind filesystem" 
-
-	cd "$LIND_ENV_PATH/fs"
-	cp "$LIND_ENV_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc/x86_64-nacl/lib/runnable-ld.so" runnable-ld.so
-	
-	$LIND_BASE/src/safeposix-rust/gen_netdevs.sh
-	# "$LIND_ENV_PATH_BIN/lind_fs_utils" mkdir "/lib"
-	# "$LIND_ENV_PATH_BIN/lind_fs_utils" update "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"  "/lib/glibc"
-
+	mkdir /home/lind/lind_project/src/safeposix-rust/tmp
 	# Copy files into the designed location (replace original lindfs)
 	mkdir -p "${RAWPOSIX_PATH}/lib/glibc"
 	cp -r "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"* "${RAWPOSIX_PATH}/lib/glibc/"
