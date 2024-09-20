@@ -320,7 +320,7 @@ function install_to_path() {
 	mkdir /home/lind/lind_project/src/safeposix-rust/tmp
 	# Copy files into the designed location (replace original lindfs)
 	mkdir -p "${RAWPOSIX_PATH}/lib/glibc"
-	cp -r "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"* "${RAWPOSIX_PATH}/lib/glibc/"
+	cp -r "$LIND_ENV_PATH_SDK/toolchain/${OS_SUBDIR}_x86_glibc/x86_64-nacl/lib/"* "${RAWPOSIX_PATH}/lib/glibc/"
 	cp "$LIND_ENV_PATH/librustposix.so" "${RAWPOSIX_PATH}/"
 
 	print "Done."
