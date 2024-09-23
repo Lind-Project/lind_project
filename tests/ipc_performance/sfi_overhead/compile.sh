@@ -1,0 +1,11 @@
+#!/bin/bash
+
+echo "Compiling lind SFI test binaries"
+x86_64-nacl-gcc scripts/write.c -o scripts/write.nexe -lrt -std=gnu99 -O3
+x86_64-nacl-gcc scripts/close.c -o scripts/close.nexe -lrt -std=gnu99 -O3
+x86_64-nacl-gcc scripts/getpid.c -o scripts/getpid.nexe -lrt -std=gnu99 -O3
+
+echo "Compiling native SFI test binaries"
+/usr/local/gcc-4.4.3/bin/gcc scripts/write.c -o scripts/write -lrt -std=gnu99 -O3
+/usr/local/gcc-4.4.3/bin/gcc scripts/close.c -o scripts/close -lrt -std=gnu99 -O3
+/usr/local/gcc-4.4.3/bin/gcc scripts/getpid.c -o scripts/getpid -lrt -std=gnu99 -O3

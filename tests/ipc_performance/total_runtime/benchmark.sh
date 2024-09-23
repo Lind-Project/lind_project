@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Compile gcc-4 for native / bash and coreutils for lind
-./setup.sh
-
 # Compile binaries
 ./compile.sh
 

@@ -1,6 +1,6 @@
-FROM base-lite:latest as build
+FROM securesystemslab/base-lite as build
 LABEL lind "v2.0-rc1"
-LABEL description "Lind NaCl Glibc Toolchain (Pre-built)"
+LABEL description "Lind IPC Total Runtime Tests (Pre-built)"
 LABEL author "Nicholas Renner nrenner@nyu.edu"
 
 ARG BRANCH
@@ -38,7 +38,7 @@ RUN ./src/mklind rustposix
 RUN ./src/mklind nacl
 RUN ./src/mklind install
 
-FROM base-lite:latest as prod
+FROM securesystemslab/base-lite as prod
 
 COPY --from=build /home/lind/lind_project/lind /home/lind/lind_project/lind
 WORKDIR /home/lind/lind_project
@@ -46,19 +46,18 @@ RUN git submodule update --init tests/native-rustposix
 RUN ./src/scripts/base/compile_bash.sh
 RUN ./src/scripts/base/load_bash.sh
 RUN ./src/scripts/base/load_coreutils.sh
+
 USER root
 RUN ./tests/ipc_performance/total_runtime/setup.sh
 WORKDIR /home/lind/lind_project/tests/ipc_performance/total_runtime
-RUN ./compile.sh
-RUN mkdir data
+
+# Checkout to working branch
+RUN git config --global --add safe.directory /home/lind/lind_project
+RUN git checkout ipc-fix
+
 USER lind
-# RUN /home/lind/lind_project/src/scripts/rawposix/rawposix_install.sh
-# RUN /home/lind/lind_project/src/scripts/rawposix/rawposix_base.sh
 # finish install
 WORKDIR /home/lind/lind_project
-
-
-#RUN x86_64-nacl-gcc /home/lind/lind_project/tests/test_cases/hello.c -o /home/lind/lind_project/hello.nexe && lindfs cp /home/lind/lind_project/hello.nexe hello.nexe && lind /hello.nexe
 
 # Set the default shell to bash
 SHELL ["/bin/bash"]

@@ -4,6 +4,12 @@ The purpose of the test is to find out the total time taken for write and read. 
 
 ## Instructions to run test
 
+### Doing setups manually
+
+```sh
+./setup.sh
+```
+
 ### Run pipe test suite in unsafe / lind / native
 
 ```sh
