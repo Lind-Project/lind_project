@@ -20,7 +20,7 @@ def tail_n_1(file_path, buf_size, platform):
         lines = f.readlines()
         if lines:
             last_line = lines[-1].strip()
-            match = re.search(r'average time (\d+)', last_line)
+            match = re.search(r'average time (\d+)', last_line.decode('utf-8'))
             if match:
                 results[buf_size] = int(match.group(1))
             else:
