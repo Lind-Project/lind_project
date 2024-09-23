@@ -14,31 +14,31 @@ def run_test(count, command, platform, type):
                 stderr=PIPE
             )
 
-def tail_n_1(file_path, buf_size, platform):
-    results = {}
+# def tail_n_1(file_path, buf_size, platform):
+#     results = {}
         
-    with open(file_path, 'rb') as f:
-        # 移动到文件末尾
-        f.seek(0, 2)
-        # 读取文件的最后一行
-        position = f.tell()
-        line = b''
-        while position >= 0:
-            f.seek(position)
-            char = f.read(1)
-            if char == b'\n' and line:
-                break
-            line = char + line
-            position -= 1
-        match = re.search(r'average time (\d+)', line.decode('utf-8'))
-        if match:
-            results[buf_size] = int(match.group(1))
-        else:
-            print("No match found in the last line.")
+#     with open(file_path, 'rb') as f:
+#         # 移动到文件末尾
+#         f.seek(0, 2)
+#         # 读取文件的最后一行
+#         position = f.tell()
+#         line = b''
+#         while position >= 0:
+#             f.seek(position)
+#             char = f.read(1)
+#             if char == b'\n' and line:
+#                 break
+#             line = char + line
+#             position -= 1
+#         match = re.search(r'average time (\d+)', line.decode('utf-8'))
+#         if match:
+#             results[buf_size] = int(match.group(1))
+#         else:
+#             print("No match found in the last line.")
     
-    # Write to json file
-    with open(f'{platform}_write.json', 'w') as fp:
-        json.dump(results, fp)
+#     # Write to json file
+#     with open(f'{platform}_write.json', 'w') as fp:
+#         json.dump(results, fp)
 
 parser = argparse.ArgumentParser(
     description="SFI Penalty Tests"
@@ -66,9 +66,9 @@ for buf_size in [1, 16, 256, 4096, 65536]:
     lind_write_command = ['lind', '/write.nexe', str(buf_size)]
     run_test(args.count, lind_write_command, 'lind', f'write_{buf_size}')
 
-    for platform in platforms:
-        # Extract write() test results into json file
-        tail_n_1(f'outputs/{platform}_write_{buf_size}.txt', buf_size, platform)
+    # for platform in platforms:
+    #     # Extract write() test results into json file
+    #     tail_n_1(f'outputs/{platform}_write_{buf_size}.txt', buf_size, platform)
 
 print(f'--------------------------------------------------------------------')
 print(f'Close test ---- Native Linux')
