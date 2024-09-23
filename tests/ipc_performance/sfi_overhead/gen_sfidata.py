@@ -16,17 +16,25 @@ def run_test(count, command, platform, type):
 
 def tail_n_1(file_path, buf_size, platform):
     results = {}
+        
     with open(file_path, 'rb') as f:
-        lines = f.readlines()
-        if lines:
-            last_line = lines[-1].strip()
-            match = re.search(r'average time (\d+)', last_line.decode('utf-8'))
-            if match:
-                results[buf_size] = int(match.group(1))
-            else:
-                print("No match found in the last line.")
+        # 移动到文件末尾
+        f.seek(0, 2)
+        # 读取文件的最后一行
+        position = f.tell()
+        line = b''
+        while position >= 0:
+            f.seek(position)
+            char = f.read(1)
+            if char == b'\n' and line:
+                break
+            line = char + line
+            position -= 1
+        match = re.search(r'average time (\d+)', line.decode('utf-8'))
+        if match:
+            results[buf_size] = int(match.group(1))
         else:
-            print(f"Empty output file on write {platform}")
+            print("No match found in the last line.")
     
     # Write to json file
     with open(f'{platform}_write.json', 'w') as fp:
