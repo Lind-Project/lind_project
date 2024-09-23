@@ -17,12 +17,16 @@ def run_test(count, command, platform, type):
 def tail_n_1(file_path, buf_size, platform):
     results = {}
     with open(file_path, 'rb') as f:
-        # Seek from last line
-        f.seek(-2, os.SEEK_END)
-        while f.read(1) != b'\n':
-            f.seek(-2, os.SEEK_CUR)
-        last_line = f.readline().decode()
-        results[buf_size] = re.search(r'average time (\d+)', last_line)
+        lines = f.readlines()
+        if lines:
+            last_line = lines[-1].strip()
+            match = re.search(r'average time (\d+)', last_line)
+            if match:
+                results[buf_size] = int(match.group(1))
+            else:
+                print("No match found in the last line.")
+        else:
+            print(f"Empty output file on write {platform}")
     
     # Write to json file
     with open(f'{platform}_write.json', 'w') as fp:
@@ -45,18 +49,18 @@ run_times = {}
 
 platforms = ['nat', 'lind']
 
-for buf_size in range(1, 16, 256, 4096, 65536):
+for buf_size in [1, 16, 256, 4096, 65536]:
     print(f'Write tests ---- Native Linux')
-    nat_write_command = ['scripts/write', buf_size]
+    nat_write_command = ['scripts/write', str(buf_size)]
     run_test(args.count, nat_write_command, 'nat', f'write_{buf_size}')
 
     print(f'Write tests ---- Lind')
-    lind_write_command = ['lind', '/write.nexe', buf_size]
+    lind_write_command = ['lind', '/write.nexe', str(buf_size)]
     run_test(args.count, lind_write_command, 'lind', f'write_{buf_size}')
 
     for platform in platforms:
         # Extract write() test results into json file
-        tail_n_1(f'output/{platform}_write_{buf_size}.txt', buf_size, platform)
+        tail_n_1(f'outputs/{platform}_write_{buf_size}.txt', buf_size, platform)
 
 print(f'--------------------------------------------------------------------')
 print(f'Close test ---- Native Linux')
