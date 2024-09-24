@@ -81,7 +81,7 @@ for time in "${close_lind_times[@]}";  do
     echo "    $time," >> data/close_result.json
 done
 echo '  ]' >> data/close_result.json
-echo '}' > data/close_result.json
+echo '}' >> data/close_result.json
 #####################################################################################
 
 echo "SFI test -- getpid()"
@@ -110,4 +110,4 @@ for time in "${getpid_lind_times[@]}"; do
     echo "    $time," >> data/getpid_result.json
 done
 echo '  ],' >> data/getpid_result.json
-echo '}' > data/getpid_result.json
+echo '}' >> data/getpid_result.json
