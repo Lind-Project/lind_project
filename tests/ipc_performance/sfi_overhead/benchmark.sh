@@ -7,6 +7,10 @@ mkdir data/
 mkdir outputs/
 
 #####################################################################################
+# ------
+# Use RustPOSIX + libc-write
+./rustposix_fast.sh
+# ------
 
 # echo "SFI test -- write()"
 
@@ -52,6 +56,10 @@ mkdir outputs/
 # echo '}' >> data/write_times.json
 
 #####################################################################################
+# ------
+# Use regular RustPOSIX
+./rustposix.sh
+# ------
 
 echo "SFI test -- close()"
 
