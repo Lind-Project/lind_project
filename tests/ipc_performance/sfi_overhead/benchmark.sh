@@ -23,33 +23,33 @@ lind /write.nexe 256 > outputs/lind_256_write.txt
 lind /write.nexe 4096 > outputs/lind_4096_write.txt
 lind /write.nexe 65536 > outputs/lind_65536_write.txt
 
-echo '{' > write_times.json
+echo '{' > data/write_times.json
 
 # Lind
-echo '  "lind": {' >> write_times.json
-for file in lind_*_write.txt
+echo '  "lind": {' >> data/write_times.json
+for file in outputs/lind_*_write.txt
 do
     buffer_size=$(tail -n 1 "$file" | awk '{print $3}')
     avg_time=$(tail -n 1 "$file" | awk '{print $9}')
-    echo "    \"$buffer_size\": $avg_time," >> write_times.json
+    echo "    \"$buffer_size\": $avg_time," >> data/write_times.json
 done
 # Remove last
-sed -i '$ s/,$//' write_times.json
-echo '  },' >> write_times.json
+sed -i '$ s/,$//' data/write_times.json
+echo '  },' >>data/ write_times.json
 
 # Native
-echo '  "native": {' >> write_times.json
-for file in nat_*_write.txt
+echo '  "native": {' >> data/write_times.json
+for file in outputs/nat_*_write.txt
 do
     buffer_size=$(tail -n 1 "$file" | awk '{print $3}')
     avg_time=$(tail -n 1 "$file" | awk '{print $9}')
-    echo "    \"$buffer_size\": $avg_time," >> write_times.json
+    echo "    \"$buffer_size\": $avg_time," >> data/write_times.json
 done
 # Remove
-sed -i '$ s/,$//' write_times.json
-echo '  }' >> write_times.json
+sed -i '$ s/,$//' data/write_times.json
+echo '  }' >> data/write_times.json
 
-echo '}' >> write_times.json
+echo '}' >> data/write_times.json
 
 #####################################################################################
 
