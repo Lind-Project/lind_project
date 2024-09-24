@@ -60,27 +60,24 @@ echo '{' > data/close_result.json
 close_native_times=()
 close_lind_times=()
 
-for ((i=1; i<=$1; i++))
-do
+for ((i=1; i<=$1; i++)); do
     echo "----- native -----"
-    native_close_output=$(scripts/close | grep 'average time' | awk '{print $5}')
+    native_close_output=$(scripts/close | grep 'average time' | awk '{print $6}')
     close_native_times+=($native_close_output)
     echo "----- lind -----"
-    lind_close_output=$(lind /close.nexe | grep 'average time' | awk '{print $5}')
+    lind_close_output=$(lind /close.nexe | grep 'average time' | awk '{print $6}')
     close_lind_times+=($lind_close_output)
 done
 
 # Write results to json file
 echo '  "native": [' >> data/close_result.json
-for time in "${close_native_times[@]}"
-do
+for time in "${close_native_times[@]}"; do
     echo "    $time," >> data/close_result.json
 done
 echo '  ],' >> data/close_result.json
 
 echo '  "lind": [' >> data/close_result.json
-for time in "${close_lind_times[@]}"
-do
+for time in "${close_lind_times[@]}";  do
     echo "    $time," >> data/close_result.json
 done
 echo '  ],' >> data/close_result.json
@@ -92,27 +89,24 @@ echo "SFI test -- getpid()"
 echo '{' > data/close_result.json
 getpid_native_times=()
 getpid_lind_times=()
-for ((i=1; i<=$1; i++))
-do
+for ((i=1; i<=$1; i++)); do
     echo "----- native -----"
-    native_getpid_output=$(scripts/getpid | grep 'average time' | awk '{print $5}')
+    native_getpid_output=$(scripts/getpid | grep 'average time' | awk '{print $6}')
     getpid_native_times+=($native_getpid_output)
     echo "----- lind -----"
-    lind_getpid_output=$(lind /getpid.nexe | grep 'average time' | awk '{print $5}')
+    lind_getpid_output=$(lind /getpid.nexe | grep 'average time' | awk '{print $6}')
     close_getpid_times+=($lind_getpid_output)
 done
 
 # Write results to json file
 echo '  "native": [' >> data/getpid_result.json
-for time in "${getpid_native_times[@]}"
-do
+for time in "${getpid_native_times[@]}"; do
     echo "    $time," >> data/getpid_result.json
 done
 echo '  ],' >> data/getpid_result.json
 
 echo '  "lind": [' >> data/getpid_result.json
-for time in "${getpid_lind_times[@]}"
-do
+for time in "${getpid_lind_times[@]}"; do
     echo "    $time," >> data/getpid_result.json
 done
 echo '  ],' >> data/getpid_result.json
