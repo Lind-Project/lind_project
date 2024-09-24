@@ -18,13 +18,6 @@ nat_command="scripts/write"
 lind_command="lind /write.nexe"
 output_dir="outputs"
 
-declare -A iterations
-iterations[1]=1 #1073741824
-iterations[16]=8 #134217728
-iterations[256]=128 #8388608
-iterations[4096]=204 #524288
-iterations[65536]=32768 #32768
-
 # Run write() test and then put the output into JSON file
 function run_tests() {
     local command=$1
@@ -33,25 +26,16 @@ function run_tests() {
     local output_file="${output_dir}/${platform}_${buffer_size}_write.txt"
     total_avg_time=0
     local iterations_count=${iterations[$buffer_size]} 
-
-    # Remove previous output file
-    rm -f "$output_file"
-
     # Run write() test case and extract the average runtime
     echo "Running $command $buffer_size > $output_file"
     # Run the write test for the given number of iterations
-    for ((i=1; i<=iterations_count; i++)); do
-        echo "Iteration $i for buffer size $buffer_size"
-        current_time=$($command $buffer_size | tail -n 1 | awk '{print $10}')
-        echo "Time for iteration $i: $current_time ns"
-        total_avg_time=$(echo "$total_avg_time + $current_time" | bc)
-    done
-
-    avg_time=$(echo "$total_avg_time / $iterations_count" | bc)
-    echo "Buffer size: $buffer_size, Average time: $avg_time ns"
-
-    # Put final average data into JSON file
-    echo "    \"$buffer_size\": $avg_time," >> "data/write_$platform.json"
+    echo "Iteration $i for buffer size $buffer_size"
+    current_time=$($command $buffer_size | tail -n 1 | awk '{print $10}')
+    echo "Buffer size: $buffer_size, Average time: $current_time ns"
+    # Put average data into JSON file
+    echo "    \"$buffer_size\": $current_time," >> "data/write_$platform.json"
+    # Remove output file after operation
+    rm -f "$output_file"
 }
 
 # Clear and initialize JSON file

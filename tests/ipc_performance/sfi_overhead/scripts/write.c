@@ -5,8 +5,9 @@
 #include <time.h>
 #include <string.h>
 
-#define TOTAL_SIZE (2LL * 1024 * 1024 * 1024)  // 2GB
+#define LOOP_COUNT 32768
 
+// Collect same data point for all of them
 long long gettimens() {
     struct timespec tp;
     clock_gettime(CLOCK_MONOTONIC, &tp);
@@ -21,20 +22,18 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     memset(buffer, 'A', buf_size);
-
-    unsigned long long loop_count = TOTAL_SIZE / buf_size;
     
     long long start_time = gettimens();
     
-    for(int i = 0; i < loop_count; i++) {
+    for(int i = 0; i < LOOP_COUNT; i++) {
         write(STDOUT_FILENO, buffer, buf_size);
     }
     
     long long end_time = gettimens();
     long long total_time = end_time - start_time;
-    long long average_time = total_time / loop_count;
+    long long average_time = total_time / LOOP_COUNT;
     
-    printf("\nBuffer size %d bytes: %d write() calls, average time %lld ns\n", buf_size, loop_count, average_time);
+    printf("\nBuffer size %d bytes: %d write() calls, average time %lld ns\n", buf_size, LOOP_COUNT, average_time);
     fflush(NULL);
     
     free(buffer);
