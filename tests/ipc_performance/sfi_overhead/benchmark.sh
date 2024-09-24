@@ -95,7 +95,7 @@ for ((i=1; i<=$1; i++)); do
     getpid_native_times+=($native_getpid_output)
     echo "----- lind -----"
     lind_getpid_output=$(lind /getpid.nexe | grep 'average time' | awk '{print $6}')
-    close_getpid_times+=($lind_getpid_output)
+    getpid_lind_times+=($lind_getpid_output)
 done
 
 # Write results to json file
