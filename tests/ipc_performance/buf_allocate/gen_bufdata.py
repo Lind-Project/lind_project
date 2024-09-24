@@ -15,7 +15,7 @@ def extract_times(output):
         return None
 
 parser = argparse.ArgumentParser(
-    description="Script to benchmark sending n GBs unix domain socket implementation with varying buffersize"
+    description="Script to benchmark sending n GBs unix domain socket / pipe implementation with varying buffersize"
 )
 parser.add_argument(
     "-b",

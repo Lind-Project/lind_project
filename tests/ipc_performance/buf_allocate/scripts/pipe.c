@@ -24,7 +24,7 @@ void parent(int pipe_to_child[2], int pipe_from_child[2], int buf_size, sem_t *s
     
     sem_wait(semaphore);
 
-    fprintf(stderr, "Starts writing: %lld\n", gettimens());
+    fprintf(stderr, "Starts sending: %lld\n", gettimens());
     fflush(stderr);
 
     for (int i = 0; i < GB / buf_size; ++i) {
@@ -47,7 +47,7 @@ void parent(int pipe_to_child[2], int pipe_from_child[2], int buf_size, sem_t *s
 
     
 
-    fprintf(stderr, "Ends reading: %lld\n", gettimens());
+    fprintf(stderr, "Ends receiving: %lld\n", gettimens());
     fflush(stderr);
 
     free(send_buf);
