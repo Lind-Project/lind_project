@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm -rf /home/lind/lind_project/src/safeposix-rust
+sudo rm -rf /home/lind/lind_project/src/safeposix-rust
 cd /home/lind/lind_project/src/
 git clone https://github.com/Lind-Project/safeposix-rust.git
 cd safeposix-rust
