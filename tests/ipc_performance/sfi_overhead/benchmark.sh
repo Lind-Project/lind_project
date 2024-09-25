@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Setup rust compiler in sudo mode
+rustup default nightly
+
 # Compile binaries
 ./compile.sh
 
