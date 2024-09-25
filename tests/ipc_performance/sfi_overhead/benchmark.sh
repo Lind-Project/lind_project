@@ -33,7 +33,7 @@ function run_tests() {
     current_time=$($command $buffer_size | tail -n 1 | awk '{print $10}')
     echo "Buffer size: $buffer_size, Average time: $current_time ns"
     # Put average data into JSON file
-    echo "    \"$buffer_size\": $current_time," >> "data/write_$platform.json"
+    echo "    $current_time," >> "data/write_$platform.json"
     # Remove output file after operation
     rm -f "$output_file"
 }
@@ -53,14 +53,22 @@ function finalize_json() {
 echo "----- native -----"
 init_json "nat"
 for buf_size in 1 16 256 4096 65536; do
-  run_tests "$nat_command" $buf_size "nat"
+    echo "  \"$buf_size\": [" >> "data/write_nat.json"
+    for ((i=1; i<=$1; i++)); do
+        run_tests "$nat_command" $buf_size "nat"
+    done
+    echo '  ]' >> "data/write_nat.json"
 done
 finalize_json "nat"
 
 echo "----- lind -----"
 init_json "lind"
 for buf_size in 1 16 256 4096 65536; do
-  run_tests "$lind_command" $buf_size "lind"
+    echo "  \"$buf_size\": [" >> "data/write_lind.json"
+    for ((i=1; i<=$1; i++)); do
+        run_tests "$lind_command" $buf_size "lind"
+    done
+    echo '  ]' >> "data/write_lind.json"
 done
 finalize_json "lind"
 
