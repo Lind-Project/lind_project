@@ -1,8 +1,5 @@
 #!/bin/bash
 
-echo -e "Loading postgres and bash"
-/home/lind/lind_project/tests/lamp_stack/pgbench/load_lind.sh > /dev/null
-
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <param>"
     exit 1
@@ -36,8 +33,6 @@ fi
 if [ "$param" == "100000" ]; then
 	sed -i '7s|.*|usr/local/pgsql/bin/pgbench -t 100000 -U lind postgres|' "$file"
 fi
-
-lindfs cp /home/lind/lind_project/tests/lamp_stack/pgbench/scripts/run_pgbench.sh /run_pgbench.sh 
 
 echo -e "Initializing postgres"
 lind /bin/bash init_postgres.sh > /dev/null
