@@ -3,18 +3,18 @@ echo -e "------------ Starting 4-way Locking Comparison Tests ------------\n"
 
 mkdir -p data
 
-echo -e "====== Running Native ======\n"
+echo -e "\n====== Running Native ======\n"
 
 # Compile binaries for native
 /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/compile-native.sh
 /home/lind/lind_project/tests/ipc_performance/total_runtime/run_lock_comp.sh $1 "native" "regular"
 
-echo -e "====== Running Lind ======\n"
+echo -e "\n====== Running Lind ======\n"
 # Compile binaries for lind
 /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/compile-lind.sh
 /home/lind/lind_project/tests/ipc_performance/total_runtime/run_lock_comp.sh $1 "lind" "regular"
 
-echo -e "====== Running Lind - Mutex ======\n"
+echo -e "\n====== Running Lind - Mutex ======\n"
 
 # Clone the RustPOSIX repo
 cd /home/lind/lind_project/src/
@@ -27,12 +27,11 @@ cd /home/lind/lind_project/
 src/mklind rustposix
 src/mklind install
 
-mkdir -p /home/lind/lind_project/tests/ipc_performance/total_runtime/data-all/lind-mutex/data
-cd /home/lind/lind_project/tests/ipc_performance/total_runtime/data-all/lind-mutex
+cd /home/lind/lind_project/tests/ipc_performance/total_runtime/
 
 /home/lind/lind_project/tests/ipc_performance/total_runtime/run_lock_comp.sh $1 "lind" "mutex"
 
-echo -e "====== Running Lind - Spin lock ======\n"
+echo -e "\n====== Running Lind - Spin lock ======\n"
 
 # Checkout to spin locks branch and recompile RustPOSIX
 cd /home/lind/lind_project/src/safeposix-rust
@@ -41,7 +40,6 @@ cd /home/lind/lind_project/
 src/mklind rustposix
 src/mklind install
 
-mkdir -p /home/lind/lind_project/tests/ipc_performance/total_runtime/data-all/lind-spin/data
-cd /home/lind/lind_project/tests/ipc_performance/total_runtime/data-all/lind-spin
+cd /home/lind/lind_project/tests/ipc_performance/total_runtime/
 
 /home/lind/lind_project/tests/ipc_performance/total_runtime/run_lock_comp.sh $1 "lind" "spin"
