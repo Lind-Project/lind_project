@@ -16,6 +16,8 @@ echo -e "\n====== Running Lind ======\n"
 
 echo -e "\n====== Running Lind - Mutex ======\n"
 
+# Enable Rust compiler
+rustup default nightly
 # Clone the RustPOSIX repo
 cd /home/lind/lind_project/src/
 rm -r safeposix-rust
