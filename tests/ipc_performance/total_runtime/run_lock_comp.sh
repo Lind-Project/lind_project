@@ -4,14 +4,14 @@ if [ "$2" = "native" ]; then
     echo -e "Loading files into native desired location\n"
     cp scripts/readpipe .
     cp scripts/writepipe .
-    platforms=("/bin/bash scripts/pipescript.sh")
+    platform="/bin/bash scripts/pipescript.sh"
 elif [ "$2" = "lind" ]; then
     echo -e "Loading files into file system of Lind\n"
     # lind will require /scripts/readpipe to execute
     lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/pipescript.sh /pipescript.sh
     lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/writepipe.nexe /writepipe
     lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/readpipe.nexe /readpipe
-    platforms=("lind /bin/bash /pipescript.sh")
+    platform="lind /bin/bash /pipescript.sh"
 else
     echo "Usage: ./run_pipe_performance.sh [count] [platform] [test_type]"
     exit 1
@@ -21,10 +21,10 @@ count=$1
 test_type=$3
 
 echo -e "\nRunning with: -p $platform -w 16 -r x -c $count -t $test_type"
-python3 gen_locakdata.py -w 16 -r x -p "$platform" -c "$count" -t "$test_type"
+python3 gen_lockdata.py -w 16 -r x -p "$platform" -c "$count" -t "$test_type"
 
 echo -e "\nRunning with: -p $platform -w x -r x -c $count -t $test_type"
-python3 gen_locakdata.py -w x -r x -p "$platform" -c "$count" -t "$test_type"
+python3 gen_lockdata.py -w x -r x -p "$platform" -c "$count" -t "$test_type"
 
 echo -e "\nRunning with: -p $platform -w x -r 16 -c $count -t $test_type"
-python3 gen_locakdata.py -w x -r 16 -p "$platform" -c "$count" -t "$test_type"
+python3 gen_lockdata.py -w x -r 16 -p "$platform" -c "$count" -t "$test_type"
