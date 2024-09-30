@@ -13,17 +13,18 @@ elif [ "$2" = "lind" ]; then
     lindfs cp /home/lind/lind_project/tests/ipc_performance/total_runtime/scripts/readpipe.nexe /readpipe
     platforms=("lind /bin/bash /pipescript.sh")
 else
-    echo "Usage: ./run_pipe_performance.sh [count] [platform]"
+    echo "Usage: ./run_pipe_performance.sh [count] [platform] [test_type]"
     exit 1
 fi
 
 count=$1
+test_type=$3
 
-echo -e "\nRunning with: -p $platform -w 16 -r x -c $count"
-python3 gen_pipedata.py -w 16 -r x -p "$platform" -c "$count"
+echo -e "\nRunning with: -p $platform -w 16 -r x -c $count -t $test_type"
+python3 gen_pipedata.py -w 16 -r x -p "$platform" -c "$count" -t "$test_type"
 
-echo -e "\nRunning with: -p $platform -w x -r x -c $count"
-python3 gen_pipedata.py -w x -r x -p "$platform" -c "$count"
+echo -e "\nRunning with: -p $platform -w x -r x -c $count -t $test_type"
+python3 gen_pipedata.py -w x -r x -p "$platform" -c "$count" -t "$test_type"
 
-echo -e "\nRunning with: -p $platform -w x -r 16 -c $count"
-python3 gen_pipedata.py -w x -r 16 -p "$platform" -c "$count"
+echo -e "\nRunning with: -p $platform -w x -r 16 -c $count -t $test_type"
+python3 gen_pipedata.py -w x -r 16 -p "$platform" -c "$count" -t "$test_type"
