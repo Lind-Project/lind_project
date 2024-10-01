@@ -82,9 +82,16 @@ for size in range(4, 17, 2):
     elif args.execution == "lind /pipe":
         platform = "lind"
         type = "pipe"
-    else:
+    elif args.execution == "scripts/pipe":
         platform = "nat"
         type = "pipe"
+    elif args.execution == "lind /loopback":
+        platform = "lind"
+        type = "loopback"
+    else:
+        platform = "nat"
+        type = "loopback"
+        
     with open(f"data/{type}_{platform}_{args.buffer}.json", "w") as fp:
         json.dump(run_times, fp)
         
