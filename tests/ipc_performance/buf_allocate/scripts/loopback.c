@@ -84,6 +84,14 @@ int create_server_socket() {
         exit(EXIT_FAILURE);
     }
 
+    int opt = 1;  // Option for SO_REUSEADDR
+
+    // Set SO_REUSEADDR to allow reuse of the port
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+        
     // Set up server address
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.7"); // Loopback address
