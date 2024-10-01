@@ -19,23 +19,23 @@ long long gettimens() {
     return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
 }
 
-void parent(int socket, sem_t *semaphore) {
-    char *buf = (char *)malloc(CHUNK_SIZE);
+void parent(int socket, int buf_size, sem_t *semaphore) {
+    char *buf = (char *)malloc(buf_size);
 
-    memset(buf, 'a', CHUNK_SIZE);
+    memset(buf, 'a', buf_size);
     
     sem_wait(semaphore);
 
     fprintf(stderr, "Starts sending: %lld\n", gettimens());
     fflush(stderr);
 
-    for (int i = 0; i < GB / 2048; ++i) {
-        if (send(socket, buf, CHUNK_SIZE, 0) == -1) {
+    for (int i = 0; i < GB / buf_size; ++i) {
+        if (send(socket, buf, buf_size, 0) == -1) {
             perror("Send");
             exit(1);
         }
         
-        if (recv(socket, buf, CHUNK_SIZE, 0) == -1) {
+        if (recv(socket, buf, buf_size, 0) == -1) {
             perror("Recv");
             exit(1);
         }
@@ -47,23 +47,23 @@ void parent(int socket, sem_t *semaphore) {
     free(buf);
 }
 
-void child(int socket, sem_t *semaphore) {
-    char *buf = (char *)malloc(CHUNK_SIZE);
+void child(int socket, int buf_size, sem_t *semaphore) {
+    char *buf = (char *)malloc(buf_size);
 
-    memset(buf, 'b', CHUNK_SIZE);
+    memset(buf, 'b', buf_size);
 
     if (sem_post(semaphore) < 0) {
         perror("sem_post");
         exit(1);
     }
 
-    for (int x = 0; x < GB / 2048; ++x) {
-        if (recv(socket, buf, CHUNK_SIZE, 0) == -1) {
+    for (int x = 0; x < GB / buf_size; ++x) {
+        if (recv(socket, buf, buf_size, 0) == -1) {
             perror("Recv");
             exit(1);
         }
         
-        if (send(socket, buf, CHUNK_SIZE, 0) == -1) {
+        if (send(socket, buf, buf_size, 0) == -1) {
             perror("Send");
             exit(1);
         }
@@ -133,7 +133,13 @@ int create_client_socket() {
 }
 
 int main(int argc, char *argv[]) {
-    int sockets[2];
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s [send_recv_buf_size]\n", argv[0]);
+        exit(1);
+    }
+
+    int buf_size = 1 << atoi(argv[1]);
+
     pid_t pid;
 
     sem_t *semaphore = mmap(NULL, sizeof(sem_t), PROT_READ | PROT_WRITE,
@@ -154,7 +160,7 @@ int main(int argc, char *argv[]) {
         // Child process
         int client_fd = create_client_socket();
 
-        child(client_fd, semaphore);
+        child(client_fd, buf_size, semaphore);
         close(client_fd);
     } else {
         // Parent process
@@ -169,7 +175,7 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        parent(accepted_fd, semaphore);
+        parent(accepted_fd, buf_size, semaphore);
         close(accepted_fd);
     }
 
