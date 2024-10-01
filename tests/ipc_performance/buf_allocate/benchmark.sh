@@ -28,7 +28,7 @@ cd ../..
 src/mklind rustposix
 src/mklind install
 
-cd /home/lind/lind_project/tests/ipc_performance/buf_allocate/benchmark.sh
+cd /home/lind/lind_project/tests/ipc_performance/buf_allocate/
 echo "Running on lind stack"
 python3 gen_bufdata.py -c $1 -p "lind /loopback"
 
