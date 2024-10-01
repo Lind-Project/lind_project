@@ -17,10 +17,9 @@ long long gettimens() {
 }
 
 void parent(int socket, int buf_size, sem_t *semaphore) {
-    char *send_buf = (char *)malloc(buf_size);
-    char *recv_buf = (char *)malloc(buf_size);
+    char *buf = (char *)malloc(buf_size);
 
-    memset(send_buf, 'a', buf_size);
+    memset(buf, 'a', buf_size);
     
     sem_wait(semaphore);
 
@@ -28,37 +27,27 @@ void parent(int socket, int buf_size, sem_t *semaphore) {
     fflush(stderr);
 
     for (int i = 0; i < GB / buf_size; ++i) {
-        if (send(socket, send_buf, buf_size, 0) == -1) {
+        if (send(socket, buf, buf_size, 0) == -1) {
             perror("Send");
             exit(1);
         }
-    }
-    for (int j = 0; j < GB / buf_size; ++j) {
-        int total_received = 0;
-        while (total_received < buf_size) {
-            int received = recv(socket, recv_buf + total_received, buf_size - total_received, 0);
-            if (received == -1) {
-                perror("Recv");
-                exit(1);
-            }
-            total_received += received;
+        
+        if (recv(socket, buf, buf_size, 0) == -1) {
+            perror("Recv");
+            exit(1);
         }
     }
-
-    
 
     fprintf(stderr, "Ends receiving: %lld\n", gettimens());
     fflush(stderr);
 
-    free(send_buf);
-    free(recv_buf);
+    free(buf);
 }
 
 void child(int socket, int buf_size, sem_t *semaphore) {
-    char *send_buf = (char *)malloc(buf_size);
-    char *recv_buf = (char *)malloc(buf_size);
+    char *buf = (char *)malloc(buf_size);
 
-    memset(send_buf, 'b', buf_size);
+    memset(buf, 'b', buf_size);
 
     if (sem_post(semaphore) < 0) {
         perror("sem_post");
@@ -66,25 +55,18 @@ void child(int socket, int buf_size, sem_t *semaphore) {
     }
 
     for (int x = 0; x < GB / buf_size; ++x) {
-        int total_received = 0;
-        while (total_received < buf_size) {
-            int received = recv(socket, recv_buf + total_received, buf_size - total_received, 0);
-            if (received == -1)
-            {
-                perror("Recv");
-                exit(1);
-            }
-            total_received += received;
+        if (recv(socket, buf, buf_size, 0) == -1) {
+            perror("Recv");
+            exit(1);
         }
-    }
-    for (int y = 0; y < GB / buf_size; ++y) {
-        if (send(socket, send_buf, buf_size, 0) == -1) {
+        
+        if (send(socket, buf, buf_size, 0) == -1) {
             perror("Send");
             exit(1);
         }
     }
-    free(send_buf);
-    free(recv_buf);
+
+    free(buf);
 }
 
 int main(int argc, char *argv[]) {

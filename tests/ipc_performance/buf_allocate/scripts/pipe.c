@@ -16,49 +16,39 @@ long long gettimens() {
     return (long long)tp.tv_sec * 1000000000LL + tp.tv_nsec;
 }
 
-void parent(int pipe_to_child[2], int pipe_from_child[2], int buf_size, sem_t *semaphore) {
-    char *send_buf = (char *)malloc(buf_size);
-    char *recv_buf = (char *)malloc(buf_size);
+void parent(int pipe_to_child[2], int pipe_to_parent[2],int buf_size, sem_t *semaphore) {
+    char *buf = (char *)malloc(buf_size);
 
-    memset(send_buf, 'a', buf_size);
+    memset(buf, 'a', buf_size);
     
     sem_wait(semaphore);
 
-    fprintf(stderr, "Starts sending: %lld\n", gettimens());
+    fprintf(stderr, "Starts writing: %lld\n", gettimens());
     fflush(stderr);
 
     for (int i = 0; i < GB / buf_size; ++i) {
-        if (write(pipe_to_child[1], send_buf, buf_size) == -1) {
+        if (write(pipe_to_child[1], buf, buf_size) == -1) {
             perror("write");
             exit(1);
         }
-    }
-    for (int j = 0; j < GB / buf_size; ++j) {
+        
         int total_received = 0;
-        while (total_received < buf_size) {
-            int received = read(pipe_from_child[0], recv_buf + total_received, buf_size - total_received);
-            if (received == -1) {
-                perror("read");
-                exit(1);
-            }
-            total_received += received;
+        if (read(pipe_to_parent[0], buf, buf_size) == -1) {
+            perror("read");
+            exit(1);
         }
     }
 
-    
-
-    fprintf(stderr, "Ends receiving: %lld\n", gettimens());
+    fprintf(stderr, "Ends reading: %lld\n", gettimens());
     fflush(stderr);
 
-    free(send_buf);
-    free(recv_buf);
+    free(buf);
 }
 
-void child(int pipe_to_parent[2], int pipe_from_parent[2], int buf_size, sem_t *semaphore) {
-    char *send_buf = (char *)malloc(buf_size);
-    char *recv_buf = (char *)malloc(buf_size);
+void child(int pipe_to_parent[2], int pipe_to_child[2], int buf_size, sem_t *semaphore) {
+    char *buf = (char *)malloc(buf_size);
 
-    memset(send_buf, 'b', buf_size);
+    memset(buf, 'b', buf_size);
 
     if (sem_post(semaphore) < 0) {
         perror("sem_post");
@@ -66,30 +56,23 @@ void child(int pipe_to_parent[2], int pipe_from_parent[2], int buf_size, sem_t *
     }
 
     for (int x = 0; x < GB / buf_size; ++x) {
-        int total_received = 0;
-        while (total_received < buf_size) {
-            int received = read(pipe_from_parent[0], recv_buf + total_received, buf_size - total_received);
-            if (received == -1)
-            {
-                perror("read");
-                exit(1);
-            }
-            total_received += received;
+        if (read(pipe_to_child[0], buf, buf_size) == -1) {
+            perror("read");
+            exit(1);
         }
-    }
-    for (int y = 0; y < GB / buf_size; ++y) {
-        if (write(pipe_to_parent[1], send_buf, buf_size) == -1) {
+        
+        if (write(pipe_to_parent[1], buf, buf_size) == -1) {
             perror("write");
             exit(1);
         }
     }
-    free(send_buf);
-    free(recv_buf);
+
+    free(buf);
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s [write_read_buf_size]\n", argv[0]);
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s [send_recv_buf_size]\n", argv[0]);
         exit(1);
     }
 
