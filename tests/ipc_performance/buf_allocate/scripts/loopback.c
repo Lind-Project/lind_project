@@ -11,7 +11,6 @@
 #include <arpa/inet.h>
 
 #define GB (1 << 30)
-#define CHUNK_SIZE 2048
 
 long long gettimens() {
     struct timespec tp;
