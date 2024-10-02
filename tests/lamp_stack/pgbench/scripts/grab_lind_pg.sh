@@ -17,7 +17,7 @@ for param in "${params[@]}"; do
   for ((i = 1; i <= repeat_count; i++)); do
     echo "Running iteration $i of $repeat_count for param = $param..."
     
-    ./run_pg_lind.sh "$param" &> pg.log
+    lind /bin/bash run_pg_lind.sh "$param" &> pg.log
 
     tps_excluding=$(grep "tps =" pg.log | grep "excluding" | awk '{print $3}')
     
