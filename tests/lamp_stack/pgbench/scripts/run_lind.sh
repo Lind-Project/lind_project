@@ -7,7 +7,7 @@ fi
 
 param=$1
 
-file="/home/lind/lind_project/tests/lamp_stack/pgbench/scripts/run_pgbench.sh"
+file="/home/lind/lind_project/tests/lamp_stack/pgbench/scripts/run_pg_lind.sh"
 
 if [ ! -f "$file" ]; then
     echo "File $file not found!"
@@ -38,4 +38,4 @@ echo -e "Initializing postgres"
 lind /bin/bash init_postgres.sh > /dev/null
 
 echo -e "\nRunning pgbench"
-lind /bin/bash run_pgbench.sh
+lind /bin/bash run_pg_lind.sh
