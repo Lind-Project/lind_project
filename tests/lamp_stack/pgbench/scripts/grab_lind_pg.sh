@@ -12,7 +12,7 @@ for param in "${params[@]}"; do
   echo -e "\nRunning tests with param = $param..."
   echo "  \"$param\": [" >> $json_file
   for ((i = 1; i <= repeat_count; i++)); do
-    echo -e "\n\nRunning iteration $i of $repeat_count for param = $param..."
+    echo -e "\nRunning iteration $i of $repeat_count for param = $param..."
     
     echo -e "Initializing postgres"
     lind /bin/bash init_postgres.sh > /dev/null
@@ -36,9 +36,6 @@ for param in "${params[@]}"; do
     ./cleanup_lind_tarball.sh
   done
   echo "  ]," >> $json_file
-  average_tps_excluding=$(echo "$total_tps_excluding / $repeat_count" | bc -l)
-  
-  echo "Average TPS (excluding) for param $param: $average_tps_excluding"
 done
 
 echo "}" >> $json_file

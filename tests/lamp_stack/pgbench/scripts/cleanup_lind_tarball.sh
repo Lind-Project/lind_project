@@ -1,8 +1,9 @@
 #!/bin/bash
 CWD=$PWD
 echo -e "Resetting lind fs"
-rm -rf lind/
+cd lind/lindenv/fs
+rm -rf *
 cd "$CWD"
 
 echo -e "Loading lind"
-cp -r backup_lindfs/ lind/
+cp -r backup_lindfs/lindenv/fs/* lind/lindenv/fs/
