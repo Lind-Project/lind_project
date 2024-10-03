@@ -10,7 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define GB (1 << 30)
+#define GB (1 << 26)
 
 long long gettimens() {
     struct timespec tp;
