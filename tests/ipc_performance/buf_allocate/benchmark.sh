@@ -19,6 +19,7 @@ python3 gen_bufdata.py -c $1 -p "scripts/uds"
 
 echo -e "\n---------------- Loop Back ----------------\n"
 # Recompile RustPOSIX 
+rustup default nightly
 cd /home/lind/lind_project/src/
 rm -r safeposix-rust
 git clone https://github.com/Lind-Project/safeposix-rust.git
