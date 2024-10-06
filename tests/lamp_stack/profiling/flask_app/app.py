@@ -13,7 +13,6 @@ num_pages = int((html_size_128KBs * (2 ** 17)) / (2 * size)) # size * num_pages 
 def rand_generator(size=size, chars=string.ascii_uppercase + string.digits):
     return "".join(random.choice(chars) for _ in range(size - 1))
 
-# Initialize data table
 data = []
 for n in range(num_pages):
     title = rand_generator()
@@ -27,8 +26,20 @@ def get_db_connection():
 def _get_random_row():
     conn = get_db_connection()
     cur = conn.cursor()
+
+    # Initialize data table
+    for n in range(num_pages):
+        cur.execute(
+            "INSERT INTO books (title, ID, review)"
+            "VALUES (%s, %s, %s)",
+            data[n],
+        )
+        if n % 5 == 0:
+            conn.commit()
+    conn.commit()
+
     value = random.randint(1, 10000)
-    cur.execute('SELECT * FROM data WHERE ID=%s;' % value)
+    cur.execute('SELECT * FROM books WHERE ID=%s;' % value)
     result = cur.fetchall()
     cur.close()
     conn.close()
