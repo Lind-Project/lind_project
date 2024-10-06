@@ -7,8 +7,9 @@ app = Flask(__name__)
 
 html_size_128KBs = 2 ** 0
 size = 2 ** 16
-num_pages = int((html_size_128KBs * (2 ** 17)) / (2 * size)) # size * num_pages = html_size_128KBs
+num_pages = int((html_size_128KBs * (2 ** 17)) / (2 * size))  # size * num_pages = html_size_128KBs
 
+connection_pool = psycopg2.pool.SimpleConnectionPool(1, 20, database="postgres", user="lind", host="/tmp")
 
 def rand_generator(size=size, chars=string.ascii_uppercase + string.digits):
     return "".join(random.choice(chars) for _ in range(size - 1))
@@ -20,8 +21,12 @@ for n in range(num_pages):
     data.append((title, n, review))
 
 def get_db_connection():
-    conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
-    return conn
+    # Get connection from connection pool
+    return connection_pool.getconn()
+
+def release_db_connection(conn):
+    # Release connection from connection pool
+    connection_pool.putconn(conn)
 
 def initialize_data():
     conn = get_db_connection()
@@ -30,7 +35,7 @@ def initialize_data():
     # Check if the table already has data
     cur.execute('SELECT COUNT(*) FROM books')
     count = cur.fetchone()[0]
-    
+
     # Only insert data if the table is empty
     if count == 0:
         for n in range(num_pages):
@@ -42,8 +47,9 @@ def initialize_data():
             if n % 5 == 0:
                 conn.commit()
         conn.commit()
+    
     cur.close()
-    conn.close()
+    release_db_connection(conn)
 
 def _get_random_row():
     conn = get_db_connection()
@@ -53,8 +59,10 @@ def _get_random_row():
     value = random.randint(0, num_pages - 1)  # pages_num is within range [0, num_pages)
     cur.execute('SELECT * FROM books WHERE pages_num = %s;', (value,))
     result = cur.fetchall()
+    
     cur.close()
-    conn.close()
+    release_db_connection(conn)
+    
     return result
 
 @app.route('/db')
