@@ -30,7 +30,7 @@ def _get_random_row():
     # Initialize data table
     for n in range(num_pages):
         cur.execute(
-            "INSERT INTO books (title, ID, review)"
+            "INSERT INTO books (title, pages_num, review)"
             "VALUES (%s, %s, %s)",
             data[n],
         )
@@ -39,7 +39,7 @@ def _get_random_row():
     conn.commit()
 
     value = random.randint(1, 10000)
-    cur.execute('SELECT * FROM books WHERE ID=%s;' % value)
+    cur.execute('SELECT * FROM books WHERE pages_num=%s;' % value)
     result = cur.fetchall()
     cur.close()
     conn.close()
