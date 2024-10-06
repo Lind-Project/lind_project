@@ -23,23 +23,35 @@ def get_db_connection():
     conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
     return conn
 
+def initialize_data():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Check if the table already has data
+    cur.execute('SELECT COUNT(*) FROM books')
+    count = cur.fetchone()[0]
+    
+    # Only insert data if the table is empty
+    if count == 0:
+        for n in range(num_pages):
+            cur.execute(
+                "INSERT INTO books (title, pages_num, review)"
+                "VALUES (%s, %s, %s)",
+                data[n],
+            )
+            if n % 5 == 0:
+                conn.commit()
+        conn.commit()
+    cur.close()
+    conn.close()
+
 def _get_random_row():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Initialize data table
-    for n in range(num_pages):
-        cur.execute(
-            "INSERT INTO books (title, pages_num, review)"
-            "VALUES (%s, %s, %s)",
-            data[n],
-        )
-        if n % 5 == 0:
-            conn.commit()
-    conn.commit()
-
-    value = random.randint(1, 10000)
-    cur.execute('SELECT * FROM books WHERE pages_num=%s;' % value)
+    # Select a valid pages_num to query
+    value = random.randint(0, num_pages - 1)  # pages_num is within range [0, num_pages)
+    cur.execute('SELECT * FROM books WHERE pages_num = %s;', (value,))
     result = cur.fetchall()
     cur.close()
     conn.close()
@@ -47,12 +59,14 @@ def _get_random_row():
 
 @app.route('/db')
 def db():
+    initialize_data()  # Only initialize if necessary
     result = _get_random_row()
     return jsonify(result)
 
 @app.route('/queries')
 def queries():
-    num_queries = int(request.args.get('queries'))
+    initialize_data()  # Only initialize if necessary
+    num_queries = int(request.args.get('queries', 1))  # Default to 1 if not provided
     num_queries = min(500, max(num_queries, 1))
     result = [_get_random_row()[0] for i in range(num_queries)]
     return jsonify(result)
