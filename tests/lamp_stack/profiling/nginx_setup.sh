@@ -7,8 +7,11 @@ if [ -f /etc/lsb-release ]; then
     fi
 fi
 
+export CC=/usr/local/gcc-4.4.3/bin/gcc
+export CXX=/usr/local/gcc-4.4.3/bin/g++
+
 cd /home/lind/lind_project/tests/applications/nginx
-./auto/configure CC=/usr/local/gcc-4.4.3/bin/gcc CXX=/usr/local/gcc-4.4.3/bin/g++
+./auto/configure
 make
 sudo make install
 sudo cp /home/lind/lind_project/src/scripts/nginx/nginx-conf/nginx.conf /usr/local/nginx/conf/nginx.conf
