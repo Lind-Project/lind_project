@@ -17,7 +17,7 @@ def _get_random_row():
     conn = get_db_connection()
     cur = conn.cursor()
     value = random.randint(1, 10000)
-    cur.execute(f'SELECT * FROM world WHERE ID={value};')
+    cur.execute('SELECT * FROM world WHERE ID=%s;' % value)
     result = cur.fetchall()
     cur.close()
     conn.close()
