@@ -23,7 +23,10 @@ conn.commit()
 # Copy data from the specified CSV file into the 'world' table
 csv_file_path = 'lines.csv'
 cur.execute(
-    f"COPY world(id, word) FROM '{csv_file_path}' DELIMITER ',' CSV HEADER;"
+    "CREATE TABLE world ("
+    "id INT, "
+    "word VARCHAR(255)"
+    ");"
 )
 
 # Commit the changes to the database after data insertion
