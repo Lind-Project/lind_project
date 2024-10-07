@@ -25,7 +25,7 @@ conn.commit()
 # Since our code is running as a client script, PostgreSQL cannot access ./lines.csv 
 # on the server's file system. Instead, we will read the file with Python and insert 
 # the data directly
-csv_file_path = './lines.csv'
+csv_file_path = 'flask_app/lines.csv'
 # Open the CSV file and read the data
 with open(csv_file_path, 'r') as f:
     reader = csv.reader(f)
@@ -36,12 +36,6 @@ with open(csv_file_path, 'r') as f:
 
 # Commit the changes to the database after data insertion
 conn.commit()
-
-# Select and display the first 10 rows from the 'world' table
-cur.execute("SELECT * FROM world LIMIT 10;")
-rows = cur.fetchall()
-for row in rows:
-    print(row)
 
 # Close the cursor and the connection
 cur.close()
