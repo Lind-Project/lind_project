@@ -48,7 +48,7 @@ def queries():
     average_size = total_size / num_queries if num_queries > 0 else 0
 
     # Print out the average size
-    print(f"Average query result size: {average_size} bytes")
+    print("Average query result size: {} bytes".format(average_size))
 
     return jsonify(results)
 
