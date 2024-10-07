@@ -21,7 +21,7 @@ cur.execute(
 conn.commit()
 
 # Copy data from the specified CSV file into the 'world' table
-csv_file_path = 'lines.csv'
+csv_file_path = './lines.csv'
 cur.execute(
     "COPY world(id, word) FROM %s DELIMITER ',' CSV HEADER;",
     (csv_file_path,)
