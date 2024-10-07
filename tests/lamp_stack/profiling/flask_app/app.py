@@ -25,6 +25,10 @@ def _get_random_row():
 @app.route('/db')
 def db():
     result = _get_random_row()
+    # Convert Python data structures (such as dictionaries, lists, strings, etc.) to HTTP 
+    # response objects in JSON format. It can automatically serialize data into JSON format 
+    # and set the appropriate Content-Type to application/json so that the client can 
+    # recognize and parse it.
     return jsonify(result)
 
 # Check the average queries size return (just printout)
@@ -55,6 +59,7 @@ def queries():
 # Add 4 terminator at the end of str to extend the sentence to 16 bytes
 # We want to test with the 2^16 to 2^26 skipping by 2 
 # Usage: /plaintext?power=16
+@app.route('/plaintext')
 def plaintext():
     # Get the power from the query parameter or default to 16 if not provided
     power = int(request.args.get('power', 16))
@@ -64,7 +69,6 @@ def plaintext():
     
     # Determine how many times to repeat 'Hello, World!!!!'
     base_string = "Hello, World!!!!"
-    # repeat_count = total_size // len(base_string)
     
     # Generate the response string of the required size
     response_string = base_string * repeat_count
