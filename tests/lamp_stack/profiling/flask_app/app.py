@@ -20,7 +20,6 @@ def _get_random_row():
     cur.execute('SELECT * FROM world WHERE id = %s;', (value,))
     result = cur.fetchall()
     cur.close()
-    conn.close()
     return result
 
 @app.route('/db')
