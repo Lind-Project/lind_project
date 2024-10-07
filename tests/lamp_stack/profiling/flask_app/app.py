@@ -65,10 +65,11 @@ def plaintext():
     power = int(request.args.get('power', 16))
     
     # Calculate the total size in bytes
-    total_size = 2 ** power
+    total_size = 2 ** (power-4)
     
     # Determine how many times to repeat 'Hello, World!!!!'
     base_string = "Hello, World!!!!"
+    # Ignore the remainder after the decimal point
     repeat_count = total_size // len(base_string)
     
     # Generate the response string of the required size
