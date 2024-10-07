@@ -18,7 +18,7 @@ def rand_generator(size=size, chars=string.ascii_uppercase + string.digits):
 def _get_random_row():
     cur = conn.cursor()
     value = random.randint(1, 10000)
-    cur.execute(f'SELECT * FROM world where ID={value};')
+    cur.execute('SELECT * FROM world WHERE id = %s;', (value,))
     result = cur.fetchall()
     cur.close()
     conn.close()
