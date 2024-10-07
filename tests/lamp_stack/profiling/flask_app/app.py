@@ -5,6 +5,10 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
+html_size_128KBs = 2 ** 0
+size = 2 ** 16
+num_pages = int((html_size_128KBs * (2 ** 17)) / (2 * size))  # size * num_pages = html_size_128KBs
+
 conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
 def rand_generator(size=size, chars=string.ascii_uppercase + string.digits):
