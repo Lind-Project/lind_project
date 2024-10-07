@@ -1,22 +1,40 @@
 import psycopg2
 
-
+# Establish a connection to the PostgreSQL database
 conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
 # Open a cursor to perform database operations
 cur = conn.cursor()
 
-# Execute a command: this creates a new table
-cur.execute("DROP TABLE IF EXISTS books;")
+# Drop the existing 'world' table if it exists
+cur.execute("DROP TABLE IF EXISTS world;")
+
+# Create the 'world' table with two columns: id and word
 cur.execute(
-    "CREATE TABLE books (id serial PRIMARY KEY,"
-    "title varchar (65535) NOT NULL,"
-    "pages_num integer NOT NULL,"
-    "review text,"
-    "date_added date DEFAULT CURRENT_TIMESTAMP);"
+    "CREATE TABLE world ("
+    "id INT, "
+    "word VARCHAR(255)"
+    ");"
 )
 
+# Commit the changes to the database
 conn.commit()
 
+# Copy data from the specified CSV file into the 'world' table
+csv_file_path = 'lines.csv'
+cur.execute(
+    f"COPY world(id, word) FROM '{csv_file_path}' DELIMITER ',' CSV HEADER;"
+)
+
+# Commit the changes to the database after data insertion
+conn.commit()
+
+# Select and display the first 10 rows from the 'world' table
+cur.execute("SELECT * FROM world LIMIT 10;")
+rows = cur.fetchall()
+for row in rows:
+    print(row)
+
+# Close the cursor and the connection
 cur.close()
 conn.close()
