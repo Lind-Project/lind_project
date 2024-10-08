@@ -34,8 +34,7 @@ def db():
 # Check the average queries size return (just printout)
 @app.route('/queries')
 def queries():
-    power  = int(request.args.get('power'))
-    power = min(500, max(power, 1))
+    power = int(request.args.get('power', 16))
 
     # The average size of each query is 16 bytes
     num_queries = 2**(power-4)
