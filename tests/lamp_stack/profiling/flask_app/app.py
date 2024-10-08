@@ -6,17 +6,19 @@ app = Flask(__name__)
 
 conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
-def _get_random_row():
+def _get_random_rows(num_rows):
     cur = conn.cursor()
-    value = random.randint(1, 10000)
-    cur.execute('SELECT * FROM world WHERE id = %s;', (value,))
-    result = cur.fetchall()
+    # Generate multiple ID
+    ids = tuple(random.randint(1, 10000) for _ in range(num_rows))
+    # Get multiple results at once 
+    cur.execute('SELECT * FROM world WHERE id IN %s;', (ids,))
+    results = cur.fetchall()
     cur.close()
-    return result
+    return results
 
 @app.route('/db')
 def db():
-    result = _get_random_row()
+    result = _get_random_rows(1)
     # Convert Python data structures (such as dictionaries, lists, strings, etc.) to HTTP 
     # response objects in JSON format. It can automatically serialize data into JSON format 
     # and set the appropriate Content-Type to application/json so that the client can 
@@ -29,8 +31,7 @@ def queries():
 
     # The average size of each query is 16 bytes
     num_queries = 2**(power-4)
-    result = [_get_random_row()[0] for _ in range(num_queries)]
-
+    result = _get_random_rows(num_queries)
     return jsonify(result)
 
 # Add 4 terminator at the end of str to extend the sentence to 16 bytes
