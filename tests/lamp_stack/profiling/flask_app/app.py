@@ -36,9 +36,17 @@ def db():
 def queries():
     power = int(request.args.get('power', 16))
 
+    cur = conn.cursor()
+
     # The average size of each query is 16 bytes
     num_queries = 2**(power-4)
-    result = [_get_random_row()[0] for _ in range(num_queries)]
+    for _ in range(num_queries):
+        value = random.randint(1, 10000)
+        cur.execute('SELECT * FROM world WHERE id = %s;', (value,))
+        result = cur.fetchall()
+        result = [_get_random_row()[0] for _ in range(num_queries)]
+
+    cur.close()
 
     return jsonify(result)
 
@@ -55,11 +63,16 @@ def plaintext():
     
     # Determine how many times to repeat 'Hello, World!!!!'
     base_string = "Hello, World!!!!"
-    # Ignore the remainder after the decimal point
-    repeat_count = total_size // len(base_string)
+    base_str_utf8 = base_string.encode('utf-8')
     
-    # Generate the response string of the required size
-    response_string = base_string * repeat_count
+    # Ignore the remainder after the decimal point
+    repeat_count = total_size // len(base_str_utf8)
+    
+    # Generate the response string 
+    repeat_str = base_str_utf8 * repeat_count
+
+    # Check again the final data length and remove extra chars
+    response_string = repeat_str.encode('utf-8')[:total_size].decode('utf-8', 'ignore')
     
     # Return the generated string
     return response_string
