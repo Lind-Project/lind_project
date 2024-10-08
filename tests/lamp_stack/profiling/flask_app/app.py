@@ -34,27 +34,14 @@ def db():
 # Check the average queries size return (just printout)
 @app.route('/queries')
 def queries():
-    num_queries  = int(request.args.get('queries'))
-    num_queries = min(500, max(num_queries, 1))
+    power  = int(request.args.get('power'))
+    power = min(500, max(power, 1))
 
-    total_size = 0
-    results = []
+    # The average size of each query is 16 bytes
+    num_queries = 2**(power-4)
+    result = [_get_random_row()[0] for _ in range(num_queries)]
 
-    for _ in range(num_queries):
-        row = _get_random_row()
-        results.append(row[0])
-        
-        # Calculate the size of the query result in bytes and add to total
-        result_size = sum(len(str(item)) for item in row[0])
-        total_size += result_size
-
-    # Calculate the average size of the queries
-    average_size = total_size / num_queries if num_queries > 0 else 0
-
-    # Print out the average size
-    print("Average query result size: {} bytes".format(average_size))
-
-    return jsonify(results)
+    return jsonify(result)
 
 # Add 4 terminator at the end of str to extend the sentence to 16 bytes
 # We want to test with the 2^16 to 2^26 skipping by 2 
