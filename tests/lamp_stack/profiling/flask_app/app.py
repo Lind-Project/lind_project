@@ -34,13 +34,14 @@ def db():
 # Check the average queries size return (just printout)
 @app.route('/queries')
 def queries():
-    power = int(request.args.get('power', 16))
-
-    # The average size of each query is 16 bytes
-    num_queries = 2**(power-4)
-    result = [_get_random_row()[0] for _ in range(num_queries)]
-
-    return jsonify(result)
+    try:
+        power = int(request.args.get('power', 16))
+        num_queries = 2**(power-4)
+        result = [_get_random_row()[0] for _ in range(num_queries)]
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "Server error"}), 500
 
 # Add 4 terminator at the end of str to extend the sentence to 16 bytes
 # We want to test with the 2^16 to 2^26 skipping by 2 
