@@ -20,7 +20,12 @@ def _get_random_rows(num_rows):
 
         ids = tuple(random.randint(1, 10000) for _ in range(current_batch_size))
 
-        cur.execute('SELECT * FROM world WHERE id IN {};'.format(ids))
+        # It will meet syntax error with ","
+        if len(ids) == 1:
+            query = 'SELECT * FROM world WHERE id = {};'.format(ids[0])
+        else:
+            query = 'SELECT * FROM world WHERE id IN {};'.format(ids)
+        cur.execute(query)
 
         results.extend(cur.fetchall())
 
