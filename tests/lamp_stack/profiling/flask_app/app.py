@@ -6,19 +6,17 @@ app = Flask(__name__)
 
 conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
-def _get_random_rows(num_rows):
+def _get_random_rows(loops):
     cur = conn.cursor()
     results = []
 
-    # At most 1000 IDs each time
+    # At most 64 IDs each time
     batch_size = 64
 
     # Calculate how many loops do we want when exceeding 1000
-    for _ in range((num_rows + batch_size - 1) // batch_size):
-        # Calculate current rows
-        current_batch_size = min(batch_size, num_rows)
+    for _ in range(0, loops):
 
-        ids = tuple(random.randint(1, 10000) for _ in range(current_batch_size))
+        ids = tuple(random.randint(0, 1000) for _ in range(batch_size))
 
         # It will meet syntax error with ","
         if len(ids) == 1:
@@ -29,7 +27,6 @@ def _get_random_rows(num_rows):
 
         results.extend(cur.fetchall())
 
-        num_rows -= current_batch_size
 
     cur.close()
     return results
@@ -47,10 +44,8 @@ def db():
 @app.route('/queries')
 def queries():
     power = int(request.args.get('power', 16))
-
-    # The average size of each query is 16 bytes
-    num_queries = 2**(power-4)
-    result = _get_random_rows(num_queries)
+    loop = 2**(power-16)
+    result = _get_random_rows(loop)
     return jsonify(result)
 
 # Add 4 terminator at the end of str to extend the sentence to 16 bytes
@@ -62,7 +57,7 @@ def plaintext():
     power = int(request.args.get('power', 16))
     
     # Calculate the total size in bytes
-    total_size = 2 ** (power-10)
+    total_size = 2 ** (power-4)
     
     # Determine how many times to repeat 'Hello, World!!!!'
     base_string = "Hello, World!!!!"
