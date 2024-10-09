@@ -60,4 +60,4 @@ else
 
     echo "================================ Running Plaintext ================================"
     run_wrk "data/nat_lamp_plaintext.json" "plaintext"
-done
+fi

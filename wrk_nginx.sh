@@ -58,4 +58,4 @@ if [[ "$platform" == "lind" ]]; then
     run_wrk "data/lind_ng" 
 else
     run_wrk "data/nat_ng" 
-done
+fi
