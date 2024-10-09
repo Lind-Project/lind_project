@@ -15,7 +15,7 @@ for param in "${params[@]}"; do
     echo -e "\nRunning iteration $i of $repeat_count for param = $param..."
     
     echo -e "Initializing postgres"
-    lind /bin/bash init_postgres.sh > /dev/null
+    lind /bin/bash init_postgres.sh &> /dev/null
     
     lind /bin/bash run_pg_lind.sh "$param" &> pg.log
 
@@ -33,7 +33,8 @@ for param in "${params[@]}"; do
     fi
 
     # Cleanup
-    ./cleanup_rawposix.sh
+    # ./cleanup_rawposix.sh
+    rm -rf /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/pgsql/data/
   done
   echo "  ]," >> $json_file
 done
