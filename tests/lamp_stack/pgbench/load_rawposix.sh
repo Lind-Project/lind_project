@@ -71,6 +71,8 @@ sudo chmod 666 /home/lind/lind_project/src/safeposix-rust/tmp/dev/null
 sudo mknod /home/lind/lind_project/src/safeposix-rust/tmp/dev/urandom c 1 9
 sudo chmod 666 /home/lind/lind_project/src/safeposix-rust/tmp/dev/urandom
 
+mv /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7/lib-dynload/psycopg2/lib/* /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7/lib-dynload/psycopg2/
+
 ########################################## Runtime scripts ##########################################
 
 cp /home/lind/lind_project/tests/lamp_stack/pgbench/scripts/run_lind.sh /home/lind/lind_project/src/safeposix-rust/tmp/run_lind.sh
