@@ -20,8 +20,7 @@ def _get_random_rows(num_rows):
 
         ids = tuple(random.randint(1, 10000) for _ in range(current_batch_size))
 
-        query = f'SELECT * FROM world WHERE id IN {ids};'
-        cur.execute(query)
+        cur.execute('SELECT * FROM world WHERE id IN {};'.format(ids))
 
         results.extend(cur.fetchall())
 
