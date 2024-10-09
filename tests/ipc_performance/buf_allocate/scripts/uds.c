@@ -32,9 +32,15 @@ void parent(int socket, int buf_size, sem_t *semaphore) {
             exit(1);
         }
         
-        if (recv(socket, buf, buf_size, 0) == -1) {
-            perror("Recv");
-            exit(1);
+        int bytes_read = 0;
+        while(bytes_read < buf_size)
+        {
+            int bytes;
+            if ((bytes = recv(socket, buf, buf_size, 0)) == -1) {
+                perror("Recv");
+                exit(1);
+            }
+            bytes_read += bytes;
         }
     }
 
@@ -55,9 +61,15 @@ void child(int socket, int buf_size, sem_t *semaphore) {
     }
 
     for (int x = 0; x < GB / buf_size; ++x) {
-        if (recv(socket, buf, buf_size, 0) == -1) {
-            perror("Recv");
-            exit(1);
+        int bytes_read = 0;
+        while(bytes_read < buf_size)
+        {
+            int bytes;
+            if ((bytes = recv(socket, buf, buf_size, 0)) == -1) {
+                perror("Recv");
+                exit(1);
+            }
+            bytes_read += bytes;
         }
         
         if (send(socket, buf, buf_size, 0) == -1) {

@@ -32,10 +32,15 @@ void parent(int pipe_to_child[2], int pipe_to_parent[2],int buf_size, sem_t *sem
             exit(1);
         }
         
-        int total_received = 0;
-        if (read(pipe_to_parent[0], buf, buf_size) == -1) {
-            perror("read");
-            exit(1);
+        int bytes_read = 0;
+        while(bytes_read < buf_size)
+        {
+            int bytes;
+            if ((bytes = read(pipe_to_parent[0], buf, buf_size)) == -1) {
+                perror("read");
+                exit(1);
+            }
+            bytes_read += bytes;
         }
     }
 
@@ -56,9 +61,15 @@ void child(int pipe_to_parent[2], int pipe_to_child[2], int buf_size, sem_t *sem
     }
 
     for (int x = 0; x < GB / buf_size; ++x) {
-        if (read(pipe_to_child[0], buf, buf_size) == -1) {
-            perror("read");
-            exit(1);
+        int bytes_read = 0;
+        while(bytes_read < buf_size)
+        {
+            int bytes;
+            if ((bytes = read(pipe_to_child[0], buf, buf_size)) == -1) {
+                perror("read");
+                exit(1);
+            }
+            bytes_read += bytes;
         }
         
         if (write(pipe_to_parent[1], buf, buf_size) == -1) {
