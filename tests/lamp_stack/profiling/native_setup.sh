@@ -11,5 +11,7 @@ echo -e "\nSetting up NGINX\n"
 cd $CWD
 echo -e "\nNGINX setup complete\n"
 
-echo -e "\nStarting LAMP\n"
-./run_lamp_native.sh
+# echo -e "\nStarting LAMP\n"
+# ./run_lamp_native.sh
+/home/lind/lind_project/tests/lamp_stack/profiling/gen_static.sh
+echo -e "\nNGINX static file loading complete\n"
