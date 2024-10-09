@@ -6,7 +6,7 @@ echo "postgres ready"
 /bin/python flask_app/init_table.py
 sleep 3
 echo "table ready"
-sudo /usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx_static.conf -p /usr/local/nginx/
+sudo /usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf -p /usr/local/nginx/
 sleep 5
 echo "nginx ready"
 cd flask_app/
