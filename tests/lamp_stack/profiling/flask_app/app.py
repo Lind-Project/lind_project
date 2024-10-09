@@ -11,7 +11,7 @@ def _get_random_rows(loops):
     results = []
 
     # At most 64 IDs each time
-    batch_size = 64
+    batch_size = 32
 
     # Calculate how many loops do we want when exceeding 1000
     for _ in range(0, loops):
@@ -78,4 +78,3 @@ def plaintext():
 if __name__ == "__main__":
     app.run(host="0.0.0.0")
     conn.close()
-    
