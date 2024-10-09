@@ -22,6 +22,7 @@ mkdir /home/lind/lind_project/src/safeposix-rust/tmp/tmp/
 
 echo -e "Loading bash and coreutils to RawPOSIX"
 
+cd /home/lind/lind_project/tests/applications/bash/
 echo "Bash starting coping..."
 
 mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/bin
@@ -34,6 +35,7 @@ echo "Bash has been installed. Usage: lind /bin/bash /script.sh"
 
 echo "Coreutils starting..."
 
+cd /home/lind/lind_project/tests/applications/coreutils/src;
 find . -perm /a+x -type f -exec sh -c 'cp -r /home/lind/lind_project/tests/applications/coreutils/src/"$(basename {})" /home/lind/lind_project/src/safeposix-rust/tmp/bin/"$(basename {})"' \;
 
 echo "Coreutils has been installed. Usage: lind /bin/(anycoretuil)"
