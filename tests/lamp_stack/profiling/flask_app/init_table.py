@@ -13,7 +13,7 @@ cur.execute("DROP TABLE IF EXISTS world;")
 cur.execute(
     "CREATE TABLE world ("
     "id INT, "
-    "word VARCHAR(1024)"
+    "word VARCHAR(2000)"
     ");"
 )
 
