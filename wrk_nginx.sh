@@ -23,7 +23,7 @@ run_wrk() {
 
         for ((i=1; i<=iterations; i++)); do
             # Execute wrk according to platform
-            if [["$platform" == "lind"]]; do
+            if [[ "$platform" == "lind" ]]; then
                 output=$(wrk -t1 -c1 -d${duration} --timeout 30 http://localhost:80/static_${filesize}.html)
             else
                 output=$(wrk -t1 -c1 -d${duration} --timeout 30 http://localhost:80/home/lind/lind_project/static_${filesize}.html)
@@ -54,7 +54,7 @@ do
     echo "Results saved to $output_file"
 }
 
-if [["$platform" == "lind"]]; do
+if [[ "$platform" == "lind" ]]; then
     run_wrk "data/lind_ng" 
 else
     run_wrk "data/nat_ng" 

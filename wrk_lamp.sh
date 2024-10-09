@@ -48,7 +48,7 @@ run_wrk() {
     echo "Results saved to $output_file"
 }
 
-if [["$platform" == "lind"]]; do
+if [[ "$platform" == "lind" ]]; then
     echo "================================ Running Queries ================================"
     run_wrk "data/lind_lamp_queries.json" "queries"
 
