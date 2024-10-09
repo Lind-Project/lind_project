@@ -31,6 +31,8 @@ run_wrk() {
 
             # Get Requests/sec
             reqs_sec=$(echo "$output" | grep "Requests/sec" | awk '{print $2}')
+
+            echo -e "Requests/sec: $reqs_sec"
             
             echo "    $reqs_sec" >> $output_file
 

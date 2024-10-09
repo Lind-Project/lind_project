@@ -25,6 +25,7 @@ run_wrk() {
         for ((i=1; i<=iterations; i++)); do
             # Execute wrk
             output=$(wrk -t1 -c1 -d${duration} --timeout 30 http://localhost:80/$type?power=$power)
+            echo "executing: wrk -t1 -c1 -d${duration} --timeout 30 http://localhost:80/$type?power=$power"
             # Get Requests/sec
             reqs_sec=$(echo "$output" | grep "Requests/sec" | awk '{print $2}')
             
