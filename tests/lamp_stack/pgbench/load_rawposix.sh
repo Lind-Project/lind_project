@@ -1,5 +1,9 @@
 #!/bin/bash
 
+mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/bin
+mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/
+mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/etc
+
 ########################################## Postgres ##########################################
 
 echo -e "Loading postgres to RawPOSIX"
@@ -7,8 +11,6 @@ echo -e "Loading postgres to RawPOSIX"
 cp -r /home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/x86_64-nacl/lib/ /home/lind/lind_project/src/safeposix-rust/tmp/lib/ 
 
 echo "Copying Postgres"
-
-mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/
 
 cp -r /home/lind/lind_project/lind/tmp/usr/local/pgsql /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/pgsql
 cp /home/lind/lind_project/tests/applications/postgres/src/interfaces/libpq/libpq.so.5.13 /home/lind/lind_project/src/safeposix-rust/tmp/lib/glibc/libpq.so.5
@@ -25,7 +27,6 @@ echo -e "Loading bash and coreutils to RawPOSIX"
 cd /home/lind/lind_project/tests/applications/bash/
 echo "Bash starting coping..."
 
-mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/bin
 cp -r /home/lind/lind_project/tests/applications/bash/bash /home/lind/lind_project/src/safeposix-rust/tmp/bin/bash
 cp -r /home/lind/lind_project/tests/applications/bash/bash /home/lind/lind_project/src/safeposix-rust/tmp/bin/sh
 
@@ -41,8 +42,6 @@ find . -perm /a+x -type f -exec sh -c 'cp -r /home/lind/lind_project/tests/appli
 echo "Coreutils has been installed. Usage: lind /bin/(anycoretuil)"
 
 ########################################## Confs ##########################################
-
-mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/etc
 
 cp /etc/hosts /home/lind/lind_project/hosts
 sed -i '/ip6/d' /home/lind/lind_project/hosts # remove inet6 addresses
