@@ -8,6 +8,8 @@ cp -r /home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/x86_64-
 
 echo "Copying Postgres"
 
+mkdir -p /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/
+
 cp -r /home/lind/lind_project/lind/tmp/usr/local/pgsql /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/pgsql
 cp /home/lind/lind_project/tests/applications/postgres/src/interfaces/libpq/libpq.so.5.13 /home/lind/lind_project/src/safeposix-rust/tmp/lib/glibc/libpq.so.5
 cp /home/lind/lind_project/lind/tmp/usr/local/pgsql/bin/postgres /home/lind/lind_project/src/safeposix-rust/tmp/bin/postgres
