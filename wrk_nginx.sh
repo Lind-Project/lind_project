@@ -38,7 +38,7 @@ run_wrk() {
             if [ $i -lt 10 ]; then
                 echo "," >> $output_file
             fi
-do
+
                 
         done
 
