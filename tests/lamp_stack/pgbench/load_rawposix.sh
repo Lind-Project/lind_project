@@ -78,5 +78,4 @@ mv /home/lind/lind_project/src/safeposix-rust/tmp/usr/local/lib/python2.7/lib-dy
 
 ########################################## Runtime scripts ##########################################
 
-cp /home/lind/lind_project/tests/lamp_stack/pgbench/scripts/run_lind.sh /home/lind/lind_project/src/safeposix-rust/tmp/run_lind.sh
-cp /home/lind/lind_project/tests/lamp_stack/pgbench/scripts/run_pgbench.sh /home/lind/lind_project/src/safeposix-rust/tmp/run_pgbench.sh
+cp /home/lind/lind_project/tests/lamp_stack/pgbench/scripts/run_pg_lind.sh /home/lind/lind_project/src/safeposix-rust/tmp/run_pg_lind.sh
