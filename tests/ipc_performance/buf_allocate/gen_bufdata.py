@@ -45,7 +45,7 @@ args = parser.parse_args()
 
 run_times = {}
 
-for size in range(8, 21, 2):
+for size in range(4, 21, 2):
     buffer_size = str(size) if args.buffer == "x" else args.buffer
 
     # Split the command string into a list
