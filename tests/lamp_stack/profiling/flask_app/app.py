@@ -8,13 +8,28 @@ conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
 def _get_random_rows(num_rows):
     cur = conn.cursor()
-    # Generate multiple ID
-    ids = tuple(random.randint(1, 10000) for _ in range(num_rows))
-    # Get multiple results at once 
-    cur.execute('SELECT * FROM world WHERE id IN %s;', (ids,))
-    results = cur.fetchall()
+    results = []
+
+    # At most 1000 IDs each time
+    batch_size = 1000
+
+    # Calculate how many loops do we want when exceeding 1000
+    for _ in range((num_rows + batch_size - 1) // batch_size):
+        # Calculate current rows
+        current_batch_size = min(batch_size, num_rows)
+
+        ids = tuple(random.randint(1, 10000) for _ in range(current_batch_size))
+
+        query = f'SELECT * FROM world WHERE id IN {ids};'
+        cur.execute(query)
+
+        results.extend(cur.fetchall())
+
+        num_rows -= current_batch_size
+
     cur.close()
     return results
+
 
 @app.route('/db')
 def db():
