@@ -36,8 +36,8 @@ cur.execute(
     "tid INT,"      
     "bid INT," 
     "aid INT," 
-    "delta INT," 
-    "mtime TIMESTAMP" 
+    "delta INT" 
+    # "mtime TIMESTAMP" 
     ");"
 )
 # Commit the changes to the database

@@ -10,7 +10,7 @@ def transaction():
     cur = conn.cursor()
     results = []
 
-    mtime = datetime(2024, 10, 11, 13, 37, 26, 151925)
+    # mtime = datetime(2024, 10, 11, 13, 37, 26, 151925)
     aid = random.randint(1, 100000)
     tid = random.randint(1, 10)
     bid = 1
@@ -29,8 +29,8 @@ def transaction():
     query = 'UPDATE pgbench_branches SET bbalance = bbalance + {} WHERE bid = {};'.format(delta, bid) 
     cur.execute(query)
 
-    query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {}, '{}');".format(tid, bid, aid, delta, mtime) 
-    # query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {});".format(tid, bid, aid, delta) 
+    # query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {}, '{}');".format(tid, bid, aid, delta, mtime) 
+    query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {});".format(tid, bid, aid, delta) 
     cur.execute(query)
 
     cur.close()
