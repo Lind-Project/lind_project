@@ -30,7 +30,7 @@ def transaction():
     cur.execute(query)
 
     # query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {}, '{}');".format(tid, bid, aid, delta, mtime) 
-    query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {});".format(tid, bid, aid, delta) 
+    query = "INSERT INTO pgbench_history (tid, bid, aid, delta) VALUES ({}, {}, {}, {});".format(tid, bid, aid, delta) 
     cur.execute(query)
 
     cur.close()
