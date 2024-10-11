@@ -10,7 +10,7 @@ echo "table ready"
 sudo /usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf -p /usr/local/nginx/
 sleep 5
 echo "nginx ready"
-cd flask_app/
+# cd flask_app/
 # /bin/python2.7 gunicornexec.py --bind=unix:/tmp/gunicorn.sock wsgi:app
 /bin/python app.py
 sleep 5
