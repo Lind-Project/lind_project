@@ -2,7 +2,7 @@ import psycopg2
 import random
 from datetime import datetime
 import time
-from pytz import timezone
+import pytz
 
 conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
@@ -10,7 +10,7 @@ def transaction():
     cur = conn.cursor()
     results = []
 
-    mtime = datetime.now(timezone.utc)
+    mtime = datetime.now(pytz.utc)
     aid = random.randint(1, 100000)
     tid = random.randint(1, 10)
     bid = 1
