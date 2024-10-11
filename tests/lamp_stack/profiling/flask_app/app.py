@@ -29,7 +29,7 @@ def transaction():
     query = 'UPDATE pgbench_branches SET bbalance = bbalance + {} WHERE bid = {};'.format(delta, bid) 
     cur.execute(query)
 
-    query = 'INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {}, {});'.format(tid, bid, aid, delta, mtime) 
+    query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {}, '{}');".format(tid, bid, aid, delta, mtime) 
     cur.execute(query)
 
     cur.close()
