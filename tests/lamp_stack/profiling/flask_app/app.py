@@ -36,7 +36,7 @@ def transaction():
     return results
 
 def main():
-    transactions = 1000
+    transactions = 50000
     t0 = time.time()
     for i in range(0, transactions):
         transaction()
