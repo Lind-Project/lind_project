@@ -44,3 +44,6 @@ def main():
 
     totaltime = t1 - t0
     print(totaltime)
+
+if __name__ == "__main__":
+    main()
