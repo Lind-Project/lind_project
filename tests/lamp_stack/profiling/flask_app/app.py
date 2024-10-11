@@ -1,8 +1,8 @@
 import psycopg2
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 import time
-from pytz import timezone
+# from pytz import timezone
 
 conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
