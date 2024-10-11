@@ -19,9 +19,9 @@ def transaction():
     query = 'UPDATE pgbench_accounts SET abalance = abalance + {} WHERE aid = {};'.format(delta, aid)
     cur.execute(query)
 
-    # query = 'SELECT abalance FROM pgbench_accounts WHERE aid = {};'.format(aid)
-    # cur.execute(query)
-    # results.extend(cur.fetchall())
+    query = 'SELECT abalance FROM pgbench_accounts WHERE aid = {};'.format(aid)
+    cur.execute(query)
+    results.extend(cur.fetchall())
 
 
     query = 'UPDATE pgbench_tellers SET tbalance = tbalance + {} WHERE tid = {};'.format(delta, tid) 
@@ -29,8 +29,8 @@ def transaction():
     query = 'UPDATE pgbench_branches SET bbalance = bbalance + {} WHERE bid = {};'.format(delta, bid) 
     cur.execute(query)
 
-    query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {}, '{}');".format(tid, bid, aid, delta, mtime) 
-    cur.execute(query)
+    # query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {}, '{}');".format(tid, bid, aid, delta, mtime) 
+    # cur.execute(query)
 
     cur.close()
     return results
