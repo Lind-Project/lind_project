@@ -6,10 +6,6 @@ echo "postgres ready"
 /bin/python /init_table.py
 sleep 3
 echo "table ready"
-# /usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf -p /usr/local/nginx/
-sleep 5
-echo "nginx ready"
-# /bin/python gunicornexec.py --bind unix:/tmp/gunicorn.sock wsgi:app 2>&1
-/bin/python /app.py
-sleep 5
-echo "system ready"
+for i in {1..10}; do
+	/bin/python /app.py
+done
