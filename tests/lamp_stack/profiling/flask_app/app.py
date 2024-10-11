@@ -23,15 +23,16 @@ def transaction():
     cur.execute(query)
     results.extend(cur.fetchall())
 
-
     query = 'UPDATE pgbench_tellers SET tbalance = tbalance + {} WHERE tid = {};'.format(delta, tid) 
+    cur.execute(query)
 
     query = 'UPDATE pgbench_branches SET bbalance = bbalance + {} WHERE bid = {};'.format(delta, bid) 
     cur.execute(query)
 
-    # query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {}, '{}');".format(tid, bid, aid, delta, mtime) 
-    # cur.execute(query)
+    query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {}, '{}');".format(tid, bid, aid, delta, mtime) 
+    cur.execute(query)
 
+    conn.commit()
     cur.close()
     return results
 
@@ -47,4 +48,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    conn.close()
     
