@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mkdir -p /usr/local/python-gcc4/{bin,lib,include,lib-dynload,site-packages}
+sudo mkdir -p /usr/local/python-gcc4/{bin,lib,include,lib-dynload,site-packages}
 
 echo "Copying libraries and configs"
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/python /usr/local/python-gcc4/bin/python;
@@ -14,8 +14,8 @@ sudo cp /home/lind/lind_project/tests/applications/python/pyconfig.h /usr/local/
 
 echo "Python installed!"
 echo "Copying Openssl"
-sudo cp /home/lind/lind_project/tests/applications/openssl/libcrypto.so.1.0.0 /lib/libcrypto.so.1.0.0
-sudo cp /home/lind/lind_project/tests/applications/openssl/libssl.so.1.0.0 /lib/libssl.so.1.0.0
+sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/openssl/libcrypto.so.1.0.0 /lib/libcrypto.so.1.0.0
+sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/openssl/libssl.so.1.0.0 /lib/libssl.so.1.0.0
 
 # Copies 
 echo Copying files...
