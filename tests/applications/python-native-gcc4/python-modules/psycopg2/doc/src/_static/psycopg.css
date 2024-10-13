@@ -1,0 +1,39 @@
+@import url("classic.css");
+
+blockquote {
+    font-style: italic;
+}
+
+div.admonition-todo {
+    background-color: #ffa;
+    border: 1px solid #ee2;
+}
+
+div.dbapi-extension {
+    background-color: #eef;
+    border: 1px solid #aaf;
+}
+
+code.sql,
+tt.sql {
+    font-size: 1em;
+    background-color: transparent;
+}
+
+a > code.sql,
+a > tt.sql {
+    font-weight: normal;
+}
+
+a > code.sql:hover,
+a > tt.sql:hover {
+    text-decoration: underline;
+}
+
+dl.faq dt {
+    font-weight: bold;
+}
+
+table.data-types div.line-block {
+    margin-bottom: 0;
+}

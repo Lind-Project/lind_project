@@ -1,0 +1,13 @@
+if [ -f /etc/lsb-release ]; then
+    . /etc/lsb-release
+    if [ "$DISTRIB_ID" = "Ubuntu" ]; then
+        export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
+    fi
+fi
+
+export CC=/usr/local/gcc-4.4.3/bin/gcc
+
+
+./Configure linux-x86_64 no-hw no-asm no-krb5 --prefix=build/ --openssldir=build/ssl -fPIC -shared -D_GNU_SOURCE
+make
+
