@@ -9,7 +9,7 @@ sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc
 sudo cp -r /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/Lib /usr/local/python-gcc4/lib/
 sudo cp -r /home/lind/lind_project/tests/applications/python/Lib /usr/local/python-gcc4/lib
 # lindfs cp /home/lind/lind_project/tests/applications/python/Makefile /usr/local/lib/python2.7/config/Makefile
-sudo cp /home/lind/lind_project/tests/applications/python/pyconfig.h /usr/local/python-gcc4/pyconfig.h
+sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/pyconfig.h /usr/local/python-gcc4/pyconfig.h
 # lindfs cp /home/lind/lind_project/src/scripts/includes/passwd /etc/passwd
 
 echo "Python installed!"
