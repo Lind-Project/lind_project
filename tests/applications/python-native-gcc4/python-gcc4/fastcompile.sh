@@ -5,8 +5,7 @@ if [ -f /etc/lsb-release ]; then
     fi
 fi
 
-mkdir -p /home/lind/lind_project/tests/applications/python-g/usr/local/gcc-4.4.3/bin/gcc4/build/lib
-
+mkdir -p /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/build/lib
 
 modulesarray=('_collectionsmodule' 'operator' 'itertoolsmodule' '_struct' 'mathmodule' 'binascii' 'timemodule' 'cStringIO' '_randommodule' 'arraymodule' 'socketmodule' '_functoolsmodule' 'cPickle' '_struct' 'selectmodule' 'arraymodule' 'unicodedata' 'fcntlmodule' 'grpmodule')
 libsarray=('_collections' 'operator' 'itertools' '_struct' 'math' 'binascii' 'time' 'cStringIO' '_random' 'array' '_socket' '_functools' 'cPickle' '_struct' 'select' 'array' 'unicodedata' 'fcntl' 'grp')
