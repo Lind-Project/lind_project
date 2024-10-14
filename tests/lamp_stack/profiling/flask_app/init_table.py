@@ -6,18 +6,40 @@ conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 # Open a cursor to perform database operations
 cur = conn.cursor()
 
-# Drop the existing 'world' table if it exists
-cur.execute("DROP TABLE IF EXISTS world;")
+# Drop the existing 'pgbench_accounts' table if it exists
+cur.execute("DROP TABLE IF EXISTS pgbench_accounts;")
+cur.execute("DROP TABLE IF EXISTS pgbench_branches;")
+cur.execute("DROP TABLE IF EXISTS pgbench_tellers;")
+cur.execute("DROP TABLE IF EXISTS pgbench_history;")
 
-# Create the 'world' table with two columns: id and word
+# Create the 'pgbench_accounts' table with two columns: id and word
 cur.execute(
-    "CREATE TABLE world ("
-    "id INT, "
-    "word1 VARCHAR(2000),"
-    "word2 VARCHAR(2000)"
+    "CREATE TABLE pgbench_accounts ("
+    "aid INT,"      
+    "abalance INT" 
     ");"
 )
-
+cur.execute(
+    "CREATE TABLE pgbench_branches ("
+    "bid INT,"      
+    "bbalance INT" 
+    ");"
+)
+cur.execute(
+    "CREATE TABLE pgbench_tellers ("
+    "tid INT,"      
+    "tbalance INT" 
+    ");"
+)
+cur.execute(
+    "CREATE TABLE pgbench_history ("
+    "tid INT,"      
+    "bid INT," 
+    "aid INT," 
+    "delta INT," 
+    "mtime TIMESTAMP" 
+    ");"
+)
 # Commit the changes to the database
 conn.commit()
 
@@ -26,16 +48,34 @@ conn.commit()
 # on the server's file system. Instead, we will read the file with Python and insert 
 # the data directly. 
 # We don't have csv module been compiled in Lind, so copying manually instead.
-csv_file_path = 'hitchdata2.csv'
-# Open the CSV file and read the data
-with open(csv_file_path, 'r') as f:
+pgbench_accounts = 'pgbench_accounts.txt'
+pgbench_branches = 'pgbench_branches.txt'
+pgbench_tellers = 'pgbench_tellers.txt'
+# Open the pgbench_accounts file and read the data
+with open(pgbench_accounts, 'r') as f:
     # Skip the header row
     next(f)
     for line in f:
         # Split each line by comma to parse the id and word columns
         row = line.strip().split(',')
         # Insert each row into the 'world' table
-        cur.execute("INSERT INTO world (id, word1, word2) VALUES (%s, %s, %s);", row)
+        cur.execute("INSERT INTO pgbench_accounts (aid, abalance) VALUES (%s, %s);", row)
+with open(pgbench_branches, 'r') as f:
+    # Skip the header row
+    next(f)
+    for line in f:
+        # Split each line by comma to parse the id and word columns
+        row = line.strip().split(',')
+        # Insert each row into the 'world' table
+        cur.execute("INSERT INTO pgbench_branches (bid, bbalance) VALUES (%s, %s);", row)
+with open(pgbench_tellers, 'r') as f:
+    # Skip the header row
+    next(f)
+    for line in f:
+        # Split each line by comma to parse the id and word columns
+        row = line.strip().split(',')
+        # Insert each row into the 'world' table
+        cur.execute("INSERT INTO pgbench_tellers (tid, tbalance) VALUES (%s, %s);", row)
 
 # Commit the changes to the database after data insertion
 conn.commit()
