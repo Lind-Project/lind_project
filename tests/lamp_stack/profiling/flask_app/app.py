@@ -15,13 +15,13 @@ def _get_random_rows(loops):
 
     # Calculate how many loops do we want when exceeding 1000
     for i in range(0, loops):
-
+        id = i // 1000
         # Generate a random ID
         # random_id = random.randint(0, 1000)
         for _ in range(0, batch_size):
             # Query for each individual ID
             query = 'SELECT * FROM world WHERE id = %s;'
-            cur.execute(query, (i,))
+            cur.execute(query, (id,))
 
             # Append the result of each query to the results list
             results.extend(cur.fetchall())
