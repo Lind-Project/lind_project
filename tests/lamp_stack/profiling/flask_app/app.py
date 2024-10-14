@@ -11,7 +11,7 @@ def _get_random_rows(loops):
     results = []
 
     # At most 64 IDs each time
-    batch_size = 4
+    # batch_size = 4
 
     # Calculate how many loops do we want when exceeding 1000
     for i in range(0, loops):
