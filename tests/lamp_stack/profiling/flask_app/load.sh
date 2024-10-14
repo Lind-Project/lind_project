@@ -1,7 +1,7 @@
 lindfs mkdir /templates
 # lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/lines.csv /flask_app/lines.csv
-lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/hitchdata2.csv /hitchdata2.csv
-# lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/hitchdata4.csv /hitchdata4.csv
+# lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/hitchdata2.csv /hitchdata2.csv
+lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/hitchdata4.csv /hitchdata4.csv
 lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/gunicornexec.py /gunicornexec.py
 lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/wsgi.py /wsgi.py
 lindfs cp /home/lind/lind_project/tests/lamp_stack/profiling/flask_app/wsgi_no_pg.py /wsgi_no_pg.py
