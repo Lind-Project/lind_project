@@ -14,7 +14,9 @@ cur.execute(
     "CREATE TABLE world ("
     "id INT, "
     "word1 VARCHAR(2000),"
-    "word2 VARCHAR(2000)"
+    "word2 VARCHAR(2000),"
+    "word3 VARCHAR(2000),"
+    "word4 VARCHAR(2000)"
     ");"
 )
 
@@ -35,7 +37,7 @@ with open(csv_file_path, 'r') as f:
         # Split each line by comma to parse the id and word columns
         row = line.strip().split(',')
         # Insert each row into the 'world' table
-        cur.execute("INSERT INTO world (id, word1, word2) VALUES (%s, %s, %s);", row)
+        cur.execute("INSERT INTO world (id, word1, word2, word3, word4) VALUES (%s, %s, %s, %s, %s);", row)
 
 # Commit the changes to the database after data insertion
 conn.commit()
