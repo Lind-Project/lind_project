@@ -13,7 +13,7 @@ sudo /usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf -p /usr/loc
 sleep 5
 echo "nginx ready"
 # cd flask_app/
-# /usr/local/python-gcc4/bin/python gunicornexec.py --bind=unix:/tmp/gunicorn.sock wsgi:app
-/usr/local/python-gcc4/bin/python app.py
+/usr/local/python-gcc4/bin/python gunicornexec.py --bind=unix:/tmp/gunicorn.sock wsgi:app
+# /usr/local/python-gcc4/bin/python app.py
 sleep 5
 echo "system ready"
