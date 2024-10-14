@@ -10,7 +10,7 @@ def transaction():
     cur = conn.cursor()
     results = []
 
-    mtime = datetime.now()
+    mtime = datetime(2024, 1, 1, 12, 0, 0)
     aid = random.randint(1, 100000)
     tid = random.randint(1, 10)
     bid = 1
