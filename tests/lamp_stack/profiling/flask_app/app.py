@@ -37,13 +37,15 @@ def transaction():
     return results
 
 def main():
-    transactions = 1
+    # transactions = 1
     t0 = time.time()
-    for i in range(0, transactions):
-        transaction()
+    # for i in range(0, transactions):
+    #     transaction()
+    result = transaction()
     t1 = time.time()
 
     totaltime = t1 - t0
+    print(result)
     print(totaltime)
 
 if __name__ == "__main__":
