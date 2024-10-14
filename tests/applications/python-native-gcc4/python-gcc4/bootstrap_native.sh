@@ -13,5 +13,5 @@ export CFLAGS='-g -e -fPIC -fno-pie -DPY_FORMAT_LONG_LONG="ll" -O3 -std=c99'
 export CXXFLAGS='-g -fPIC -fno-pie -O3'
 export LDFLAGS='-g -fno-pie -O3'
 
-./configure --enable-shared --enable-unicode=ucs4 "$@"
+./configure --enable-shared --enable-unicode=ucs2 "$@"
 make
