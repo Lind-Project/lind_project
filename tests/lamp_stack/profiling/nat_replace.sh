@@ -1,6 +1,8 @@
 #!/bin/bash
 
 export PATH=/usr/local/python-gcc4/bin/:$PATH
+export PYTHONPATH=/usr/local/python-gcc4/lib-dynload:$PYTHONPATH
+export LD_LIBRARY_PATH=/usr/local/pgsql/lib/:$LD_LIBRARY_PATH
 
 /usr/local/pgsql/bin/postgres -F -d 0 -c listen_addresses='' -D /usr/local/pgsql/data/ &
 sleep 15
