@@ -15,7 +15,7 @@ def _get_random_rows(loops):
 
     # Calculate how many loops do we want when exceeding 1000
     for i in range(0, loops):
-        id = i // 1000
+        id = i % 1000
         # Generate a random ID
         # random_id = random.randint(0, 1000)
         for _ in range(0, batch_size):
