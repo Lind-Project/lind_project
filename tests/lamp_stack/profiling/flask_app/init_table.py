@@ -26,7 +26,7 @@ conn.commit()
 # on the server's file system. Instead, we will read the file with Python and insert 
 # the data directly. 
 # We don't have csv module been compiled in Lind, so copying manually instead.
-csv_file_path = 'hitchdata2.csv'
+csv_file_path = 'hitchdata4.csv'
 # Open the CSV file and read the data
 with open(csv_file_path, 'r') as f:
     # Skip the header row
