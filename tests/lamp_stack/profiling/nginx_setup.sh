@@ -11,7 +11,10 @@ export CC=/usr/local/gcc-4.4.3/bin/gcc
 export CXX=/usr/local/gcc-4.4.3/bin/g++
 
 cd /home/lind/lind_project/tests/applications/nginx
-./auto/configure
+./auto/configure \
+	--with-compat \
+	--without-http_rewrite_module \
+	--without-http_gzip_module
 make
 sudo make install
 sudo cp /home/lind/lind_project/src/scripts/nginx/nginx-conf/nginx.conf /usr/local/nginx/conf/nginx.conf

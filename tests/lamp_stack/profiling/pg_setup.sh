@@ -7,9 +7,12 @@ if [ -f /etc/lsb-release ]; then
     fi
 fi
 
+export CC=/usr/local/gcc-4.4.3/bin/gcc
+export CXX=/usr/local/gcc-4.4.3/bin/g++
+
 cd /home/lind/lind_project/tests/applications/postgres/
 
-./configure CC=/usr/local/gcc-4.4.3/bin/gcc CXX=/usr/local/gcc-4.4.3/bin/g++
+./configure --with-template=linux --without-readline --without-zlib USE_DEV_URANDOM=1
 make
 sudo make install
 sudo mkdir -m 770 /usr/local/pgsql/data/
