@@ -1,56 +1,79 @@
 import psycopg2
-import string
 import random
-
-from flask import Flask, render_template
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
-html_size_128KBs = 2 ** 0
-size = 2 ** 16
-num_pages = int((html_size_128KBs * (2 ** 17)) / (2 * size)) # size * num_pages = html_size_128KBs
+
 conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
-
-def rand_generator(size=size, chars=string.ascii_uppercase + string.digits):
-    return "".join(random.choice(chars) for _ in range(size - 1))
-
-
-data = []
-for n in range(num_pages):
-    title = rand_generator()
-    review = rand_generator()
-    data.append((title, n, review))
-
-
-@app.route("/")
-def index():
+def _get_random_rows(loops):
     cur = conn.cursor()
+    results = []
 
-    for n in range(num_pages):
-        cur.execute(
-            "INSERT INTO books (title, pages_num, review)"
-            "VALUES (%s, %s, %s)",
-            data[n],
-        )
-        if n % 5 == 0:
-            conn.commit()
-    conn.commit()
+    # At most 64 IDs each time
+    batch_size = 32
 
-    books = []
-    for n in range(num_pages):
-        cur.execute("SELECT * FROM books WHERE pages_num = %s", (n,))
-        books.append(cur.fetchone())
+    # Calculate how many loops do we want when exceeding 1000
+    for _ in range(0, loops):
 
-    for n in range(num_pages):
-        cur.execute("DELETE FROM books WHERE pages_num = %s", (n,))
-        if n % 5 == 0:
-            conn.commit()
-    conn.commit()
+        # Generate a random ID
+        random_id = random.randint(0, 1000)
+        
+        # Query for each individual ID
+        query = 'SELECT * FROM world WHERE id = %s;'
+        cur.execute(query, (random_id,))
+
+        # Append the result of each query to the results list
+        results.extend(cur.fetchall())
+
 
     cur.close()
-    return render_template("index.html", books=books)
+    return results
 
+
+@app.route('/db')
+def db():
+    result = _get_random_rows(1)
+    # Convert Python data structures (such as dictionaries, lists, strings, etc.) to HTTP 
+    # response objects in JSON format. It can automatically serialize data into JSON format 
+    # and set the appropriate Content-Type to application/json so that the client can 
+    # recognize and parse it.
+    return jsonify(result)
+
+@app.route('/queries')
+def queries():
+    power = int(request.args.get('power', 16))
+    loop = 2**(power-16)
+    result = _get_random_rows(loop)
+    return jsonify(result)
+
+# Add 4 terminator at the end of str to extend the sentence to 16 bytes
+# We want to test with the 2^16 to 2^26 skipping by 2 
+# Usage: /plaintext?power=16
+@app.route('/plaintext')
+def plaintext():
+    # Get the power from the query parameter or default to 16 if not provided
+    power = int(request.args.get('power', 16))
+    
+    # Calculate the total size in bytes
+    total_size = 2 ** (power-4)
+    
+    # Determine how many times to repeat 'Hello, World!!!!'
+    base_string = "Hello, World!!!!"
+    base_str_utf8 = base_string.encode('utf-8')
+    
+    # Ignore the remainder after the decimal point
+    repeat_count = total_size // len(base_str_utf8)
+    
+    # Generate the response string 
+    repeat_str = base_str_utf8 * repeat_count
+
+    # Check again the final data length and remove extra chars
+    response_string = repeat_str.encode('utf-8')[:total_size].decode('utf-8', 'ignore')
+    
+    # Return the generated string
+    return response_string
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0")
     conn.close()
