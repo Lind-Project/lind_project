@@ -38,3 +38,7 @@ sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc
 echo "Copying flask files:"
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-modules/site-packages/markupsafe/_speedups.so /usr/local/python-gcc4/site-packages/_speedups.so
 sudo cp -r /home/lind/lind_project/tests/applications/python-native-gcc4/python-modules/site-packages/ /usr/local/python-gcc4/
+
+echo "Copying psycopg2..."
+sudo mkdir -p /usr/local/python-gcc4/lib-dynload/psycopg2/
+sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-modules/psycopg2/lib/* /usr/local/python-gcc4/lib-dynload/psycopg2/
