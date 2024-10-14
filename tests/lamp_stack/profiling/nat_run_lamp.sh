@@ -5,7 +5,7 @@ export PATH=/usr/local/python-gcc4/bin/:$PATH
 /usr/local/pgsql/bin/postgres -F -d 0 -c listen_addresses='' -D /usr/local/pgsql/data/ &
 sleep 15
 echo "postgres ready"
-# cd flask_app/
+cd flask_app/
 /usr/local/python-gcc4/bin/python init_table.py
 sleep 3
 echo "table ready"
