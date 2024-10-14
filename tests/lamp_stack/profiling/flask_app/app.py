@@ -6,8 +6,8 @@ import time
 
 conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
-def transaction():
-    cur = conn.cursor()
+def transaction(cur):
+    
     results = []
 
     mtime = datetime.now()
@@ -33,15 +33,17 @@ def transaction():
     cur.execute(query)
 
     conn.commit()
-    cur.close()
+    
     return results
 
 def main():
     transactions = 1000
+    cur = conn.cursor()
     t0 = time.time()
     for i in range(0, transactions):
-        transaction()
+        transaction(cur=cur)
     t1 = time.time()
+    cur.close()
 
     totaltime = t1 - t0
     print(totaltime)
@@ -49,4 +51,3 @@ def main():
 if __name__ == "__main__":
     main()
     conn.close()
-    
