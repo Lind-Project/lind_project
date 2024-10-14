@@ -1,54 +1,80 @@
 import psycopg2
 import random
-from datetime import datetime
-import time
-# import pytz
+from flask import Flask, jsonify, request
+
+app = Flask(__name__)
 
 conn = psycopg2.connect(database="postgres", user="lind", host="/tmp")
 
-def transaction():
+def _get_random_rows(loops):
     cur = conn.cursor()
     results = []
 
-    mtime = datetime.now()
-    aid = random.randint(1, 100000)
-    tid = random.randint(1, 10)
-    bid = 1
-    delta = random.randint(1, 100)
+    # At most 64 IDs each time
+    batch_size = 4
 
-    query = 'UPDATE pgbench_accounts SET abalance = abalance + {} WHERE aid = {};'.format(delta, aid)
-    cur.execute(query)
+    # Calculate how many loops do we want when exceeding 1000
+    for i in range(0, loops):
 
-    query = 'SELECT abalance FROM pgbench_accounts WHERE aid = {};'.format(aid)
-    cur.execute(query)
-    results.extend(cur.fetchall())
+        # Generate a random ID
+        # random_id = random.randint(0, 1000)
+        
+        # Query for each individual ID
+        query = 'SELECT * FROM world WHERE id = %s;'
+        cur.execute(query, (i,))
 
-    query = 'UPDATE pgbench_tellers SET tbalance = tbalance + {} WHERE tid = {};'.format(delta, tid) 
-    cur.execute(query)
+        # Append the result of each query to the results list
+        results.extend(cur.fetchall())
 
-    query = 'UPDATE pgbench_branches SET bbalance = bbalance + {} WHERE bid = {};'.format(delta, bid) 
-    cur.execute(query)
 
-    query = "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES ({}, {}, {}, {}, '{}');".format(tid, bid, aid, delta, mtime) 
-    cur.execute(query)
-
-    conn.commit()
     cur.close()
     return results
 
-def main():
-    # transactions = 1
-    t0 = time.time()
-    # for i in range(0, transactions):
-    #     transaction()
-    result = transaction()
-    t1 = time.time()
 
-    totaltime = t1 - t0
-    print(result)
-    print(totaltime)
+@app.route('/db')
+def db():
+    result = _get_random_rows(1)
+    # Convert Python data structures (such as dictionaries, lists, strings, etc.) to HTTP 
+    # response objects in JSON format. It can automatically serialize data into JSON format 
+    # and set the appropriate Content-Type to application/json so that the client can 
+    # recognize and parse it.
+    return jsonify(result)
+
+@app.route('/queries')
+def queries():
+    power = int(request.args.get('power', 16))
+    loop = 2**(power-16)
+    result = _get_random_rows(loop)
+    return jsonify(result)
+
+# Add 4 terminator at the end of str to extend the sentence to 16 bytes
+# We want to test with the 2^16 to 2^26 skipping by 2 
+# Usage: /plaintext?power=16
+@app.route('/plaintext')
+def plaintext():
+    # Get the power from the query parameter or default to 16 if not provided
+    power = int(request.args.get('power', 16))
+    
+    # Calculate the total size in bytes
+    total_size = 2 ** (power-4)
+    
+    # Determine how many times to repeat 'Hello, World!!!!'
+    base_string = "Hello, World!!!!"
+    base_str_utf8 = base_string.encode('utf-8')
+    
+    # Ignore the remainder after the decimal point
+    repeat_count = total_size // len(base_str_utf8)
+    
+    # Generate the response string 
+    repeat_str = base_str_utf8 * repeat_count
+
+    # Check again the final data length and remove extra chars
+    response_string = repeat_str.encode('utf-8')[:total_size].decode('utf-8', 'ignore')
+    
+    # Return the generated string
+    return response_string
 
 if __name__ == "__main__":
-    main()
+    app.run(host="0.0.0.0")
     conn.close()
     
