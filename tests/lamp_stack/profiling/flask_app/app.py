@@ -15,7 +15,7 @@ def _get_random_rows(loops):
     # Calculate how many loops do we want when exceeding 1000
     for _ in range(0, loops):
 
-        ids = tuple(random.randint(0, 1000) for _ in range(batch_size))
+        ids = tuple(i for i in range(batch_size))
 
         # It will meet syntax error with ","
         if len(ids) == 1:
