@@ -6,4 +6,6 @@ echo "postgres ready"
 /bin/python /replace_init.py
 sleep 3
 echo "table ready"
-/bin/python replace_app.py
+for i in {0..10}; do
+    /bin/python replace_app.py
+done

@@ -11,4 +11,6 @@ cd flask_app/
 /usr/local/python-gcc4/bin/python replace_init.py
 sleep 3
 echo "table ready"
-/usr/local/python-gcc4/bin/python replace_app.py
+for i in {0..10}; do
+    /usr/local/python-gcc4/bin/python replace_app.py
+done
