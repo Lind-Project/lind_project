@@ -13,18 +13,19 @@ def _get_random_rows(loops):
     batch_size = 32
 
     # Calculate how many loops do we want when exceeding 1000
-    for i in range(0, loops):
-        id = i % 1000
-        # Generate a random ID
-        # random_id = random.randint(0, 1000)
-        for _ in range(0, batch_size):
-            # Query for each individual ID
-            query = 'SELECT * FROM world WHERE id = %s;'
-            cur.execute(query, (id,))
+    for _ in range(0, loops):
 
-            # Append the result of each query to the results list
-            results.extend(cur.fetchall())
-        
+        ids = tuple(random.randint(0, 1000) for _ in range(batch_size))
+
+        # It will meet syntax error with ","
+        if len(ids) == 1:
+            query = 'SELECT * FROM world WHERE id = {};'.format(ids[0])
+        else:
+            query = 'SELECT * FROM world WHERE id IN {};'.format(ids)
+        cur.execute(query)
+
+        results.extend(cur.fetchall())
+
 
     cur.close()
     return results
@@ -76,4 +77,3 @@ def plaintext():
 if __name__ == "__main__":
     app.run(host="0.0.0.0")
     conn.close()
-    
