@@ -1,7 +1,7 @@
 #!/bin/bash
 
 sudo mkdir -p /usr/local/python-gcc4/{bin,lib,include}
-sudo mkdir -p /usr/local/python-gcc4/lib/python2.7/{config, site-packages,lib-dynload}
+sudo mkdir -p /usr/local/python-gcc4/lib/python2.7/{config,site-packages,lib-dynload}
 sudo mkdir -p /usr/local/python-gcc4/include/python2.7/
 
 echo "Copying libraries and configs"
@@ -9,7 +9,7 @@ sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc
 
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/libpython2.7.so.1.0 /usr/local/python-gcc4/lib/
 sudo cp -r /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/Lib /usr/local/python-gcc4/lib/
-sudo cp -r /home/lind/lind_project/tests/applications/python/Lib /usr/local/python-gcc4/lib
+sudo cp /home/lind/lind_project/tests/applications/python/Lib/* /usr/local/python-gcc4/lib/
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/Makefile /usr/local/python-gcc4/lib/python2.7/config/
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/pyconfig.h /usr/local/python-gcc4/include/python2.7/pyconfig.h
 # lindfs cp /home/lind/lind_project/src/scripts/includes/passwd /etc/passwd
@@ -38,7 +38,7 @@ sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/build/lib/libffi.so /usr/local/python-gcc4/lib/libffi.so.5
 
 # echo "Copying flask files:"
-sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-modules/site-packages/markupsafe/_speedups.so /usr/local/python-gcc4/site-packages/_speedups.so
+sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-modules/site-packages/markupsafe/_speedups.so /usr/local/python-gcc4/lib/python2.7/site-packages/_speedups.so
 sudo cp -r /home/lind/lind_project/tests/applications/python-native-gcc4/python-modules/site-packages/ /usr/local/python-gcc4/lib/python2.7/
 
 # echo "Copying psycopg2..."
