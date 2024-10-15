@@ -14,6 +14,10 @@ export CXXFLAGS='-g -fPIC -fno-pie -O3'
 export LDFLAGS='-g -fno-pie -O3'
 
 ./configure --enable-shared --enable-unicode=ucs2 "$@"
-# cp "./Modules/Setup.dist"  "./Modules/Setup"
-# touch Include/Python-ast.h Python/Python-ast.c
+
+make # fail
+
+cp "./Modules/Setup.dist"  "./Modules/Setup"
+touch Include/Python-ast.h Python/Python-ast.c
+
 make

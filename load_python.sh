@@ -8,8 +8,8 @@ echo "Copying libraries and configs"
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/python /usr/local/python-gcc4/bin/python;
 
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/libpython2.7.so.1.0 /usr/local/python-gcc4/lib/
-sudo cp -r /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/Lib /usr/local/python-gcc4/lib/
-sudo cp /home/lind/lind_project/tests/applications/python/Lib/* /usr/local/python-gcc4/lib/
+# sudo cp -r /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/Lib /usr/local/python-gcc4/lib/
+sudo cp -r /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/Lib/* /usr/local/python-gcc4/lib/
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/Makefile /usr/local/python-gcc4/lib/python2.7/config/
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/pyconfig.h /usr/local/python-gcc4/include/python2.7/pyconfig.h
 # lindfs cp /home/lind/lind_project/src/scripts/includes/passwd /etc/passwd
