@@ -28,7 +28,7 @@ do
 done
 
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/build/lib/datetime.so /usr/local/python-gcc4/lib/python2.7/lib-dynload/datetime.so
-sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/build/lib/_io.so /usr/local/python-gcc/lib/python2.7/lib-dynload/_io.so
+sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/build/lib/_io.so /usr/local/python-gcc4/lib/python2.7/lib-dynload/_io.so
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/build/lib/zlib.so /usr/local/python-gcc4/lib/python2.7/lib-dynload/zlib.so
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/Modules/zlib/libz.so.1.2.3 /usr/local/python-gcc4/libz.so.1
 sudo cp /home/lind/lind_project/tests/applications/python-native-gcc4/python-gcc4/build/lib/_ssl.so /usr/local/python-gcc4/lib/python2.7/lib-dynload/_ssl.so
