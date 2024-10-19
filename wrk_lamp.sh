@@ -14,8 +14,7 @@ platform=$3
 # Plaintext wrk runtime function
 run_wrk() {
     local output_file=$1
-    local type=$2
-    echo -e "\n --------------Start running $type and Save to $output_file--------------\n"
+    echo -e "\n --------------Start running mixed and Save to $output_file--------------\n"
 
     echo "{" > $output_file
 
@@ -24,8 +23,8 @@ run_wrk() {
 
         for ((i=1; i<=iterations; i++)); do
             # Execute wrk
-            output=$(wrk -t1 -c1 -d${duration} --timeout 30 http://localhost:80/$type?power=$power)
-            echo "executing: wrk -t1 -c1 -d${duration} --timeout 30 http://localhost:80/$type?power=$power"
+            output=$(wrk -t1 -c1 -d${duration} --timeout 30 http://localhost:80/mixed?power=$power)
+            echo "executing: wrk -t1 -c1 -d${duration} --timeout 30 http://localhost:80/mixed?power=$power"
             # Get Requests/sec
             reqs_sec=$(echo "$output" | grep "Requests/sec" | awk '{print $2}')
             
@@ -50,15 +49,9 @@ run_wrk() {
 }
 
 if [[ "$platform" == "lind" ]]; then
-    echo "================================ Running Queries ================================"
-    run_wrk "data/lind_lamp_queries.json" "queries"
-
-    echo "================================ Running Plaintext ================================"
-    run_wrk "data/lind_lamp_plaintext.json" "plaintext"
+    echo "================================ Running Lind Mixed LAMP ================================"
+    run_wrk "data/lind_lamp.json"
 else
-    echo "================================ Running Queries ================================"
-    run_wrk "data/nat_lamp_queries.json" "queries"
-
-    echo "================================ Running Plaintext ================================"
-    run_wrk "data/nat_lamp_plaintext.json" "plaintext"
+    echo "================================ Running Native Mixed LAMP ================================"
+    run_wrk "data/nat_lamp.json"
 fi
