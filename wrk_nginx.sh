@@ -29,10 +29,10 @@ run_wrk() {
                 output=$(wrk -t1 -c1 -d${duration} --timeout 30 http://localhost:80/home/lind/lind_project/static_${filesize}.html)
             fi
 
-            # Get Requests/sec
-            reqs_sec=$(echo "$output" | grep "Requests/sec" | awk '{print $2}')
+            # Get Transfer/sec
+            reqs_sec=$(echo "$output" | grep "Transfer/sec" | awk '{print $2}')
 
-            echo -e "Requests/sec: $reqs_sec"
+            echo -e "Transfer/sec: $reqs_sec"
             
             echo "    $reqs_sec" >> $output_file
 
