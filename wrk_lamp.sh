@@ -15,7 +15,6 @@ platform=$3
 run_wrk() {
     local output_file=$1
 
-
     ##plaintext
 
     plainoutput="${output_file}_plaintext.json"
