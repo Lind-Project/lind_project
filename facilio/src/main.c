@@ -242,6 +242,8 @@ int main(void) {
   unlink(socket_path);
   // listen on port 3000 and any available network binding (NULL == 0.0.0.0)
   http_listen(NULL, socket_path, .on_request = on_request, .log = 1);
+
+  chmod(socket_path, 0666);
   // start the server
   fio_start(.threads = 1);
   // deallocating the common values
