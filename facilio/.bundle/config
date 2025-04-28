@@ -1,0 +1,2 @@
+---
+BUNDLE_BUILD__PG: "--with-opt-dir=/usr/local/opt/libpq"
