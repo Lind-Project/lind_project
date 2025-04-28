@@ -10,12 +10,32 @@ FIOBJ HTTP_HEADER_X_DATA;
 static PGconn *conn = NULL;
 
 // Buffers for each endpoint and power level
-static char **queries_buffers[MAX_POWER_INDEX] = {0};
-static char **mixed_buffers[MAX_POWER_INDEX] = {0};
-static char **plaintext_buffers[MAX_POWER_INDEX] = {0};
+// New pre-allocated response buffers
+static char *queries_responses[MAX_POWER_INDEX] = {0};
+static char *mixed_responses[MAX_POWER_INDEX] = {0};
+static char *plaintext_responses[MAX_POWER_INDEX] = {0};
 static size_t queries_counts[MAX_POWER_INDEX] = {0};
 static size_t mixed_counts[MAX_POWER_INDEX] = {0};
 static size_t plaintext_counts[MAX_POWER_INDEX] = {0};
+
+static void init_buffers(void) {
+    for (int i = 0; i < MAX_POWER_INDEX; ++i) {
+        // Queries
+        size_t queries_loops = 1UL << (MIN_POWER + i - MIN_POWER);
+        size_t queries_total = queries_loops * BATCH_SIZE_QUERIES;
+        queries_responses[i] = malloc(queries_total * 64); // 64 bytes estimated per entry
+
+        // Mixed
+        size_t mixed_loops = 1UL << (MIN_POWER + i - MIN_POWER);
+        size_t mixed_total = mixed_loops * BATCH_SIZE_MIXED + (1UL << (MIN_POWER + i - 5));
+        mixed_responses[i] = malloc(mixed_total * 64); // same rough estimate
+
+        // Plaintext
+        size_t plaintext_loops = 1UL << (MIN_POWER + i - 4);
+        plaintext_responses[i] = malloc(plaintext_loops * PLAINTEXT_LEN);
+    }
+}
+
 
 // Initialize PostgreSQL connection
 static void init_db(void) {
@@ -36,166 +56,149 @@ static int power_to_index(int power) {
 
 // Free all allocated buffers
 static void free_buffers(void) {
-  for (int i = 0; i < MAX_POWER_INDEX; ++i) {
-      free(queries_buffers[i]);
-      free(mixed_buffers[i]);
-      free(plaintext_buffers[i]);
-  }
+    for (int i = 0; i < MAX_POWER_INDEX; ++i) {
+        free(queries_responses[i]);
+        free(mixed_responses[i]);
+        free(plaintext_responses[i]);
+    }
 }
 
-// Handler for /queries endpoint
 static void on_queries(http_s *request) {
-  http_parse_query(request);
-  FIOBJ power_param = fiobj_hash_get(request->params, fiobj_str_new("power", 5));
-  int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
-  if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
-      http_send_error(request, 400);
-      return;
-  }
+    http_parse_query(request);
+    FIOBJ power_param = fiobj_hash_get(request->params, fiobj_str_new("power", 5));
+    int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
+    if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
+        http_send_error(request, 400);
+        return;
+    }
 
-  int index = power_to_index(power);
-  size_t loops = 1 << (power - MIN_POWER);
-  size_t total_queries = loops * BATCH_SIZE_QUERIES;
+    int index = power_to_index(power);
+    size_t loops = 1UL << (power - MIN_POWER);
+    size_t total_queries = loops * BATCH_SIZE_QUERIES;
 
-  // Allocate buffer if not already allocated
-  if (!queries_buffers[index]) {
-      queries_buffers[index] = malloc(sizeof(char *) * total_queries);
-      queries_counts[index] = total_queries;
-  }
+    // Estimate max response size: assuming ~64 bytes per query result
+    size_t estimated_size = total_queries * 64;
+    char *response = malloc(estimated_size);
+    if (!response) {
+        http_send_error(request, 500);
+        return;
+    }
+    size_t response_offset = 0;
 
-  char **buffer = queries_buffers[index];
+    for (size_t i = 0; i < loops; ++i) {
+        for (int j = 0; j < BATCH_SIZE_QUERIES; ++j) {
+            int id = rand() % 1000 + 1;
+            char query[64];
+            snprintf(query, sizeof(query), "SELECT * FROM world WHERE id = %d;", id);
+            PGresult *res = PQexec(conn, query);
+            if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                fprintf(stderr, "Query failed: %s\n", PQerrorMessage(conn));
+                PQclear(res);
+                continue;
+            }
+            char *value = PQgetvalue(res, 0, 0);
+            size_t val_len = strlen(value);
 
-  for (size_t i = 0; i < loops; ++i) {
-      for (int j = 0; j < BATCH_SIZE_QUERIES; ++j) {
-          int id = rand() % 1000 + 1;
-          char query[64];
-          snprintf(query, sizeof(query), "SELECT * FROM world WHERE id = %d;", id);
-          PGresult *res = PQexec(conn, query);
-          if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-              fprintf(stderr, "Query failed: %s\n", PQerrorMessage(conn));
-              PQclear(res);
-              continue;
-          }
-          buffer[i * BATCH_SIZE_QUERIES + j] = strdup(PQgetvalue(res, 0, 0));
-          PQclear(res);
-      }
-  }
-  // Calculate total response size
-  size_t response_size = 0;
-  for (size_t i = 0; i < total_queries; ++i) {
-      response_size += strlen(buffer[i]);
-  }
+            // Copy directly into response
+            memcpy(response + response_offset, value, val_len);
+            response_offset += val_len;
 
-  char *response = malloc(response_size + 1);
-  response[0] = '\0';
-  for (size_t i = 0; i < total_queries; ++i) {
-      strcat(response, buffer[i]);
-      free(buffer[i]); // Free individual strings after use
-  }
+            PQclear(res);
+        }
+    }
 
-  http_send_body(request, response, response_size);
-  free(response);
+    http_send_body(request, response, response_offset);
+    free(response);
 }
 
-// Handler for /mixed endpoint
+
 static void on_mixed(http_s *request) {
-  http_parse_query(request);
-  FIOBJ power_param = fiobj_hash_get(request->params, fiobj_str_new("power", 5));
-  int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
-  if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
-      http_send_error(request, 400);
-      return;
-  }
+    http_parse_query(request);
+    FIOBJ power_param = fiobj_hash_get(request->params, fiobj_str_new("power", 5));
+    int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
+    if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
+        http_send_error(request, 400);
+        return;
+    }
 
-  int index = power_to_index(power);
-  size_t loops = 1 << (power - MIN_POWER);
-  size_t total_queries = loops * BATCH_SIZE_MIXED;
-  size_t plaintext_loops = 1 << (power - 5);
-  size_t total_entries = total_queries + plaintext_loops;
+    int index = power_to_index(power);
+    size_t loops = 1UL << (power - MIN_POWER);
+    size_t total_queries = loops * BATCH_SIZE_MIXED;
+    size_t plaintext_loops = 1UL << (power - 5);
+    size_t total_entries = total_queries + plaintext_loops;
 
-  // Allocate buffer if not already allocated
-  if (!mixed_buffers[index]) {
-      mixed_buffers[index] = malloc(sizeof(char *) * total_entries);
-      mixed_counts[index] = total_entries;
-  }
+    // Estimate a rough maximum size
+    // Assume each DB entry and PLAINTEXT_STR fits ~64 bytes
+    size_t estimated_size = total_entries * 64;
+    char *response = malloc(estimated_size);
+    if (!response) {
+        http_send_error(request, 500);
+        return;
+    }
+    size_t response_offset = 0;
 
-  char **buffer = mixed_buffers[index];
+    // Fetch database entries
+    for (size_t i = 0; i < loops; ++i) {
+        for (int j = 0; j < BATCH_SIZE_MIXED; ++j) {
+            int id = rand() % 1000 + 1;
+            char query[64];
+            snprintf(query, sizeof(query), "SELECT * FROM world WHERE id = %d;", id);
+            PGresult *res = PQexec(conn, query);
+            if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+                fprintf(stderr, "Query failed: %s\n", PQerrorMessage(conn));
+                PQclear(res);
+                continue;
+            }
+            char *value = PQgetvalue(res, 0, 0);
+            size_t val_len = strlen(value);
 
-  // Fetch database entries
-  for (size_t i = 0; i < loops; ++i) {
-      for (int j = 0; j < BATCH_SIZE_MIXED; ++j) {
-          int id = rand() % 1000 + 1;
-          char query[64];
-          snprintf(query, sizeof(query), "SELECT * FROM world WHERE id = %d;", id);
-          PGresult *res = PQexec(conn, query);
-          if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-              fprintf(stderr, "Query failed: %s\n", PQerrorMessage(conn));
-              PQclear(res);
-              continue;
-          }
-          buffer[i * BATCH_SIZE_MIXED + j] = strdup(PQgetvalue(res, 0, 0));
-          PQclear(res);
-      }
-  }
+            // Copy result into response buffer
+            memcpy(response + response_offset, value, val_len);
+            response_offset += val_len;
 
-  // Add plaintext entries
-  for (size_t i = 0; i < plaintext_loops; ++i) {
-      buffer[total_queries + i] = strdup(PLAINTEXT_STR);
-  }
+            PQclear(res);
+        }
+    }
 
-  // Calculate total response size
-  size_t response_size = 0;
-  for (size_t i = 0; i < total_entries; ++i) {
-      response_size += strlen(buffer[i]);
-  }
+    // Add plaintext entries
+    size_t plaintext_len = strlen(PLAINTEXT_STR);
+    for (size_t i = 0; i < plaintext_loops; ++i) {
+        memcpy(response + response_offset, PLAINTEXT_STR, plaintext_len);
+        response_offset += plaintext_len;
+    }
 
-  char *response = malloc(response_size + 1);
-  response[0] = '\0';
-  for (size_t i = 0; i < total_entries; ++i) {
-      strcat(response, buffer[i]);
-      free(buffer[i]); // Free individual strings after use
-  }
-
-  http_send_body(request, response, response_size);
-  free(response);
+    // Send final response
+    http_send_body(request, response, response_offset);
+    free(response);
 }
 
-// Handler for /plaintext endpoint
+
 static void on_plaintext(http_s *request) {
-  http_parse_query(request);
-  FIOBJ power_param = fiobj_hash_get(request->params, fiobj_str_new("power", 5));
-  int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
-  if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
-      http_send_error(request, 400);
-      return;
-  }
+    http_parse_query(request);
+    FIOBJ power_param = fiobj_hash_get(request->params, fiobj_str_new("power", 5));
+    int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
+    if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
+        http_send_error(request, 400);
+        return;
+    }
 
-  int index = power_to_index(power);
-  size_t loops = 1 << (power - 4);
-  size_t total_size = loops * PLAINTEXT_LEN;
+    size_t loops = 1UL << (power - 4);
+    size_t total_size = loops * PLAINTEXT_LEN;
 
-  // Allocate buffer if not already allocated
-  if (!plaintext_buffers[index]) {
-      plaintext_buffers[index] = malloc(sizeof(char *) * loops);
-      plaintext_counts[index] = loops;
-  }
+    char *response = malloc(total_size);
+    if (!response) {
+        http_send_error(request, 500);
+        return;
+    }
 
-  char **buffer = plaintext_buffers[index];
+    for (size_t i = 0; i < loops; ++i) {
+        memcpy(response + i * PLAINTEXT_LEN, PLAINTEXT_STR, PLAINTEXT_LEN);
+    }
 
-  for (size_t i = 0; i < loops; ++i) {
-      buffer[i] = strdup(PLAINTEXT_STR);
-  }
-
-  char *response = malloc(total_size + 1);
-  response[0] = '\0';
-  for (size_t i = 0; i < loops; ++i) {
-      strcat(response, buffer[i]);
-      free(buffer[i]); // Free individual strings after use
-  }
-
-  http_send_body(request, response, total_size);
-  free(response);
+    http_send_body(request, response, total_size);
+    free(response);
 }
+
 
 void on_debug(http_s *request) {
   // SQL query to count rows in the 'world' table
@@ -231,6 +234,8 @@ void on_debug(http_s *request) {
 int main(void) {
 
   init_db();
+
+  init_buffers();
   // allocating values we use often
   HTTP_HEADER_X_DATA = fiobj_str_new("X-Data", 6);
 
