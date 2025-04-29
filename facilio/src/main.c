@@ -23,12 +23,14 @@ static void init_buffers(void) {
         // Queries
         size_t queries_loops = 1UL << (MIN_POWER + i*2 - MIN_POWER);
         size_t queries_total = queries_loops * BATCH_SIZE_QUERIES;
-        queries_responses[i] = malloc(queries_total * 64); // 64 bytes estimated per entry
+        queries_responses[i] = malloc(queries_total * 2048); // 64 bytes estimated per entry
 
         // Mixed
         size_t mixed_loops = 1UL << (MIN_POWER + i*2 - MIN_POWER);
-        size_t mixed_total = mixed_loops * BATCH_SIZE_MIXED + (1UL << (MIN_POWER + i*2 - 5));
-        mixed_responses[i] = malloc(mixed_total * 64); // same rough estimate
+        size_t mixed_queries_size = mixed_loops * BATCH_SIZE_MIXED * 2048; // 2048 bytes estimated per entry
+        size_t mixed_plaintext_size = (1UL << (MIN_POWER + i*2 - 5)) * PLAINTEXT_LEN; // 16 bytes per plaintext
+        size_t mixed_total = mixed_queries_size + mixed_plaintext_size;
+        mixed_responses[i] = malloc(mixed_total); // same rough estimate
 
         // Plaintext
         size_t plaintext_loops = 1UL << (MIN_POWER + i*2 - 4);
@@ -77,7 +79,7 @@ static void on_queries(http_s *request) {
     size_t total_queries = loops * BATCH_SIZE_QUERIES;
 
     // Estimate max response size: assuming ~64 bytes per query result
-    size_t estimated_size = total_queries * 64;
+    size_t estimated_size = total_queries * 2048;
     char *response = queries_responses[index];
     if (!response) {
         http_send_error(request, 500);
@@ -97,12 +99,11 @@ static void on_queries(http_s *request) {
                 PQclear(res);
                 continue;
             }
-            char *value = PQgetvalue(res, 0, 0);
+            char *value = PQgetvalue(res, 0, 1);
             size_t val_len = strlen(value);
-
             // Copy directly into response
-            memcpy(response + response_offset, value, val_len);
-            response_offset += val_len;
+            memcpy(response + response_offset, value, val_len-1);
+            response_offset += val_len-1;
 
             PQclear(res);
         }
@@ -137,7 +138,7 @@ static void on_mixed(http_s *request) {
 
     // Fetch database entries
     for (size_t i = 0; i < loops; ++i) {
-        for (int j = 0; j < BATCH_SIZE_QUERIES; ++j) {
+        for (int j = 0; j < BATCH_SIZE_MIXED; ++j) {
             int id = rand() % 1000 + 1;
             char query[64];
             snprintf(query, sizeof(query), "SELECT * FROM world WHERE id = %d;", id);
@@ -147,11 +148,11 @@ static void on_mixed(http_s *request) {
                 PQclear(res);
                 continue;
             }
-            char *value = PQgetvalue(res, 0, 0);
+            char *value = PQgetvalue(res, 0, 1);
             size_t val_len = strlen(value);
 
-            memcpy(response + response_offset, value, val_len);
-            response_offset += val_len;
+            memcpy(response + response_offset, value, val_len-1);
+            response_offset += val_len-1;
 
             PQclear(res);
         }
