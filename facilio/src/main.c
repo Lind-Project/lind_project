@@ -21,18 +21,19 @@ static size_t plaintext_counts[MAX_POWER_INDEX] = {0};
 static void init_buffers(void) {
     for (int i = 0; i < MAX_POWER_INDEX; ++i) {
         // Queries
-        size_t queries_loops = 1UL << (MIN_POWER + i - MIN_POWER);
+        size_t queries_loops = 1UL << (MIN_POWER + i*2 - MIN_POWER);
         size_t queries_total = queries_loops * BATCH_SIZE_QUERIES;
         queries_responses[i] = malloc(queries_total * 64); // 64 bytes estimated per entry
 
         // Mixed
-        size_t mixed_loops = 1UL << (MIN_POWER + i - MIN_POWER);
-        size_t mixed_total = mixed_loops * BATCH_SIZE_MIXED + (1UL << (MIN_POWER + i - 5));
+        size_t mixed_loops = 1UL << (MIN_POWER + i*2 - MIN_POWER);
+        size_t mixed_total = mixed_loops * BATCH_SIZE_MIXED + (1UL << (MIN_POWER + i*2 - 5));
         mixed_responses[i] = malloc(mixed_total * 64); // same rough estimate
 
         // Plaintext
-        size_t plaintext_loops = 1UL << (MIN_POWER + i - 4);
-        plaintext_responses[i] = malloc(plaintext_loops * PLAINTEXT_LEN);
+        size_t plaintext_loops = 1UL << (MIN_POWER + i*2 - 4);
+        fprintf(stderr, "Allocating plaintext buffer for power %d: %zu\n", MIN_POWER + i*2, plaintext_loops * (PLAINTEXT_LEN+1));
+        plaintext_responses[i] = malloc(plaintext_loops * (PLAINTEXT_LEN+1));
     }
 }
 
@@ -54,7 +55,6 @@ static int power_to_index(int power) {
 
 
 
-// Free all allocated buffers
 static void free_buffers(void) {
     for (int i = 0; i < MAX_POWER_INDEX; ++i) {
         free(queries_responses[i]);
@@ -78,11 +78,12 @@ static void on_queries(http_s *request) {
 
     // Estimate max response size: assuming ~64 bytes per query result
     size_t estimated_size = total_queries * 64;
-    char *response = malloc(estimated_size);
+    char *response = queries_responses[index];
     if (!response) {
         http_send_error(request, 500);
         return;
     }
+    //memset(response, 0, estimated_size);
     size_t response_offset = 0;
 
     for (size_t i = 0; i < loops; ++i) {
@@ -108,8 +109,8 @@ static void on_queries(http_s *request) {
     }
 
     http_send_body(request, response, response_offset);
-    free(response);
 }
+
 
 
 static void on_mixed(http_s *request) {
@@ -122,24 +123,21 @@ static void on_mixed(http_s *request) {
     }
 
     int index = power_to_index(power);
-    size_t loops = 1UL << (power - MIN_POWER);
-    size_t total_queries = loops * BATCH_SIZE_MIXED;
-    size_t plaintext_loops = 1UL << (power - 5);
-    size_t total_entries = total_queries + plaintext_loops;
-
-    // Estimate a rough maximum size
-    // Assume each DB entry and PLAINTEXT_STR fits ~64 bytes
-    size_t estimated_size = total_entries * 64;
-    char *response = malloc(estimated_size);
+    char *response = mixed_responses[index];
     if (!response) {
         http_send_error(request, 500);
         return;
     }
+
+    size_t loops = 1UL << (power - MIN_POWER);
+    size_t total_queries = loops * BATCH_SIZE_MIXED;
+    size_t plaintext_loops = 1UL << (power - 5);
+
     size_t response_offset = 0;
 
     // Fetch database entries
     for (size_t i = 0; i < loops; ++i) {
-        for (int j = 0; j < BATCH_SIZE_MIXED; ++j) {
+        for (int j = 0; j < BATCH_SIZE_QUERIES; ++j) {
             int id = rand() % 1000 + 1;
             char query[64];
             snprintf(query, sizeof(query), "SELECT * FROM world WHERE id = %d;", id);
@@ -152,7 +150,6 @@ static void on_mixed(http_s *request) {
             char *value = PQgetvalue(res, 0, 0);
             size_t val_len = strlen(value);
 
-            // Copy result into response buffer
             memcpy(response + response_offset, value, val_len);
             response_offset += val_len;
 
@@ -160,17 +157,15 @@ static void on_mixed(http_s *request) {
         }
     }
 
-    // Add plaintext entries
-    size_t plaintext_len = strlen(PLAINTEXT_STR);
     for (size_t i = 0; i < plaintext_loops; ++i) {
-        memcpy(response + response_offset, PLAINTEXT_STR, plaintext_len);
-        response_offset += plaintext_len;
+        memcpy(response + response_offset, PLAINTEXT_STR, PLAINTEXT_LEN);
+        response_offset += PLAINTEXT_LEN;
     }
 
     // Send final response
     http_send_body(request, response, response_offset);
-    free(response);
 }
+
 
 
 static void on_plaintext(http_s *request) {
@@ -183,9 +178,11 @@ static void on_plaintext(http_s *request) {
     }
 
     size_t loops = 1UL << (power - 4);
+    int index = power_to_index(power);
+
+    char *response = plaintext_responses[index];
     size_t total_size = loops * PLAINTEXT_LEN;
 
-    char *response = malloc(total_size);
     if (!response) {
         http_send_error(request, 500);
         return;
@@ -196,7 +193,6 @@ static void on_plaintext(http_s *request) {
     }
 
     http_send_body(request, response, total_size);
-    free(response);
 }
 
 
