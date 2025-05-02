@@ -11,6 +11,6 @@ echo "table ready"
 sleep 5
 echo "nginx ready"
 
-./tmp/fioapp
+./fioapp
 sleep 5
 echo "system ready"
