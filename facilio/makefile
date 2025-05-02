@@ -60,7 +60,7 @@ LIB_PRIVATE_SUBFOLDERS=
 #############################################################################
 
 # any libraries required (only names, ommit the "-l" at the begining)
-LINKER_LIBS=pthread m pq
+LINKER_LIBS=pthread m pq rt
 # optimization level.
 OPTIMIZATION=-O2
 # Warnings... i.e. -Wpedantic -Weverything -Wno-format-pedantic

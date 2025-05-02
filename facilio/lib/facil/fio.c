@@ -2877,8 +2877,7 @@ intptr_t fio_accept(intptr_t srv_uuid) {
   int client;
 #endif
 #ifdef SOCK_NONBLOCK
-  client = accept4(fio_uuid2fd(srv_uuid), (struct sockaddr *)addrinfo, &addrlen,
-                   SOCK_NONBLOCK | SOCK_CLOEXEC);
+  client = accept(fio_uuid2fd(srv_uuid), (struct sockaddr *)addrinfo, &addrlen);
   if (client <= 0)
     return -1;
 #else
