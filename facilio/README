@@ -1,0 +1,7 @@
+Steps to run Lind Facil Stack
+
+1. Remove makefile, cp makefile-nacl as makefile
+2. Run bootstrap_nacl
+3. Compile full lamp stack via src/scripts/lamp/compile_lamp.sh and load via load_lamp.sh
+4. Load facil related files via ./load_facil.sh
+5. Run lind facil stack via: lind /bin/bash facil_lind_stack.sh
