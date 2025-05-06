@@ -1,5 +1,5 @@
 #include "main.h"
-
+#include <math.h>
 // We'll use this callback in `http_listen`, to handles HTTP requests
 void on_request(http_s *request);
 
@@ -11,31 +11,11 @@ static PGconn *conn = NULL;
 
 // Buffers for each endpoint and power level
 // New pre-allocated response buffers
-static char *queries_responses[MAX_POWER_INDEX] = {0};
-static char *mixed_responses[MAX_POWER_INDEX] = {0};
-static char *plaintext_responses[MAX_POWER_INDEX] = {0};
-static size_t queries_counts[MAX_POWER_INDEX] = {0};
-static size_t mixed_counts[MAX_POWER_INDEX] = {0};
-static size_t plaintext_counts[MAX_POWER_INDEX] = {0};
+static char *responses[MAX_POWER_INDEX] = {0};
 
 static void init_buffers(void) {
     for (int i = 0; i < MAX_POWER_INDEX; ++i) {
-        // Queries
-        size_t queries_loops = 1UL << (MIN_POWER + i*2 - MIN_POWER);
-        size_t queries_total = queries_loops * BATCH_SIZE_QUERIES;
-        queries_responses[i] = malloc(queries_total * 2048); // 64 bytes estimated per entry
-
-        // Mixed
-        size_t mixed_loops = 1UL << (MIN_POWER + i*2 - MIN_POWER);
-        size_t mixed_queries_size = mixed_loops * BATCH_SIZE_MIXED * 2048; // 2048 bytes estimated per entry
-        size_t mixed_plaintext_size = (1UL << (MIN_POWER + i*2 - 5)) * PLAINTEXT_LEN; // 16 bytes per plaintext
-        size_t mixed_total = mixed_queries_size + mixed_plaintext_size;
-        mixed_responses[i] = malloc(mixed_total); // same rough estimate
-
-        // Plaintext
-        size_t plaintext_loops = 1UL << (MIN_POWER + i*2 - 4);
-        fprintf(stderr, "Allocating plaintext buffer for power %d: %zu\n", MIN_POWER + i*2, plaintext_loops * (PLAINTEXT_LEN+1));
-        plaintext_responses[i] = malloc(plaintext_loops * (PLAINTEXT_LEN+1));
+        responses[i] = malloc(pow(2, MIN_POWER + (i*2)));
     }
 }
 
@@ -59,20 +39,21 @@ static int power_to_index(int power) {
 
 static void free_buffers(void) {
     for (int i = 0; i < MAX_POWER_INDEX; ++i) {
-        free(queries_responses[i]);
-        free(mixed_responses[i]);
-        free(plaintext_responses[i]);
+        free(responses[i]);
     }
 }
 
 static void on_queries(http_s *request) {
     http_parse_query(request);
-    FIOBJ power_param = fiobj_hash_get(request->params, fiobj_str_new("power", 5));
+    FIOBJ key = fiobj_str_new("power", 5);
+    FIOBJ power_param = fiobj_hash_get(request->params, key);
     int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
     if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
         http_send_error(request, 400);
         return;
     }
+
+    fiobj_free(key);
 
     int index = power_to_index(power);
     size_t loops = 1UL << (power - MIN_POWER);
@@ -80,7 +61,7 @@ static void on_queries(http_s *request) {
 
     // Estimate max response size: assuming ~64 bytes per query result
     size_t estimated_size = total_queries * 2048;
-    char *response = queries_responses[index];
+    char *response = responses[index];
     if (!response) {
         http_send_error(request, 500);
         return;
@@ -116,15 +97,18 @@ static void on_queries(http_s *request) {
 
 static void on_mixed(http_s *request) {
     http_parse_query(request);
-    FIOBJ power_param = fiobj_hash_get(request->params, fiobj_str_new("power", 5));
+    FIOBJ key = fiobj_str_new("power", 5);
+    FIOBJ power_param = fiobj_hash_get(request->params, key);
     int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
     if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
         http_send_error(request, 400);
         return;
     }
 
+    fiobj_free(key);
+
     int index = power_to_index(power);
-    char *response = mixed_responses[index];
+    char *response = responses[index];
     if (!response) {
         http_send_error(request, 500);
         return;
@@ -171,17 +155,20 @@ static void on_mixed(http_s *request) {
 
 static void on_plaintext(http_s *request) {
     http_parse_query(request);
-    FIOBJ power_param = fiobj_hash_get(request->params, fiobj_str_new("power", 5));
+    FIOBJ key = fiobj_str_new("power", 5);
+    FIOBJ power_param = fiobj_hash_get(request->params, key);
     int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
     if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
         http_send_error(request, 400);
         return;
     }
 
+    fiobj_free(key);
+
     size_t loops = 1UL << (power - 4);
     int index = power_to_index(power);
 
-    char *response = plaintext_responses[index];
+    char *response = responses[index];
     size_t total_size = loops * PLAINTEXT_LEN;
 
     if (!response) {
