@@ -223,7 +223,7 @@ int main(void) {
   // allocating values we use often
   HTTP_HEADER_X_DATA = fiobj_str_new("X-Data", 6);
 
-  FIO_LOG_LEVEL = FIO_LOG_LEVEL_DEBUG;
+  //FIO_LOG_LEVEL = FIO_LOG_LEVEL_DEBUG;
 
   const char *socket_path = "/tmp/facil.sock";
 
