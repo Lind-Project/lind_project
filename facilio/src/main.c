@@ -1,5 +1,7 @@
 #include "main.h"
 #include <math.h>
+
+#define PGSTRLEN 2048
 // We'll use this callback in `http_listen`, to handles HTTP requests
 void on_request(http_s *request);
 
@@ -67,11 +69,11 @@ static void on_queries(http_s *request) {
         return;
     }
     //memset(response, 0, estimated_size);
-    size_t response_offset = 0;
+    char *resp_copy_ptr = response;
 
     for (size_t i = 0; i < loops; ++i) {
         for (int j = 0; j < BATCH_SIZE_QUERIES; ++j) {
-            int id = rand() % 1000 + 1;
+            int id = i % 1000 + 1;
             char query[64];
             snprintf(query, sizeof(query), "SELECT * FROM world WHERE id = %d;", id);
             PGresult *res = PQexec(conn, query);
@@ -80,11 +82,8 @@ static void on_queries(http_s *request) {
                 PQclear(res);
                 continue;
             }
-            char *value = PQgetvalue(res, 0, 1);
-            size_t val_len = strlen(value);
-            // Copy directly into response
-            memcpy(response + response_offset, value, val_len-1);
-            response_offset += val_len-1;
+            resp_copy_ptr = PQgetvalue(res, 0, 1);
+            resp_copy_ptr = resp_copy_ptr + PGSTRLEN;
 
             PQclear(res);
         }
