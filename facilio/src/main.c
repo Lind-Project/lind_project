@@ -70,6 +70,7 @@ static void on_queries(http_s *request) {
     }
     //memset(response, 0, estimated_size);
     char *resp_copy_ptr = response;
+    long total_len = 0;
 
     for (size_t i = 0; i < loops; ++i) {
         for (int j = 0; j < BATCH_SIZE_QUERIES; ++j) {
@@ -83,13 +84,14 @@ static void on_queries(http_s *request) {
                 continue;
             }
             resp_copy_ptr = PQgetvalue(res, 0, 1);
-            resp_copy_ptr = resp_copy_ptr + PGSTRLEN;
+            total_len = total_len + PGSTRLEN;
+            resp_copy_ptr = resp_copy_ptr + total_len;
 
             PQclear(res);
         }
     }
 
-    http_send_body(request, response, response_offset);
+    http_send_body(request, response, total_len);
 }
 
 
