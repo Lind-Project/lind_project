@@ -12,6 +12,8 @@ echo "postgres ready"
 /usr/local/python-gcc4/bin/python init_table.py
 sleep 3
 echo "table ready"
+
+sudo cp -f ./nginx.conf /usr/local/nginx/conf/nginx.conf
 sudo /usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf -p /usr/local/nginx/
 sleep 5
 echo "nginx ready"

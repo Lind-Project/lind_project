@@ -69,26 +69,25 @@ static void on_queries(http_s *request) {
     //memset(response, 0, estimated_size);
     size_t response_offset = 0;
 
-    for (size_t i = 0; i < loops; ++i) {
-        for (int j = 0; j < BATCH_SIZE_QUERIES; ++j) {
-            int id = rand() % 1000 + 1;
-            char query[64];
-            snprintf(query, sizeof(query), "SELECT * FROM world WHERE id = %d;", id);
-            PGresult *res = PQexec(conn, query);
-            if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                fprintf(stderr, "Query failed: %s\n", PQerrorMessage(conn));
-                PQclear(res);
-                continue;
-            }
-            char *value = PQgetvalue(res, 0, 1);
-            size_t val_len = strlen(value);
-            // Copy directly into response
-            memcpy(response + response_offset, value, val_len-1);
-            response_offset += val_len-1;
-
-            PQclear(res);
-        }
+    char query[128];
+    snprintf(query, sizeof(query), "SELECT * FROM world LIMIT %zu;", total_queries);
+    
+    PGresult *res = PQexec(conn, query);
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        fprintf(stderr, "Query failed: %s\n", PQerrorMessage(conn));
+        PQclear(res);
+        return;
     }
+    
+    // Assuming each value is exactly 2048 bytes (e.g., CHAR(2048))
+    int nrows = PQntuples(res);
+    for (int i = 0; i < nrows; ++i) {
+        char *value = PQgetvalue(res, i, 1);  // column index 1
+        memcpy(response + response_offset, value, 2048);
+        response_offset += 2048;
+    }
+    
+    PQclear(res);
 
     http_send_body(request, response, response_offset);
 }
@@ -120,27 +119,25 @@ static void on_mixed(http_s *request) {
 
     size_t response_offset = 0;
 
-    // Fetch database entries
-    for (size_t i = 0; i < loops; ++i) {
-        for (int j = 0; j < BATCH_SIZE_MIXED; ++j) {
-            int id = rand() % 1000 + 1;
-            char query[64];
-            snprintf(query, sizeof(query), "SELECT * FROM world WHERE id = %d;", id);
-            PGresult *res = PQexec(conn, query);
-            if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-                fprintf(stderr, "Query failed: %s\n", PQerrorMessage(conn));
-                PQclear(res);
-                continue;
-            }
-            char *value = PQgetvalue(res, 0, 1);
-            size_t val_len = strlen(value);
-
-            memcpy(response + response_offset, value, val_len-1);
-            response_offset += val_len-1;
-
-            PQclear(res);
-        }
+    char query[128];
+    snprintf(query, sizeof(query), "SELECT * FROM world LIMIT %zu;", total_queries);
+    
+    PGresult *res = PQexec(conn, query);
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        fprintf(stderr, "Query failed: %s\n", PQerrorMessage(conn));
+        PQclear(res);
+        return;
     }
+    
+    // Assuming each value is exactly 2048 bytes (e.g., CHAR(2048))
+    int nrows = PQntuples(res);
+    for (int i = 0; i < nrows; ++i) {
+        char *value = PQgetvalue(res, i, 1);  // column index 1
+        memcpy(response + response_offset, value, 2048);
+        response_offset += 2048;
+    }
+    
+    PQclear(res);
 
     for (size_t i = 0; i < plaintext_loops; ++i) {
         memcpy(response + response_offset, PLAINTEXT_STR, PLAINTEXT_LEN);
