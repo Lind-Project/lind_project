@@ -49,7 +49,7 @@ run_wrk() {
 
     echo "}" >> $queriesoutput
 
-    echo "Plaintext Results saved to $queriesoutput"
+    echo "Queries Results saved to $queriesoutput"
 }
 
 if [[ "$platform" == "lind" ]]; then

@@ -18,5 +18,6 @@
 #define BATCH_SIZE_MIXED 16
 #define PLAINTEXT_STR "Hello, World!!!!"
 #define PLAINTEXT_LEN 16
+#define ROW_SIZE 2048
 
 void on_request(http_s *request);

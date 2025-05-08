@@ -1,24 +1,21 @@
 #include "main.h"
 #include <math.h>
-// We'll use this callback in `http_listen`, to handles HTTP requests
-void on_request(http_s *request);
 
 // These will contain pre-allocated values that we will use often
 FIOBJ HTTP_HEADER_X_DATA;
-// Set logging level to DEBUG
 
+// static PostgreSQL connection
 static PGconn *conn = NULL;
 
 // Buffers for each endpoint and power level
-// New pre-allocated response buffers
 static char *responses[MAX_POWER_INDEX] = {0};
 
+// Pre-allocate buffers for each power level
 static void init_buffers(void) {
     for (int i = 0; i < MAX_POWER_INDEX; ++i) {
         responses[i] = malloc(pow(2, MIN_POWER + (i*2)));
     }
 }
-
 
 // Initialize PostgreSQL connection
 static void init_db(void) {
@@ -36,37 +33,38 @@ static int power_to_index(int power) {
 }
 
 
-
+// Utility function to free preallocated buffers
 static void free_buffers(void) {
     for (int i = 0; i < MAX_POWER_INDEX; ++i) {
         free(responses[i]);
     }
 }
 
-static void on_queries(http_s *request) {
+// Utility function to extract the power parameter from the request
+int extract_power(http_s *request) {
+    // Parse the query string to get the "power" parameter
     http_parse_query(request);
+    // Create a new string object for the key "power"
     FIOBJ key = fiobj_str_new("power", 5);
+    // Get the value of the "power" parameter from the request
     FIOBJ power_param = fiobj_hash_get(request->params, key);
+    // Convert the value to an integer, or use the default value if not provided
+    // Check if the power value is within the valid range
     int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
     if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
         http_send_error(request, 400);
-        return;
+        return MIN_POWER;
     }
-
+    // Free the key object
     fiobj_free(key);
+    // Return the power value
+    return power;
+}
 
-    int index = power_to_index(power);
-    size_t loops = 1UL << (power - MIN_POWER);
-    size_t total_queries = loops * BATCH_SIZE_QUERIES;
 
-    // Estimate max response size: assuming ~64 bytes per query result
-    size_t estimated_size = total_queries * 2048;
-    char *response = responses[index];
-    if (!response) {
-        http_send_error(request, 500);
-        return;
-    }
-    //memset(response, 0, estimated_size);
+// Utility function to handle postgres queries
+// This function will be called to fill the response buffer with data from the database
+size_t query_postgres(char *response, size_t total_queries) {
     size_t response_offset = 0;
 
     char query[128];
@@ -76,38 +74,55 @@ static void on_queries(http_s *request) {
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         fprintf(stderr, "Query failed: %s\n", PQerrorMessage(conn));
         PQclear(res);
-        return;
+        return 0;
     }
     
     // Assuming each value is exactly 2048 bytes (e.g., CHAR(2048))
     int nrows = PQntuples(res);
     for (int i = 0; i < nrows; ++i) {
         char *value = PQgetvalue(res, i, 1);  // column index 1
-        memcpy(response + response_offset, value, 2048);
-        response_offset += 2048;
+        memcpy(response + response_offset, value, ROW_SIZE);
+        response_offset += ROW_SIZE;
     }
     
     PQclear(res);
+
+    return response_offset;
+}
+
+
+// Handler for the "/queries" endpoint
+static void on_queries(http_s *request) {
+
+    // Parse the query string to get the "power" parameter
+    int power = extract_power(request);
+    int index_from_power = power_to_index(power);
+    size_t loops = 1UL << (power - MIN_POWER);
+    size_t total_queries = loops * BATCH_SIZE_QUERIES;
+
+    char *response = responses[index_from_power];
+    if (!response) {
+        http_send_error(request, 500);
+        return;
+    }
+
+    size_t response_offset = query_postgres(response, total_queries);
+    if (response_offset == 0) {
+        http_send_error(request, 500);
+        return;
+    }
 
     http_send_body(request, response, response_offset);
 }
 
 
-
+// Handler for the "/mixed" endpoint
 static void on_mixed(http_s *request) {
-    http_parse_query(request);
-    FIOBJ key = fiobj_str_new("power", 5);
-    FIOBJ power_param = fiobj_hash_get(request->params, key);
-    int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
-    if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
-        http_send_error(request, 400);
-        return;
-    }
+    // Parse the query string to get the "power" parameter
+    int power = extract_power(request);
 
-    fiobj_free(key);
-
-    int index = power_to_index(power);
-    char *response = responses[index];
+    int index_from_power = power_to_index(power);
+    char *response = responses[index_from_power];
     if (!response) {
         http_send_error(request, 500);
         return;
@@ -117,28 +132,12 @@ static void on_mixed(http_s *request) {
     size_t total_queries = loops * BATCH_SIZE_MIXED;
     size_t plaintext_loops = 1UL << (power - 5);
 
-    size_t response_offset = 0;
-
-    char query[128];
-    snprintf(query, sizeof(query), "SELECT * FROM world LIMIT %zu;", total_queries);
-    
-    PGresult *res = PQexec(conn, query);
-    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        fprintf(stderr, "Query failed: %s\n", PQerrorMessage(conn));
-        PQclear(res);
+    size_t response_offset = query_postgres(response, total_queries);
+    if (response_offset == 0) {
+        http_send_error(request, 500);
         return;
     }
-    
-    // Assuming each value is exactly 2048 bytes (e.g., CHAR(2048))
-    int nrows = PQntuples(res);
-    for (int i = 0; i < nrows; ++i) {
-        char *value = PQgetvalue(res, i, 1);  // column index 1
-        memcpy(response + response_offset, value, 2048);
-        response_offset += 2048;
-    }
-    
-    PQclear(res);
-
+    // Fill the rest of the response with plaintext
     for (size_t i = 0; i < plaintext_loops; ++i) {
         memcpy(response + response_offset, PLAINTEXT_STR, PLAINTEXT_LEN);
         response_offset += PLAINTEXT_LEN;
@@ -149,23 +148,15 @@ static void on_mixed(http_s *request) {
 }
 
 
-
+// Handler for the "/plaintext" endpoint
 static void on_plaintext(http_s *request) {
-    http_parse_query(request);
-    FIOBJ key = fiobj_str_new("power", 5);
-    FIOBJ power_param = fiobj_hash_get(request->params, key);
-    int power = power_param ? atoi(fiobj_obj2cstr(power_param).data) : MIN_POWER;
-    if (power < MIN_POWER || power > MAX_POWER || (power - MIN_POWER) % POWER_STEP != 0) {
-        http_send_error(request, 400);
-        return;
-    }
-
-    fiobj_free(key);
+    // Parse the query string to get the "power" parameter
+    int power = extract_power(request);
 
     size_t loops = 1UL << (power - 4);
-    int index = power_to_index(power);
+    int index_from_power = power_to_index(power);
 
-    char *response = responses[index];
+    char *response = responses[index_from_power];
     size_t total_size = loops * PLAINTEXT_LEN;
 
     if (!response) {
@@ -181,61 +172,42 @@ static void on_plaintext(http_s *request) {
 }
 
 
-void on_debug(http_s *request) {
-  // SQL query to count rows in the 'world' table
-  const char *query = "SELECT COUNT(*) FROM world;";
-
-  // Execute the query
-  PGresult *res = PQexec(conn, query);
-
-  // Check for successful execution
-  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-      // Send error response
-      http_send_error(request, 500);
-      PQclear(res);
-      return;
-  }
-
-  // Retrieve the count result
-  char *count_str = PQgetvalue(res, 0, 0);
-
-  // Format the response
-  char response[128];
-  snprintf(response, sizeof(response), "Number of rows in 'world' table: %s\n", count_str);
-
-  // Send the response
-  http_send_body(request, response, strlen(response));
-
-  // Clean up
-  PQclear(res);
-}
-
-
 // Listen to HTTP requests and start facil.io
 int main(void) {
 
-  init_db();
+    // Initialize PostgreSQL connection
+    init_db();
 
-  init_buffers();
-  // allocating values we use often
-  HTTP_HEADER_X_DATA = fiobj_str_new("X-Data", 6);
+    // Initialize buffers
+    init_buffers();
 
-  //FIO_LOG_LEVEL = FIO_LOG_LEVEL_DEBUG;
+    // allocating values we use often
+    HTTP_HEADER_X_DATA = fiobj_str_new("X-Data", 6);
 
-  const char *socket_path = "/tmp/facil.sock";
+    //FIO_LOG_LEVEL = FIO_LOG_LEVEL_DEBUG;
 
-  // Remove existing socket file if it exists
-  unlink(socket_path);
-  // listen on port 3000 and any available network binding (NULL == 0.0.0.0)
-  http_listen(NULL, socket_path, .on_request = on_request, .log = 1);
+    const char *socket_path = "/tmp/facil.sock";
 
-  chmod(socket_path, 0666);
-  // start the server
-  fio_start(.threads = 1);
-  // deallocating the common values
-  fiobj_free(HTTP_HEADER_X_DATA);
-  free_buffers();
-  PQfinish(conn);
+    // Remove existing socket file if it exists
+    unlink(socket_path);
+
+    // listen on port 3000 and any available network binding (NULL == 0.0.0.0)
+    http_listen(NULL, socket_path, .on_request = on_request, .log = 1);
+
+    // set the socket to be world writable
+    chmod(socket_path, 0666);
+
+    // start the server
+    fio_start(.threads = 1);
+
+    // deallocating the common values
+    fiobj_free(HTTP_HEADER_X_DATA);
+
+    // deallocating the buffers
+    free_buffers();
+
+    // close the PostgreSQL connection
+    PQfinish(conn);
 }
 
 // Easy HTTP handling
@@ -247,8 +219,6 @@ void on_request(http_s *request) {
       on_mixed(request);
   } else if (fiobj_obj2cstr(path).len == 10 && memcmp(fiobj_obj2cstr(path).data, "/plaintext", 10) == 0) {
       on_plaintext(request);
-  } else if (fiobj_obj2cstr(path).len == 6 && memcmp(fiobj_obj2cstr(path).data, "/debug", 6) == 0) {
-      on_debug(request);
   } else {
       http_send_error(request, 404);
   }
