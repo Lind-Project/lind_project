@@ -64,8 +64,7 @@ int extract_power(http_s *request) {
 
 // Utility function to handle postgres queries
 // This function will be called to fill the response buffer with data from the database
-size_t query_postgres(char *response, size_t total_queries) {
-    size_t response_offset = 0;
+size_t query_postgres(char *response, size_t total_queries, size_t response_offset) {
 
     char query[128];
     // Query to get the top n rows from world table.
@@ -114,7 +113,11 @@ static void on_queries(http_s *request) {
     }
 
     // Postgres query and output copied to response.
-    size_t response_offset = query_postgres(response, total_queries);
+    size_t response_offset = query_postgres(response, total_queries, 0);
+    while (total_queries > ROW_SIZE ) {
+        total_queries -= ROW_SIZE;
+        response_offset = query_postgres(response, total_queries, response_offset);
+    }
     if (response_offset == 0) {
         http_send_error(request, 500);
         return;
@@ -150,7 +153,11 @@ static void on_mixed(http_s *request) {
     }
 
     // Postgres query and output copied to response.
-    size_t response_offset = query_postgres(response, total_queries);
+    size_t response_offset = query_postgres(response, total_queries, 0);
+    while (total_queries > ROW_SIZE ) {
+        total_queries -= ROW_SIZE;
+        response_offset = query_postgres(response, total_queries, response_offset);
+    }
     if (response_offset == 0) {
         http_send_error(request, 500);
         return;
