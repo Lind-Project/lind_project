@@ -68,6 +68,7 @@ size_t query_postgres(char *response, size_t total_queries) {
     size_t response_offset = 0;
 
     char query[128];
+    // Query to get the top n rows from world table.
     snprintf(query, sizeof(query), "SELECT * FROM world LIMIT %zu;", total_queries);
     
     PGresult *res = PQexec(conn, query);
@@ -92,11 +93,17 @@ size_t query_postgres(char *response, size_t total_queries) {
 
 
 // Handler for the "/queries" endpoint
+// Usage: /queries?power=16
 static void on_queries(http_s *request) {
 
     // Parse the query string to get the "power" parameter
     int power = extract_power(request);
+
+    // Index from power to use the right power level buffer
     int index_from_power = power_to_index(power);
+
+    // Calculating Total rows to be queried from database.
+    // Subtract 2^16 because each loop gens 64kb
     size_t loops = 1UL << (power - MIN_POWER);
     size_t total_queries = loops * BATCH_SIZE_QUERIES;
 
@@ -106,37 +113,49 @@ static void on_queries(http_s *request) {
         return;
     }
 
+    // Postgres query and output copied to response.
     size_t response_offset = query_postgres(response, total_queries);
     if (response_offset == 0) {
         http_send_error(request, 500);
         return;
     }
 
+    // Send final response
     http_send_body(request, response, response_offset);
 }
 
 
 // Handler for the "/mixed" endpoint
+// Usage: /mixed?power=16
 static void on_mixed(http_s *request) {
     // Parse the query string to get the "power" parameter
     int power = extract_power(request);
 
+    // Index from power to use the right power level buffer
     int index_from_power = power_to_index(power);
+
+    // Calculating Total rows to be queried from database.
+    // Subtract 2^16 because each loop gens 64kb ideally but here we will only gen 32kb per loop and rest is plaintext.
+    size_t loops = 1UL << (power - MIN_POWER);
+    size_t total_queries = loops * BATCH_SIZE_MIXED;
+
+    // Calculating Total plaintext loops 
+    // -4 for 16 byes, -1 for only half of response is plaintext
+    size_t plaintext_loops = 1UL << (power - 5);
+
     char *response = responses[index_from_power];
     if (!response) {
         http_send_error(request, 500);
         return;
     }
 
-    size_t loops = 1UL << (power - MIN_POWER);
-    size_t total_queries = loops * BATCH_SIZE_MIXED;
-    size_t plaintext_loops = 1UL << (power - 5);
-
+    // Postgres query and output copied to response.
     size_t response_offset = query_postgres(response, total_queries);
     if (response_offset == 0) {
         http_send_error(request, 500);
         return;
     }
+
     // Fill the rest of the response with plaintext
     for (size_t i = 0; i < plaintext_loops; ++i) {
         memcpy(response + response_offset, PLAINTEXT_STR, PLAINTEXT_LEN);
@@ -149,10 +168,13 @@ static void on_mixed(http_s *request) {
 
 
 // Handler for the "/plaintext" endpoint
+// Usage: /plaintext?power=16
 static void on_plaintext(http_s *request) {
     // Parse the query string to get the "power" parameter
     int power = extract_power(request);
 
+    // Calculate the total loops s
+    // Determine how many times to repeat 'Hello, World!!!!' 16 bytes
     size_t loops = 1UL << (power - 4);
     int index_from_power = power_to_index(power);
 
@@ -164,10 +186,12 @@ static void on_plaintext(http_s *request) {
         return;
     }
 
+    // Fill the rest of the response with plaintext
     for (size_t i = 0; i < loops; ++i) {
         memcpy(response + i * PLAINTEXT_LEN, PLAINTEXT_STR, PLAINTEXT_LEN);
     }
 
+    // Send final response
     http_send_body(request, response, total_size);
 }
 
