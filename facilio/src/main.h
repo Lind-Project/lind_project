@@ -19,5 +19,6 @@
 #define PLAINTEXT_STR "Hello, World!!!!"
 #define PLAINTEXT_LEN 16
 #define ROW_SIZE 2048
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 void on_request(http_s *request);

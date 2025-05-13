@@ -77,13 +77,22 @@ size_t query_postgres(char *response, size_t total_queries, size_t response_offs
         return 0;
     }
     
-    // Assuming each value is exactly 2048 bytes (e.g., CHAR(2048))
     int nrows = PQntuples(res);
+    // Assuming each value is exactly 2048 bytes (e.g., CHAR(2048))
     for (int i = 0; i < nrows; ++i) {
         char *value = PQgetvalue(res, i, 1);  // column index 1
         memcpy(response + response_offset, value, ROW_SIZE);
         response_offset += ROW_SIZE;
     }
+    while (total_queries > ROW_SIZE) {
+        total_queries = total_queries - ROW_SIZE;
+        for (int i = 0; i < MIN(nrows, total_queries); ++i) {
+            char *value = PQgetvalue(res, i, 1);  // column index 1
+            memcpy(response + response_offset, value, ROW_SIZE);
+            response_offset += ROW_SIZE;
+        }
+    }
+
     
     PQclear(res);
 
@@ -114,10 +123,6 @@ static void on_queries(http_s *request) {
 
     // Postgres query and output copied to response.
     size_t response_offset = query_postgres(response, total_queries, 0);
-    while (total_queries > ROW_SIZE ) {
-        total_queries -= ROW_SIZE;
-        response_offset = query_postgres(response, total_queries, response_offset);
-    }
     if (response_offset == 0) {
         http_send_error(request, 500);
         return;
@@ -154,10 +159,6 @@ static void on_mixed(http_s *request) {
 
     // Postgres query and output copied to response.
     size_t response_offset = query_postgres(response, total_queries, 0);
-    while (total_queries > ROW_SIZE ) {
-        total_queries -= ROW_SIZE;
-        response_offset = query_postgres(response, total_queries, response_offset);
-    }
     if (response_offset == 0) {
         http_send_error(request, 500);
         return;
