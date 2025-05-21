@@ -9,12 +9,17 @@ fi
 
 export CC=/usr/local/gcc-4.4.3/bin/gcc
 export CXX=/usr/local/gcc-4.4.3/bin/g++
+export CFLAGS='-g -DNGX_HAVE_MAP_ANON=1 -O3 -DNGX_HAVE_EPOLL=0 -DNGX_HAVE_EPOLLEXCLUSIVE=0 -DNGX_TEST_BUILD_EPOLL=1'
 
 cd /home/lind/lind_project/tests/applications/nginx
+
 ./auto/configure \
 	--with-compat \
 	--without-http_rewrite_module \
-	--without-http_gzip_module
+	--without-http_gzip_module \
+	--with-select_module \
+	--with-poll_module
+
 make
 sudo make install
 sudo cp /home/lind/lind_project/src/scripts/nginx/nginx-conf/nginx.conf /usr/local/nginx/conf/nginx.conf

@@ -13,8 +13,7 @@ cur.execute("DROP TABLE IF EXISTS world;")
 cur.execute(
     "CREATE TABLE world ("
     "id INT, "
-    "word1 VARCHAR,"
-    "word2 VARCHAR"
+    "word1 VARCHAR"
     ");"
 )
 
@@ -26,7 +25,7 @@ conn.commit()
 # on the server's file system. Instead, we will read the file with Python and insert 
 # the data directly. 
 # We don't have csv module been compiled in Lind, so copying manually instead.
-csv_file_path = 'hitchdata2.csv'
+csv_file_path = 'hitchdata2k.csv'
 # Open the CSV file and read the data
 with open(csv_file_path, 'r') as f:
     # Skip the header row
@@ -35,7 +34,7 @@ with open(csv_file_path, 'r') as f:
         # Split each line by comma to parse the id and word columns
         row = line.strip().split(',')
         # Insert each row into the 'world' table
-        cur.execute("INSERT INTO world (id, word1, word2) VALUES (%s, %s, %s);", row)
+        cur.execute("INSERT INTO world (id, word1) VALUES (%s, %s);", row)
 
 # Commit the changes to the database after data insertion
 conn.commit()
@@ -43,3 +42,5 @@ conn.commit()
 # Close the cursor and the connection
 cur.close()
 conn.close()
+
+
