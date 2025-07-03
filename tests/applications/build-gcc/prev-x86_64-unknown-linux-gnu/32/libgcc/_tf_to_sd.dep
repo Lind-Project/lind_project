@@ -1,0 +1,62 @@
+_tf_to_sd.o: ../../../../gcc-4.4.3/libgcc/config/libbid/_tf_to_sd.c \
+ ../../../../gcc-4.4.3/libgcc/config/libbid/bid_conf.h \
+ ../../../../gcc-4.4.3/libgcc/config/libbid/bid_functions.h \
+ ../../../../gcc-4.4.3/libgcc/config/libbid/bid_gcc_intrinsics.h \
+ ../../.././gcc/tconfig.h ../../.././gcc/auto-host.h \
+ ../../../../gcc-4.4.3/libgcc/../include/ansidecl.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/coretypes.h ../../.././gcc/tm.h \
+ ../../.././gcc/options.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/i386/biarch64.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/i386/i386.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/vxworks-dummy.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/i386/unix.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/i386/att.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/dbxelf.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/elfos.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/svr4.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/linux.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/i386/x86-64.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/i386/linux64.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/defaults.h
+
+../../../../gcc-4.4.3/libgcc/config/libbid/bid_conf.h:
+
+../../../../gcc-4.4.3/libgcc/config/libbid/bid_functions.h:
+
+../../../../gcc-4.4.3/libgcc/config/libbid/bid_gcc_intrinsics.h:
+
+../../.././gcc/tconfig.h:
+
+../../.././gcc/auto-host.h:
+
+../../../../gcc-4.4.3/libgcc/../include/ansidecl.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/coretypes.h:
+
+../../.././gcc/tm.h:
+
+../../.././gcc/options.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/i386/biarch64.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/i386/i386.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/vxworks-dummy.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/i386/unix.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/i386/att.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/dbxelf.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/elfos.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/svr4.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/linux.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/i386/x86-64.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/i386/linux64.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/defaults.h:

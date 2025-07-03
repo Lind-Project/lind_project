@@ -1,0 +1,1 @@
+tf-signs_s.o: ../../../../gcc-4.4.3/libgcc/config/i386/32/tf-signs.c

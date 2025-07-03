@@ -1,0 +1,21 @@
+line-map.o: ../../gcc-4.4.3/libcpp/line-map.c config.h \
+ ../../gcc-4.4.3/libcpp/system.h \
+ ../../gcc-4.4.3/libcpp/../include/filenames.h \
+ ../../gcc-4.4.3/libcpp/../include/libiberty.h \
+ ../../gcc-4.4.3/libcpp/../include/ansidecl.h \
+ ../../gcc-4.4.3/libcpp/../include/safe-ctype.h \
+ ../../gcc-4.4.3/libcpp/include/line-map.h
+
+config.h:
+
+../../gcc-4.4.3/libcpp/system.h:
+
+../../gcc-4.4.3/libcpp/../include/filenames.h:
+
+../../gcc-4.4.3/libcpp/../include/libiberty.h:
+
+../../gcc-4.4.3/libcpp/../include/ansidecl.h:
+
+../../gcc-4.4.3/libcpp/../include/safe-ctype.h:
+
+../../gcc-4.4.3/libcpp/include/line-map.h:

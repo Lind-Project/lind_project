@@ -1,0 +1,49 @@
+# This file is a shell script that caches the results of configure
+# tests run on this system so they can be shared between configure
+# scripts and configure runs, see configure's option --config-cache.
+# It is not useful on other systems.  If it contains results you don't
+# want to keep, you may remove or edit it.
+#
+# config.status only pays attention to the cache file if you give it
+# the --recheck option to rerun configure.
+#
+# `ac_cv_env_foo' variables (set or unset) will be overridden when
+# loading this file, other *unset* `ac_cv_foo' will be assigned the
+# following values.
+
+ac_cv_build=${ac_cv_build=x86_64-unknown-linux-gnu}
+ac_cv_build_alias=${ac_cv_build_alias=x86_64-unknown-linux-gnu}
+ac_cv_c_compiler_gnu=${ac_cv_c_compiler_gnu=yes}
+ac_cv_env_CC_set=set
+ac_cv_env_CC_value='/home/lind/lind_project/tests/applications/build-gcc/./gcc/xgcc -B/home/lind/lind_project/tests/applications/build-gcc/./gcc/ -B/usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/bin/ -B/usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/lib/ -isystem /usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/include -isystem /usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/sys-include'
+ac_cv_env_CFLAGS_set=set
+ac_cv_env_CFLAGS_value='-fgnu89-inline -g -O2  '
+ac_cv_env_CPPFLAGS_set=set
+ac_cv_env_CPPFLAGS_value=
+ac_cv_env_CPP_set=
+ac_cv_env_CPP_value=
+ac_cv_env_LDFLAGS_set=set
+ac_cv_env_LDFLAGS_value=
+ac_cv_env_build_alias_set=set
+ac_cv_env_build_alias_value=x86_64-unknown-linux-gnu
+ac_cv_env_host_alias_set=set
+ac_cv_env_host_alias_value=x86_64-unknown-linux-gnu
+ac_cv_env_target_alias_set=set
+ac_cv_env_target_alias_value=x86_64-unknown-linux-gnu
+ac_cv_host=${ac_cv_host=x86_64-unknown-linux-gnu}
+ac_cv_host_alias=${ac_cv_host_alias=x86_64-unknown-linux-gnu}
+ac_cv_objext=${ac_cv_objext=o}
+ac_cv_prog_AR=${ac_cv_prog_AR=ar}
+ac_cv_prog_AWK=${ac_cv_prog_AWK=gawk}
+ac_cv_prog_CC=${ac_cv_prog_CC='/home/lind/lind_project/tests/applications/build-gcc/./gcc/xgcc -B/home/lind/lind_project/tests/applications/build-gcc/./gcc/ -B/usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/bin/ -B/usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/lib/ -isystem /usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/include -isystem /usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/sys-include'}
+ac_cv_prog_CPP=${ac_cv_prog_CPP='/home/lind/lind_project/tests/applications/build-gcc/./gcc/xgcc -B/home/lind/lind_project/tests/applications/build-gcc/./gcc/ -B/usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/bin/ -B/usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/lib/ -isystem /usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/include -isystem /usr/local/gcc-4.4.3//x86_64-unknown-linux-gnu/sys-include -E'}
+ac_cv_prog_LIPO=${ac_cv_prog_LIPO=lipo}
+ac_cv_prog_NM=${ac_cv_prog_NM=/home/lind/lind_project/tests/applications/build-gcc/./gcc/nm}
+ac_cv_prog_RANLIB=${ac_cv_prog_RANLIB=ranlib}
+ac_cv_prog_STRIP=${ac_cv_prog_STRIP=strip}
+ac_cv_prog_cc_g=${ac_cv_prog_cc_g=yes}
+ac_cv_prog_cc_stdc=${ac_cv_prog_cc_stdc=}
+gcc_cv_have_cc_tls=${gcc_cv_have_cc_tls=yes}
+libgcc_cv_dfp=${libgcc_cv_dfp=yes}
+libgcc_cv_fixed_point=${libgcc_cv_fixed_point=no}
+libgcc_cv_hidden_visibility_attribute=${libgcc_cv_hidden_visibility_attribute=yes}

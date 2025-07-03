@@ -1,0 +1,1 @@
+../../../gcc-4.4.3/gmp/mpn/generic/mode1o.c

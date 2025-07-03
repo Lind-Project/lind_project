@@ -1,0 +1,39 @@
+makedepend.o: ../../gcc-4.4.3/libcpp/makedepend.c config.h \
+ ../../gcc-4.4.3/libcpp/system.h \
+ ../../gcc-4.4.3/libcpp/../include/filenames.h \
+ ../../gcc-4.4.3/libcpp/../include/libiberty.h \
+ ../../gcc-4.4.3/libcpp/../include/ansidecl.h \
+ ../../gcc-4.4.3/libcpp/../include/safe-ctype.h \
+ ../../gcc-4.4.3/libcpp/include/line-map.h \
+ ../../gcc-4.4.3/libcpp/include/cpplib.h \
+ ../../gcc-4.4.3/libcpp/include/symtab.h \
+ ../../gcc-4.4.3/libcpp/../include/obstack.h \
+ ../../gcc-4.4.3/libcpp/include/line-map.h \
+ ../../gcc-4.4.3/libcpp/../include/getopt.h \
+ ../../gcc-4.4.3/libcpp/include/mkdeps.h
+
+config.h:
+
+../../gcc-4.4.3/libcpp/system.h:
+
+../../gcc-4.4.3/libcpp/../include/filenames.h:
+
+../../gcc-4.4.3/libcpp/../include/libiberty.h:
+
+../../gcc-4.4.3/libcpp/../include/ansidecl.h:
+
+../../gcc-4.4.3/libcpp/../include/safe-ctype.h:
+
+../../gcc-4.4.3/libcpp/include/line-map.h:
+
+../../gcc-4.4.3/libcpp/include/cpplib.h:
+
+../../gcc-4.4.3/libcpp/include/symtab.h:
+
+../../gcc-4.4.3/libcpp/../include/obstack.h:
+
+../../gcc-4.4.3/libcpp/include/line-map.h:
+
+../../gcc-4.4.3/libcpp/../include/getopt.h:
+
+../../gcc-4.4.3/libcpp/include/mkdeps.h:

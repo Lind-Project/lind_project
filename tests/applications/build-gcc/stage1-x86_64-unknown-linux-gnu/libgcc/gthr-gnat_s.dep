@@ -1,0 +1,4 @@
+gthr-gnat_s.o: ../../../gcc-4.4.3/libgcc/../gcc/gthr-gnat.c \
+ ../../../gcc-4.4.3/libgcc/../gcc/gthr-gnat.h
+
+../../../gcc-4.4.3/libgcc/../gcc/gthr-gnat.h:

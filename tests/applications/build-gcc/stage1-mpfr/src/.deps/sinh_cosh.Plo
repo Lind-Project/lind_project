@@ -1,0 +1,157 @@
+sinh_cosh.lo: ../../../gcc-4.4.3/mpfr/src/sinh_cosh.c \
+ /usr/include/stdc-predef.h ../../../gcc-4.4.3/mpfr/src/mpfr-impl.h \
+ /usr/include/stdio.h \
+ /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
+ /usr/include/features.h /usr/include/x86_64-linux-gnu/sys/cdefs.h \
+ /usr/include/x86_64-linux-gnu/bits/wordsize.h \
+ /usr/include/x86_64-linux-gnu/bits/long-double.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+ /usr/lib/gcc/x86_64-linux-gnu/9/include/stddef.h \
+ /usr/lib/gcc/x86_64-linux-gnu/9/include/stdarg.h \
+ /usr/include/x86_64-linux-gnu/bits/types.h \
+ /usr/include/x86_64-linux-gnu/bits/timesize.h \
+ /usr/include/x86_64-linux-gnu/bits/typesizes.h \
+ /usr/include/x86_64-linux-gnu/bits/time64.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/types/FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/sys_errlist.h /usr/include/string.h \
+ /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
+ /usr/include/strings.h /usr/lib/gcc/x86_64-linux-gnu/9/include/limits.h \
+ /usr/lib/gcc/x86_64-linux-gnu/9/include/syslimits.h \
+ /usr/include/limits.h /usr/include/x86_64-linux-gnu/bits/posix1_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/local_lim.h \
+ /usr/include/linux/limits.h \
+ /usr/include/x86_64-linux-gnu/bits/posix2_lim.h \
+ /home/lind/lind_project/tests/applications/build-gcc/./gmp/gmp.h \
+ /home/lind/lind_project/tests/applications/build-gcc/./gmp/../../gcc-4.4.3/gmp/gmp-impl.h \
+ /home/lind/lind_project/tests/applications/build-gcc/./gmp/config.h \
+ /home/lind/lind_project/tests/applications/build-gcc/./gmp/gmp-mparam.h \
+ /home/lind/lind_project/tests/applications/build-gcc/./gmp/fib_table.h \
+ /home/lind/lind_project/tests/applications/build-gcc/./gmp/fac_table.h \
+ /home/lind/lind_project/tests/applications/build-gcc/./gmp/mp_bases.h \
+ /usr/include/inttypes.h /usr/lib/gcc/x86_64-linux-gnu/9/include/stdint.h \
+ /usr/include/stdint.h /usr/include/x86_64-linux-gnu/bits/wchar.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+ /home/lind/lind_project/tests/applications/build-gcc/./gmp/../../gcc-4.4.3/gmp/longlong.h \
+ ../../../gcc-4.4.3/mpfr/src/mpfr.h \
+ ../../../gcc-4.4.3/mpfr/src/mpfr-thread.h mparam.h \
+ ../../../gcc-4.4.3/mpfr/src/generic/mparam.h /usr/include/locale.h \
+ /usr/include/x86_64-linux-gnu/bits/locale.h
+
+/usr/include/stdc-predef.h:
+
+../../../gcc-4.4.3/mpfr/src/mpfr-impl.h:
+
+/usr/include/stdio.h:
+
+/usr/include/x86_64-linux-gnu/bits/libc-header-start.h:
+
+/usr/include/features.h:
+
+/usr/include/x86_64-linux-gnu/sys/cdefs.h:
+
+/usr/include/x86_64-linux-gnu/bits/wordsize.h:
+
+/usr/include/x86_64-linux-gnu/bits/long-double.h:
+
+/usr/include/x86_64-linux-gnu/gnu/stubs.h:
+
+/usr/include/x86_64-linux-gnu/gnu/stubs-64.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/9/include/stddef.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/9/include/stdarg.h:
+
+/usr/include/x86_64-linux-gnu/bits/types.h:
+
+/usr/include/x86_64-linux-gnu/bits/timesize.h:
+
+/usr/include/x86_64-linux-gnu/bits/typesizes.h:
+
+/usr/include/x86_64-linux-gnu/bits/time64.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/__FILE.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/FILE.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdio_lim.h:
+
+/usr/include/x86_64-linux-gnu/bits/sys_errlist.h:
+
+/usr/include/string.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/locale_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/__locale_t.h:
+
+/usr/include/strings.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/9/include/limits.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/9/include/syslimits.h:
+
+/usr/include/limits.h:
+
+/usr/include/x86_64-linux-gnu/bits/posix1_lim.h:
+
+/usr/include/x86_64-linux-gnu/bits/local_lim.h:
+
+/usr/include/linux/limits.h:
+
+/usr/include/x86_64-linux-gnu/bits/posix2_lim.h:
+
+/home/lind/lind_project/tests/applications/build-gcc/./gmp/gmp.h:
+
+/home/lind/lind_project/tests/applications/build-gcc/./gmp/../../gcc-4.4.3/gmp/gmp-impl.h:
+
+/home/lind/lind_project/tests/applications/build-gcc/./gmp/config.h:
+
+/home/lind/lind_project/tests/applications/build-gcc/./gmp/gmp-mparam.h:
+
+/home/lind/lind_project/tests/applications/build-gcc/./gmp/fib_table.h:
+
+/home/lind/lind_project/tests/applications/build-gcc/./gmp/fac_table.h:
+
+/home/lind/lind_project/tests/applications/build-gcc/./gmp/mp_bases.h:
+
+/usr/include/inttypes.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/9/include/stdint.h:
+
+/usr/include/stdint.h:
+
+/usr/include/x86_64-linux-gnu/bits/wchar.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdint-intn.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdint-uintn.h:
+
+/home/lind/lind_project/tests/applications/build-gcc/./gmp/../../gcc-4.4.3/gmp/longlong.h:
+
+../../../gcc-4.4.3/mpfr/src/mpfr.h:
+
+../../../gcc-4.4.3/mpfr/src/mpfr-thread.h:
+
+mparam.h:
+
+../../../gcc-4.4.3/mpfr/src/generic/mparam.h:
+
+/usr/include/locale.h:
+
+/usr/include/x86_64-linux-gnu/bits/locale.h:

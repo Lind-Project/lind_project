@@ -1,0 +1,31 @@
+negtf2.o: ../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/negtf2.c \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/soft-fp.h \
+ ../../.././gcc/sfp-machine.h \
+ ../../../../gcc-4.4.3/libgcc/config/i386/32/sfp-machine.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/op-1.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/op-2.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/op-4.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/op-8.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/op-common.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/longlong.h \
+ ../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/quad.h
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/soft-fp.h:
+
+../../.././gcc/sfp-machine.h:
+
+../../../../gcc-4.4.3/libgcc/config/i386/32/sfp-machine.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/op-1.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/op-2.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/op-4.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/op-8.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/op-common.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/longlong.h:
+
+../../../../gcc-4.4.3/libgcc/../gcc/config/soft-fp/quad.h:

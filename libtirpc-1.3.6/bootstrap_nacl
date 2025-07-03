@@ -1,0 +1,21 @@
+#!/bin/bash
+
+export AR=/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-ar
+export CC=/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc-4.4.3
+export CXX=/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-g++
+export LD=/home/lind/lind_project/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-ld
+export CFLAGS='-g -fno-pie -lpthread'
+export CXXFLAGS='-g -fno-pie'
+export LDFLAGS='-g -fno-pie'
+export PATH="/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+
+
+# if [ -f /etc/lsb-release ]; then
+#     . /etc/lsb-release
+#     if [ "$DISTRIB_ID" = "Ubuntu" ]; then
+#         export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
+#     fi
+# fi
+
+./configure --host=x86_64-none-linux --enable-shared --with-pic --sysconfdir=/etc --disable-static --disable-gssapi &&
+make

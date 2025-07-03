@@ -1,0 +1,1 @@
+crtfastmath.o: ../../../gcc-4.4.3/libgcc/../gcc/config/i386/crtfastmath.c

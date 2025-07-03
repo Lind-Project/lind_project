@@ -1,0 +1,1 @@
+crtprec64.o: ../../../gcc-4.4.3/libgcc/../gcc/config/i386/crtprec.c
