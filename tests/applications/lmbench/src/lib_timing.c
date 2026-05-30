@@ -343,7 +343,9 @@ benchmp_parent(	int response,
 	result_t*	merged_results = NULL;
 	char*		signals = NULL;
 	unsigned char*	buf;
-	fd_set		fds_read, fds_error;
+	fd_set		fds_read;
+	/* Control pipes only need readability; Lind may mark pipe readiness as
+	 * exceptional, which incorrectly drives the benchmark error path. */
 	struct timeval	timeout;
 
 	if (benchmp_sigchld_received || benchmp_sigterm_received) {
@@ -362,16 +364,13 @@ benchmp_parent(	int response,
 	for (i = 0; i < parallel * sizeof(char); i += bytes_read) {
 		bytes_read = 0;
 		FD_ZERO(&fds_read);
-		FD_ZERO(&fds_error);
 		FD_SET(response, &fds_read);
-		FD_SET(response, &fds_error);
 
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
-		select(response+1, &fds_read, NULL, &fds_error, &timeout);
+		select(response+1, &fds_read, NULL, NULL, &timeout);
 		if (benchmp_sigchld_received 
-		    || benchmp_sigterm_received
-		    || FD_ISSET(response, &fds_error)) 
+		    || benchmp_sigterm_received)
 		{
 #ifdef _DEBUG
 			fprintf(stderr, "benchmp_parent: ready, benchmp_sigchld_received=%d\n", benchmp_sigchld_received);
@@ -407,16 +406,13 @@ benchmp_parent(	int response,
 	for (i = 0; i < parallel * sizeof(char); i += bytes_read) {
 		bytes_read = 0;
 		FD_ZERO(&fds_read);
-		FD_ZERO(&fds_error);
 		FD_SET(response, &fds_read);
-		FD_SET(response, &fds_error);
 
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
-		select(response+1, &fds_read, NULL, &fds_error, &timeout);
+		select(response+1, &fds_read, NULL, NULL, &timeout);
 		if (benchmp_sigchld_received 
-		    || benchmp_sigterm_received
-		    || FD_ISSET(response, &fds_error)) 
+		    || benchmp_sigterm_received)
 		{
 #ifdef _DEBUG
 			fprintf(stderr, "benchmp_parent: done, benchmp_child_died=%d\n", benchmp_sigchld_received);
@@ -443,7 +439,6 @@ benchmp_parent(	int response,
 		buf = (unsigned char*)results;
 
 		FD_ZERO(&fds_read);
-		FD_ZERO(&fds_error);
 
 		/* tell one child to report its results */
 		write(result_signal, buf, sizeof(char));
@@ -451,14 +446,12 @@ benchmp_parent(	int response,
 		for (; n > 0; n -= bytes_read, buf += bytes_read) {
 			bytes_read = 0;
 			FD_SET(response, &fds_read);
-			FD_SET(response, &fds_error);
 
 			timeout.tv_sec = 1;
 			timeout.tv_usec = 0;
-			select(response+1, &fds_read, NULL, &fds_error, &timeout);
+			select(response+1, &fds_read, NULL, NULL, &timeout);
 			if (benchmp_sigchld_received 
-			    || benchmp_sigterm_received
-			    || FD_ISSET(response, &fds_error)) 
+			    || benchmp_sigterm_received)
 			{
 #ifdef _DEBUG
 				fprintf(stderr, "benchmp_parent: results, benchmp_sigchld_received=%d\n", benchmp_sigchld_received);
