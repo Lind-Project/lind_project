@@ -86,10 +86,14 @@ initialize(iter_t iterations, void* cookie)
 	}
 	handle_scheduler(benchmp_childid(), 0, 1);
 
-	if (pState->pid = fork())
+	if (pState->pid = fork()) {
+		close(pState->sv[0]);
 		return;
+	}
 
 	handle_scheduler(benchmp_childid(), 1, 1);
+
+	close(pState->sv[1]);
 
 	/* Child sits and ping-pongs packets back to parent */
 	signal(SIGTERM, exit);
@@ -122,7 +126,7 @@ cleanup(iter_t iterations, void* cookie)
 	if (iterations) return;
 
 	if (pState->pid) {
-		kill(pState->pid, SIGKILL);
+		close(pState->sv[1]);
 		waitpid(pState->pid, NULL, 0);
 		pState->pid = 0;
 	}

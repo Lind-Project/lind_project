@@ -116,7 +116,8 @@ cleanup(iter_t iterations, void* cookie)
 	if (iterations) return;
 
 	if (state->pid) {
-		kill(state->pid, SIGKILL);
+		close(state->p1[1]);
+		close(state->p2[0]);
 		waitpid(state->pid, NULL, 0);
 		state->pid = 0;
 	}
@@ -149,7 +150,7 @@ writer(register int w, register int r)
 	for ( ;; ) {
 		if (read(r, cptr, 1) != 1 ||
 			write(w, cptr, 1) != 1) {
-			    perror("(w) read/write on pipe");
+			    exit(0);
 		}
 	}
 }

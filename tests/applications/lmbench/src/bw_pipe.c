@@ -90,7 +90,6 @@ cleanup(iter_t iterations, void * cookie)
 
 	close(state->readfd);
 	if (state->pid > 0) {
-		kill(state->pid, SIGKILL);
 		waitpid(state->pid, NULL, 0);
 	}
 	state->pid = 0;
@@ -124,7 +123,7 @@ writer(int writefd, char* buf, size_t xfer)
 		touch(buf, xfer);
 #endif
 		for (done = 0; done < xfer; done += n) {
-			if ((n = write(writefd, buf, xfer - done)) < 0) {
+			if ((n = write(writefd, buf, xfer - done)) <= 0) {
 				exit(0);
 			}
 		}

@@ -83,7 +83,6 @@ cleanup(iter_t iterations, void*  cookie)
 	close(state->control[1]);
 	close(state->pipes[0]);
 	if (state->pid > 0) {
-		kill(state->pid, SIGKILL);
 		waitpid(state->pid, NULL, 0);
 	}
 	state->pid = 0;
@@ -114,14 +113,16 @@ writer(int controlfd, int writefd, char* buf, void* cookie)
 	struct _state* state = (struct _state*)cookie;
 
 	for ( ;; ) {
-		read(controlfd, &todo, sizeof(todo));
+		if (read(controlfd, &todo, sizeof(todo)) != sizeof(todo)) {
+			exit(0);
+		}
 		for (done = 0; done < todo; done += n) {
 #ifdef TOUCH
 			touch(buf, XFERSIZE);
 #endif
-			if ((n = write(writefd, buf, state->xfer)) < 0) {
+			if ((n = write(writefd, buf, state->xfer)) <= 0) {
 				/* error! */
-				exit(1);
+				exit(0);
 			}
 		}
 	}
