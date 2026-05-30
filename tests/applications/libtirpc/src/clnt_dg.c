@@ -55,8 +55,10 @@
 #include "rpc_com.h"
 #include "clnt_fd_locks.h"
 
-#ifdef IP_RECVERR
+#if defined(IP_RECVERR) && defined(HAVE_LINUX_ERRQUEUE_H)
+#ifdef HAVE_ASM_TYPES_H
 #include <asm/types.h>
+#endif
 #include <linux/errqueue.h>
 #include <sys/uio.h>
 #endif
@@ -246,7 +248,7 @@ clnt_dg_create(fd, svcaddr, program, version, sendsz, recvsz)
 #if 0
 	(void)bindresvport_sa(fd, (struct sockaddr *)svcaddr->buf);
 #endif
-#ifdef IP_RECVERR
+#if defined(IP_RECVERR) && defined(HAVE_LINUX_ERRQUEUE_H)
 	{
 	int on = 1;
 	setsockopt(fd, SOL_IP, IP_RECVERR, &on, sizeof(on));
@@ -420,7 +422,7 @@ get_reply:
                 }
                 break;
         }
-#ifdef IP_RECVERR
+#if defined(IP_RECVERR) && defined(HAVE_LINUX_ERRQUEUE_H)
       if (fd.revents & POLLERR)
 	{
 	  struct msghdr msg;
