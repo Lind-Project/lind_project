@@ -27,6 +27,7 @@ export OS=x86_64-nacl
 export CFLAGS="-g -O2 -fno-pie -DNO_PORTMAPPER -I${TIRPC_PREFIX}/include/tirpc"
 export CPPFLAGS="-I${TIRPC_PREFIX}/include/tirpc"
 export LDFLAGS="-g -fno-pie -L${TIRPC_PREFIX}/lib"
+export LDLIBS="-ltirpc -lpthread -lm"
 
 cd "$APP_DIR/src"
-make OS="$OS" CC="$CC" AR="$AR" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" lmbench "$@"
+make OS="$OS" CC="$CC" AR="$AR" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" LDLIBS="$LDLIBS" lmbench "$@"
