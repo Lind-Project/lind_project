@@ -157,11 +157,9 @@ AC_CONFIG_HEADERS([config.h])
 LT_INIT
 AC_HEADER_DIRENT
 AC_PREFIX_DEFAULT(/usr)
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h libintl.h limits.h locale.h
-netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h
-sys/param.h sys/socket.h sys/time.h syslog.h unistd.h features.h
-gssapi/gssapi_ext.h endian.h machine/endian.h])
-AX_PTHREAD
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h libintl.h limits.h locale.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/param.h sys/socket.h sys/time.h syslog.h unistd.h features.h gssapi/gssapi_ext.h endian.h machine/endian.h])
+AC_CHECK_LIB([pthread], [pthread_create], [PTHREAD_LIBS="-lpthread"], [PTHREAD_LIBS=""])
+AC_SUBST([PTHREAD_LIBS])
 AC_CHECK_FUNCS([getpeereid getrpcbyname getrpcbynumber setrpcent endrpcent getrpcent])
 
 AC_CHECK_TYPES(struct rpcent,,, [
