@@ -24,9 +24,15 @@ export LDFLAGS='-g -fno-pie'
 
 cd "$APP_DIR"
 
-if [[ ! -e ./configure ]]; then
-    bash ./autogen.sh
-fi
+rm -rf autom4te.cache
+rm -f aclocal.m4 configure config.h.in
+rm -f compile config.guess config.sub depcomp install-sh ltmain.sh missing
+mkdir -p m4
+libtoolize --force --copy
+aclocal -I m4
+autoheader
+automake --add-missing --copy --gnu
+autoconf
 
 ./configure \
     --host=x86_64-nacl \
