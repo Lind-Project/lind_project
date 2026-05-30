@@ -1,0 +1,32 @@
+#!/bin/bash
+set -e
+
+APP_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$APP_DIR/../../.." && pwd)"
+TOOLCHAIN_BIN="${LIND_NACL_TOOLCHAIN:-$REPO_ROOT/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin}"
+if [[ -d "$TOOLCHAIN_BIN" ]]; then
+    export PATH="$TOOLCHAIN_BIN:$PATH"
+fi
+TIRPC_PREFIX="${APP_DIR}/../libtirpc/_nacl"
+
+if [[ ! -r "$TIRPC_PREFIX/include/tirpc/rpc/rpc.h" ]]; then
+    echo "building libtirpc for NaCl first" >&2
+    (cd "$APP_DIR/../libtirpc" && bash ./bootstrap_nacl)
+fi
+
+export AR=x86_64-nacl-ar
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export RANLIB=x86_64-nacl-ranlib
+if ! command -v "$CC" >/dev/null 2>&1; then
+    echo "missing x86_64-nacl-gcc; set LIND_NACL_TOOLCHAIN=/path/to/linux_x86_glibc/bin or run inside the Lind NaCl toolchain container" >&2
+    exit 127
+fi
+export OS=x86_64-nacl
+export CFLAGS="-g -O2 -fno-pie -DNO_PORTMAPPER -I${TIRPC_PREFIX}/include/tirpc"
+export CPPFLAGS="-I${TIRPC_PREFIX}/include/tirpc"
+export LDFLAGS="-g -fno-pie -L${TIRPC_PREFIX}/lib"
+
+cd "$APP_DIR/src"
+make OS="$OS" CC="$CC" AR="$AR" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" lmbench "$@"

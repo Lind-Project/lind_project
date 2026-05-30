@@ -1,0 +1,53 @@
+#####################################
+# lmbench smoke-test command list
+#
+# Format:
+#   bin/<binary> [args...]
+#
+# Each non-comment line is executed as:
+#   lind_run bin/<binary> [args...]
+#
+# Notes:
+# - Paths here are guest-visible lindfs paths.
+# - File-based tests use assets under `/tmp/lmbench-test`.
+# - This smoke list intentionally focuses on one-command lmbench invocations.
+#   Multi-step server/client benchmarks such as `bw_tcp`, `lat_connect`,
+#   `lat_http`, `lat_rpc`, `lat_tcp`, `lat_udp`, `lat_unix_connect`, and
+#   `lmhttp` are omitted from this first pass.
+#####################################
+
+bin/bw_file_rd -P 1 -W 0 -N 1 512K open2close /tmp/lmbench-test/sample_large.bin
+bin/bw_mem -P 1 -W 0 -N 1 1M rd
+bin/bw_mmap_rd -P 1 -W 0 -N 1 512K mmap_only /tmp/lmbench-test/sample_large.bin
+bin/bw_pipe -P 1 -W 0 -N 1 -M 64K
+bin/bw_unix -P 1 -W 0 -N 1 -M 64K
+bin/disk /tmp/lmbench-test/sample_large.bin
+bin/enough
+bin/flushdisk
+bin/hello
+bin/lat_ctx -W 0 -N 1 2
+bin/lat_fcntl -W 0 -N 1
+bin/lat_fifo -W 0 -N 1
+bin/lat_fs -s 4K -n 2 -W 0 -N 1 /tmp/lmbench-test/fs_dir
+bin/lat_mem_rd -W 0 -N 1 1M 128
+bin/lat_mmap -W 0 -N 1 512K /tmp/lmbench-test/sample_large.bin
+bin/lat_ops -W 0 -N 1
+bin/lat_pagefault -W 0 -N 1 /tmp/lmbench-test/sample_large.bin
+bin/lat_pipe -W 0 -N 1
+bin/lat_proc -W 0 -N 1 procedure
+bin/lat_select -n 1 -W 0 -N 1 file
+bin/lat_sem -W 0 -N 1
+bin/lat_sig -W 0 -N 1 catch
+bin/lat_syscall -W 0 -N 1 null
+bin/lat_unix -W 0 -N 1
+bin/line -v -W 0 -N 1 -M 1M
+bin/lmdd label=smoke print=1 move=64K if=internal of=internal
+bin/loop_o
+bin/memsize 8
+bin/mhz -c
+bin/msleep 1
+bin/par_mem -M 1M -W 0 -N 1
+bin/par_ops -W 0 -N 1
+bin/stream -M 1M -W 0 -N 1
+bin/timing_o
+bin/tlb -M 1M -W 0 -N 1

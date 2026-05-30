@@ -1,0 +1,43 @@
+#!/bin/bash
+set -e
+
+APP_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$APP_DIR/../../.." && pwd)"
+TOOLCHAIN_BIN="${LIND_NACL_TOOLCHAIN:-$REPO_ROOT/lind/lindenv/sdk/toolchain/linux_x86_glibc/bin}"
+if [[ -d "$TOOLCHAIN_BIN" ]]; then
+    export PATH="$TOOLCHAIN_BIN:$PATH"
+fi
+PREFIX="${APP_DIR}/_nacl"
+
+export AR=x86_64-nacl-ar
+export CC=x86_64-nacl-gcc
+export CXX=x86_64-nacl-g++
+export LD=x86_64-nacl-ld
+export RANLIB=x86_64-nacl-ranlib
+if ! command -v "$CC" >/dev/null 2>&1; then
+    echo "missing x86_64-nacl-gcc; set LIND_NACL_TOOLCHAIN=/path/to/linux_x86_glibc/bin or run inside the Lind NaCl toolchain container" >&2
+    exit 127
+fi
+export CFLAGS='-g -O2 -fno-pie'
+export CXXFLAGS='-g -O2 -fno-pie'
+export LDFLAGS='-g -fno-pie'
+
+cd "$APP_DIR"
+
+if [[ ! -e ./configure ]]; then
+    bash ./autogen.sh
+fi
+
+./configure \
+    --host=x86_64-nacl \
+    --prefix="$PREFIX" \
+    --disable-gssapi \
+    --disable-shared \
+    --enable-static \
+    ac_cv_func_malloc_0_nonnull=yes \
+    ac_cv_func_memset=yes \
+    ac_cv_func_strchr=yes \
+    "$@"
+
+make
+make install
