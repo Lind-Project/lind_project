@@ -18,7 +18,7 @@ if ! command -v "$CC" >/dev/null 2>&1; then
     echo "missing x86_64-nacl-gcc; set LIND_NACL_TOOLCHAIN=/path/to/linux_x86_glibc/bin or run inside the Lind NaCl toolchain container" >&2
     exit 127
 fi
-export CFLAGS='-g -O2 -fno-pie'
+export CFLAGS='-g -O2 -std=gnu99 -fno-pie'
 export CXXFLAGS='-g -O2 -fno-pie'
 export LDFLAGS='-g -fno-pie'
 
